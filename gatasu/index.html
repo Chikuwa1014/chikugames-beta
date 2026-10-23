@@ -119,7 +119,7 @@ details ul{margin:8px 0 0;padding-left:1.2em}
       <details>
         <summary>更新履歴</summary>
         <ul>
-          <li>v1.0.0（2026-10-23）公開。ヒロイン4人・ミニゲーム4種。</li>
+          <li>β0.1.0（2026-10-24）ベータ版として公開。ヒロイン4人・ミニゲーム4種。</li>
         </ul>
       </details>
     </div>
@@ -144,9 +144,9 @@ details ul{margin:8px 0 0;padding-left:1.2em}
 
 <script>
 "use strict";
-const VERSION = "1.0.0";
+const VERSION = "β0.1.0";
 const $ = id => document.getElementById(id);
-$("verLabel").textContent = "v" + VERSION;
+$("verLabel").textContent = (VERSION.startsWith("β") ? "" : "v") + VERSION;
 
 /* ===================== 調整用の数値 ===================== */
 const TUNING = {
