@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>がたす、モテる。</title>
+<meta name="description" content="モテ選手権に出場したがたすが、4人の女の子の心をつかんで優勝をめざす恋愛アドベンチャー。会話とミニゲームで好感度を上げて告白しよう！">
+<meta property="og:type" content="website">
+<meta property="og:title" content="がたす、モテる。">
+<meta property="og:description" content="会話とミニゲームで好感度を上げて、4人の女の子に告白！ モテ選手権で優勝できるか。">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#241526">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 28 4 16a7 7 0 0 1 12-9 7 7 0 0 1 12 9z' fill='%23FF5C8A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* 夜のモテ選手権会場：濃いプラムの地に、ネオンピンクのハートが主役 */
+:root{
+  --bg:#241526; --panel:#33203A; --sunk:#1A0F1C; --line:#4E3354; --ink:#FFF0F5; --muted:#C7A9C4;
+  --pink:#FF5C8A; --pink2:#FF9DB8; --gold:#FFD15C; --mint:#6FE0B8; --red:#FF4D4D;
+  --display:"Dela Gothic One","Hiragino Sans","Noto Sans JP",sans-serif;
+  --body:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{
+  min-height:100vh;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
+  background:radial-gradient(120% 55% at 50% 0%,#3E1F45 0%,var(--bg) 62%) fixed var(--bg);
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+}
+main{max-width:480px;margin:0 auto;padding-block:10px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.topbar a,.topbar button{color:var(--muted);text-decoration:none;font:inherit;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:transparent;cursor:pointer}
+.topbar .sp{flex:1}
+.topbar .ver{color:var(--muted);font-size:12px}
+#stageWrap{position:relative;border-radius:14px;overflow:hidden;border:2px solid var(--line);background:#000}
+#stage{display:block;width:100%;aspect-ratio:3/2;image-rendering:pixelated;touch-action:manipulation}
+#chapterTag{position:absolute;left:8px;top:8px;font-size:11px;font-weight:800;letter-spacing:.08em;background:rgba(26,15,28,.75);color:var(--pink2);padding:2px 10px;border-radius:999px}
+.meter{display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:12px;color:var(--muted)}
+.meter .bar{flex:1;height:12px;border-radius:999px;background:var(--sunk);border:1px solid var(--line);position:relative;overflow:hidden}
+.meter .fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--pink2),var(--pink));transition:width .5s ease}
+.meter .pass{position:absolute;top:0;bottom:0;width:2px;background:var(--gold)}
+.meter b{color:var(--ink);font-variant-numeric:tabular-nums;width:32px;text-align:right}
+#box{margin-top:10px;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 14px 14px;min-height:118px;position:relative;cursor:pointer;user-select:none}
+#box .name{display:inline-block;font-weight:800;font-size:13px;padding:1px 10px;border-radius:999px;margin-bottom:6px;background:var(--sunk);color:var(--pink2)}
+#box .text{font-size:16px;line-height:1.7;min-height:54px;white-space:pre-wrap}
+#box .next{position:absolute;right:12px;bottom:6px;color:var(--pink);font-size:12px;animation:bob 1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+#choices{display:grid;gap:8px;margin-top:10px}
+button.ch{font:inherit;font-size:15px;font-weight:700;text-align:left;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--sunk);color:var(--ink);cursor:pointer}
+button.ch:hover{border-color:var(--pink2)}
+button.ch:active{transform:scale(.98)}
+.big{font:inherit;font-family:var(--display);font-size:20px;letter-spacing:.04em;width:100%;padding:14px;border-radius:14px;border:0;cursor:pointer;background:var(--pink);color:#2A0612;box-shadow:0 4px 0 #A3274D}
+.big:active{transform:translateY(3px);box-shadow:0 1px 0 #A3274D}
+.big.sub{background:var(--panel);color:var(--ink);box-shadow:0 4px 0 var(--sunk);border:2px solid var(--line)}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#title h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,10vw,46px);line-height:1.1;margin:14px 0 2px;text-align:center;color:var(--ink);text-shadow:0 3px 0 var(--pink)}
+#title .kicker{text-align:center;font-size:12px;letter-spacing:.2em;color:var(--pink2);font-weight:800}
+#title .lead{text-align:center;color:var(--muted);font-size:13px;margin:6px 0 14px}
+#title .stack{display:grid;gap:12px}
+#best{text-align:center;font-size:13px;color:var(--gold)}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--muted)}
+details summary{cursor:pointer;color:var(--ink);font-weight:700}
+details ul{margin:8px 0 0;padding-left:1.2em}
+#mini{margin-top:10px;display:grid;gap:8px}
+#mini .hint{font-size:13px;color:var(--muted);text-align:center}
+#mini .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#mini .pad{font:inherit;font-weight:800;font-size:16px;padding:16px 8px;border-radius:12px;border:2px solid var(--line);background:var(--sunk);color:var(--ink);cursor:pointer;touch-action:manipulation}
+#mini .pad:active{background:var(--panel)}
+#mini .tap{font-family:var(--display);font-size:22px;padding:22px 8px;background:var(--pink);color:#2A0612;border-color:var(--pink)}
+.result{display:grid;gap:10px;text-align:center}
+.result .ttl{font-family:var(--display);font-size:26px;color:var(--gold);line-height:1.2}
+.result .hearts{font-size:15px;letter-spacing:.1em}
+.result table{width:100%;border-collapse:collapse;font-size:14px}
+.result td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+.result td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.share{display:flex;gap:8px;flex-wrap:wrap}
+.share a,.share button{flex:1;min-width:30%;text-align:center;text-decoration:none;font:inherit;font-weight:800;font-size:13px;border-radius:10px;padding:10px;background:var(--sunk);color:var(--ink);border:1px solid var(--line);cursor:pointer}
+@media (prefers-reduced-motion:reduce){#box .next{animation:none}.meter .fill{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <a href="../">← ちくわゲームズ</a>
+    <span class="sp"></span>
+    <button type="button" id="soundBtn">音：ON</button>
+    <button type="button" id="homeBtn" hidden>タイトルへ</button>
+    <span class="ver" id="verLabel"></span>
+  </div>
+
+  <div id="stageWrap">
+    <canvas id="stage" width="960" height="640"></canvas>
+    <div id="chapterTag" hidden></div>
+  </div>
+
+  <!-- タイトル -->
+  <section id="title">
+    <div class="kicker">おでん横丁モテ選手権</div>
+    <h1>がたす、モテる。</h1>
+    <p class="lead">4人の女の子と出会い、会話とミニゲームで好感度を上げて告白しよう。<br>全員の心をつかめば優勝だ！</p>
+    <div class="stack">
+      <div id="best" hidden></div>
+      <button type="button" class="big" id="startBtn">エントリーする</button>
+      <details>
+        <summary>あそびかた</summary>
+        <ul>
+          <li>女の子ごとに、会話2回 → ミニゲーム → 告白 の順に進みます。</li>
+          <li>会話の選びかたで好感度が上下します。ミニゲームの結果でも好感度がもらえます。</li>
+          <li>告白のとき、好感度が<b>60</b>以上なら成功！</li>
+          <li>心をつかんだ人数で称号が決まります。4人全員なら優勝です。</li>
+          <li>文章をタップすると次に進みます。</li>
+        </ul>
+      </details>
+      <details>
+        <summary>更新履歴</summary>
+        <ul>
+          <li>v1.0.0（2026-10-23）公開。ヒロイン4人・ミニゲーム4種。</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- ゲーム中 -->
+  <section id="play" hidden>
+    <div class="meter" id="meter" hidden>
+      <span id="meterName">好感度</span>
+      <div class="bar"><div class="fill" id="meterFill"></div><div class="pass" id="meterPass"></div></div>
+      <b id="meterVal">0</b>
+    </div>
+    <div id="box" role="button" tabindex="0" aria-label="次へ">
+      <div class="name" id="boxName"></div>
+      <div class="text" id="boxText"></div>
+      <div class="next" id="boxNext" hidden>▼</div>
+    </div>
+    <div id="choices"></div>
+    <div id="mini" hidden></div>
+  </section>
+</main>
+
+<script>
+"use strict";
+const VERSION = "1.0.0";
+const $ = id => document.getElementById(id);
+$("verLabel").textContent = "v" + VERSION;
+
+/* ===================== 調整用の数値 ===================== */
+const TUNING = {
+  startLove: 20,        // 出会ったときの好感度
+  passLine: 60,         // 告白が成功する好感度
+  maxLove: 100,
+  choice: { good: 15, soso: 5, bad: -10 },  // 会話の選択肢
+  miniMax: 30,          // ミニゲームで増える好感度の上限
+  textSpeed: 28,        // 1文字あたりのミリ秒
+  quiz: { count: 3, perHit: 10 },
+  rhythm: { notes: 14, bpm: 112, perfect: 90, good: 180, travel: 1.6 },
+  cafe: { seconds: 20, perOrder: 5, missPenaltyMs: 600 },
+  reflex: { rounds: 5, waitMin: 1000, waitMax: 2800, pts: [[300, 6], [400, 4], [550, 2], [Infinity, 1]] },
+};
+
+/* ===================== 保存（localStorage） ===================== */
+const KEY_BEST = "gatasu-best", KEY_SOUND = "gatasu-sound";
+function load(key, def) { try { const v = localStorage.getItem(key); return v == null ? def : JSON.parse(v); } catch (e) { return def; } }
+function save(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+
+/* ===================== 音 ===================== */
+// がたす本人の声「愛してる」（ボイス収録ページで録ったもの。12kHz モノラル WAV）
+const VOICE_AISHITERU = "data:audio/wav;base64,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";
+let soundOn = load(KEY_SOUND, true), AC = null;
+function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === "suspended") AC.resume(); return AC; }
+function beep(freq, dur = 0.08, type = "square", vol = 0.06, when = 0) {
+  if (!soundOn) return; const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + when;
+  o.type = type; o.frequency.setValueAtTime(freq, t); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const SFX = {
+  blip: () => beep(880, 0.03, "square", 0.03),
+  pick: () => { beep(660, 0.06); beep(990, 0.08, "square", 0.05, 0.06); },
+  up: () => { [523, 659, 784].forEach((f, i) => beep(f, 0.1, "triangle", 0.08, i * 0.08)); },
+  down: () => { beep(330, 0.12, "sawtooth", 0.05); beep(220, 0.2, "sawtooth", 0.05, 0.1); },
+  hit: () => beep(1200, 0.05, "triangle", 0.08),
+  miss: () => beep(160, 0.08, "sawtooth", 0.05),
+  win: () => { [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.16, "triangle", 0.09, i * 0.11)); },
+  lose: () => { [392, 330, 262].forEach((f, i) => beep(f, 0.2, "triangle", 0.07, i * 0.16)); },
+};
+let voiceEl = null;
+function playVoice() {
+  if (!soundOn) return Promise.resolve();
+  try {
+    if (!voiceEl) voiceEl = new Audio(VOICE_AISHITERU);
+    voiceEl.currentTime = 0; voiceEl.volume = 1;
+    return voiceEl.play().catch(() => {});
+  } catch (e) { return Promise.resolve(); }
+}
+function setSoundLabel() { $("soundBtn").textContent = soundOn ? "音：ON" : "音：OFF"; }
+setSoundLabel();
+$("soundBtn").onclick = () => { soundOn = !soundOn; save(KEY_SOUND, soundOn); setSoundLabel(); if (soundOn) SFX.pick(); };
+
+/* ===================== キャラの絵（なめらかなイラストを canvas のパスで描く） ===================== */
+// 座標は「足元の中心 = (0,0)、上がマイナス」。s=4 のとき身長およそ 136（画面の高さ 240 に対して）
+const SKIN = "#F8D9C4", SKIN_SH = "#E9B9A0", INK = "#3A2430";
+const CAST = {
+  gatasu: { name: "がたす", hair: "#1E171B", hairHi: "#4A3A44", style: "mash", glasses: true, eye: "#2A1E22", shirt: "#FAF8F3", shirtSh: "#D9D2C6", pants: "#24222C", shoes: "#3A3742", mark: "#D8283A", male: true, sleeve: "tee" },
+  shiori: { name: "しおり", hair: "#24203A", hairHi: "#5A5482", style: "long", eye: "#5A4A8A", shirt: "#F4F1EA", shirtSh: "#D8D2C6", cardigan: "#3E4C7A", skirt: "#6B5470", leg: "#3A3240", shoes: "#3A2E33", sleeve: "long", sleeveCol: "#3E4C7A" },
+  rinka: { name: "りんか", hair: "#F2C45A", hairHi: "#FFF0B8", style: "gyaru", eye: "#8A5A2E", shirt: "#FF7DB0", shirtSh: "#E0578F", skirt: "#3A3550", leg: SKIN, shoes: "#F7F4EE", earring: "#FFD15C", choker: "#2A2030", sleeve: "none" },
+  miyu: { name: "みゆ", hair: "#8A5634", hairHi: "#D09A6A", style: "bob", eye: "#6A4028", shirt: "#F1E6D2", shirtSh: "#D6C6A8", apron: "#6A4430", pants: "#3C302C", shoes: "#2A1E1A", sleeve: "roll" },
+  aoi: { name: "あおい", hair: "#2B1E1A", hairHi: "#6A5246", style: "short", eye: "#4A3428", shirt: "#2F7DD1", shirtSh: "#205E9E", stripe: "#F7F4EE", pants: "#2F7DD1", shoes: "#F7F4EE", pin: "#FF5C8A", sleeve: "long", sleeveCol: "#2F7DD1" },
+  chikuwa: { name: "ちくわくん" },
+};
+function shade(hex, a) { // a>0 で明るく、a<0 で暗く
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const f = v => Math.round(a < 0 ? v * (1 + a) : v + (255 - v) * a);
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+function ell(c, x, y, rx, ry, fill, rot = 0) { c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); c.fillStyle = fill; c.fill(); }
+function shape(c, fill, line, build, lw = 1.1) { c.beginPath(); build(); if (fill) { c.fillStyle = fill; c.fill(); } if (line) { c.lineWidth = lw; c.strokeStyle = line; c.lineJoin = "round"; c.stroke(); } }
+function lgrad(c, x0, y0, x1, y1, a, b) { const g = c.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, a); g.addColorStop(1, b); return g; }
+function limb(c, pts, w, col, line) { // 太い線で手足を描く（ふちどり付き）
+  c.lineCap = "round"; c.lineJoin = "round";
+  const go = () => { c.beginPath(); c.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]); };
+  go(); c.lineWidth = w + 2.2; c.strokeStyle = line; c.stroke();
+  go(); c.lineWidth = w; c.strokeStyle = col; c.stroke();
+}
+
+function drawChar(c, id, x, y, s, mood = "normal", t = 0, flip = false) {
+  if (FGC) c = FGC;   // ゲーム画面では、キャラは前景のドット面に描く（ふちどりを付けるため）
+  if (id === "chikuwa") return drawChikuwa(c, x, y, s, t);
+  const P = CAST[id], k = s / 4, breathe = Math.sin(t * 2.2) * 0.8;
+  c.save(); c.translate(x, y); const kx = P.male ? k * 0.9 : k, ky = P.male ? k * 1.07 : k; c.scale(flip ? -kx : kx, ky); // がたすは細長く
+  ell(c, 0, 0, 28, 5, "rgba(0,0,0,.28)");
+  const OL = INK;
+  // --- 足 ---
+  if (P.skirt) {
+    limb(c, [-7, -38, -8, -4], 9, P.leg, OL); limb(c, [7, -38, 8, -4], 9, P.leg, OL);
+    if (P.leg === SKIN) { limb(c, [-8, -14, -8, -4], 10, "#FFFFFF", OL); limb(c, [8, -14, 8, -4], 10, "#FFFFFF", OL); }
+  } else {
+    shape(c, lgrad(c, -16, 0, 16, 0, shade(P.pants, 0.12), P.pants), OL, () => {
+      const L = P.male ? 9 : 17, top = P.male ? -50 : -44, W = P.male ? 12 : L; c.moveTo(-W, top); c.lineTo(W, top); c.lineTo(L, -36); c.lineTo(L - 1, -4); c.lineTo(2, -4); c.lineTo(0, -30); c.lineTo(-2, -4); c.lineTo(-L + 1, -4); c.lineTo(-L, -36); c.closePath();
+    });
+    if (P.stripe) { c.strokeStyle = P.stripe; c.lineWidth = 2; c.beginPath(); c.moveTo(-15, -42); c.lineTo(-14, -6); c.moveTo(15, -42); c.lineTo(14, -6); c.stroke(); }
+  }
+  const fw = P.male ? 7.5 : 10; ell(c, -7, -3, fw, 4, P.shoes); ell(c, 7, -3, fw, 4, P.shoes);
+  c.lineWidth = 1; c.strokeStyle = OL; c.beginPath(); c.ellipse(-7, -3, fw, 4, 0, 0, Math.PI * 2); c.moveTo(7 + fw, -3); c.ellipse(7, -3, fw, 4, 0, 0, Math.PI * 2); c.stroke();
+  // --- 後ろ髪（顔より奥） ---
+  c.save(); c.translate(0, breathe * 0.3);
+  backHair(c, P, OL);
+  c.restore();
+  // --- 胴体 ---
+  c.save(); c.translate(0, breathe * 0.3);
+  const wide = P.male ? 15 : 21, hem = P.male ? -44 : -40, sh = P.male ? 6 : 0, flare = P.male ? 1.5 : 0; // がたす：ヒョロガリで肩が落ちた猫背、Tシャツはぶかぶか
+  if (P.skirt) shape(c, lgrad(c, 0, -44, 0, -16, shade(P.skirt, 0.1), P.skirt), OL, () => { c.moveTo(-18, -46); c.lineTo(18, -46); c.lineTo(26, -18); c.quadraticCurveTo(0, -13, -26, -18); c.closePath(); });
+  // うで（後ろ側から先に描くと体の前に来ない）
+  const armCol = P.sleeve === "long" ? (P.sleeveCol || P.shirt) : SKIN;
+  const sway = Math.sin(t * 2.2) * 1.2;
+  const aw = P.male ? 4.5 : 8, ah = P.male ? -36 : -44;
+  limb(c, [-wide + 3, -74 + sh, -wide - 2, -58, -wide - 1 + sway, ah], aw, armCol, OL);
+  limb(c, [wide - 3, -74 + sh, wide + 2, -58, wide + 1 - sway, ah], aw, armCol, OL);
+  ell(c, -wide - 1 + sway, ah + 2, 4, 4.6, SKIN); ell(c, wide + 1 - sway, ah + 2, 4, 4.6, SKIN);
+  // 胴
+  shape(c, lgrad(c, -wide, 0, wide, 0, shade(P.shirt, 0.08), P.shirtSh), OL, () => {
+    c.moveTo(-wide + 6, -82 + sh); c.quadraticCurveTo(-wide - 1, -80 + sh, -wide - 1, -70 + sh); c.lineTo(-wide - flare, hem); c.quadraticCurveTo(0, hem + 4, wide + flare, hem);
+    c.lineTo(wide + 1, -70 + sh); c.quadraticCurveTo(wide + 1, -80 + sh, wide - 6, -82 + sh); c.quadraticCurveTo(0, -86 + sh, -wide + 6, -82 + sh); c.closePath();
+  });
+  if (P.male) { // すその影の線と、すその下に見えるベルト
+    c.strokeStyle = P.shirtSh; c.lineWidth = 2; c.beginPath(); c.moveTo(-wide - flare + 1, hem - 2); c.quadraticCurveTo(0, hem + 1, wide + flare - 1, hem - 2); c.stroke();
+    c.fillStyle = "#4A3A30"; c.fillRect(-11, hem + 2, 22, 2.5); c.fillStyle = "#B9A68E"; c.fillRect(-2, hem + 2, 4, 2.5);
+  }
+  // そで
+  if (P.sleeve === "tee") { // 大きめTシャツの、ひじまである太いそで
+    [-1, 1].forEach(d => shape(c, P.shirt, OL, () => { c.moveTo(d * (wide - 5), -82 + sh); c.quadraticCurveTo(d * (wide + 7), -78 + sh, d * (wide + 8), -58); c.lineTo(d * (wide - 1), -55); c.lineTo(d * (wide - 3), -70 + sh); c.closePath(); }));
+    c.strokeStyle = P.shirtSh; c.lineWidth = 1; c.beginPath(); c.moveTo(-10, -60); c.quadraticCurveTo(-4, -56, -8, -48); c.moveTo(12, -66); c.quadraticCurveTo(8, -58, 13, -50); c.stroke(); // しわ
+    // 胸の赤い刺しゅう（文字ではなく小さな模様）
+    c.strokeStyle = P.mark; c.lineWidth = 1.3; c.beginPath(); c.moveTo(-4, -74); c.quadraticCurveTo(-2, -77, 0, -74); c.quadraticCurveTo(2, -71, 4, -74); c.moveTo(-3, -70); c.quadraticCurveTo(-1, -73, 1, -70); c.quadraticCurveTo(3, -67, 4, -70); c.stroke();
+  } else if (P.sleeve === "roll") {
+    [-1, 1].forEach(d => shape(c, P.shirt, OL, () => { c.moveTo(d * (wide - 5), -82); c.quadraticCurveTo(d * (wide + 5), -78, d * (wide + 6), -62); c.lineTo(d * (wide - 1), -60); c.closePath(); }));
+  } else if (P.sleeve === "none") {
+    // 肩を出したトップス：胸元にハートの柄
+    ell(c, 0, -64, 0.1, 0.1, P.shirt); drawHeartShape(c, 0, -64, 5, "#FFFFFF");
+  }
+  if (P.cardigan) { // 前を開けたカーディガン
+    [-1, 1].forEach(d => shape(c, lgrad(c, 0, -84, 0, hem, shade(P.cardigan, 0.12), P.cardigan), OL, () => {
+      c.moveTo(d * (wide - 6), -82); c.quadraticCurveTo(d * wide, -80, d * wide, -70); c.lineTo(d * (wide - 2), hem); c.lineTo(d * 6, hem + 2); c.lineTo(d * 4, -80); c.closePath(); }));
+    ell(c, -7, -64, 1.4, 1.4, "#E0D8C8"); ell(c, -7, -54, 1.4, 1.4, "#E0D8C8");
+    c.fillStyle = "#B03A4A"; c.beginPath(); c.moveTo(-3, -82); c.lineTo(3, -82); c.lineTo(0, -75); c.closePath(); c.fill(); // リボン
+  }
+  if (P.apron) {
+    shape(c, lgrad(c, 0, -76, 0, -20, shade(P.apron, 0.1), P.apron), OL, () => { c.moveTo(-13, -74); c.lineTo(13, -74); c.lineTo(15, -56); c.lineTo(19, -22); c.quadraticCurveTo(0, -18, -19, -22); c.lineTo(-15, -56); c.closePath(); });
+    c.strokeStyle = shade(P.apron, -0.25); c.lineWidth = 1; c.strokeRect(-7, -44, 14, 9);
+    c.strokeStyle = P.apron; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-12, -74); c.lineTo(-7, -84); c.moveTo(12, -74); c.lineTo(7, -84); c.stroke();
+  }
+  if (P.stripe) { // ジャージ：ファスナーと白いライン
+    c.strokeStyle = shade(P.shirt, -0.3); c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, -82); c.lineTo(0, hem); c.stroke();
+    c.strokeStyle = P.stripe; c.lineWidth = 2; c.beginPath(); c.moveTo(-wide + 1, -70); c.lineTo(-wide + 3, hem + 1); c.moveTo(wide - 1, -70); c.lineTo(wide - 3, hem + 1); c.stroke();
+    shape(c, P.shirt, OL, () => { c.moveTo(-9, -86); c.lineTo(0, -78); c.lineTo(9, -86); c.lineTo(7, -88); c.lineTo(0, -82); c.lineTo(-7, -88); c.closePath(); }); // えり
+  }
+  c.restore();
+  // --- 首と顔 ---
+  c.save(); c.translate(0, breathe * 0.5 + (P.male ? 7 : 0)); // 猫背：頭を前に下げる
+  shape(c, SKIN_SH, null, () => { c.rect(-5, -90, 10, 9); });
+  if (P.choker) { c.fillStyle = P.choker; c.fillRect(-6, -88, 12, 2.5); }
+  ell(c, -24, -106, 4, 6, SKIN); ell(c, 24, -106, 4, 6, SKIN);
+  if (P.earring) { c.strokeStyle = P.earring; c.lineWidth = 1.4; c.beginPath(); c.arc(-25, -98, 3, 0, Math.PI * 2); c.arc(25, -98, 3, 0, Math.PI * 2); c.stroke(); }
+  shape(c, lgrad(c, 0, -134, 0, -84, SKIN, shade(SKIN.replace("#", "#"), -0.02)), OL, () => {
+    c.moveTo(-24, -114); c.bezierCurveTo(-25, -98, -14, -85, 0, -84); c.bezierCurveTo(14, -85, 25, -98, 24, -114);
+    c.bezierCurveTo(24, -137, -24, -137, -24, -114); c.closePath();
+  });
+  face(c, P, mood, t);
+  if (P.glasses) glasses(c);
+  frontHair(c, P, OL);
+  c.restore();
+  c.restore();
+}
+
+function face(c, P, mood, t) {
+  const blink = (t % 4.3) < 0.12 && (mood === "normal");
+  const EY = -102;
+  // まゆ
+  c.strokeStyle = shade(P.hair, 0.15); c.lineWidth = 1.6; c.lineCap = "round"; c.beginPath();
+  if (mood === "sad") { c.moveTo(-15, -112); c.lineTo(-6, -115); c.moveTo(15, -112); c.lineTo(6, -115); }
+  else if (mood === "shock") { c.moveTo(-15, -116); c.quadraticCurveTo(-10, -119, -5, -116); c.moveTo(15, -116); c.quadraticCurveTo(10, -119, 5, -116); }
+  else { c.moveTo(-15, -114); c.quadraticCurveTo(-10, -116, -5, -114); c.moveTo(15, -114); c.quadraticCurveTo(10, -116, 5, -114); }
+  c.stroke();
+  // ほお
+  const blushA = mood === "love" ? 0.6 : mood === "happy" ? 0.4 : P.male ? 0 : 0.25;
+  if (blushA) { ell(c, -14, -94, 5, 2.4, `rgba(255,110,140,${blushA})`); ell(c, 14, -94, 5, 2.4, `rgba(255,110,140,${blushA})`); }
+  // 目
+  [-10, 10].forEach(ex => {
+    if (blink || mood === "happy") {
+      c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(ex - 6, EY + 1); c.quadraticCurveTo(ex, EY - 6, ex + 6, EY + 1); c.stroke(); return;
+    }
+    if (mood === "shock") { ell(c, ex, EY, 6, 6.5, "#FFFFFF"); c.strokeStyle = INK; c.lineWidth = 1.2; c.beginPath(); c.ellipse(ex, EY, 6, 6.5, 0, 0, Math.PI * 2); c.stroke(); ell(c, ex, EY, 1.6, 1.6, INK); return; }
+    const big = !P.male, rx = big ? 5.6 : 4.2, ry = big ? 7 : 4.2;
+    ell(c, ex, EY, rx + 0.6, ry + 0.4, "#FFFFFF");
+    if (mood === "love") { drawHeartShape(c, ex, EY + 0.5, big ? 5.5 : 4.4, "#FF4F82"); }
+    else {
+      const ly = mood === "sad" ? 1.5 : 0;
+      const ig = c.createLinearGradient(0, EY - ry, 0, EY + ry); ig.addColorStop(0, shade(P.eye, -0.45)); ig.addColorStop(1, shade(P.eye, 0.35));
+      ell(c, ex, EY + 0.8 + ly, rx * 0.86, ry * 0.92, ig);
+      ell(c, ex, EY + 1.2 + ly, rx * 0.4, ry * 0.45, shade(P.eye, -0.6));
+      ell(c, ex - rx * 0.35, EY - ry * 0.35 + ly, rx * 0.32, ry * 0.26, "#FFFFFF");
+      ell(c, ex + rx * 0.35, EY + ry * 0.45 + ly, rx * 0.14, ry * 0.12, "#FFFFFF");
+    }
+    // 上まぶた・まつげ
+    c.strokeStyle = INK; c.lineWidth = big ? 2.4 : 2; c.beginPath();
+    c.moveTo(ex - rx - 1.2, EY - ry * 0.25); c.quadraticCurveTo(ex, EY - ry - 2.2, ex + rx + 1.2, EY - ry * 0.35); c.stroke();
+    if (big) { c.lineWidth = 1.4; c.beginPath(); const o = ex > 0 ? 1 : -1; c.moveTo(ex + o * (rx + 1), EY - ry * 0.35); c.lineTo(ex + o * (rx + 3.2), EY - ry * 0.6); c.stroke(); }
+    if (mood === "sad" && !P.male) ell(c, ex + 3, EY + ry + 4 + (t * 6 % 4), 1.2, 2, "rgba(140,200,255,.85)");
+  });
+  // 鼻
+  c.strokeStyle = SKIN_SH; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0.5, -96); c.lineTo(-0.8, -94); c.stroke();
+  // 口
+  c.lineWidth = 1.4; c.strokeStyle = "#9A4058";
+  if (mood === "happy" || mood === "love") { shape(c, "#B8405A", "#8A2E44", () => { c.moveTo(-5, -91); c.quadraticCurveTo(0, -83, 5, -91); c.quadraticCurveTo(0, -89, -5, -91); }); ell(c, 0, -87.6, 2.4, 1.2, "#FF8FA8"); }
+  else if (mood === "sad") { c.beginPath(); c.moveTo(-3.5, -88); c.quadraticCurveTo(0, -91, 3.5, -88); c.stroke(); }
+  else if (mood === "shock") { ell(c, 0, -89, 3, 4, "#8A2A3A"); }
+  else { c.beginPath(); c.moveTo(-3, -90.5); c.quadraticCurveTo(0, -88.5, 3, -90.5); c.stroke(); }
+}
+
+function glasses(c) { // 細いメタルの丸めがね
+  [-10, 10].forEach(ex => {
+    ell(c, ex, -102, 8.4, 8, "rgba(200,225,255,.16)");
+    c.strokeStyle = "#B9A68E"; c.lineWidth = 1.3; c.beginPath(); c.ellipse(ex, -102, 8.4, 8, 0, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = "rgba(255,255,255,.75)"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(ex - 4, -97); c.lineTo(ex + 1, -107); c.stroke();
+  });
+  c.strokeStyle = "#B9A68E"; c.lineWidth = 1.3; c.beginPath(); c.moveTo(-1.6, -104); c.quadraticCurveTo(0, -106, 1.6, -104); c.moveTo(-18.4, -104); c.lineTo(-24, -106); c.moveTo(18.4, -104); c.lineTo(24, -106); c.stroke();
+}
+
+function hairFill(c, P, y0, y1) { return lgrad(c, 0, y0, 0, y1, P.hairHi, P.hair); }
+function angelRing(c, P, y) { c.strokeStyle = "rgba(255,255,255,.28)"; c.lineWidth = 2.2; c.beginPath(); c.ellipse(0, y, 15, 4, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
+function backHair(c, P, OL) {
+  if (P.style === "long") shape(c, hairFill(c, P, -136, -40), OL, () => { c.moveTo(-26, -118); c.bezierCurveTo(-30, -142, 30, -142, 26, -118); c.bezierCurveTo(32, -90, 31, -66, 27, -52); c.quadraticCurveTo(0, -46, -27, -52); c.bezierCurveTo(-31, -66, -32, -90, -26, -118); c.closePath(); });
+  else if (P.style === "gyaru") shape(c, hairFill(c, P, -136, -46), OL, () => {
+    c.moveTo(-26, -118); c.bezierCurveTo(-30, -142, 30, -142, 26, -118);
+    c.bezierCurveTo(36, -104, 26, -92, 34, -80); c.bezierCurveTo(40, -70, 28, -62, 33, -52); c.quadraticCurveTo(20, -46, 14, -58);
+    c.lineTo(-14, -58); c.quadraticCurveTo(-20, -46, -33, -52); c.bezierCurveTo(-28, -62, -40, -70, -34, -80); c.bezierCurveTo(-26, -92, -36, -104, -26, -118); c.closePath(); });
+  else if (P.style === "bob") shape(c, hairFill(c, P, -136, -84), OL, () => { c.moveTo(-26, -118); c.bezierCurveTo(-30, -142, 30, -142, 26, -118); c.bezierCurveTo(30, -100, 30, -88, 22, -84); c.lineTo(-22, -84); c.bezierCurveTo(-30, -88, -30, -100, -26, -118); c.closePath(); });
+}
+function frontHair(c, P, OL) {
+  const F = hairFill(c, P, -138, -100);
+  if (P.style === "mash") { // 目にかかる、重めのマッシュ
+    shape(c, F, OL, () => {
+      c.moveTo(-28, -98); c.bezierCurveTo(-34, -146, 34, -146, 28, -98);
+      c.lineTo(25, -96); c.lineTo(23, -108); c.lineTo(18, -105); c.lineTo(14, -110); c.lineTo(8, -106); c.lineTo(3, -111); c.lineTo(-2, -106);
+      c.lineTo(-7, -111); c.lineTo(-12, -106); c.lineTo(-17, -110); c.lineTo(-22, -105); c.lineTo(-24, -96); c.closePath();
+    });
+    c.strokeStyle = shade(P.hair, 0.25); c.lineWidth = 1; c.beginPath(); c.moveTo(-8, -130); c.quadraticCurveTo(-12, -120, -14, -111); c.moveTo(6, -131); c.quadraticCurveTo(9, -120, 9, -108); c.stroke();
+    angelRing(c, P, -126);
+  } else if (P.style === "long") {
+    shape(c, F, OL, () => { c.moveTo(-26, -112); c.bezierCurveTo(-30, -142, 30, -142, 26, -112); c.lineTo(22, -112); c.lineTo(18, -116); c.lineTo(14, -111); c.lineTo(9, -116); c.lineTo(4, -112); c.lineTo(0, -117); c.lineTo(-5, -112); c.lineTo(-10, -116); c.lineTo(-15, -111); c.lineTo(-20, -116); c.lineTo(-23, -110); c.closePath(); });
+    [-1, 1].forEach(d => shape(c, F, OL, () => { c.moveTo(d * 23, -116); c.quadraticCurveTo(d * 28, -96, d * 23, -74); c.lineTo(d * 20, -78); c.quadraticCurveTo(d * 23, -96, d * 19, -112); c.closePath(); }));
+    angelRing(c, P, -124);
+  } else if (P.style === "gyaru") {
+    shape(c, F, OL, () => { c.moveTo(-26, -110); c.bezierCurveTo(-30, -142, 30, -142, 26, -110); c.quadraticCurveTo(20, -118, 10, -120); c.quadraticCurveTo(-4, -116, -16, -106); c.quadraticCurveTo(-20, -110, -23, -104); c.closePath(); });
+    [-1, 1].forEach(d => shape(c, F, OL, () => { c.moveTo(d * 23, -114); c.bezierCurveTo(d * 30, -100, d * 22, -92, d * 27, -80); c.lineTo(d * 23, -82); c.bezierCurveTo(d * 18, -92, d * 24, -100, d * 19, -110); c.closePath(); }));
+    angelRing(c, P, -125);
+  } else if (P.style === "bob") {
+    shape(c, F, OL, () => { c.moveTo(-26, -110); c.bezierCurveTo(-30, -142, 30, -142, 26, -110); c.lineTo(22, -113); c.lineTo(16, -110); c.lineTo(11, -115); c.lineTo(5, -111); c.lineTo(-1, -116); c.lineTo(-7, -111); c.lineTo(-13, -115); c.lineTo(-19, -110); c.lineTo(-23, -112); c.closePath(); });
+    [-1, 1].forEach(d => shape(c, F, OL, () => { c.moveTo(d * 24, -114); c.quadraticCurveTo(d * 28, -94, d * 20, -86); c.quadraticCurveTo(d * 18, -92, d * 20, -110); c.closePath(); }));
+    angelRing(c, P, -124);
+  } else if (P.style === "short") {
+    shape(c, F, OL, () => { c.moveTo(-26, -104); c.bezierCurveTo(-30, -144, 30, -144, 26, -104); c.lineTo(23, -106); c.quadraticCurveTo(22, -116, 14, -118); c.quadraticCurveTo(4, -112, -6, -114); c.quadraticCurveTo(-14, -112, -18, -118); c.quadraticCurveTo(-22, -112, -23, -104); c.closePath(); });
+    ell(c, 15, -121, 5, 1.8, P.pin, -0.3);
+    angelRing(c, P, -126);
+  }
+}
+function drawHeartShape(c, x, y, r, col) {
+  c.beginPath(); c.moveTo(x, y + r * 0.9);
+  c.bezierCurveTo(x - r * 1.3, y - r * 0.1, x - r * 0.9, y - r * 1.1, x, y - r * 0.45);
+  c.bezierCurveTo(x + r * 0.9, y - r * 1.1, x + r * 1.3, y - r * 0.1, x, y + r * 0.9);
+  c.fillStyle = col; c.fill();
+}
+function drawChikuwa(c, x, y, s, t) {
+  if (FGC) c = FGC;
+  // おでん横丁の実況：ちくわくん
+  const k = s / 4, hop = Math.abs(Math.sin(t * 3)) * 4;
+  c.save(); c.translate(x, y); c.scale(k, k);
+  ell(c, 0, 0, 20, 4, "rgba(0,0,0,.28)");
+  c.translate(0, -hop);
+  limb(c, [-8, -10, -9, -2], 6, "#C9772E", INK); limb(c, [8, -10, 9, -2], 6, "#C9772E", INK);
+  shape(c, lgrad(c, -18, 0, 18, 0, "#FBEBCB", "#E9C894"), INK, () => { c.roundRect(-18, -78, 36, 70, 14); });
+  shape(c, lgrad(c, 0, -80, 0, -58, "#E9A55B", "#B8642A"), INK, () => { c.moveTo(-18, -64); c.lineTo(-18, -66); c.arcTo(-18, -78, -6, -78, 14); c.lineTo(6, -78); c.arcTo(18, -78, 18, -66, 14); c.lineTo(18, -60); c.quadraticCurveTo(0, -56, -18, -60); c.closePath(); });
+  [[-9, -70], [3, -73], [10, -65], [-3, -64]].forEach(([a, b]) => ell(c, a, b, 3, 1.6, "rgba(120,60,20,.45)"));
+  ell(c, -7, -44, 2.6, 3.4, INK); ell(c, 7, -44, 2.6, 3.4, INK); ell(c, -7.8, -45.4, 0.9, 0.9, "#FFF"); ell(c, 6.2, -45.4, 0.9, 0.9, "#FFF");
+  ell(c, -12, -37, 3.4, 1.8, "rgba(255,120,150,.5)"); ell(c, 12, -37, 3.4, 1.8, "rgba(255,120,150,.5)");
+  c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-4, -36); c.quadraticCurveTo(0, -32, 4, -36); c.stroke();
+  limb(c, [16, -40, 22, -48], 5, "#E9C894", INK);
+  shape(c, "#4A4A55", INK, () => { c.roundRect(19, -60, 7, 12, 3); }); ell(c, 22.5, -60, 5, 5, "#6A6A78");
+  c.restore();
+}
+
+/* ===================== 背景 ===================== */
+function px(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+function glow(c, x, y, r, col) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, "rgba(0,0,0,0)"); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+function rnd(i) { const v = Math.sin(i * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }
+const BG = {
+  title(c, t) {
+    c.fillStyle = lgrad(c, 0, 0, 0, 240, "#4A2252", "#150A17"); c.fillRect(0, 0, 360, 240);
+    for (let i = 0; i < 5; i++) {
+      const sx = 40 + i * 70, a = Math.sin(t * 0.7 + i * 1.3) * 60;
+      const g = c.createLinearGradient(sx, 0, 180 + a, 200); g.addColorStop(0, "rgba(255,140,180,.28)"); g.addColorStop(1, "rgba(255,140,180,0)");
+      c.fillStyle = g; c.beginPath(); c.moveTo(sx - 6, 0); c.lineTo(sx + 6, 0); c.lineTo(180 + a + 40, 200); c.lineTo(180 + a - 40, 200); c.fill();
+    }
+    c.fillStyle = lgrad(c, 0, 194, 0, 240, "#3A1C40", "#1A0C1C"); c.fillRect(0, 194, 360, 46);
+    glow(c, 180, 200, 120, "rgba(255,92,138,.25)");
+    c.fillStyle = "#FF5C8A"; c.fillRect(0, 194, 360, 2);
+    for (let i = 0; i < 18; i++) { const on = (Math.floor(t * 3) + i) % 3; glow(c, i * 20 + 10, 206, 7, on ? "rgba(255,210,100,.9)" : "rgba(160,70,120,.6)"); }
+  },
+  library(c, t) {
+    c.fillStyle = lgrad(c, 0, 0, 0, 170, "#5A4034", "#3A2820"); c.fillRect(0, 0, 360, 170);
+    // 窓と光
+    c.fillStyle = lgrad(c, 0, 8, 0, 70, "#CFE8F5", "#9CC4D8"); c.fillRect(236, 8, 86, 62);
+    c.strokeStyle = "#5A3E2E"; c.lineWidth = 4; c.strokeRect(236, 8, 86, 62); c.beginPath(); c.moveTo(279, 8); c.lineTo(279, 70); c.moveTo(236, 39); c.lineTo(322, 39); c.stroke();
+    c.fillStyle = "rgba(255,245,210,.12)"; c.beginPath(); c.moveTo(236, 70); c.lineTo(322, 70); c.lineTo(250, 200); c.lineTo(130, 200); c.fill();
+    // 本棚
+    const shelf = (x0, x1) => {
+      c.fillStyle = "#4A3024"; c.fillRect(x0, 0, x1 - x0, 170);
+      for (let row = 0; row < 3; row++) {
+        const base = 50 + row * 52; let x = x0 + 4, i = row * 40 + x0;
+        while (x < x1 - 8) {
+          const w = 5 + rnd(i) * 6, h = 30 + rnd(i + 9) * 14, hue = ["#8A3B3B", "#3E5A7A", "#5E7A3E", "#C99A4A", "#6B4A7A", "#A86A3A", "#2F5F5A", "#B85A5A"][Math.floor(rnd(i + 3) * 8)];
+          c.fillStyle = lgrad(c, x, 0, x + w, 0, shade(hue, 0.15), shade(hue, -0.2)); c.fillRect(x, base - h, w, h);
+          c.fillStyle = "rgba(255,220,150,.5)"; c.fillRect(x + 1, base - h + 5, w - 2, 1.2); c.fillRect(x + 1, base - 8, w - 2, 1.2);
+          x += w + 0.8; i++;
+        }
+        c.fillStyle = lgrad(c, 0, base, 0, base + 6, "#7A543E", "#4A3024"); c.fillRect(x0, base, x1 - x0, 6);
+      }
+      c.fillStyle = "#6A4632"; c.fillRect(x0, 0, 4, 170); c.fillRect(x1 - 4, 0, 4, 170);
+    };
+    shelf(0, 220); shelf(330, 360);
+    // 床
+    c.fillStyle = lgrad(c, 0, 168, 0, 240, "#8A6248", "#5E3E2C"); c.fillRect(0, 168, 360, 72);
+    c.strokeStyle = "rgba(0,0,0,.15)"; c.lineWidth = 1; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(0, 176 + i * 12); c.lineTo(360, 176 + i * 12); c.stroke(); }
+    for (let i = 0; i < 14; i++) { const x = (rnd(i) * 360 + t * 4) % 360, y = 80 + rnd(i + 5) * 110 + Math.sin(t + i) * 4; ell(c, x, y, 0.9, 0.9, "rgba(255,240,200,.6)"); }
+  },
+  plaza(c, t) {
+    c.fillStyle = lgrad(c, 0, 0, 0, 170, "#140E36", "#4A1E58"); c.fillRect(0, 0, 360, 170);
+    for (let i = 0; i < 30; i++) ell(c, rnd(i) * 360, rnd(i + 2) * 70, 0.7, 0.7, `rgba(255,240,200,${0.4 + 0.6 * ((Math.sin(t * 2 + i) + 1) / 2)})`);
+    const B = [[0, 62, 66], [62, 40, 58], [120, 74, 76], [196, 30, 70], [266, 56, 94]];
+    B.forEach(([x, y, w], k) => {
+      c.fillStyle = lgrad(c, 0, y, 0, 170, "#2C1F48", "#1A1230"); c.fillRect(x, y, w, 170 - y);
+      for (let yy = y + 8; yy < 160; yy += 13) for (let xx = x + 6; xx < x + w - 8; xx += 11) { const on = rnd(xx * 3 + yy + k) > 0.35; c.fillStyle = on ? "rgba(255,214,120,.85)" : "rgba(60,44,90,1)"; c.fillRect(xx, yy, 6, 7); }
+    });
+    // ネオン
+    const on = 0.6 + 0.4 * Math.abs(Math.sin(t * 3));
+    c.save(); c.font = 'bold 15px "M PLUS 1",sans-serif'; c.shadowColor = "#FF5C8A"; c.shadowBlur = 12; c.fillStyle = `rgba(255,140,180,${on})`; c.fillText("DANCE", 207, 26); c.restore();
+    // 街灯
+    c.fillStyle = "#2A2238"; c.fillRect(40, 96, 3, 80); glow(c, 41, 96, 40, "rgba(255,220,150,.45)"); ell(c, 41, 96, 5, 3, "#FFE8B0");
+    // 地面（ぬれた石だたみの照り返し）
+    c.fillStyle = lgrad(c, 0, 170, 0, 240, "#4E3E66", "#2A2040"); c.fillRect(0, 170, 360, 70);
+    c.strokeStyle = "rgba(255,255,255,.06)"; for (let i = 0; i < 10; i++) { c.beginPath(); c.moveTo(i * 40 - 20, 240); c.lineTo(180 + (i - 4.5) * 8, 170); c.stroke(); }
+    glow(c, 225, 200, 50, "rgba(255,92,138,.18)"); glow(c, 41, 200, 40, "rgba(255,220,150,.15)");
+  },
+  cafe(c, t) {
+    c.fillStyle = lgrad(c, 0, 0, 0, 120, "#F2E2C4", "#E0C9A2"); c.fillRect(0, 0, 360, 120);
+    c.fillStyle = lgrad(c, 0, 110, 0, 170, "#9A6A48", "#7A5236"); c.fillRect(0, 110, 360, 60);
+    for (let i = 0; i < 18; i++) { c.fillStyle = "rgba(0,0,0,.07)"; c.fillRect(i * 20, 112, 1, 58); }
+    // 窓（外のみどり）
+    c.fillStyle = lgrad(c, 0, 14, 0, 90, "#BFE4F2", "#9FD08A"); c.fillRect(18, 14, 100, 76);
+    ell(c, 50, 80, 30, 14, "#7FB86A"); ell(c, 95, 84, 26, 12, "#6AA85A");
+    c.strokeStyle = "#7A5236"; c.lineWidth = 4; c.strokeRect(18, 14, 100, 76); c.beginPath(); c.moveTo(68, 14); c.lineTo(68, 90); c.stroke();
+    c.fillStyle = "rgba(255,255,255,.25)"; c.beginPath(); c.moveTo(24, 20); c.lineTo(40, 20); c.lineTo(28, 50); c.lineTo(24, 50); c.fill();
+    // メニューの黒板
+    c.fillStyle = "#2E3A32"; c.fillRect(206, 18, 124, 66); c.strokeStyle = "#8A6248"; c.lineWidth = 4; c.strokeRect(206, 18, 124, 66);
+    c.fillStyle = "#F4F1EA"; c.font = 'bold 11px "M PLUS 1",sans-serif'; c.fillText("MENU", 250, 34);
+    c.font = '9px "M PLUS 1",sans-serif'; ["ラテ ………… 450", "ケーキ ……… 500", "サンド ……… 600", "ソーダ ……… 400"].forEach((s2, i) => c.fillText(s2, 218, 48 + i * 10));
+    // ペンダントライト
+    [150, 180].forEach((x, i) => { c.strokeStyle = "#3A2A22"; c.lineWidth = 1; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 28 + i * 8); c.stroke(); shape(c, "#3A2A22", null, () => { c.moveTo(x - 9, 38 + i * 8); c.lineTo(x + 9, 38 + i * 8); c.lineTo(x + 4, 28 + i * 8); c.lineTo(x - 4, 28 + i * 8); c.closePath(); }); glow(c, x, 42 + i * 8, 34, "rgba(255,220,140,.45)"); });
+    // 観葉植物
+    shape(c, "#B86A44", INK, () => { c.moveTo(332, 168); c.lineTo(352, 168); c.lineTo(349, 140); c.lineTo(335, 140); c.closePath(); }, 1);
+    [[-0.9, "#5E9A4E"], [-0.4, "#6FB05E"], [0.2, "#5E9A4E"], [0.7, "#7FC06A"]].forEach(([a, col]) => ell(c, 342 + Math.sin(a) * 10, 124 - Math.cos(a) * 10, 5, 13, col, a));
+    // カウンター
+    c.fillStyle = lgrad(c, 0, 166, 0, 240, "#7A5236", "#4E3220"); c.fillRect(0, 166, 360, 74);
+    c.fillStyle = "#B8865E"; c.fillRect(0, 164, 360, 6);
+    // カップと湯気
+    shape(c, "#FAF8F3", INK, () => { c.moveTo(282, 150); c.lineTo(302, 150); c.lineTo(299, 165); c.lineTo(285, 165); c.closePath(); }, 1);
+    c.strokeStyle = INK; c.lineWidth = 1; c.beginPath(); c.arc(304, 156, 4, -1.2, 1.2); c.stroke();
+    c.strokeStyle = "rgba(255,255,255,.7)"; c.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) { const ph = (t * 0.8 + i / 3) % 1; c.globalAlpha = 1 - ph; c.beginPath(); c.moveTo(287 + i * 5, 148 - ph * 20); c.quadraticCurveTo(291 + i * 5, 140 - ph * 20, 287 + i * 5, 132 - ph * 20); c.stroke(); }
+    c.globalAlpha = 1;
+  },
+  field(c, t) {
+    c.fillStyle = lgrad(c, 0, 0, 0, 120, "#5EAEF0", "#CBE9FF"); c.fillRect(0, 0, 360, 120);
+    for (let i = 0; i < 3; i++) { const cx = ((t * 6 + i * 150) % 460) - 60, cy = 22 + i * 16; [[0, 0, 18], [16, -4, 14], [30, 2, 12], [-14, 3, 11]].forEach(([dx, dy, r]) => ell(c, cx + dx, cy + dy, r, r * 0.7, "rgba(255,255,255,.95)")); }
+    // 遠くの木と観客席
+    for (let i = 0; i < 16; i++) ell(c, i * 24 + 6, 108, 16, 12, i % 2 ? "#4E9050" : "#5EA45C");
+    c.fillStyle = "#8A97A8"; c.fillRect(220, 88, 140, 24); for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#9AA6B6" : "#7A8798"; c.fillRect(220, 88 + i * 6, 140, 6); }
+    c.fillStyle = lgrad(c, 0, 112, 0, 132, "#6FBF6A", "#4E9A4E"); c.fillRect(0, 112, 360, 22);
+    // トラック（奥が細くなる）
+    c.fillStyle = lgrad(c, 0, 132, 0, 240, "#C46A42", "#D97A4E"); c.fillRect(0, 132, 360, 108);
+    c.strokeStyle = "rgba(255,255,255,.9)"; c.lineWidth = 1.4;
+    for (let i = 0; i < 6; i++) { const y = 136 + i * i * 3.6 + i * 6; c.lineWidth = 0.8 + i * 0.35; c.beginPath(); c.moveTo(0, y); c.lineTo(360, y); c.stroke(); }
+  },
+  ceremony(c, t) {
+    c.fillStyle = "#1A0F1C"; c.fillRect(0, 0, 360, 240);
+    for (let i = 0; i < 12; i++) { const x = i * 30; c.fillStyle = lgrad(c, x, 0, x + 30, 0, "#7A1530", "#C23A5E"); c.fillRect(x, 0, 30, 172); c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(x + 22, 0, 8, 172); }
+    glow(c, 180, 110, 130, "rgba(255,230,160,.25)");
+    c.fillStyle = lgrad(c, 0, 0, 0, 22, "#5E1028", "#8A1E3A"); c.fillRect(0, 0, 360, 22);
+    for (let i = 0; i < 24; i++) { shape(c, "#FFD15C", null, () => { c.moveTo(i * 15, 22); c.quadraticCurveTo(i * 15 + 7.5, 32, i * 15 + 15, 22); c.closePath(); }); }
+    c.fillStyle = lgrad(c, 0, 172, 0, 240, "#4A2838", "#241420"); c.fillRect(0, 172, 360, 68); c.fillStyle = "#FFD15C"; c.fillRect(0, 172, 360, 3);
+    for (let i = 0; i < 30; i++) {
+      const x = (rnd(i) * 360 + t * 20 * (1 + rnd(i + 1))) % 360, y = (rnd(i + 7) * 180 + t * 35 * (0.6 + rnd(i + 4))) % 180, a = t * 4 + i;
+      c.save(); c.translate(x, y); c.rotate(a); c.fillStyle = ["#FF5C8A", "#FFD15C", "#6FE0B8", "#FF9DB8", "#9AB8FF"][i % 5]; c.fillRect(-2.5, -1.5, 5, 3); c.restore();
+    }
+  },
+};
+
+/* ===================== 画面の状態と描画ループ ===================== */
+const cv = $("stage"), ctx = cv.getContext("2d");
+/* ドット絵の仕組み：描く座標は 360×240。それを 480×320 ドットの面に描き、
+   ①半透明をなくし色の段階を減らす（pixelize）②キャラの面には 1 ドットのふちどり（outline）を付けてから、
+   画面（960×640）に 2 倍で拡大する。文字（S.texts と S.big）はドットにせず、くっきり上から描く */
+const DOT = { w: 480, h: 320, step: 24, line: [0x2A, 0x16, 0x22] };
+const bufBg = document.createElement("canvas"), bufFg = document.createElement("canvas");
+bufBg.width = bufFg.width = DOT.w; bufBg.height = bufFg.height = DOT.h;
+const bctx = bufBg.getContext("2d", { willReadFrequently: true }), fctx = bufFg.getContext("2d", { willReadFrequently: true });
+let FGC = null;   // これが入っている間、drawChar はこの面に描く
+function pixelize(c) {
+  const im = c.getImageData(0, 0, DOT.w, DOT.h), d = im.data, st = DOT.step;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 110) { d[i + 3] = 0; continue; }
+    d[i + 3] = 255; d[i] = Math.min(255, Math.round(d[i] / st) * st); d[i + 1] = Math.min(255, Math.round(d[i + 1] / st) * st); d[i + 2] = Math.min(255, Math.round(d[i + 2] / st) * st);
+  }
+  return im;
+}
+function outline(im) {
+  const W = DOT.w, H = DOT.h, d = im.data, a = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) a[i] = d[i * 4 + 3];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; if (a[i]) continue;
+    if ((x > 0 && a[i - 1]) || (x < W - 1 && a[i + 1]) || (y > 0 && a[i - W]) || (y < H - 1 && a[i + W])) { const j = i * 4; d[j] = DOT.line[0]; d[j + 1] = DOT.line[1]; d[j + 2] = DOT.line[2]; d[j + 3] = 255; }
+  }
+  return im;
+}
+
+const S = { bg: "title", chars: [], fx: [], big: null, mini: null, texts: [] };
+// chars: {id, x, mood, flip}
+function setScene(bg, chars) { S.bg = bg; S.chars = chars.map(ch => Object.assign({ mood: "normal" }, ch)); }
+function mood(id, m) { const ch = S.chars.find(c => c.id === id); if (ch) ch.mood = m; }
+function hearts(n, x = 180, y = 120, col = "#FF5C8A") {
+  for (let i = 0; i < n; i++) S.fx.push({ x: x + (Math.random() - 0.5) * 60, y: y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 40, vy: -40 - Math.random() * 50, life: 1.4 + Math.random() * 0.6, col });
+}
+function drawHeart(c, x, y, s, col) { drawHeartShape(c, x, y, s * 2.2, col); }
+let last = performance.now(), T = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; T += dt;
+  const k = DOT.w / 360;
+  bctx.setTransform(k, 0, 0, k, 0, 0); bctx.clearRect(0, 0, 360, 240);
+  fctx.setTransform(k, 0, 0, k, 0, 0); fctx.clearRect(0, 0, 360, 240);
+  S.texts = []; FGC = fctx;
+  try {
+    if (S.mini && S.mini.draw) S.mini.draw(bctx, T, dt);
+    else {
+      BG[S.bg](bctx, T);
+      S.chars.forEach(ch => drawChar(fctx, ch.id, ch.x, ch.y || 214, ch.s || 4, ch.mood, T + ch.x, ch.flip));
+    }
+  } finally { FGC = null; }
+  S.fx = S.fx.filter(f => (f.life -= dt) > 0);
+  S.fx.forEach(f => { f.x += f.vx * dt; f.y += f.vy * dt; if (f.life > 0.25 || Math.floor(f.life * 20) % 2) drawHeart(fctx, f.x, f.y, 3, f.col); });
+  bctx.setTransform(1, 0, 0, 1, 0, 0); fctx.setTransform(1, 0, 0, 1, 0, 0);
+  bctx.putImageData(pixelize(bctx), 0, 0);
+  fctx.putImageData(outline(pixelize(fctx)), 0, 0);
+  bctx.drawImage(bufFg, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(bufBg, 0, 0, cv.width, cv.height);
+  // ここから先はくっきり描く文字
+  ctx.setTransform(cv.width / 360, 0, 0, cv.height / 240, 0, 0); ctx.imageSmoothingEnabled = true;
+  S.texts.forEach(tx => {
+    ctx.font = `bold ${tx.size}px "M PLUS 1", sans-serif`; ctx.textAlign = tx.align; ctx.textBaseline = "middle";
+    if (tx.stroke) { ctx.lineWidth = 4; ctx.strokeStyle = "#1A0F1C"; ctx.strokeText(tx.text, tx.x, tx.y); }
+    ctx.fillStyle = tx.col; ctx.fillText(tx.text, tx.x, tx.y);
+  });
+  ctx.textAlign = "left";
+  if (S.big) {
+    const b = S.big, kk = Math.min(1, (T - b.t0) * 3);
+    ctx.save(); ctx.translate(180, 120); ctx.scale(0.6 + 0.4 * kk, 0.6 + 0.4 * kk);
+    ctx.font = `48px ${getComputedStyle(document.body).getPropertyValue("--display") || "sans-serif"}`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 8; ctx.strokeStyle = "#2A0612"; ctx.strokeText(b.text, 0, 0);
+    ctx.fillStyle = b.col || "#FF5C8A"; ctx.fillText(b.text, 0, 0); ctx.restore();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ===================== 文章・選択肢 ===================== */
+const ABORT = { abort: true };
+let G = null;          // いまのゲーム（タイトルに戻ると token が変わり、進行中の処理は止まる）
+function alive(tok) { if (!G || G.token !== tok) throw ABORT; }
+let advance = null;
+function onBoxTap() { if (advance) advance(); }
+$("box").addEventListener("click", onBoxTap);
+$("box").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onBoxTap(); } });
+$("stage").addEventListener("click", () => { if (!S.mini) onBoxTap(); });
+
+function say(who, text) {
+  const tok = G.token;
+  return new Promise((res, rej) => {
+    const name = who ? (CAST[who] ? CAST[who].name : who) : "";
+    $("boxName").textContent = name; $("boxName").hidden = !name;
+    $("boxText").textContent = ""; $("boxNext").hidden = true; $("box").hidden = false;
+    let i = 0, done = false;
+    const chars = Array.from(text);
+    const tick = setInterval(() => {
+      if (!G || G.token !== tok) { clearInterval(tick); return rej(ABORT); }
+      i++; $("boxText").textContent = chars.slice(0, i).join("");
+      if (i % 3 === 0) SFX.blip();
+      if (i >= chars.length) finish();
+    }, TUNING.textSpeed);
+    function finish() { clearInterval(tick); $("boxText").textContent = text; done = true; $("boxNext").hidden = false; }
+    advance = () => {
+      if (!G || G.token !== tok) return rej(ABORT);
+      if (!done) return finish();
+      advance = null; res();
+    };
+  });
+}
+function choose(list) {
+  const tok = G.token;
+  return new Promise((res, rej) => {
+    const box = $("choices"); box.innerHTML = ""; $("boxNext").hidden = true; advance = null;
+    list.forEach((it, i) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "ch"; b.textContent = it.t;
+      b.onclick = () => { if (!G || G.token !== tok) return rej(ABORT); SFX.pick(); box.innerHTML = ""; res(i); };
+      box.appendChild(b);
+    });
+  });
+}
+function wait(ms) { const tok = G.token; return new Promise((res, rej) => setTimeout(() => (G && G.token === tok) ? res() : rej(ABORT), ms)); }
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ===================== 好感度メーター ===================== */
+function showMeter(id) {
+  $("meter").hidden = !id; if (!id) return;
+  $("meterName").textContent = CAST[id].name + "の好感度";
+  $("meterPass").style.left = (TUNING.passLine / TUNING.maxLove * 100) + "%";
+  updMeter();
+}
+function updMeter() { const v = G.love; $("meterFill").style.width = Math.max(0, v) / TUNING.maxLove * 100 + "%"; $("meterVal").textContent = v; }
+function addLove(n) {
+  G.love = Math.max(0, Math.min(TUNING.maxLove, G.love + n)); updMeter();
+  if (n > 0) { SFX.up(); hearts(Math.min(8, 2 + Math.round(n / 4)), 250, 120); }
+  else if (n < 0) { SFX.down(); hearts(3, 250, 120, "#6A5A70"); }
+}
+
+/* ===================== ヒロイン ===================== */
+// 選択肢の v は TUNING.choice のキー（good・soso・bad）。r は相手の返事、m はそのときの表情
+const HEROINES = [
+  {
+    id: "shiori", bg: "library", chapter: "第1章　図書館の しおり", mini: "quiz",
+    meet: [["gatasu", "（図書館は静かでいい…ここならモテ選手権の作戦が練れる）"], ["shiori", "あの…その本、私も読もうと思ってて"], ["gatasu", "（文学部っぽい人だ…！ 落ち着け、俺）"]],
+    talks: [
+      { q: "その本、好きなんですか？", c: [
+        { t: "はい！ 3章の伏線回収が最高で…", v: "good", r: "わかります…！ あそこ、鳥肌が立ちました", m: "happy" },
+        { t: "表紙がかっこよかったので", v: "soso", r: "ふふ、ジャケ買いですね", m: "normal" },
+        { t: "デュフッ、この作者は初期作から追ってますが今作は正直…（早口）", v: "bad", r: "……あ、はい", m: "shock" } ] },
+      { q: "今度、少人数の読書会があるんです。興味あります？", c: [
+        { t: "行きたいです。おすすめの本、持っていきます", v: "good", r: "うれしい…！ 楽しみにしてますね", m: "happy" },
+        { t: "人が多いのはちょっと苦手で…", v: "soso", r: "そっか…じゃあ、また誘いますね", m: "normal" },
+        { t: "それってオフ会ってこと？", v: "bad", r: "オフ会…？ 読書会、です", m: "sad" } ] },
+    ],
+    miniIntro: "じゃあ…クイズを出してもいいですか？ 本で読んだ雑学なんです",
+    yes: "…私も、がたすさんと話してると、時間を忘れちゃいます",
+    no: "ごめんなさい…いいお友達でいてください",
+  },
+  {
+    id: "rinka", bg: "plaza", chapter: "第2章　駅前広場の りんか", mini: "rhythm",
+    meet: [["rinka", "ねー、そこのメガネくん！ ダンスの練習つき合ってくんない？"], ["gatasu", "（ギャ、ギャルだ…！ 話しかけられた…！）"], ["rinka", "一人足りないんだよね。ちょっとだけでいいから！"]],
+    talks: [
+      { q: "てかメガネくん、名前なんてーの？", c: [
+        { t: "がたすです。よろしく！", v: "good", r: "がたす！ ウケる、覚えやすいじゃん", m: "happy" },
+        { t: "あ、えっと…が、がたす…です…", v: "soso", r: "声ちっさ！ でもいいよ、がたすね", m: "normal" },
+        { t: "名乗るほどの者ではない（キリッ）", v: "bad", r: "は？ なにそれ、こわ", m: "shock" } ] },
+      { q: "あーしのダンス、どうだった？", c: [
+        { t: "めっちゃかっこよかった！ キレがすごい", v: "good", r: "でしょー！？ わかってんじゃん", m: "happy" },
+        { t: "よく分からないけど、すごかったです", v: "soso", r: "正直でよろしい", m: "normal" },
+        { t: "ふむ、3拍目の重心移動が甘いですな", v: "bad", r: "…ダメ出し？ 初対面で？", m: "sad" } ] },
+    ],
+    miniIntro: "じゃ、一緒に踊ってみよ！ リズムに合わせてタップね",
+    yes: "がたす、意外とアリかも。…てか、ちょっとドキドキしたんだけど",
+    no: "ごめーん、がたすはトモダチって感じ！",
+  },
+  {
+    id: "miyu", bg: "cafe", chapter: "第3章　カフェの みゆ", mini: "cafe",
+    meet: [["miyu", "いらっしゃいませ！ ご注文はお決まりですか？"], ["gatasu", "（笑顔がまぶしい…！ メニュー、メニューを見るんだ）"]],
+    talks: [
+      { q: "迷ってたら、何かおすすめしましょうか？", c: [
+        { t: "おすすめを一つください", v: "good", r: "じゃあ季節のラテを！ 私も大好きなんです", m: "happy" },
+        { t: "いつもので", v: "soso", r: "えっ…はじめましてですよね？ ふふっ", m: "normal" },
+        { t: "ラージ・ノンシュガー・エクストラ…（長い呪文）", v: "bad", r: "えっと…当店にはないメニューですね…", m: "shock" } ] },
+      { q: "すみません、今日バイトの子がお休みで…バタバタしてて", c: [
+        { t: "手伝いましょうか？ 皿洗いならできます", v: "good", r: "えっ、本当ですか！？ 神様…！", m: "happy" },
+        { t: "大変ですね、がんばってください", v: "soso", r: "ありがとうございます、がんばります！", m: "normal" },
+        { t: "（無言でスマホをいじる）", v: "bad", r: "……", m: "sad" } ] },
+    ],
+    miniIntro: "あっ、お客さんが一気に！ ちょっとだけ注文を通すの、手伝ってもらえませんか？",
+    yes: "今日はほんとに助かりました。…今度は、お客さんじゃなくてデートで来てくれますか？",
+    no: "ごめんなさい！ お店の常連さんとして、大切にしたいです",
+  },
+  {
+    id: "aoi", bg: "field", chapter: "第4章　グラウンドの あおい", mini: "reflex",
+    meet: [["aoi", "おーい！ そこの人、ボール取ってー！"], ["gatasu", "（ボ、ボール…！ よし、取れた！）"], ["aoi", "ナイスキャッチ！ ありがと！"]],
+    talks: [
+      { q: "君、何かスポーツやってる？", c: [
+        { t: "やってないけど、体を動かすのは好きです", v: "good", r: "いいね！ 今からでも遅くないよ", m: "happy" },
+        { t: "ゲームなら毎日やってます", v: "soso", r: "eスポーツってやつ？ 反射神経すごそう！", m: "normal" },
+        { t: "我の専門は、指先の運動のみ", v: "bad", r: "…指先？", m: "shock" } ] },
+      { q: "ねえ、勝負しよっか！ 私が勝ったらジュースおごりね！", c: [
+        { t: "望むところです！", v: "good", r: "そうこなくっちゃ！", m: "happy" },
+        { t: "お手やわらかに…", v: "soso", r: "手加減はしないよー！", m: "normal" },
+        { t: "勝負とか、陽キャのノリはちょっと…", v: "bad", r: "えー、ノリ悪いなあ", m: "sad" } ] },
+    ],
+    miniIntro: "反応勝負！ ボールが光ったら、すぐにタップ！",
+    yes: "やるじゃん！ …ねえ、これからも一緒に走らない？ ずっと",
+    no: "ナイスファイト！ でも今は記録が大事なんだ、ごめん！",
+  },
+];
+
+/* ===================== ゲームの流れ ===================== */
+function showTitle() {
+  G = null; advance = null; S.mini = null; S.big = null; S.fx = [];
+  $("title").hidden = false; $("play").hidden = true; $("homeBtn").hidden = true; $("chapterTag").hidden = true;
+  setScene("title", [{ id: "gatasu", x: 180, s: 5, y: 222, mood: "normal" }]);
+  const b = load(KEY_BEST, null);
+  $("best").hidden = !b; if (b) $("best").textContent = `ベスト記録：${b.count}人の心をつかんだ（称号「${b.title}」）`;
+}
+$("startBtn").onclick = () => { audio(); SFX.pick(); startGame(); };
+$("homeBtn").onclick = () => showTitle();
+
+async function startGame() {
+  G = { token: Math.random(), love: 0, results: [] };
+  $("title").hidden = true; $("play").hidden = false; $("homeBtn").hidden = false; $("mini").hidden = true; $("choices").innerHTML = "";
+  try {
+    await prologue();
+    for (const h of HEROINES) await chapter(h);
+    await ceremony();
+  } catch (e) { if (e !== ABORT) console.error(e); }
+}
+
+async function prologue() {
+  showMeter(null); $("chapterTag").hidden = false; $("chapterTag").textContent = "開幕";
+  setScene("title", [{ id: "chikuwa", x: 90, s: 4, y: 210 }, { id: "gatasu", x: 250 }]);
+  await say("chikuwa", "さあ始まりました！ 第1回 おでん横丁モテ選手権！");
+  await say("chikuwa", "ルールはかんたん！ 4人の女の子と出会って、心をつかんだ人数で勝負だ！");
+  mood("gatasu", "shock");
+  await say("gatasu", "（今年こそ…今年こそ、モテてみせる…！）");
+  await say("chikuwa", "エントリーナンバー1番、がたす選手！ …なんか自信なさそうだけど大丈夫か！？");
+  mood("gatasu", "happy");
+  await say("gatasu", "だ、大丈夫です…！ たぶん…");
+}
+
+async function chapter(h) {
+  G.love = TUNING.startLove;
+  $("chapterTag").hidden = false; $("chapterTag").textContent = h.chapter;
+  setScene(h.bg, [{ id: "gatasu", x: 100 }, { id: h.id, x: 255, flip: true }]);
+  showMeter(null);
+  for (const [who, line] of h.meet) await say(who, line);
+  showMeter(h.id);
+  // 会話
+  for (const talk of h.talks) {
+    mood(h.id, "normal"); mood("gatasu", "normal");
+    await say(h.id, talk.q);
+    const i = await choose(talk.c);
+    const ch = talk.c[i];
+    mood("gatasu", ch.v === "bad" ? "happy" : "normal");
+    await say("gatasu", ch.t);
+    mood(h.id, ch.m); addLove(TUNING.choice[ch.v]);
+    if (ch.v === "bad") mood("gatasu", "shock");
+    await say(h.id, ch.r);
+  }
+  // ミニゲーム
+  mood(h.id, "happy"); mood("gatasu", "normal");
+  await say(h.id, h.miniIntro);
+  const bonus = await MINI[h.mini](h);
+  setScene(h.bg, [{ id: "gatasu", x: 100 }, { id: h.id, x: 255, flip: true }]);
+  if (bonus >= TUNING.miniMax * 0.7) { mood(h.id, "happy"); await say(h.id, "すごーい！"); }
+  else if (bonus >= TUNING.miniMax * 0.35) { mood(h.id, "normal"); await say(h.id, "なかなかやるね！"); }
+  else { mood(h.id, "sad"); await say(h.id, "あはは…ドンマイ！"); }
+  addLove(bonus);
+  await say("", `ミニゲームで好感度 +${bonus}！`);
+  // 告白
+  mood("gatasu", "love"); mood(h.id, "normal");
+  await say("gatasu", `${CAST[h.id].name}さん…！ ずっと言いたかったことがあります…！`);
+  S.big = { text: "愛してる", t0: T }; hearts(10, 180, 130);
+  $("boxName").textContent = "がたす"; $("boxName").hidden = false; $("boxText").textContent = "愛してる！！"; $("boxNext").hidden = true;
+  await Promise.all([playVoice(), wait(1300)]);
+  await wait(400);
+  S.big = null;
+  const ok = G.love >= TUNING.passLine;
+  if (ok) {
+    mood(h.id, "love"); SFX.win(); hearts(14, 255, 110);
+    await say(h.id, h.yes);
+    mood("gatasu", "happy");
+    await say("", `${CAST[h.id].name}の心をつかんだ！（好感度 ${G.love}）`);
+  } else {
+    mood(h.id, "sad"); SFX.lose();
+    await say(h.id, h.no);
+    mood("gatasu", "sad");
+    await say("gatasu", "そ、そんな…");
+    await say("", `好感度 ${G.love}…あと ${TUNING.passLine - G.love} 足りなかった！`);
+  }
+  G.results.push({ id: h.id, love: G.love, ok });
+}
+
+const TITLES = [
+  { n: 4, title: "伝説のモテ男", rank: "優勝！" },
+  { n: 3, title: "ほぼモテ男", rank: "準優勝" },
+  { n: 2, title: "ちょいモテ男", rank: "入賞" },
+  { n: 1, title: "一途な男", rank: "参加賞" },
+  { n: 0, title: "次こそはがたす", rank: "敢闘賞" },
+];
+async function ceremony() {
+  showMeter(null); $("chapterTag").textContent = "表彰式";
+  const count = G.results.filter(r => r.ok).length, total = G.results.reduce((a, r) => a + r.love, 0);
+  const T1 = TITLES.find(x => count >= x.n);
+  const girls = G.results.filter(r => r.ok).map(r => ({ id: r.id }));
+  setScene("ceremony", [{ id: "chikuwa", x: 26, s: 2, y: 214 }, { id: "gatasu", x: 180 }]);
+  await say("chikuwa", "結果発表ーー！！");
+  await say("chikuwa", `がたす選手が心をつかんだのは… ${count}人！`);
+  // 心をつかんだ女の子が並ぶ
+  const xs = [108, 252, 66, 300].slice(0, count);
+  S.chars = S.chars.concat(girls.map((g, i) => ({ id: g.id, x: xs[i], s: 3, y: 210, mood: "love", flip: xs[i] > 180 })));
+  if (count === 4) { SFX.win(); hearts(20, 180, 100); mood("gatasu", "love"); S.big = { text: "優勝！", t0: T, col: "#FFD15C" }; await playVoice(); }
+  else if (count > 0) { SFX.up(); hearts(8, 180, 110); mood("gatasu", "happy"); }
+  else { SFX.lose(); mood("gatasu", "sad"); }
+  await say("chikuwa", `称号は「${T1.title}」！ ${T1.rank}`);
+  S.big = null;
+  const best = load(KEY_BEST, null);
+  if (!best || count > best.count || (count === best.count && total > best.total)) save(KEY_BEST, { count, total, title: T1.title });
+  showResult(count, total, T1);
+}
+function showResult(count, total, T1) {
+  $("box").hidden = true; advance = null;
+  const rows = G.results.map(r => `<tr><td>${CAST[r.id].name}</td><td>${r.ok ? "♥ 成功" : "× ざんねん"}（${r.love}）</td></tr>`).join("");
+  const text = `「がたす、モテる。」で${count}人の心をつかんだ！ 称号「${T1.title}」${count === 4 ? "でモテ選手権優勝！" : ""}\n#がたすモテる #ちくわげーむず`;
+  const url = location.origin + location.pathname;
+  const box = $("choices");
+  box.innerHTML = `<div class="result">
+    <div class="ttl">${T1.rank}<br>${T1.title}</div>
+    <div class="hearts">心をつかんだ人数　<b>${count} / 4</b></div>
+    <table>${rows}<tr><td>好感度の合計</td><td>${total}</td></tr></table>
+    <div class="share">
+      <a target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}">X でシェア</a>
+      <a target="_blank" rel="noopener" href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}">LINE</a>
+      <a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&hashtag=${encodeURIComponent("#ちくわげーむず")}">Facebook</a>
+    </div>
+    <button type="button" class="big" id="againBtn">もう一度エントリー</button>
+    <button type="button" class="big sub" id="toTitleBtn">タイトルへ</button>
+  </div>`;
+  if (navigator.share) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = "その他";
+    b.onclick = () => navigator.share({ title: "がたす、モテる。", text, url }).catch(() => {});
+    box.querySelector(".share").appendChild(b);
+  }
+  $("againBtn").onclick = () => { box.innerHTML = ""; $("box").hidden = false; startGame(); };
+  $("toTitleBtn").onclick = () => { box.innerHTML = ""; $("box").hidden = false; showTitle(); };
+}
+
+/* ===================== ミニゲーム ===================== */
+// どれも 0〜TUNING.miniMax の好感度ボーナスを返す
+function miniPanel(html) { $("chapterTag").hidden = true; const m = $("mini"); m.innerHTML = html; m.hidden = false; $("box").hidden = true; $("choices").innerHTML = ""; advance = null; return m; }
+function miniEnd() { $("chapterTag").hidden = false; $("mini").hidden = true; $("mini").innerHTML = ""; $("box").hidden = false; S.mini = null; }
+function miniBg(c, bg, t) { BG[bg](c, t); c.fillStyle = "rgba(20,10,22,.55)"; c.fillRect(0, 0, 360, 240); }
+function stageText(c, text, y, size = 16, col = "#FFF0F5") { S.texts.push({ text, x: 180, y, size, col, align: "center", stroke: true }); }
+function uiText(text, x, y, size, col) { S.texts.push({ text, x, y, size, col, align: "left", stroke: false }); }  // ドットにしない文字（ふちなし）
+
+const QUIZ = [
+  { q: "日本でいちばん高い山は？", a: ["富士山", "北岳", "奥穂高岳"] },
+  { q: "1ダースはいくつ？", a: ["12", "10", "20"] },
+  { q: "図書館の本の分け方（日本十進分類法）で「9」は？", a: ["文学", "歴史", "芸術"] },
+  { q: "地球からいちばん近い恒星は？", a: ["太陽", "シリウス", "北極星"] },
+  { q: "光の三原色に入らないのは？", a: ["黄", "赤", "青"] },
+  { q: "1気圧で水がふっとうする温度は？", a: ["100℃", "90℃", "120℃"] },
+  { q: "「吾輩は猫である」を書いたのは？", a: ["夏目漱石", "芥川龍之介", "太宰治"] },
+];
+const MINI = {
+  /* しおり：雑学クイズ（3問・3択） */
+  async quiz(h) {
+    const tok = G.token; let hit = 0, n = 0, msg = "";
+    const qs = shuffle(QUIZ).slice(0, TUNING.quiz.count);
+    S.mini = { draw(c, t) { miniBg(c, h.bg, t); drawChar(c, h.id, 290, 220, 3, "happy", t, true); stageText(c, "しおりのクイズ", 34, 20, "#FF9DB8"); stageText(c, `${n} / ${qs.length}　正解 ${hit}`, 64, 14); if (msg) stageText(c, msg, 130, 30, msg === "正解！" ? "#6FE0B8" : "#FF4D4D"); } };
+    for (const item of qs) {
+      alive(tok); msg = "";
+      const m = miniPanel(`<div class="hint">Q${n + 1}. ${item.q}</div><div class="grid" id="qa" style="grid-template-columns:1fr"></div>`);
+      const pick = await new Promise((res, rej) => {
+        shuffle(item.a).forEach(a => { const b = document.createElement("button"); b.type = "button"; b.className = "pad"; b.textContent = a; b.onclick = () => (G && G.token === tok) ? res(a) : rej(ABORT); m.querySelector("#qa").appendChild(b); });
+      });
+      n++; if (pick === item.a[0]) { hit++; msg = "正解！"; SFX.hit(); hearts(3, 180, 130); } else { msg = `正解は「${item.a[0]}」`; SFX.miss(); }
+      m.querySelector("#qa").innerHTML = "";
+      await wait(1000);
+    }
+    miniEnd();
+    return Math.min(TUNING.miniMax, hit * TUNING.quiz.perHit);
+  },
+
+  /* りんか：リズムダンス（流れてくるハートが輪に重なったらタップ） */
+  async rhythm(h) {
+    const tok = G.token, R = TUNING.rhythm, beat = 60 / R.bpm;
+    const pattern = [0, 1, 2, 3, 4, 4.5, 5, 6, 7, 8, 9, 9.5, 10, 11].slice(0, R.notes);
+    const notes = pattern.map(b => ({ at: 2 + b * beat, done: false, res: "" }));
+    let t0 = null, score = 0, judge = "", judgeT = 0, combo = 0;
+    const HITX = 70, now = () => (performance.now() - t0) / 1000;
+    S.mini = { draw(c, t) {
+      miniBg(c, h.bg, t);
+      const tt = t0 == null ? 0 : now();
+      const step = Math.floor(tt / beat) % 2;
+      drawChar(c, "gatasu", 120, 226, 3, combo >= 3 ? "happy" : "normal", step * 3.14, false);
+      drawChar(c, h.id, 290, 226, 3, "happy", step * 3.14 + 1, true);
+      c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(0, 70, 360, 50);
+      c.strokeStyle = "#FFD15C"; c.lineWidth = 3; c.beginPath(); c.arc(HITX, 95, 18, 0, Math.PI * 2); c.stroke();
+      notes.forEach(n => { if (n.done) return; const x = HITX + (n.at - tt) / R.travel * 300; if (x < -20 || x > 380) return; drawHeart(c, x, 92, 4, "#FF5C8A"); });
+      if (judge && tt - judgeT < 0.5) stageText(c, judge, 48, 22, judge === "パーフェクト！" ? "#FFD15C" : judge === "グッド" ? "#6FE0B8" : "#FF4D4D");
+      stageText(c, t0 == null ? "ハートが輪に重なったらタップ！" : `コンボ ${combo}`, 140, 14);
+    } };
+    const m = miniPanel(`<div class="hint">ハートが黄色い輪に重なった瞬間にタップ！</div><button type="button" class="pad tap" id="tapBtn">タップ！</button>`);
+    function tap() {
+      if (t0 == null) return; const tt = now();
+      let best = null, bd = 1e9; notes.forEach(n => { if (!n.done) { const d = Math.abs(n.at - tt) * 1000; if (d < bd) { bd = d; best = n; } } });
+      if (!best || bd > R.good * 1.6) return;
+      best.done = true;
+      if (bd <= R.perfect) { score += 1; judge = "パーフェクト！"; combo++; SFX.hit(); hearts(2, HITX, 90); }
+      else if (bd <= R.good) { score += 0.5; judge = "グッド"; combo++; SFX.hit(); }
+      else { judge = "ミス"; combo = 0; SFX.miss(); }
+      judgeT = tt;
+    }
+    const btn = m.querySelector("#tapBtn");
+    btn.addEventListener("pointerdown", e => { e.preventDefault(); tap(); });
+    btn.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); tap(); } });
+    cv.onpointerdown = e => { e.preventDefault(); tap(); };
+    await wait(600); t0 = performance.now();
+    // 4 拍のカウント音
+    for (let i = 0; i < 4; i++) beep(i < 3 ? 660 : 990, 0.05, "square", 0.05, 2 - (4 - i) * beat);
+    while (now() < notes[notes.length - 1].at + 0.6) {
+      alive(tok);
+      notes.forEach(n => { if (!n.done && now() - n.at > R.good / 1000 * 1.6) { n.done = true; judge = "ミス"; judgeT = now(); combo = 0; } });
+      await wait(30);
+    }
+    cv.onpointerdown = null;
+    await wait(400); miniEnd();
+    return Math.round(TUNING.miniMax * score / notes.length);
+  },
+
+  /* みゆ：注文さばき（注文の順にボタンを押す） */
+  async cafe(h) {
+    const tok = G.token, C = TUNING.cafe, ITEMS = ["ラテ", "ケーキ", "サンド", "ソーダ"];
+    const COL = { "ラテ": "#C99A6A", "ケーキ": "#FF9DB8", "サンド": "#F2C75C", "ソーダ": "#6FC8F0" };
+    let order = [], pos = 0, served = 0, start = null, lock = 0, flash = "";
+    const newOrder = () => { const n = 2 + (served >= 3 ? 1 : 0); order = Array.from({ length: n }, () => ITEMS[Math.floor(Math.random() * 4)]); pos = 0; };
+    newOrder();
+    const left = () => start == null ? C.seconds : Math.max(0, C.seconds - (performance.now() - start) / 1000);
+    S.mini = { draw(c, t) {
+      miniBg(c, h.bg, t);
+      drawChar(c, h.id, 300, 226, 3, "happy", t, true);
+      stageText(c, `のこり ${left().toFixed(1)} 秒　　提供 ${served} 件`, 24, 14);
+      // 注文票
+      c.fillStyle = "#F7F4EE"; c.fillRect(40, 50, 200, 110); c.fillStyle = "#3A2A22"; c.fillRect(40, 50, 200, 20);
+      uiText(`注文 No.${served + 1}`, 50, 60, 12, "#F7F4EE");
+      order.forEach((it, i) => {
+        const y = 82 + i * 24; c.fillStyle = i < pos ? "#BBB" : COL[it]; c.fillRect(54, y, 14, 14);
+        uiText(it, 78, y + 7, 15, i < pos ? "#AAA" : "#2A1A22");
+        if (i < pos) uiText("✓", 200, y + 7, 15, "#2A8A5B");
+        if (i === pos) uiText("◀", 200, y + 7, 15, "#FF5C8A");
+      });
+      if (flash && performance.now() < lock) stageText(c, flash, 190, 22, flash === "まちがい！" ? "#FF4D4D" : "#6FE0B8");
+    } };
+    const m = miniPanel(`<div class="hint">注文票の上から順に、ボタンを押してね</div><div class="grid">${ITEMS.map(i => `<button type="button" class="pad" data-i="${i}">${i}</button>`).join("")}</div>`);
+    m.querySelectorAll("[data-i]").forEach(b => b.addEventListener("pointerdown", e => {
+      e.preventDefault(); if (start == null || performance.now() < lock || left() <= 0) return;
+      if (b.dataset.i === order[pos]) { pos++; SFX.hit(); if (pos >= order.length) { served++; flash = "お待たせしました！"; lock = performance.now() + 250; hearts(2, 140, 100); newOrder(); } }
+      else { SFX.miss(); flash = "まちがい！"; pos = 0; lock = performance.now() + C.missPenaltyMs; }
+    }));
+    await wait(500); start = performance.now();
+    while (left() > 0) { alive(tok); await wait(50); }
+    flash = "しゅうりょう！"; lock = performance.now() + 900; await wait(900);
+    miniEnd();
+    return Math.min(TUNING.miniMax, served * C.perOrder);
+  },
+
+  /* あおい：反射神経（ボールが光ったらタップ。早すぎるとフライング） */
+  async reflex(h) {
+    const tok = G.token, X = TUNING.reflex;
+    let state = "wait", lit = 0, msg = "", round = 0, pts = 0, results = [];
+    S.mini = { draw(c, t) {
+      miniBg(c, h.bg, t);
+      drawChar(c, h.id, 300, 226, 3, state === "lit" ? "shock" : "happy", t, true);
+      drawChar(c, "gatasu", 60, 226, 3, state === "lit" ? "shock" : "normal", t, false);
+      stageText(c, `ラウンド ${Math.min(round + 1, X.rounds)} / ${X.rounds}　　得点 ${pts}`, 24, 14);
+      const on = state === "lit";
+      c.fillStyle = on ? "#FFD15C" : "#55506A"; c.beginPath(); c.arc(180, 112, 36, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = on ? "#FFFFFF" : "#2A2238"; c.lineWidth = 4; c.stroke();
+      if (on) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + t * 4; c.fillStyle = "#FFF0A0"; c.fillRect(180 + Math.cos(a) * 50 - 2, 112 + Math.sin(a) * 50 - 2, 4, 4); }
+      stageText(c, msg || (state === "wait" ? "まだだよ…" : ""), 180, 18, msg.includes("フライング") ? "#FF4D4D" : "#FFF0F5");
+    } };
+    const m = miniPanel(`<div class="hint">ボールが黄色く光ったら、すぐタップ！</div><button type="button" class="pad tap" id="tapBtn">タップ！</button>`);
+    let resolveTap = null;
+    const tap = () => { if (resolveTap) resolveTap(performance.now()); };
+    m.querySelector("#tapBtn").addEventListener("pointerdown", e => { e.preventDefault(); tap(); });
+    cv.onpointerdown = e => { e.preventDefault(); tap(); };
+    for (round = 0; round < X.rounds; round++) {
+      alive(tok); state = "wait"; msg = "";
+      const delay = X.waitMin + Math.random() * (X.waitMax - X.waitMin);
+      const early = await new Promise(res => { resolveTap = () => res(true); setTimeout(() => res(false), delay); });
+      resolveTap = null; alive(tok);
+      if (early) { msg = "フライング！ 0点"; SFX.miss(); results.push(null); await wait(900); continue; }
+      state = "lit"; lit = performance.now(); beep(1400, 0.05, "square", 0.06);
+      const at = await new Promise(res => { resolveTap = res; setTimeout(() => res(performance.now() + 9999), 2000); });
+      resolveTap = null; const ms = Math.round(at - lit); state = "done";
+      const p = X.pts.find(([lim]) => ms < lim)[1];
+      pts += ms > 2000 ? 0 : p; results.push(ms);
+      msg = ms > 2000 ? "おそい！ 0点" : `${ms} ミリ秒　+${p}点`;
+      if (p >= 4 && ms <= 2000) { SFX.hit(); hearts(2, 180, 110); } else SFX.miss();
+      await wait(900);
+    }
+    cv.onpointerdown = null; miniEnd();
+    return Math.min(TUNING.miniMax, pts);
+  },
+};
+
+showTitle();
+</script>
+</body>
+</html>
