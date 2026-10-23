@@ -1,7 +1,7 @@
 // βテスト用の専用 Worker（本番の chikuwa-games とは別）。リポジトリのルートをそのまま静的配信する
 // （Cloudflare Pages として作られていても、ルートの index.html がそのまま表示される）
 {
-  "name": "chikuwa-games-beta",
+  "name": "chikuwagames-beta",
   "compatibility_date": "2026-10-01",
   "assets": { "directory": "." }
 }
