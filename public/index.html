@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+</head>
+<body style="margin:0">
+<title>ボクセル体型ベータ</title>
+<style>
+:root{
+  /* 画面の左右に「今」と「B・ア」を並べ、同じ角度で回す */
+  --bg:#15161F; --panel:#20222E; --sunk:#111219; --line:#33364A; --ink:#F4F1EC; --muted:#A6A8B8; --accent:#FF8A65; --accent-ink:#2A0F06; --teal:#6FD3C1;
+  --font:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6}
+main{max-width:520px;margin:0 auto;padding-block:12px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:20px;margin:4px 0 2px;text-wrap:balance}
+p{margin:0 0 8px}
+.muted{color:var(--muted);font-size:13px}
+.pair{display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));gap:8px;margin:10px 0}
+.pick{display:flex;gap:6px;margin-top:10px}
+.pick button{flex:1;min-height:38px;font-size:13px}
+.stage{position:relative;background:radial-gradient(80% 70% at 50% 40%,#2E3350 0%,#191B27 100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.stage canvas{display:block;width:100%;height:360px;touch-action:pan-y;cursor:grab}
+.stage .lb{position:absolute;left:8px;top:6px;font-size:12px;font-weight:700}
+.stage .ct{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stage.new .lb{color:var(--accent)}
+.stage.a .lb{color:var(--teal)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row button{flex:1 1 0}
+button{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-height:44px;cursor:pointer}
+button[aria-pressed="true"]{background:var(--teal);color:#0B2622;border-color:transparent;font-weight:700}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:12px;font-size:14px}
+.card ul{margin:0;padding-left:1.2em}
+.sl{display:grid;grid-template-columns:6.5em 1fr 3em;gap:8px;align-items:center;padding:6px 0}
+.sl input{width:100%;min-width:0;accent-color:var(--teal)}
+.sl output{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;font-size:13px}
+</style>
+
+<main>
+  <h1>ボクセル体型ベータ</h1>
+  <p class="muted">A・ア（一辺4倍）のキャラを、スライダーで細かく変えられます。ドラッグで回転します。</p>
+  <div class="pair" id="pair" style="--n:1">
+    <div class="stage a" data-v="0"><canvas aria-label="キャラクター" style="height:440px"></canvas><span class="lb">プレビュー</span><span class="ct"></span></div>
+  </div>
+  <div class="card" id="sliders"></div>
+  <div class="row" id="states" style="margin-top:12px">
+    <button data-s="0" aria-pressed="true">全部着る</button>
+    <button data-s="1" aria-pressed="false">上着をぬぐ</button>
+    <button data-s="2" aria-pressed="false">下着姿</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button id="spin" aria-pressed="true">自動で回す</button>
+    <button id="front">正面に戻す</button>
+    <button id="reset">体型を戻す</button>
+  </div>
+</main>
+
+<script>
+'use strict';
+const K = (x, y, z) => x + ',' + y + ',' + z;
+function put(m, x, y, z, c) { m.set(K(x, y, z), [x, y, z, c]); }
+function box(m, x0, x1, y0, y1, z0, z1, c) { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) put(m, x, y, z, c); }
+function paint(m, x0, x1, y0, y1, z0, z1, c) { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) { const v = m.get(K(x, y, z)); if (v) v[3] = c; } }
+function ring(m, x0, x1, y0, y1, z0, z1, c) { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) if (x === x0 || x === x1 || z === z0 || z === z1) put(m, x, y, z, c); }
+function rgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function dk(h, f = 0.72) { const t = v => Math.max(0, Math.min(255, Math.round(v * f))).toString(16).padStart(2, '0'); const [r, g, b] = rgb(h); return '#' + t(r) + t(g) + t(b); }
+function shadeCss(h, f) { const [r, g, b] = rgb(h); const k = v => Math.max(0, Math.min(255, Math.round(v * f))); return `rgb(${k(r)},${k(g)},${k(b)})`; }
+
+const CH = { skin: '#EBC09A', hair: '#5B3A26', eye: '#3B5BA8', under: '#FFFFFF', cap: '#E8483A', shirt: '#FFFFFF', jacket: '#2F4D9A', skirt: '#3A3F4A', shoes: '#F2C14E' };
+
+/* ---------- 今の解像度（ゲームと同じ形） ---------- */
+function buildOld(st) {
+  const m = new Map(), S = CH.skin, H = CH.hair;
+  for (const b of [[2, 4, 0, 12, 1, 3], [5, 7, 0, 12, 1, 3], [2, 7, 13, 21, 1, 3], [0, 1, 12, 21, 1, 3], [8, 9, 12, 21, 1, 3], [2, 7, 22, 27, 0, 4]]) box(m, ...b, S);
+  put(m, 3, 24, 4, CH.eye); put(m, 3, 25, 4, CH.eye); put(m, 6, 24, 4, CH.eye); put(m, 6, 25, 4, CH.eye);
+  paint(m, 4, 5, 22, 22, 4, 4, dk(S, .8));
+  paint(m, 2, 7, 11, 13, 1, 3, CH.under); paint(m, 2, 7, 17, 19, 1, 3, CH.under);
+  paint(m, 2, 7, 27, 27, 0, 4, H); paint(m, 2, 7, 23, 27, 0, 1, H); paint(m, 2, 2, 24, 27, 0, 3, H); paint(m, 7, 7, 24, 27, 0, 3, H); paint(m, 2, 7, 26, 26, 4, 4, H);
+  box(m, 1, 1, 22, 27, 0, 3, H); box(m, 8, 8, 22, 27, 0, 3, H); box(m, 2, 7, 21, 27, -1, -1, H);
+  if (st < 2) {
+    let c = CH.skirt; paint(m, 2, 7, 11, 13, 1, 3, c); ring(m, 1, 8, 7, 10, 0, 4, c);
+    c = CH.shoes; paint(m, 2, 7, 0, 1, 1, 3, c); box(m, 2, 7, 0, 0, 4, 4, c); paint(m, 2, 7, 0, 0, 1, 4, '#FFFFFF');
+    c = CH.shirt; paint(m, 2, 7, 13, 21, 1, 3, c); paint(m, 0, 1, 19, 21, 1, 3, c); paint(m, 8, 9, 19, 21, 1, 3, c);
+    if (st < 1) { c = CH.jacket; paint(m, 2, 7, 13, 21, 1, 2, c); paint(m, 2, 3, 13, 21, 3, 3, c); paint(m, 6, 7, 13, 21, 3, 3, c); paint(m, 0, 1, 13, 21, 1, 3, c); paint(m, 8, 9, 13, 21, 1, 3, c); paint(m, 3, 3, 18, 21, 3, 3, dk(c)); paint(m, 6, 6, 18, 21, 3, 3, dk(c)); }
+    c = CH.cap; box(m, 2, 7, 28, 28, 0, 4, c); box(m, 2, 7, 27, 27, 5, 6, dk(c));
+  }
+  return m;
+}
+
+/* ---------- B・ア（一辺約1.6倍、形を作り直し） ----------
+   x 0〜15（腕0〜2・13〜15、胴と脚3〜12）、z 0〜7（体2〜5、頭0〜7、中心4）、y 0〜44（脚0〜19、胴20〜34、頭35〜44） */
+const P = (d, r, p) => Math.pow(Math.abs(d) / r, p);
+/* 角を丸めた箱。roundY=false は縦の柱（断面だけ丸い） */
+function rbox(m, x0, x1, y0, y1, z0, z1, c, p, roundY) {
+  const cx = (x0 + x1 + 1) / 2, cy = (y0 + y1 + 1) / 2, cz = (z0 + z1 + 1) / 2, rx = (x1 - x0 + 1) / 2, ry = (y1 - y0 + 1) / 2, rz = (z1 - z0 + 1) / 2;
+  for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++)
+    if (P(x + .5 - cx, rx, p) + P(z + .5 - cz, rz, p) + (roundY ? P(y + .5 - cy, ry, p) : 0) <= 1) put(m, x, y, z, c);
+}
+/* 楕円体（中心・半径・指数）の中か */
+const inE = (x, y, z, e) => P(x + .5 - e[0], e[3], e[6]) + P(y + .5 - e[1], e[4], e[6]) + P(z + .5 - e[2], e[5], e[6]) <= 1;
+/* その形を外側に広げた殻（まだ空いているマスだけ）を置く */
+function shell(m, e, rng, c, keep) {
+  const [x0, x1, y0, y1, z0, z1] = rng, inside = typeof e === 'function' ? e : (x, y, z) => inE(x, y, z, e);
+  for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) {
+    if (m.has(K(x, y, z)) || !inside(x, y, z)) continue;
+    const col = keep(x, y, z); if (col) put(m, x, y, z, col === true ? c : col);
+  }
+}
+/* いちばん手前（+z）のマスを塗る（顔など） */
+function front(m, x, y, c) { for (let z = 12; z >= -2; z--) { const v = m.get(K(x, y, z)); if (v) { v[3] = c; return; } } }
+const HEAD = [8, 40, 4, 5, 5, 4, 3];
+function buildNew(st) {
+  const m = new Map(), S = CH.skin, H = CH.hair;
+  rbox(m, 3, 7, 0, 19, 2, 5, S, 2, false); rbox(m, 8, 12, 0, 19, 2, 5, S, 2, false);   // 脚
+  rbox(m, 3, 12, 20, 34, 2, 5, S, 3, false);                                            // 胴
+  rbox(m, 0, 2, 20, 34, 2, 5, S, 2, false); rbox(m, 13, 15, 20, 34, 2, 5, S, 2, false); // 腕
+  m.delete(K(0, 34, 2)); m.delete(K(0, 34, 5)); m.delete(K(15, 34, 2)); m.delete(K(15, 34, 5)); // 肩を丸く
+  m.delete(K(0, 34, 3)); m.delete(K(0, 34, 4)); m.delete(K(15, 34, 3)); m.delete(K(15, 34, 4));
+  box(m, 6, 9, 34, 36, 3, 5, S);                                                        // 首
+  rbox(m, 3, 12, 35, 44, 0, 7, S, 3, true);                                             // 頭
+  // 顔
+  for (const ex of [5, 9]) { for (let y = 38; y <= 40; y++) { front(m, ex, y, CH.eye); front(m, ex + 1, y, CH.eye); } front(m, ex + 1, 40, '#FFFFFF'); front(m, ex, 41, dk(H, .9)); front(m, ex + 1, 41, dk(H, .9)); }
+  front(m, 7, 36, dk(S, .78)); front(m, 8, 36, dk(S, .78));
+  front(m, 4, 37, '#E9A3A0'); front(m, 11, 37, '#E9A3A0');
+  // 下着
+  paint(m, 3, 12, 17, 22, 2, 5, CH.under); paint(m, 3, 12, 28, 31, 2, 5, CH.under);
+  // 髪（ボブ）：頭を1マス広げた殻。前髪はギザギザ
+  const HE = [8, 40.3, 4, 6, 5.8, 5, 3];
+  shell(m, HE, [1, 14, 34, 46, -2, 9], H, (x, y, z) => y >= 43 || z <= 3 || ((x <= 3 || x >= 12) && y >= 36) || (y === 42 && x % 3 !== 1));
+  if (st < 2) {
+    // くつ：足首まで＋つま先、白いソール
+    let c = CH.shoes;
+    paint(m, 3, 12, 0, 4, 2, 5, c);
+    rbox(m, 3, 7, 0, 2, 5, 7, c, 2, false); rbox(m, 8, 12, 0, 2, 5, 7, c, 2, false);
+    paint(m, 3, 12, 0, 0, 2, 7, '#FFFFFF'); paint(m, 4, 6, 4, 4, 5, 5, '#FFFFFF'); paint(m, 9, 11, 4, 4, 5, 5, '#FFFFFF');
+    // スカート：上は体に沿い、下へ広がる。プリーツは2色
+    c = CH.skirt; paint(m, 3, 12, 17, 22, 2, 5, c);
+    for (let y = 9; y <= 16; y++) {
+      const f = 1 + (16 - y) * 0.035, rx = 6.0 * f, rz = 3.2 * f;
+      for (let x = -2; x <= 18; x++) for (let z = -3; z <= 11; z++) {
+        const dx = x + .5 - 8, dz = z + .5 - 4, o = P(dx, rx, 2.4) + P(dz, rz, 2.4), i = P(dx, rx - 1.2, 2.4) + P(dz, rz - 1.2, 2.4);
+        if (o <= 1 && i > 1) { const a = Math.floor((Math.atan2(dz, dx) + Math.PI) / (Math.PI * 2) * 18); put(m, x, y, z, y === 9 ? dk(c, .7) : a % 2 ? c : dk(c, .82)); }
+      }
+    }
+    // シャツ（半そで）
+    c = CH.shirt; paint(m, 3, 12, 20, 34, 2, 5, c); paint(m, 0, 2, 28, 34, 2, 5, c); paint(m, 13, 15, 28, 34, 2, 5, c);
+    if (st < 1) {
+      // ジャケット：胴と腕の外側に1マスの殻。前は開いて、えり・ボタン・ポケット
+      c = CH.jacket;
+      shell(m, (x, y, z) => P(x + .5 - 8, 6, 3) + P(z + .5 - 4, 3, 3) <= 1, [2, 13, 20, 34, 0, 7], c, (x, y, z) => {
+        if (z >= 6 && x >= 7 && x <= 8) return false;
+        if (z >= 6 && y >= 30 && (x === 6 || x === 9)) return dk(c, .7);
+        if (z >= 6 && x === 6 && (y === 23 || y === 27)) return '#F2C14E';
+        if (z >= 6 && y === 23 && (x === 4 || x === 11)) return dk(c, .8);
+        return true;
+      });
+      paint(m, 0, 2, 22, 34, 2, 5, c); paint(m, 13, 15, 22, 34, 2, 5, c);
+      paint(m, 0, 2, 22, 22, 2, 5, dk(c, .75)); paint(m, 13, 15, 22, 22, 2, 5, dk(c, .75));
+    }
+    // キャップ：ドーム形＋つば
+    c = CH.cap;
+    shell(m, [8, 41, 4, 6.8, 6.6, 5.8, 3], [0, 16, 43, 48, -3, 11], c, (x, y) => y === 43 ? dk(c, .8) : true);
+    for (let x = 4; x <= 11; x++) for (let z = 9; z <= 11; z++) if (!(z === 11 && (x === 4 || x === 11))) put(m, x, 43, z, dk(c, .85));
+    put(m, 8, 48, 4, dk(c, .7));
+  }
+  return m;
+}
+
+
+/* ---------- A・ア（一辺4倍） ----------
+   1マス＝今の1/4。x 0〜40（中心20）、z 中心10（顔は +z）、y 0〜120（脚0〜50、胴46〜88、頭91〜115） */
+const sq = v => v * v;
+/* マスの中心 (X,Y,Z) で形を判定して置く。empty=true なら空いているマスだけ */
+function fill(m, b, f, empty) {
+  for (let x = b[0]; x <= b[1]; x++) for (let y = b[2]; y <= b[3]; y++) for (let z = b[4]; z <= b[5]; z++) {
+    if (empty && m.has(K(x, y, z))) continue;
+    const c = f(x + .5, mapY(y + .5), z + .5); if (c) put(m, x, y, z, c);
+  }
+}
+/* 置いてあるマスの色を、条件に合うものだけ塗りかえる */
+function recolor(m, f) { for (const v of m.values()) { const c = f(v[0] + .5, mapY(v[1] + .5), v[2] + .5, v[3]); if (c) v[3] = c; } }
+const SE = (X, cx, rx, p) => Math.pow(Math.abs(X - cx) / rx, p);
+/* 体型：lw 手足の太さ、tw 胴の横幅、td 胴の厚み */
+let BP = { lw: 1, tw: 1, td: 1 };
+/* 身長：首より下（y<91）を h 倍にのばし、頭はその上にずらす。形の判定は元の座標で行う */
+let HT = 1;
+const mapY = Y => Y < 91 * HT ? Y / HT : Y - 91 * (HT - 1);
+const TW = () => 10 * BP.tw + 0.3;
+const legX = () => { const d = 5.2 * Math.max(1, BP.lw * 1.02); return [20 - d, 20 + d]; };
+const legR = Y => (3.3 + 1.4 * Math.min(1, Math.max(0, (Y - 4) / 46))) * BP.lw;
+const inLeg = (X, Y, Z, g = 0) => legX().some(cx => Y >= 3 && Y <= 52 && sq((X - cx) / (legR(Y) + g)) + sq((Z - 10) / (legR(Y) + g)) <= 1);
+const inFoot = (X, Y, Z, g = 0) => legX().some(cx => Y >= 0 && sq((X - cx) / (3.5 * Math.max(.9, BP.lw * .9) + g)) + sq((Y - 2.6) / (3.4 + g)) + sq((Z - 11.6) / (6.6 + g)) <= 1);
+const inTorso = (X, Y, Z, g = 0) => {
+  if (Y < 44 - g || Y > 89 + g) return false;
+  const top = Y > 79 ? SE(Y, 79, 10 + g, 2.6) : 0, bot = Y < 52 ? SE(Y, 52, 8 + g, 2.6) : 0;
+  return SE(X, 20, 10 * BP.tw + g, 2.6) + SE(Z, 10, 5.6 * BP.td + g, 2.6) + top + bot <= 1;
+};
+const armX = () => { const d = 10 * BP.tw + 3.1 * BP.lw; return [20 - d, 20 + d]; };
+const inArm = (X, Y, Z, g = 0) => armX().some(cx => {
+  const ax = cx + (cx < 20 ? -0.03 : 0.03) * (84 - Y), r = (2.7 + 0.35 * Math.min(1, Math.max(0, (Y - 56) / 28))) * BP.lw;
+  if (Y >= 55 && Y <= 84 && sq((X - ax) / (r + g)) + sq((Z - 10) / (r + 0.3 + g)) <= 1) return true;
+  if (sq(X - cx) + sq(Y - 84) + sq(Z - 10) <= sq(3.3 * BP.lw + g)) return true;                                 // 肩
+  const hx = cx + (cx < 20 ? -0.85 : 0.85);
+  return sq((X - hx) / (2.6 * Math.max(.9, BP.lw * .9) + g)) + sq((Y - 51.5) / (4.2 + g)) + sq((Z - 10.4) / (3.0 * Math.max(.9, BP.lw * .9) + g)) <= 1;     // 手
+});
+const HEADA = [20, 103, 10.5, 10.5, 12, 9.5];
+const inHead = (X, Y, Z, g = 0, e = HEADA) => SE(X, e[0], e[3] + g, 2.4) + SE(Y, e[1], e[4] + g, 2.4) + SE(Z, e[2], e[5] + g, 2.4) <= 1;
+function frontA(m, x, y, c) { for (let z = 30; z >= -5; z--) { const v = m.get(K(x, y, z)); if (v) { v[3] = c; return; } } }
+function paintFaceA(m, f) { for (let x = 6; x <= 34; x++) for (let y = 80; y <= 125; y++) { const Y = mapY(y + .5); if (Y < 86 || Y > 113) continue; const c = f(x + .5, Y); if (c) frontA(m, x, y, c); } }
+const BB = [-6, 46, -2, 136, -6, 28];
+function buildA(st) {
+  const m = new Map(), S = CH.skin, H = CH.hair;
+  fill(m, BB, (X, Y, Z) => (inLeg(X, Y, Z) || inFoot(X, Y, Z) || inTorso(X, Y, Z) || inArm(X, Y, Z) || inHead(X, Y, Z) ||
+    (Y >= 84 && Y <= 95 && sq((X - 20) / (3.3 * BP.lw)) + sq((Z - 10) / (3.3 * BP.lw)) <= 1)) && S);
+  // 顔：瞳・ハイライト・眉・鼻・口・ほお
+  paintFaceA(m, (X, Y) => {
+    for (const ex of [14.5, 25.5]) {
+      const e = sq((X - ex) / 2.3) + sq((Y - 99.5) / 3.2);
+      if (e <= 1) {
+        if (sq(X - (ex - 0.8)) + sq(Y - 101.3) <= 0.8) return '#FFFFFF';
+        return sq((X - ex) / 1.2) + sq((Y - 99) / 1.8) <= 1 ? dk(CH.eye, .45) : CH.eye;
+      }
+      if (Y > 103.5 && Y < 105.5 && Math.abs(X - ex) < 2.8 - (Y - 103.5) * 0.4) return dk(H, .9);
+    }
+    if (Y > 96 && Y < 97 && X > 19.5 && X < 21) return dk(S, .88);
+    if (Y > 92.5 && Y < 93.5 && X > 18 && X < 22.5) return dk(S, .72);
+    if (sq((X - 11.5) / 2) + sq(Y - 96) <= 1 || sq((X - 28.5) / 2) + sq(Y - 96) <= 1) return '#E9A3A0';
+    return null;
+  });
+  // 下着
+  recolor(m, (X, Y) => Math.abs(X - 20) <= TW() && ((Y >= 44 && Y <= 57) || (Y >= 70 && Y <= 78)) && CH.under);
+  // 髪（ボブ）：頭の外側の殻。前髪は毛先をそろえない
+  const HE = [20, 103.6, 10.3, 12.6, 13.6, 11.6];
+  fill(m, BB, (X, Y, Z) => {
+    if (!inHead(X, Y, Z, 0, HE)) return null;
+    const tip = (Math.floor(X / 2.2) % 3 === 0) ? 2.5 : (Math.floor(X / 2.2) % 3 === 1 ? 0.5 : 0);
+    if (Z > 15) return Y >= 105.5 - tip && H;
+    if (Y >= 106 || Z <= 9.5 || (Math.abs(X - 20) >= 8.6 && Y >= 90 + tip)) return Y < 91.5 + tip && Math.abs(X - 20) < 8 ? null : (Math.floor(X + Z) % 7 === 0 ? dk(H, .88) : H);
+    return null;
+  }, true);
+  if (st < 2) {
+    // くつ：足首まで包む。白いソールとくつひも
+    let c = CH.shoes;
+    fill(m, BB, (X, Y, Z) => Y <= 13 && (inFoot(X, Y, Z, 1) || inLeg(X, Y, Z, 1)) && (Y < 1.6 ? '#FFFFFF' : c), true);
+    recolor(m, (X, Y, Z, col) => col === c && Y > 5 && Y < 12 && Z > 13 && Math.floor(Y) % 2 === 0 && legX().some(cx => Math.abs(X - cx) < 1.6) && '#FFFFFF');
+    // スカート：腰に沿って、下へ広がる。プリーツ28本
+    c = CH.skirt;
+    recolor(m, (X, Y) => Math.abs(X - 20) <= TW() && Y >= 44 && Y <= 61 && c);
+    fill(m, BB, (X, Y, Z) => {
+      if (Y < 30 || Y > 61) return null;
+      const t = Math.max(0, (58 - Y) / 28), rx = 11.4 * BP.tw + 4.6 * t, rz = 7 * BP.td + 3.6 * t;
+      const o = SE(X, 20, rx, 2.4) + SE(Z, 10, rz, 2.4), i = SE(X, 20, rx - 1.7, 2.4) + SE(Z, 10, rz - 1.7, 2.4);
+      if (o > 1 || i <= 1) return null;
+      if (Y < 32.5) return dk(c, .68);
+      const a = Math.floor((Math.atan2(Z - 10, X - 20) + Math.PI) / (Math.PI * 2) * 28);
+      return a % 2 ? c : dk(c, .8);
+    }, true);
+    // シャツ（半そで）
+    c = CH.shirt;
+    recolor(m, (X, Y, Z, col) => col !== CH.under && Math.abs(X - 20) <= TW() && Y > 58 && Y <= 89 && c);
+    recolor(m, (X, Y) => Math.abs(X - 20) > TW() && Y >= 72 && Y <= 88 && c);
+    fill(m, BB, (X, Y, Z) => Y >= 72 && Y <= 87 && inArm(X, Y, Z, 1) && !inTorso(X, Y, Z, 1) && c, true);
+    recolor(m, (X, Y) => Math.abs(X - 20) <= TW() && Y > 70 && Y <= 78 && c);
+    if (st < 1) {
+      // ジャケット：V字のえり、ボタン2つ、ポケットのふた、そで口
+      c = CH.jacket;
+      const vw = Y => 1.4 + Math.max(0, Y - 66) * 0.2;
+      fill(m, BB, (X, Y, Z) => {
+        if (Y < 50 || !inTorso(X, Y, Z, 1.9)) return null;
+        if (Z > 13 && Math.abs(X - 20) < vw(Y)) return null;
+        if (Z > 13 && Y > 66 && Math.abs(X - 20) < vw(Y) + 3) return dk(c, .72);
+        if (Z > 14 && Math.abs(X - 17.2) < 1 && (Math.abs(Y - 58) < 1 || Math.abs(Y - 64) < 1)) return '#F2C14E';
+        if (Z > 13 && Y > 55.5 && Y < 57.5 && (Math.abs(X - 13.2) < 2.6 || Math.abs(X - 26.8) < 2.6)) return dk(c, .78);
+        return c;
+      }, true);
+      recolor(m, (X, Y, Z, col) => col === CH.shirt && Math.abs(X - 20) > TW() && Y >= 56 && c);
+      fill(m, BB, (X, Y, Z) => Y >= 56 && Y <= 88 && inArm(X, Y, Z, 1.5) && !inTorso(X, Y, Z, 1.9) && (Y < 59 ? dk(c, .72) : c), true);
+    }
+    // キャップ：ドーム、帯、つば、てっぺんのボタン
+    c = CH.cap;
+    const CE = [20, 104, 10.3, 13.9, 15.4, 12.9];
+    fill(m, BB, (X, Y, Z) => Y >= 107.5 && inHead(X, Y, Z, 0, CE) && (Y < 110 ? dk(c, .82) : (Math.abs(X - 20) < .6 || Math.abs(Z - 10.3) < .6) && Y > 113 ? dk(c, .88) : c), true);
+    fill(m, BB, (X, Y, Z) => Y >= 106 && Y <= 108 && Z >= 17 && sq((X - 20) / 10) + sq((Z - 18) / 11.5) <= 1 && dk(c, .86), true);
+    fill(m, BB, (X, Y, Z) => sq(X - 20) + sq(Y - 119.6) + sq(Z - 10.3) <= 2.6 && dk(c, .7), true);
+  }
+  return m;
+}
+
+/* ---------- 描画（ゲームと同じ方式。大きさは高さでそろえる） ---------- */
+const DIRS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+const FACE = [[[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]], [[0, 1, 0], [1, 1, 0], [1, 1, 1], [0, 1, 1]], [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]], [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]]];
+const PITCH = 0.38, LIGHT = (() => { const v = [-0.45, 0.75, 0.55], l = Math.hypot(...v); return v.map(a => a / l); })();
+function faceList(m) { const o = []; for (const [x, y, z, c] of m.values()) for (let d = 0; d < 6; d++) { const n = DIRS[d]; if (!m.has(K(x + n[0], y + n[1], z + n[2]))) o.push([x, y, z, d, c]); } return o; }
+function drawModel(ctx, w, h, fs, yaw, fr) {
+  ctx.clearRect(0, 0, w, h);
+  const k = fr.k, cp = Math.cos(PITCH), sp = Math.sin(PITCH), co = Math.cos(yaw), si = Math.sin(yaw);
+  const s = Math.min(w / (12.5 * k), h / ((36 * cp + 9 * sp) * k)), base = h - 4.5 * k * sp * s - 4, ox = w / 2;
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(ox, base, 6 * k * s, 6 * k * s * sp, 0, 0, Math.PI * 2); ctx.fill();
+  const list = [];
+  for (const [x, y, z, d, c] of fs) {
+    const n = DIRS[d], nx = n[0] * co - n[2] * si, nz = n[0] * si + n[2] * co, ny = n[1];
+    if (ny * sp + nz * cp <= 0.001) continue;
+    const p = [];
+    for (const o of FACE[d]) { const px = x + o[0] - fr.cx, py = y + o[1], pz = z + o[2] - fr.cz; const X = px * co - pz * si, Z = px * si + pz * co; p.push(ox + X * s, base - py * cp * s + Z * sp * s); }
+    const mx = x + .5 + n[0] * .5 - fr.cx, my = y + .5 + n[1] * .5, mz = z + .5 + n[2] * .5 - fr.cz;
+    list.push([(mx * si + mz * co) * cp + my * sp, p, shadeCss(c, 0.62 + 0.45 * Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]))]);
+  }
+  list.sort((a, b) => a[0] - b[0]);
+  ctx.lineJoin = 'round'; ctx.lineWidth = 0.7;
+  for (const [, p, col] of list) { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[2], p[3]); ctx.lineTo(p[4], p[5]); ctx.lineTo(p[6], p[7]); ctx.closePath(); ctx.fillStyle = col; ctx.strokeStyle = col; ctx.fill(); ctx.stroke(); }
+  return list.length;
+}
+
+const PARAMS = { lw: 1, tw: 1, td: 1, h: 1 };
+const BUILD = [st => { BP = PARAMS; HT = PARAMS.h; return buildA(st); }], FR = [{ cx: 20, cz: 10, k: 4 }];
+const V = [...document.querySelectorAll('#pair .stage')].map((el, i) => ({ el, cv: el.querySelector('canvas'), ct: el.querySelector('.ct'), build: BUILD[i], fr: FR[i] }));
+let yaw = -0.5, spin = !matchMedia('(prefers-reduced-motion: reduce)').matches, drag = null, hold = 0, dirty = true, state = 0;
+function setState(st) {
+  state = st;
+  for (const v of V) { const m = v.build(st); v.fs = faceList(m); v.n = m.size; }
+  dirty = true;
+  document.querySelectorAll('#states button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.s === st)));
+}
+function layout() { dirty = true; }
+for (const v of V) {
+  v.cv.addEventListener('pointerdown', e => { drag = e.clientX; try { v.cv.setPointerCapture(e.pointerId); } catch (_) {} });
+  v.cv.addEventListener('pointermove', e => { if (drag == null) return; yaw += (e.clientX - drag) * 0.015; drag = e.clientX; dirty = true; });
+  const up = () => { drag = null; hold = performance.now() + 2500; };
+  v.cv.addEventListener('pointerup', up); v.cv.addEventListener('pointercancel', up);
+}
+const SL = [
+  ['lw', '手足の太さ', 0.75, 1.4, 0.01], ['tw', '胴の横幅', 0.8, 1.3, 0.01], ['td', '胴の厚み', 0.8, 1.5, 0.01], ['h', '身長', 0.85, 1.15, 0.01],
+];
+const slBox = document.getElementById('sliders');
+slBox.innerHTML = SL.map(([k, n, lo, hi, st]) => `<div class="sl"><label for="sl-${k}">${n}</label><input type="range" id="sl-${k}" min="${lo}" max="${hi}" step="${st}" value="1"><output id="o-${k}">1.00</output></div>`).join('');
+let pend = false;
+slBox.addEventListener('input', e => {
+  const k = e.target.id.slice(3); PARAMS[k] = +e.target.value; document.getElementById('o-' + k).textContent = (+e.target.value).toFixed(2);
+  if (!pend) { pend = true; requestAnimationFrame(() => { pend = false; setState(state); }); }
+});
+document.getElementById('reset').onclick = () => { for (const [k] of SL) { PARAMS[k] = 1; document.getElementById('sl-' + k).value = 1; document.getElementById('o-' + k).textContent = '1.00'; } setState(state); };
+document.getElementById('states').onclick = e => { const b = e.target.closest('[data-s]'); if (b) setState(+b.dataset.s); };
+document.getElementById('spin').onclick = e => { spin = !spin; e.currentTarget.setAttribute('aria-pressed', String(spin)); };
+document.getElementById('front').onclick = () => { yaw = 0; spin = false; document.getElementById('spin').setAttribute('aria-pressed', 'false'); dirty = true; };
+document.getElementById('spin').setAttribute('aria-pressed', String(spin));
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (spin && drag == null && now > hold) { yaw += 0.5 * dt; dirty = true; }
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  for (const v of V) {
+    if (v.el.hidden) continue;
+    const r = v.cv.getBoundingClientRect(), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+    if (w !== v.cv.width || h !== v.cv.height) { v.cv.width = w; v.cv.height = h; dirty = true; }
+  }
+  if (dirty) {
+    dirty = false;
+    for (const v of V) {
+      if (v.el.hidden) continue;
+      const t0 = performance.now(), f = drawModel(v.cv.getContext('2d'), v.cv.width, v.cv.height, v.fs, yaw, v.fr), ms = performance.now() - t0;
+      v.ms = v.ms == null ? ms : v.ms * 0.85 + ms * 0.15;
+      v.ct.textContent = `面${f.toLocaleString()}・${v.ms.toFixed(0)}ms`;
+    }
+  }
+  requestAnimationFrame(loop);
+}
+layout();
+setState(0);
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
