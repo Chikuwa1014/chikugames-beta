@@ -1,0 +1,6 @@
+// βテスト用の専用 Worker（本番の chikuwa-games とは別）。静的ファイルをそのまま配信する
+{
+  "name": "chikuwa-games-beta",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./public" }
+}
