@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ぬがせて！ボクセルクイズ</title>
+<meta name="description" content="ボクセルでオリジナルキャラを作って集める、成人向けのクイズゲーム。正解するたびにキャラの装飾パーツを1つ脱がせられる（下着姿まで）。">
+<meta name="robots" content="noindex">
+<meta name="rating" content="adult">
+<meta name="theme-color" content="#15161F">
+<!-- artifact:skip -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='6' width='20' height='20' rx='3' fill='%23FF8A65'/%3E%3Crect x='11' y='11' width='10' height='10' fill='%2315161F'/%3E%3C/svg%3E">
+<!-- /artifact:skip -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#15161F; --panel:#20222E; --sunk:#111219; --line:#33364A; --ink:#F4F1EC; --muted:#A6A8B8;
+  --accent:#FF8A65; --accent-ink:#2A0F06; --teal:#6FD3C1; --red:#E8483A; --green:#7FB069; --gold:#F2C14E;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{
+  min-height:100vh;background:radial-gradient(120% 60% at 50% 0%,#262A3E 0%,var(--bg) 62%) fixed;color:var(--ink);
+  font-family:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+}
+main{max-width:480px;margin:0 auto;padding:12px 16px 48px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.topbar a{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.topbar .ver{color:var(--muted);font-size:12px}
+h1{font-size:26px;line-height:1.25;margin:6px 0 4px;font-weight:800;letter-spacing:.02em}
+h1 small{display:block;font-size:13px;color:var(--muted);font-weight:500;letter-spacing:.08em}
+h2{font-size:18px;margin:0 0 8px}
+h3{font-size:14px;margin:12px 0 6px;color:var(--muted);font-weight:700}
+p{margin:0 0 8px}
+.muted{color:var(--muted);font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+button{
+  font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:12px;
+  padding:10px 14px;cursor:pointer;min-height:44px;touch-action:manipulation;
+}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:800}
+button.wide{display:block;width:100%;margin-top:8px;text-align:center}
+button.danger{color:#FFB4AA;border-color:#6A2F2B}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>button{flex:1 1 0}
+.stat{display:flex;gap:10px;flex-wrap:wrap;font-size:14px}
+.stat b{color:var(--gold)}
+.pill{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 9px;color:var(--muted)}
+
+/* ボクセルの表示 */
+.stage{position:relative;background:radial-gradient(80% 70% at 50% 40%,#2E3350 0%,#191B27 100%);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stage canvas{display:block;width:100%;height:280px;touch-action:pan-y;cursor:grab}
+.stage.tall canvas{height:340px}
+.stage .hint{position:absolute;right:10px;bottom:6px;font-size:11px;color:var(--muted);pointer-events:none}
+.stage .tag{position:absolute;left:10px;top:8px;font-size:12px;color:var(--muted)}
+
+/* 年齢確認 */
+.gate{text-align:center;padding:22px 16px}
+.gate .badge{display:inline-block;font-size:28px;font-weight:800;border:3px solid var(--accent);color:var(--accent);border-radius:14px;padding:4px 14px;margin-bottom:10px}
+
+/* キャラ作成 */
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tabs button{flex:1;padding:8px 4px;min-height:40px;font-size:14px}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:800}
+.field{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.field label{width:4.5em;font-size:13px;color:var(--muted);flex:none}
+.field input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.sw{display:flex;flex-wrap:wrap;gap:6px}
+.sw button{width:34px;height:34px;min-height:0;padding:0;border-radius:9px;border:2px solid rgba(255,255,255,.12)}
+.sw button[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{min-height:36px;padding:6px 11px;font-size:13px;border-radius:999px}
+.chips button[aria-pressed="true"]{background:var(--teal);color:#0B2622;border-color:transparent;font-weight:700}
+.chips button.locked{color:var(--muted);border-style:dashed}
+.err{color:#FFB4AA;font-size:13px;min-height:1.4em}
+.sl{display:grid;grid-template-columns:6.5em 1fr 3em;gap:8px;align-items:center;padding:8px 0}
+.sl label{font-size:13px;color:var(--muted)}
+.sl input{width:100%;min-width:0;accent-color:var(--teal)}
+.sl output{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;font-size:13px}
+
+/* コレクション */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cc{background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:6px;text-align:center;cursor:pointer;min-height:0;display:block;width:100%}
+.cc canvas{display:block;width:100%;height:120px}
+.cc .nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc .sub{font-size:11px;color:var(--muted)}
+.cc .star{color:var(--gold)}
+.empty{text-align:center;color:var(--muted);padding:20px 0}
+
+/* クイズ */
+.qhead{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
+.lives{font-size:18px;letter-spacing:2px;color:var(--red)}
+.timer{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden;margin:6px 0 10px}
+.timer i{display:block;height:100%;background:var(--teal);width:100%}
+.qtext{font-size:17px;font-weight:700;line-height:1.5;margin-bottom:10px}
+.opts{display:grid;gap:8px}
+.opts button{text-align:left;font-weight:500}
+.opts button.ok{background:#21503F;border-color:var(--green)}
+.opts button.ng{background:#5A2420;border-color:var(--red)}
+.flash{animation:flash .5s}
+@keyframes flash{0%{filter:brightness(2.2)}100%{filter:none}}
+.big{font-size:22px;font-weight:800;text-align:center;margin:4px 0 8px}
+
+/* ショップ */
+.shop-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.shop-item:first-of-type{border-top:0}
+.shop-item .nm{flex:1;font-size:14px;cursor:pointer}
+.shop-item button{min-height:36px;padding:6px 12px;font-size:13px}
+.shop-item .got{font-size:12px;color:var(--teal)}
+
+/* 確認画面・おしらせ */
+.modal{position:fixed;inset:0;background:rgba(5,6,10,.7);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.modal .card{max-width:360px;width:100%;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:#2B2F44;border:1px solid var(--line);color:var(--ink);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.hist{font-size:13px;color:var(--muted);padding-left:1.2em;margin:0}
+.toggle{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px}
+.toggle input{width:20px;height:20px}
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar"><span class="muted">β版</span><span class="ver" id="verLabel"></span></div>
+
+  <!-- 年齢確認 -->
+  <section id="sGate" class="screen" hidden>
+    <div class="card gate">
+      <div class="badge">18+</div>
+      <h2>年齢の確認</h2>
+      <p>このゲームには、クイズに正解するとキャラクターの服を脱がせていく（下着姿まで）成人向けの表現が含まれます。</p>
+      <p class="muted">登場するキャラクターはすべて18歳以上の設定です。</p>
+      <button class="primary wide" id="gateYes">18歳以上です</button>
+      <button class="wide" id="gateNo">18歳未満です（トップへ戻る）</button>
+    </div>
+  </section>
+
+  <!-- タイトル：データベースの読み込み -->
+  <section id="sTitle" class="screen" hidden>
+    <h1>ぬがせて！ボクセルクイズ<small>キャラメイク × クイズ（18歳以上向け）</small></h1>
+    <div class="stage"><canvas id="cvTitle" aria-label="サンプルのキャラクター"></canvas></div>
+    <div class="card" style="margin-top:12px">
+      <h2>データベースを選ぶ</h2>
+      <p class="muted">作ったキャラは「データベースファイル」（<code>voxel-quiz-db.json</code>）に保存されます。続きから遊ぶときは、そのファイルを読み込んでください。</p>
+      <button class="primary wide" id="btnLoadFile">ファイルを読み込んで始める</button>
+      <button class="wide" id="btnContinue" hidden>この端末の前回のデータで始める</button>
+      <button class="wide" id="btnNew">キャラ0人から始める</button>
+    </div>
+  </section>
+
+  <!-- メニュー -->
+  <section id="sMenu" class="screen" hidden>
+    <h1>ぬがせて！ボクセルクイズ<small>メニュー</small></h1>
+    <div class="card">
+      <div class="stat"><span>コイン <b id="mCoins">0</b></span><span>キャラ <b id="mChars">0</b> 人</span><span>解放パーツ <b id="mItems">0</b></span></div>
+    </div>
+    <button class="primary wide" id="mNew">キャラをつくる</button>
+    <button class="wide" id="mCol">コレクション（クイズに挑戦）</button>
+    <button class="wide" id="mShop">ショップ（装飾パーツの解放）</button>
+    <div class="card" style="margin-top:12px">
+      <h2>データベース</h2>
+      <div class="row"><button id="mExport">ファイルに書き出す</button><button id="mImport">ファイルから追加</button></div>
+      <label class="toggle"><input type="checkbox" id="optAuto"> キャラを保存・削除するたびにファイルを書き出す</label>
+      <button class="wide" id="mTitle">別のデータベースに切りかえる</button>
+    </div>
+    <button class="wide" id="mHelp">遊び方・更新履歴</button>
+  </section>
+
+  <!-- キャラ作成・編集 -->
+  <section id="sEdit" class="screen" hidden>
+    <h2 id="eTitle">キャラをつくる</h2>
+    <div class="stage"><canvas id="cvEdit" aria-label="作成中のキャラクター"></canvas><span class="hint">ドラッグで回転</span><span class="tag" id="eCount"></span></div>
+    <div class="tabs" id="eTabs"></div>
+    <div class="card" id="ePane"></div>
+    <div class="err" id="eErr"></div>
+    <div class="row"><button id="eCancel">やめる</button><button class="primary" id="eSave">保存する</button></div>
+  </section>
+
+  <!-- コレクション -->
+  <section id="sCol" class="screen" hidden>
+    <div class="qhead"><h2 style="margin:0">コレクション</h2><button id="cBack">メニュー</button></div>
+    <p class="muted">キャラを選んでクイズに挑戦。★はクリア済み。</p>
+    <div class="grid" id="cGrid"></div>
+    <div class="row" style="margin-top:12px"><button id="cNew">新しくつくる</button><button id="cImport">ファイルから追加</button></div>
+  </section>
+
+  <!-- キャラの詳細 -->
+  <section id="sDetail" class="screen" hidden>
+    <div class="qhead"><h2 style="margin:0" id="dName"></h2><button id="dBack">コレクション</button></div>
+    <div class="stage tall"><canvas id="cvDetail" aria-label="キャラクター"></canvas><span class="hint">ドラッグで回転</span><span class="tag" id="dTag"></span></div>
+    <div class="card" style="margin-top:12px">
+      <p id="dInfo" class="muted"></p>
+      <button class="primary wide" id="dPlay">クイズで挑戦する</button>
+      <button class="wide" id="dPeek" hidden>クリア後の姿を見る</button>
+      <div class="row" style="margin-top:8px"><button id="dEdit">編集</button><button class="danger" id="dDel">削除</button></div>
+    </div>
+  </section>
+
+  <!-- クイズ -->
+  <section id="sQuiz" class="screen" hidden>
+    <div class="qhead"><span class="lives" id="qLives"></span><span class="pill" id="qLeft"></span><button id="qQuit">やめる</button></div>
+    <div class="stage"><canvas id="cvQuiz" aria-label="対戦中のキャラクター"></canvas><span class="tag" id="qName"></span></div>
+    <div class="timer"><i id="qBar"></i></div>
+    <div class="card" id="qPane"></div>
+  </section>
+
+  <!-- 結果 -->
+  <section id="sResult" class="screen" hidden>
+    <div class="big" id="rTitle"></div>
+    <div class="stage tall"><canvas id="cvResult" aria-label="結果"></canvas><span class="hint">ドラッグで回転</span></div>
+    <div class="card" style="margin-top:12px">
+      <div id="rInfo"></div>
+      <button class="primary wide" id="rAgain">もう一度挑戦</button>
+      <div class="row" style="margin-top:8px"><button id="rCol">コレクション</button><button id="rMenu">メニュー</button></div>
+    </div>
+  </section>
+
+  <!-- ショップ -->
+  <section id="sShop" class="screen" hidden>
+    <div class="qhead"><h2 style="margin:0">ショップ</h2><button id="sBack">メニュー</button></div>
+    <div class="stage"><canvas id="cvShop" aria-label="試着"></canvas><span class="tag" id="sTry">名前をタップで試着</span><span class="hint">ドラッグで回転</span></div>
+    <div class="card" style="margin-top:12px"><div class="stat"><span>コイン <b id="sCoins">0</b></span></div><p class="muted" style="margin:4px 0 0">コインはクイズの正解・クリアでもらえます。</p></div>
+    <div id="sList"></div>
+  </section>
+
+  <!-- 遊び方・更新履歴 -->
+  <section id="sHelp" class="screen" hidden>
+    <div class="qhead"><h2 style="margin:0">遊び方</h2><button id="hBack">メニュー</button></div>
+    <div class="card">
+      <p>1. 「キャラをつくる」で、ボクセルのキャラに名前・年齢（18歳以上）・髪型・色・下着の色を決め、頭・胴・腕・脚に装飾パーツをつけます。</p>
+      <p>2. 保存すると、キャラはデータベースファイル <code>voxel-quiz-db.json</code> に書き出されます。次に遊ぶときはタイトルでこのファイルを読み込みます。</p>
+      <p>3. コレクションからキャラを選んでクイズに挑戦。正解するたびに装飾パーツを1つ脱がせられます（上着はシャツより先）。全部脱がせて下着姿にしたらクリア。</p>
+      <p>4. まちがい・時間切れでライフが減り、0になると失敗。コインをためてショップで新しい装飾パーツを解放しましょう。</p>
+      <p class="muted">ファイルは手元にだけ保存されます（サーバーには送りません）。</p>
+    </div>
+    <div class="card"><h2>更新履歴</h2><ul class="hist" id="hist"></ul></div>
+  </section>
+</main>
+
+<div class="modal" id="modal" hidden><div class="card"><p id="mdText"></p><div class="row"><button id="mdNo">やめる</button><button class="primary" id="mdYes">OK</button></div></div></div>
+<div class="toast" id="toast" hidden></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* ==========================================================
+   ぬがせて！ボクセルクイズ
+   ボクセルのオリジナルキャラを作ってデータベースファイルに保存し、
+   クイズに正解するたびに装飾パーツを1つずつ脱がせる（下着姿まで）
+   ========================================================== */
+const VERSION = '1.0.0';
+const HISTORY = [
+  ['1.0.0', '2026-10-23', '公開。細かいボクセル（一辺4倍）のキャラ作成（体型・身長のスライダー、部位ごとの装飾パーツ、下着の色）、データベースファイルの書き出しと読み込み、コレクション、クイズ、ショップでの装飾パーツの解放'],
+];
+
+/* ---------- 調整用の数値 ---------- */
+const TUNING = {
+  lives: 3,          // クイズのライフ
+  timeLimit: 15,     // 1問の制限時間（秒）
+  coinCorrect: 5,    // 正解1問のコイン
+  coinClear: 20,     // クリアのコイン
+  coinLife: 10,      // クリア時に残ったライフ1つあたりのコイン
+  coinFirst: 30,     // そのキャラを初めてクリアしたときのおまけ
+  minAge: 18,        // キャラの年齢の下限（これ未満は作成・読み込みできない）
+  maxAge: 99,
+  maxChars: 100,     // データベースに入れられるキャラの数
+  nameMax: 12,
+};
+
+/* ---------- 保存キー（公開後は変えない） ---------- */
+const KEY_AGE = 'voxel-quiz-age';           // 年齢確認済みなら '1'
+const KEY_CHARS = 'voxel-quiz-chars-v1';    // キャラの作業用コピー（本体はデータベースファイル）
+const KEY_PG = 'voxel-quiz-progress-v1';    // コイン・解放パーツ・クリア記録（base64＋チェック値）
+const KEY_OPT = 'voxel-quiz-opt';           // 設定（自動書き出し）
+/* データベースファイルの形（将来 Cloudflare に保存するときも同じ形を使う） */
+const DB_APP = 'voxel-quiz', DB_VER = 1, DB_FILE = 'voxel-quiz-db.json';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ---------- 色 ---------- */
+const SKIN = ['#F6D7B8', '#EBC09A', '#D9A27A', '#B97D57', '#8C5A3A', '#5E3B26'];
+const HAIRC = ['#2A1E1A', '#5B3A26', '#A0662E', '#E2C27A', '#D9D9D9', '#C2425A', '#4A6FD0', '#8A5BC7', '#3E9E6E', '#F0A0C0'];
+const EYE = ['#2A1E1A', '#3B5BA8', '#3E8A5A', '#8A4F2A', '#7A3FA0', '#C23A3A'];
+const CLOTH = ['#FFFFFF', '#E8E2D6', '#9AA0A8', '#3A3F4A', '#1E2128', '#E8483A', '#F08A4B', '#F2C14E',
+  '#7FB069', '#3E9E8E', '#5B8DD9', '#2F4D9A', '#9A6BC9', '#E98BC2', '#8C5A3A', '#C9A27A'];
+const isHex = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+function rgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function dk(h, f = 0.72) { const t = v => Math.max(0, Math.min(255, Math.round(v * f))).toString(16).padStart(2, '0'); const [r, g, b] = rgb(h); return '#' + t(r) + t(g) + t(b); }
+function shadeCss(h, f) { const [r, g, b] = rgb(h); const k = v => Math.max(0, Math.min(255, Math.round(v * f))); return `rgb(${k(r)},${k(g)},${k(b)})`; }
+
+/* ==========================================================
+   ボクセルの組み立て（1マス＝今の1/4。x 0〜40、z の中心 10、顔は +z、y 0〜）
+   形は「その座標が体の中か」を返す関数で決め、服は体の外側に殻として重ねる
+   ========================================================== */
+const K = (x, y, z) => x + ',' + y + ',' + z;
+function put(m, x, y, z, c) { m.set(K(x, y, z), [x, y, z, c]); }
+const sq = v => v * v;
+const SE = (X, c, r, p) => Math.pow(Math.abs(X - c) / r, p);
+const clampN = (v, lo, hi) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v * 100) / 100)) : 1; };
+
+/* 体型（スライダー）：lw 手足の太さ、tw 胴の横幅、td 胴の厚み、h 身長 */
+const BODY_RANGE = { lw: [0.75, 1.35], tw: [0.8, 1.3], td: [0.8, 1.5], h: [0.85, 1.15] };
+const BODY_LABEL = { lw: '手足の太さ', tw: '胴の横幅', td: '胴の厚み', h: '身長' };
+const defBody = () => ({ lw: 1, tw: 1, td: 1, h: 1 });
+function cleanBody(b) { const o = {}; for (const k in BODY_RANGE) o[k] = clampN(b && b[k], ...BODY_RANGE[k]); return o; }
+let BP = defBody(), HT = 1, LX0 = 14.8, LX1 = 25.2, AD = 13.1, TWV = 10.3, AX0 = 6.9, AX1 = 33.1, FRQ = 1;
+function setBody(b) {
+  BP = b; HT = b.h;
+  const d = 5.2 * Math.max(1, b.lw * 1.02); LX0 = 20 - d; LX1 = 20 + d;
+  AD = 10 * b.tw + 3.1 * b.lw; AX0 = 20 - AD; AX1 = 20 + AD; TWV = 10 * b.tw + 0.3; FRQ = Math.max(0.9, b.lw * 0.9);
+}
+/* 身長：首より下（y<91）を HT 倍にのばし、頭はその上にずらす。形の判定は元の座標で行う */
+const mapY = Y => Y < 91 * HT ? Y / HT : Y - 91 * (HT - 1);
+const unmapY = Y => Y < 91 ? Y * HT : Y + 91 * (HT - 1);
+
+/* b は [x0,x1,Y0,Y1,z0,z1]（Y は元の座標）。f(X,Y,Z) が色を返したマスに置く。empty なら空いているマスだけ */
+function fill(m, b, f, empty) {
+  const y0 = Math.floor(unmapY(b[2])), y1 = Math.ceil(unmapY(b[3]));
+  for (let x = b[0]; x <= b[1]; x++) for (let y = y0; y <= y1; y++) for (let z = b[4]; z <= b[5]; z++) {
+    if (empty && m.has(K(x, y, z))) continue;
+    const c = f(x + .5, mapY(y + .5), z + .5); if (c) put(m, x, y, z, c);
+  }
+}
+function recolor(m, f) { for (const v of m.values()) { const c = f(v[0] + .5, mapY(v[1] + .5), v[2] + .5, v[3]); if (c) v[3] = c; } }
+
+const legR = Y => (3.3 + 1.4 * Math.min(1, Math.max(0, (Y - 4) / 46))) * BP.lw;
+const legIn = (cx, X, Y, Z, g) => { const r = legR(Y) + g; return sq((X - cx) / r) + sq((Z - 10) / r) <= 1; };
+const inLeg = (X, Y, Z, g = 0) => Y >= 3 && Y <= 52 && (legIn(LX0, X, Y, Z, g) || legIn(LX1, X, Y, Z, g));
+const footIn = (cx, X, Y, Z, g) => Y >= 0 && sq((X - cx) / (3.5 * FRQ + g)) + sq((Y - 2.6) / (3.4 + g)) + sq((Z - 11.6) / (6.6 + g)) <= 1;
+const inFoot = (X, Y, Z, g = 0) => footIn(LX0, X, Y, Z, g) || footIn(LX1, X, Y, Z, g);
+const inTorso = (X, Y, Z, g = 0) => {
+  if (Y < 44 - g || Y > 89 + g) return false;
+  const top = Y > 79 ? SE(Y, 79, 10 + g, 2.6) : 0, bot = Y < 52 ? SE(Y, 52, 8 + g, 2.6) : 0;
+  return SE(X, 20, 10 * BP.tw + g, 2.6) + SE(Z, 10, 5.6 * BP.td + g, 2.6) + top + bot <= 1;
+};
+const tubeIn = (cx, X, Y, Z, g) => {
+  if (Y < 55 || Y > 84) return false;
+  const ax = cx + (cx < 20 ? -0.03 : 0.03) * (84 - Y), r = (2.7 + 0.35 * Math.min(1, Math.max(0, (Y - 56) / 28))) * BP.lw;
+  return sq((X - ax) / (r + g)) + sq((Z - 10) / (r + 0.3 + g)) <= 1;
+};
+const shoulderIn = (cx, X, Y, Z, g) => sq(X - cx) + sq(Y - 84) + sq(Z - 10) <= sq(3.3 * BP.lw + g);
+const handIn = (cx, X, Y, Z, g) => { const hx = cx + (cx < 20 ? -0.85 : 0.85); return sq((X - hx) / (2.6 * FRQ + g)) + sq((Y - 51.5) / (4.2 + g)) + sq((Z - 10.4) / (3 * FRQ + g)) <= 1; };
+const inTube = (X, Y, Z, g = 0) => Math.abs(X - 20) > AD - 6.5 && (tubeIn(AX0, X, Y, Z, g) || tubeIn(AX1, X, Y, Z, g));
+const inHand = (X, Y, Z, g = 0) => Math.abs(X - 20) > AD - 6.5 && (handIn(AX0, X, Y, Z, g) || handIn(AX1, X, Y, Z, g));
+const inArm = (X, Y, Z, g = 0) => Math.abs(X - 20) > AD - 6.5 && (tubeIn(AX0, X, Y, Z, g) || tubeIn(AX1, X, Y, Z, g) || shoulderIn(AX0, X, Y, Z, g) || shoulderIn(AX1, X, Y, Z, g) || handIn(AX0, X, Y, Z, g) || handIn(AX1, X, Y, Z, g));
+const HEADA = [20, 103, 10.5, 10.5, 12, 9.5];
+const inHead = (X, Y, Z, g = 0, e = HEADA) => SE(X, e[0], e[3] + g, 2.4) + SE(Y, e[1], e[4] + g, 2.4) + SE(Z, e[2], e[5] + g, 2.4) <= 1;
+/* 探す範囲（元の Y） */
+const B_ALL = [-6, 46, -2, 152, -6, 28], B_HEAD = [-6, 46, 84, 152, -6, 28], B_TORSO = [-8, 48, 40, 98, -6, 28], B_LEG = [-6, 46, -2, 66, -6, 28], B_ARM = [-8, 48, 44, 98, -6, 28];
+
+/* ---------- 体・顔 ---------- */
+function frontA(m, x, y, c) { for (let z = 30; z >= -5; z--) { const v = m.get(K(x, y, z)); if (v) { v[3] = c; return; } } }
+function paintFace(m, f) {
+  const y0 = Math.floor(unmapY(86)), y1 = Math.ceil(unmapY(113));
+  for (let x = 6; x <= 34; x++) for (let y = y0; y <= y1; y++) { const Y = mapY(y + .5); if (Y < 86 || Y > 113) continue; const c = f(x + .5, Y); if (c) frontA(m, x, y, c); }
+}
+function buildBase(m, ch) {
+  const S = ch.skin, H = ch.hairColor;
+  fill(m, B_ALL, (X, Y, Z) => (inLeg(X, Y, Z) || inFoot(X, Y, Z) || inTorso(X, Y, Z) || inArm(X, Y, Z) || inHead(X, Y, Z) ||
+    (Y >= 84 && Y <= 95 && sq((X - 20) / (3.3 * BP.lw)) + sq((Z - 10) / (3.3 * BP.lw)) <= 1)) && S);
+  paintFace(m, (X, Y) => {
+    for (const ex of [14.5, 25.5]) {
+      if (sq((X - ex) / 2.3) + sq((Y - 99.5) / 3.2) <= 1) {
+        if (sq(X - (ex - 0.8)) + sq(Y - 101.3) <= 0.8) return '#FFFFFF';
+        return sq((X - ex) / 1.2) + sq((Y - 99) / 1.8) <= 1 ? dk(ch.eye, .45) : ch.eye;
+      }
+      if (Y > 103.5 && Y < 105.5 && Math.abs(X - ex) < 2.8 - (Y - 103.5) * 0.4) return dk(H, .9);
+    }
+    if (Y > 96 && Y < 97 && X > 19.5 && X < 21) return dk(S, .88);
+    if (Y > 92.5 && Y < 93.5 && X > 18 && X < 22.5) return dk(S, .72);
+    if (sq((X - 11.5) / 2) + sq(Y - 96) <= 1 || sq((X - 28.5) / 2) + sq(Y - 96) <= 1) return '#E9A3A0';
+    return null;
+  });
+  recolor(m, (X, Y) => Math.abs(X - 20) <= TWV && ((Y >= 44 && Y <= 57) || (Y >= 70 && Y <= 78)) && ch.under);   // 下着
+}
+
+/* ---------- 髪 ---------- */
+const HAIRS = [
+  { k: 'short', name: 'ショート' }, { k: 'bob', name: 'ボブ' }, { k: 'long', name: 'ロング' },
+  { k: 'pony', name: 'ポニーテール' }, { k: 'twin', name: 'ツインテール' }, { k: 'buzz', name: 'ベリーショート' },
+];
+const TIE = '#C2425A';
+function buildHair(m, st, H) {
+  const hh = (X, Z) => Math.floor(X + Z) % 7 === 0 ? dk(H, .88) : H;
+  const tipOf = X => { const i = Math.floor(X / 2.2) % 3; return i === 0 ? 2.5 : i === 1 ? 0.5 : 0; };
+  if (st === 'buzz') {
+    const HE = [20, 103.3, 10.3, 11.5, 12.6, 10.6];
+    fill(m, B_HEAD, (X, Y, Z) => inHead(X, Y, Z, 0, HE) && (Y >= 101 || (Z <= 9.5 && Y >= 97)) && hh(X, Z), true);
+    return;
+  }
+  const HE = [20, 103.6, 10.3, 12.6, 13.6, 11.6];
+  const low = { short: [95, 98], bob: [90, 90], long: [90, 90], pony: [95, 98], twin: [95, 98] }[st];
+  fill(m, B_HEAD, (X, Y, Z) => {
+    if (!inHead(X, Y, Z, 0, HE)) return null;
+    const tip = tipOf(X);
+    if (Z > 15) return Y >= 105.5 - tip && hh(X, Z);
+    if (Y >= 106) return hh(X, Z);
+    if (Z <= 9.5 && Y >= low[0] + tip * (st === 'bob' || st === 'long' ? 1 : 0)) return hh(X, Z);
+    if (Math.abs(X - 20) >= 8.6 && Y >= low[1] + tip * (st === 'bob' || st === 'long' ? 1 : 0)) return hh(X, Z);
+    return null;
+  }, true);
+  const zb = 10 - 5.6 * BP.td;
+  if (st === 'long') {
+    fill(m, B_ALL, (X, Y, Z) => Y >= 56 && Y <= 96 && Z >= zb - 2.6 && Z <= zb - 0.2 && Math.abs(X - 20) < 9.6 && Y >= 58 + 5 * sq((X - 20) / 9.6) && hh(X, Z), true);
+    fill(m, B_ALL, (X, Y, Z) => Y >= 80 && Y <= 96 && Math.abs(Math.abs(X - 20) - 11.6) < 1.3 && Z > 3 && Z < 12 && hh(X, Z), true);   // 耳の横の毛
+  }
+  const tail = (cx, y0, y1, zc, r0, r1) => fill(m, B_ALL, (X, Y, Z) => {
+    if (Y < y0 || Y > y1) return null;
+    const t = (y1 - Y) / (y1 - y0), r = r0 + (r1 - r0) * t;
+    return sq((X - cx) / r) + sq((Z - (zc - t * 2)) / (r * 0.95)) <= 1 && (Y > y1 - 1.6 ? TIE : hh(X, Z));
+  }, true);
+  if (st === 'pony') { tail(20, 68, 99, -1.4, 2.6, 3.9); fill(m, B_ALL, (X, Y, Z) => sq((X - 20) / 3.4) + sq((Y - 99) / 3.6) + sq((Z + 0.6) / 3.4) <= 1 && hh(X, Z), true); }
+  if (st === 'twin') for (const cx of [20 - 12.6, 20 + 12.6]) tail(cx, 66, 101, 2.6, 2.4, 3.8);
+}
+
+/* ---------- 装飾パーツ ---------- */
+const WHT = '#FFFFFF', GOLD = '#F2C14E';
+/* 袖：腕のマスを塗りかえ、さらに外側に殻をかぶせる */
+function sleeves(m, yLo, yHi, g, cf) {
+  recolor(m, (X, Y) => Math.abs(X - 20) > TWV && Y >= yLo && Y <= yHi && cf(Y));
+  fill(m, B_ARM, (X, Y, Z) => Y >= yLo && Y <= yHi && inArm(X, Y, Z, g) && !inTorso(X, Y, Z, g) && cf(Y), true);
+}
+const shirtBody = (m, yLo, f) => recolor(m, (X, Y, Z, col) => Math.abs(X - 20) <= TWV && Y > yLo && Y <= 89 && f(X, Y, Z));
+const vWidth = Y => 1.4 + Math.max(0, Y - 66) * 0.2;
+const headShell = (X, Y, Z, g) => inHead(X, Y, Z, g) && !inHead(X, Y, Z, 0.2);
+const lensD = (X, Y, ex) => sq((X - ex) / 4.6) + sq((Y - 99.5) / 4.4);
+
+const D = {
+  /* 帽子 */
+  cap(m, c) {
+    const CE = [20, 104, 10.3, 13.9, 15.4, 12.9];
+    fill(m, B_HEAD, (X, Y, Z) => Y >= 107.5 && inHead(X, Y, Z, 0, CE) && (Y < 110 ? dk(c, .82) : (Math.abs(X - 20) < .6 || Math.abs(Z - 10.3) < .6) && Y > 113 ? dk(c, .88) : c), true);
+    fill(m, B_HEAD, (X, Y, Z) => Y >= 106 && Y <= 108 && Z >= 17 && sq((X - 20) / 10) + sq((Z - 18) / 11.5) <= 1 && dk(c, .86), true);
+    fill(m, B_HEAD, (X, Y, Z) => sq(X - 20) + sq(Y - 119.6) + sq(Z - 10.3) <= 2.6 && dk(c, .7), true);
+  },
+  knit(m, c) {
+    const CE = [20, 104.5, 10.3, 13.4, 15, 12.4];
+    fill(m, B_HEAD, (X, Y, Z) => Y >= 103.5 && inHead(X, Y, Z, 0, CE) && (Y < 108 ? dk(c, .78) : Math.floor(X / 1.6) % 2 ? c : dk(c, .92)), true);
+    fill(m, B_HEAD, (X, Y, Z) => sq(X - 20) + sq(Y - 121) + sq(Z - 10.3) <= 13 && '#F4F1EC', true);
+  },
+  beret(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      if (SE(X, 21.5, 14.5, 2.4) + SE(Y, 112, 6.5, 2.4) + SE(Z, 11, 13.5, 2.4) <= 1) return c;
+      if (Y >= 103 && Y <= 108 && inHead(X, Y, Z, 1.0) && Z > 8) return dk(c, .8);
+      return sq(X - 21.5) + sq(Y - 119.2) + sq(Z - 11) <= 1.8 && dk(c, .7);
+    }, true);
+  },
+  straw(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      if (Y >= 106 && Y <= 108 && sq((X - 20) / 21) + sq((Z - 10.3) / 19) <= 1) return c;
+      if (Y > 108 && Y <= 120 && sq((X - 20) / 12.4) + sq((Z - 10.3) / 12.2) <= 1) return Y < 112 ? TIE : c;
+      return null;
+    }, true);
+  },
+  silk(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      if (Y >= 106 && Y <= 108 && sq((X - 20) / 15) + sq((Z - 10.3) / 14.5) <= 1) return c;
+      if (Y > 108 && Y <= 128 && sq((X - 20) / 12.4) + sq((Z - 10.3) / 12.2) <= 1) return Y < 113 ? TIE : c;
+      return null;
+    }, true);
+  },
+  /* アクセサリー */
+  glasses(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      if (!headShell(X, Y, Z, 1.5)) return null;
+      if (Z > 14) for (const ex of [14.5, 25.5]) { const d = lensD(X, Y, ex); if (d <= 1 && d >= 0.6) return c; }
+      if (Z > 14 && Math.abs(X - 20) < 2.2 && Math.abs(Y - 101) < .8) return c;
+      return Math.abs(Y - 100.4) < .9 && Math.abs(X - 20) > 8.4 && Z > 10 && c;
+    }, true);
+  },
+  sunglass(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      if (!headShell(X, Y, Z, 1.6)) return null;
+      if (Z > 14) for (const ex of [14.5, 25.5]) { const d = lensD(X, Y, ex); if (d <= 1) return d >= 0.72 ? dk(c, 1.6) : c; }
+      if (Z > 14 && Math.abs(X - 20) < 2.4 && Math.abs(Y - 101) < .8) return dk(c, 1.6);
+      return Math.abs(Y - 100.4) < .9 && Math.abs(X - 20) > 8.4 && Z > 10 && dk(c, 1.6);
+    }, true);
+  },
+  ribbon(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      if (sq((X - 26.6) / 3.6) + sq((Y - 112) / 3.2) + sq((Z - 11) / 2.4) <= 1 || sq((X - 33) / 3.6) + sq((Y - 112) / 3.2) + sq((Z - 11) / 2.4) <= 1) return c;
+      return sq(X - 29.8) + sq(Y - 112) + sq(Z - 11.4) <= 3.2 && dk(c, .72);
+    }, true);
+  },
+  phones(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      if (Math.abs(Z - 10.3) < 1.5 && Y >= 98 && inHead(X, Y, Z, 3.1) && !inHead(X, Y, Z, 1.6)) return c;
+      for (const ex of [20 - 11.8, 20 + 11.8]) if (sq((X - ex) / 2.8) + sq((Y - 100) / 5.2) + sq((Z - 10.4) / 5.2) <= 1) return Math.abs(X - 20) > 12.6 ? dk(c, .8) : c;
+      return null;
+    }, true);
+  },
+  catears(m, c) {
+    fill(m, B_HEAD, (X, Y, Z) => {
+      for (const ex of [20 - 7.4, 20 + 7.4]) {
+        if (Y < 108 || Y > 122) continue;
+        const w = (122 - Y) * 0.5, dz = Math.abs(Z - 10.3);
+        if (Math.abs(X - ex) < w && dz < 1.5 + (122 - Y) * 0.06) return Z > 10.3 && Math.abs(X - ex) < w * 0.55 && Y < 119 ? '#E9A3A0' : c;
+      }
+      return null;
+    }, true);
+  },
+  /* シャツ */
+  tshirt(m, c) { shirtBody(m, 58, () => c); sleeves(m, 72, 88, 1.0, () => c); },
+  tank(m, c, ch) {
+    shirtBody(m, 60, (X, Y, Z) => (Y > 80 && Math.abs(X - 20) > 7.6 * BP.tw) || (Y > 80 && Z > 13 && Math.abs(X - 20) < 5.5) ? ch.skin : c);
+  },
+  border(m, c) { const st = Y => Math.floor(Y / 3) % 2 ? c : WHT; shirtBody(m, 58, (X, Y) => st(Y)); sleeves(m, 72, 88, 1.0, st); },
+  sweater(m, c) {
+    shirtBody(m, 54, (X, Y) => Y < 62 ? dk(c, .8) : c);
+    fill(m, B_TORSO, (X, Y, Z) => Y > 54 && Y <= 91 && inTorso(X, Y, Z, 1.0) && (Y < 62 ? dk(c, .8) : c), true);
+    sleeves(m, 57, 88, 1.3, Y => Y < 60 ? dk(c, .8) : c);
+    fill(m, B_HEAD, (X, Y, Z) => Y >= 86 && Y <= 91.5 && sq(X - 20) + sq(Z - 10) <= sq(5.0 * BP.lw) && sq(X - 20) + sq(Z - 10) >= sq(3.1 * BP.lw) && dk(c, .85), true);
+  },
+  /* 上着 */
+  jacket(m, c) {
+    fill(m, B_TORSO, (X, Y, Z) => {
+      if (Y < 50 || !inTorso(X, Y, Z, 1.9)) return null;
+      if (Z > 13 && Math.abs(X - 20) < vWidth(Y)) return null;
+      if (Z > 13 && Y > 66 && Math.abs(X - 20) < vWidth(Y) + 3) return dk(c, .72);
+      if (Z > 14 && Math.abs(X - 17.2) < 1 && (Math.abs(Y - 58) < 1 || Math.abs(Y - 64) < 1)) return GOLD;
+      if (Z > 13 && Y > 55.5 && Y < 57.5 && (Math.abs(X - 20 + 6.8) < 2.6 || Math.abs(X - 20 - 6.8) < 2.6)) return dk(c, .78);
+      return c;
+    }, true);
+    sleeves(m, 56, 88, 1.5, Y => Y < 59 ? dk(c, .72) : c);
+  },
+  hoodie(m, c) {
+    const zb = 10 - 5.6 * BP.td;
+    fill(m, B_TORSO, (X, Y, Z) => {
+      if (Y < 50 || !inTorso(X, Y, Z, 1.9)) return null;
+      if (Y >= 86 && Math.abs(X - 20) < 4.4 && Z >= 10) return null;
+      if (Y < 56) return dk(c, .8);
+      if (Z > 13 && Y >= 57 && Y <= 66 && Math.abs(X - 20) < 8 * BP.tw) return dk(c, .86);
+      if (Z > 13 && Y >= 66 && Y <= 80 && (Math.abs(X - 17.8) < .6 || Math.abs(X - 22.2) < .6)) return WHT;
+      return c;
+    }, true);
+    fill(m, B_TORSO, (X, Y, Z) => sq((X - 20) / 7.6) + sq((Y - 88) / 6.6) + sq((Z - (zb - 1)) / 3.6) <= 1 && dk(c, .8), true);
+    sleeves(m, 56, 88, 1.5, Y => Y < 59 ? dk(c, .8) : c);
+  },
+  vest(m, c) {
+    fill(m, B_TORSO, (X, Y, Z) => {
+      if (Y < 52 || !inTorso(X, Y, Z, 1.6) || inArm(X, Y, Z, 0.6)) return null;
+      if (Z > 12 && Math.abs(X - 20) < vWidth(Y) + .6) return null;
+      if (Z > 12 && Y > 68 && Math.abs(X - 20) < vWidth(Y) + 2.6) return dk(c, .75);
+      if (Z > 13 && Math.abs(X - 17.4) < .9 && (Math.abs(Y - 60) < .9 || Math.abs(Y - 66) < .9)) return GOLD;
+      return Y < 55 ? dk(c, .8) : c;
+    }, true);
+  },
+  cape(m, c) {
+    const zb = 10 - 5.6 * BP.td;
+    fill(m, B_TORSO, (X, Y, Z) => {
+      if (Y >= 38 && Y <= 89 && Z >= zb - 2.4 && Z <= zb - 0.2 && Math.abs(X - 20) < 11.4 * BP.tw + (88 - Y) * 0.12) return c;
+      if (Y >= 83 && inTorso(X, Y, Z, 1.6)) return c;
+      if (Y >= 86 && Y <= 92 && sq(X - 20) + sq(Z - 10) <= sq(5.8 * BP.lw) && sq(X - 20) + sq(Z - 10) >= sq(3.4 * BP.lw)) return dk(c, .8);
+      return sq(X - 20) + sq(Y - 86.5) + sq(Z - (10 + 5.6 * BP.td + .4)) <= 3.2 && GOLD;
+    }, true);
+  },
+  apron(m, c) {
+    fill(m, B_TORSO, (X, Y, Z) => {
+      const w = Math.abs(X - 20);
+      if (Z > 10 && inTorso(X, Y, Z, 1.4) && !inTorso(X, Y, Z, 0.1)) {
+        if (Y >= 44 && Y <= 78 && w < 8.8 * BP.tw) return Y >= 52 && Y <= 60 && w < 3.8 ? dk(c, .88) : Y >= 74 ? dk(c, .92) : c;
+        if (Y > 78 && Y <= 89 && w < 5.6) return c;
+      }
+      return Y >= 84 && Y <= 92 && Math.abs(w - 5) < .9 && inTorso(X, Y, Z, 1.2) && dk(c, .85);
+    }, true);
+  },
+  /* 手まわり */
+  gloves(m, c) {
+    recolor(m, (X, Y, Z) => inHand(X, Y, Z, 0.2) && c);
+    fill(m, B_ARM, (X, Y, Z) => inHand(X, Y, Z, 0.8) && c, true);
+  },
+  wrist(m, c) {
+    recolor(m, (X, Y, Z) => Y >= 56 && Y <= 59.5 && inTube(X, Y, Z, 0.3) && c);
+    fill(m, B_ARM, (X, Y, Z) => Y >= 56 && Y <= 59.5 && inTube(X, Y, Z, 1.0) && c, true);
+  },
+  armcover(m, c) {
+    recolor(m, (X, Y, Z) => Y >= 55 && Y <= 76 && inTube(X, Y, Z, 0.3) && c);
+    fill(m, B_ARM, (X, Y, Z) => Y >= 55 && Y <= 76 && inTube(X, Y, Z, 1.0) && (Y > 74 || Y < 58 ? dk(c, 1.5) : c), true);
+  },
+  /* ボトムス */
+  pants(m, c) {
+    fill(m, B_LEG, (X, Y, Z) => {
+      if (Y >= 44 && Y <= 61 && inTorso(X, Y, Z, 1.3)) return Y >= 58 ? dk(c, .7) : c;
+      return Y >= 10 && inLeg(X, Y, Z, 1.2) && (Y < 13 ? dk(c, .8) : c);
+    }, true);
+    fill(m, B_LEG, (X, Y, Z) => Y >= 58 && Y <= 61 && Math.abs(X - 20) < 1.5 && Z > 14 && Z < 19 && GOLD, true);
+  },
+  shorts(m, c) {
+    fill(m, B_LEG, (X, Y, Z) => {
+      if (Y >= 44 && Y <= 61 && inTorso(X, Y, Z, 1.3)) return Y >= 58 ? dk(c, .7) : c;
+      return Y >= 30 && inLeg(X, Y, Z, 1.8) && (Y < 33 ? dk(c, .8) : c);
+    }, true);
+  },
+  skirt(m, c) { skirtOf(m, c, 30, 28, 4.6); },
+  longskirt(m, c) { skirtOf(m, c, 12, 46, 6.4); },
+  /* くつ・くつした */
+  sneakers(m, c) {
+    fill(m, B_LEG, (X, Y, Z) => Y <= 13 && (inFoot(X, Y, Z, 1) || inLeg(X, Y, Z, 1)) && (Y < 1.6 ? WHT : c), true);
+    recolor(m, (X, Y, Z, col) => col === c && Y > 5 && Y < 12 && Z > 13 && Math.floor(Y) % 2 === 0 && (Math.abs(X - LX0) < 1.6 || Math.abs(X - LX1) < 1.6) && WHT);
+  },
+  boots(m, c) {
+    fill(m, B_LEG, (X, Y, Z) => Y <= 26 && (inFoot(X, Y, Z, 1.2) || inLeg(X, Y, Z, 1.4)) && (Y < 1.8 ? '#2A1E1A' : Y > 23.5 ? dk(c, .75) : c));   // ズボンの上から重ねる
+  },
+  socks(m, c) {
+    fill(m, B_LEG, (X, Y, Z) => Y <= 28 && (inFoot(X, Y, Z, 1.0) || inLeg(X, Y, Z, 1.0)) && (Y > 25 ? WHT : c), true);
+  },
+  sandals(m, c) {
+    fill(m, B_LEG, (X, Y, Z) => {
+      if (Y < 1.5 && inFoot(X, Y, Z, 1)) return dk(c, .8);
+      if (Y >= 1.5 && Y < 7 && inFoot(X, Y, Z, 1) && (Math.abs(Z - 13.6) < .9 || Math.abs(Z - 17.4) < .9)) return c;
+      return Y >= 7 && Y <= 9.5 && inLeg(X, Y, Z, 0.9) && c;
+    }, true);
+  },
+};
+/* スカート：腰に沿って下へ広がる。hem は裾の高さ、span と spread で広がり方を決める */
+function skirtOf(m, c, hem, span, spread) {
+  fill(m, B_LEG, (X, Y, Z) => {
+    if (Y >= 44 && Y <= 61 && inTorso(X, Y, Z, 1.3)) return Y >= 58 ? dk(c, .7) : c;
+    if (Y < hem || Y > 61) return null;
+    const t = Math.max(0, (58 - Y) / span), rx = 11.4 * BP.tw + spread * t, rz = 7 * BP.td + spread * 0.78 * t;
+    const o = SE(X, 20, rx, 2.4) + SE(Z, 10, rz, 2.4), i = SE(X, 20, rx - 1.7, 2.4) + SE(Z, 10, rz - 1.7, 2.4);
+    if (o > 1 || i <= 1) return null;
+    if (Y < hem + 2.5) return dk(c, .68);
+    return Math.floor((Math.atan2(Z - 10, X - 20) + Math.PI) / (Math.PI * 2) * 28) % 2 ? c : dk(c, .8);
+  }, true);
+}
+
+/* ---------- 装飾パーツの一覧（price 0 は最初から使える。paid は将来の課金用） ---------- */
+const PARTS = [{ k: 'head', name: '頭' }, { k: 'body', name: '胴' }, { k: 'arm', name: '腕' }, { k: 'leg', name: '脚' }];
+/* 装飾パーツの枠。クイズでは1枠＝1問ぶん */
+const SLOTS = [
+  { k: 'hat', name: '帽子', part: 'head' }, { k: 'acc', name: 'アクセサリー', part: 'head' },
+  { k: 'inner', name: 'シャツ', part: 'body' }, { k: 'outer', name: '上着', part: 'body' },
+  { k: 'hands', name: '手まわり', part: 'arm' },
+  { k: 'bottoms', name: 'ボトムス', part: 'leg' }, { k: 'shoes', name: 'くつ・くつした', part: 'leg' },
+];
+const SLOT = Object.fromEntries(SLOTS.map(s => [s.k, s]));
+const DRAW_ORDER = ['bottoms', 'shoes', 'inner', 'outer', 'hands', 'hat', 'acc'];  // 重ねる順（あとが上）
+const NEEDS_OFF = { inner: 'outer' };  // シャツは上着を脱がせてから
+const ITEMS = [
+  { id: 'cap', slot: 'hat', name: 'キャップ', price: 0, def: '#E8483A' },
+  { id: 'knit', slot: 'hat', name: 'ニット帽', price: 40, def: '#3E9E8E' },
+  { id: 'beret', slot: 'hat', name: 'ベレー帽', price: 60, def: '#9A6BC9' },
+  { id: 'straw', slot: 'hat', name: '麦わら帽子', price: 80, def: '#E2C27A' },
+  { id: 'silk', slot: 'hat', name: 'シルクハット', price: 150, def: '#1E2128' },
+  { id: 'glasses', slot: 'acc', name: 'メガネ', price: 0, def: '#3A3F4A' },
+  { id: 'sunglass', slot: 'acc', name: 'サングラス', price: 50, def: '#1E2128' },
+  { id: 'ribbon', slot: 'acc', name: 'リボン', price: 40, def: '#E98BC2' },
+  { id: 'phones', slot: 'acc', name: 'ヘッドホン', price: 70, def: '#5B8DD9' },
+  { id: 'catears', slot: 'acc', name: 'ネコミミ', price: 90, def: '#3A3F4A' },
+  { id: 'tshirt', slot: 'inner', name: 'Tシャツ', price: 0, def: '#5B8DD9' },
+  { id: 'tank', slot: 'inner', name: 'タンクトップ', price: 0, def: '#F2C14E' },
+  { id: 'border', slot: 'inner', name: 'ボーダーシャツ', price: 50, def: '#2F4D9A' },
+  { id: 'sweater', slot: 'inner', name: 'セーター', price: 70, def: '#C9A27A' },
+  { id: 'jacket', slot: 'outer', name: 'ジャケット', price: 0, def: '#3A3F4A' },
+  { id: 'hoodie', slot: 'outer', name: 'パーカー', price: 60, def: '#9AA0A8' },
+  { id: 'vest', slot: 'outer', name: 'ベスト', price: 40, def: '#8C5A3A' },
+  { id: 'cape', slot: 'outer', name: 'マント', price: 120, def: '#C2425A' },
+  { id: 'apron', slot: 'outer', name: 'エプロン', price: 50, def: '#E8E2D6' },
+  { id: 'gloves', slot: 'hands', name: '手袋', price: 0, def: '#FFFFFF' },
+  { id: 'wrist', slot: 'hands', name: 'リストバンド', price: 30, def: '#E8483A' },
+  { id: 'armcover', slot: 'hands', name: 'アームカバー', price: 60, def: '#1E2128' },
+  { id: 'pants', slot: 'bottoms', name: 'ズボン', price: 0, def: '#2F4D9A' },
+  { id: 'shorts', slot: 'bottoms', name: 'ショートパンツ', price: 30, def: '#C9A27A' },
+  { id: 'skirt', slot: 'bottoms', name: 'スカート', price: 0, def: '#E8483A' },
+  { id: 'longskirt', slot: 'bottoms', name: 'ロングスカート', price: 70, def: '#3E9E8E' },
+  { id: 'sneakers', slot: 'shoes', name: 'スニーカー', price: 0, def: '#E8483A' },
+  { id: 'boots', slot: 'shoes', name: 'ブーツ', price: 60, def: '#8C5A3A' },
+  { id: 'socks', slot: 'shoes', name: 'ハイソックス', price: 40, def: '#1E2128' },
+  { id: 'sandals', slot: 'shoes', name: 'サンダル', price: 30, def: '#F08A4B' },
+].map(it => Object.assign({ paid: false }, it));
+const ITEM = Object.fromEntries(ITEMS.map(it => [it.id, it]));
+
+/* キャラ（＋脱がせた枠）からボクセルを組み立てる */
+function buildModel(ch, removed) {
+  setBody(ch.body || defBody());
+  const m = new Map();
+  buildBase(m, ch);
+  buildHair(m, ch.hair, ch.hairColor);
+  for (const s of DRAW_ORDER) {
+    const w = ch.wear[s];
+    if (w && D[w.id] && !(removed && removed.has(s))) D[w.id](m, w.color, ch);
+  }
+  return m;
+}
+
+/* ==========================================================
+   描画（正投影で回転。見えている面だけを奥から順に塗る）
+   ========================================================== */
+const DIRS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+const FACE = [
+  [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]],
+  [[0, 1, 0], [1, 1, 0], [1, 1, 1], [0, 1, 1]], [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]],
+  [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]], [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]],
+];
+const PITCH = 0.38;
+const LIGHT = (() => { const v = [-0.45, 0.75, 0.55], l = Math.hypot(...v); return v.map(a => a / l); })();
+const CX = 20, CZ = 10;
+function faceList(m) {
+  const out = []; let top = 100;
+  for (const [x, y, z, c] of m.values()) {
+    if (y + 1 > top) top = y + 1;
+    for (let d = 0; d < 6; d++) {
+      const n = DIRS[d];
+      if (!m.has(K(x + n[0], y + n[1], z + n[2]))) out.push([x, y, z, d, c]);
+    }
+  }
+  out.top = top;
+  return out;
+}
+function drawModel(ctx, w, h, fs, yaw) {
+  ctx.clearRect(0, 0, w, h);
+  const cp = Math.cos(PITCH), sp = Math.sin(PITCH), co = Math.cos(yaw), si = Math.sin(yaw), top = fs.top || 130;
+  const s = Math.min(w / 46, (h - 8) / (top * cp + 24 * sp)), base = h - 12 * sp * s - 6, ox = w / 2;
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.beginPath(); ctx.ellipse(ox, base, 14 * s, 14 * s * sp, 0, 0, Math.PI * 2); ctx.fill();
+  const list = [];
+  for (const [x, y, z, d, c] of fs) {
+    const n = DIRS[d];
+    const nx = n[0] * co - n[2] * si, nz = n[0] * si + n[2] * co, ny = n[1];
+    if (ny * sp + nz * cp <= 0.001) continue;
+    const p = [];
+    for (const o of FACE[d]) {
+      const px = x + o[0] - CX, py = y + o[1], pz = z + o[2] - CZ;
+      const X = px * co - pz * si, Z = px * si + pz * co;
+      p.push(ox + X * s, base - py * cp * s + Z * sp * s);
+    }
+    const mx = x + .5 + n[0] * .5 - CX, my = y + .5 + n[1] * .5, mz = z + .5 + n[2] * .5 - CZ;
+    const depth = (mx * si + mz * co) * cp + my * sp;
+    const lum = 0.62 + 0.45 * Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+    list.push([depth, p, shadeCss(c, lum)]);
+  }
+  list.sort((a, b) => a[0] - b[0]);
+  ctx.lineJoin = 'round'; ctx.lineWidth = 0.7;
+  for (const [, p, col] of list) {
+    ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[2], p[3]); ctx.lineTo(p[4], p[5]); ctx.lineTo(p[6], p[7]); ctx.closePath();
+    ctx.fillStyle = col; ctx.strokeStyle = col; ctx.fill(); ctx.stroke();
+  }
+}
+/* 小さなキャンバスに1回だけ描く（コレクションのサムネイル） */
+function drawThumb(cv, model, yaw = -0.5) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), r = cv.getBoundingClientRect();
+  const w = Math.max(1, Math.round((r.width || 96) * dpr)), h = Math.max(1, Math.round((r.height || 120) * dpr));
+  cv.width = w; cv.height = h;
+  drawModel(cv.getContext('2d'), w, h, faceList(model), yaw);
+}
+/* ドラッグで回せる表示。自動で回すときは重いので 1 秒に 20 回までにする */
+const VIEWERS = [];
+class Viewer {
+  constructor(cv, { yaw = -0.5, spin = 0 } = {}) {
+    this.cv = cv; this.ctx = cv.getContext('2d'); this.yaw = yaw; this.spin = spin; this.fs = []; this.dirty = true; this.drag = null; this.hold = 0; this.acc = 0;
+    cv.addEventListener('pointerdown', e => { this.drag = e.clientX; this.hold = 1; try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+    cv.addEventListener('pointermove', e => { if (this.drag == null) return; this.yaw += (e.clientX - this.drag) * 0.015; this.drag = e.clientX; this.dirty = true; });
+    const up = () => { this.drag = null; this.hold = performance.now() + 2500; };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    VIEWERS.push(this);
+  }
+  set(model) { this.fs = faceList(model); this.dirty = true; }
+  tick(now, dt) {
+    if (!this.cv.offsetParent) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), r = this.cv.getBoundingClientRect();
+    const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+    if (w !== this.cv.width || h !== this.cv.height) { this.cv.width = w; this.cv.height = h; this.dirty = true; }
+    if (this.spin && this.drag == null && now > this.hold) { this.acc += dt; if (this.acc >= 0.05) { this.yaw += this.spin * this.acc; this.acc = 0; this.dirty = true; } }
+    if (!this.dirty || !w || !h) return;
+    this.dirty = false;
+    drawModel(this.ctx, w, h, this.fs, this.yaw);
+  }
+}
+let lastT = performance.now();
+const STILL = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loop(now) {
+  const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+  for (const v of VIEWERS) { try { v.tick(STILL ? 0 : now, STILL ? 0 : dt); } catch (e) {} }
+  requestAnimationFrame(loop);
+}
+
+/* ==========================================================
+   クイズの問題（[問題, 正解, まちがい×3]）
+   ========================================================== */
+const QUIZ = [
+  ['日本でいちばん高い山は？', '富士山', '北岳', '奥穂高岳', '槍ヶ岳'],
+  ['日本でいちばん長い川は？', '信濃川', '利根川', '石狩川', '北上川'],
+  ['日本でいちばん大きい湖は？', '琵琶湖', '霞ヶ浦', 'サロマ湖', '猪苗代湖'],
+  ['愛知県の県庁所在地は？', '名古屋市', '豊田市', '岡崎市', '一宮市'],
+  ['富士山がまたがっている2つの県は？', '山梨県と静岡県', '静岡県と神奈川県', '山梨県と長野県', '静岡県と長野県'],
+  ['日本の都道府県の数は？', '47', '46', '48', '45'],
+  ['北半球で、1年でいちばん昼が長い日は？', '夏至', '冬至', '春分', '秋分'],
+  ['「立春」の前日は？', '節分', '大寒', '小寒', '冬至'],
+  ['旧暦8月15日の夜のお月見を何という？', '十五夜', '十三夜', '七夕', '重陽'],
+  ['1気圧で水が沸騰する温度は？', '100℃', '90℃', '80℃', '120℃'],
+  ['太陽系でいちばん大きい惑星は？', '木星', '土星', '天王星', '海王星'],
+  ['太陽を除いて、地球にいちばん近い恒星は？', 'プロキシマ・ケンタウリ', 'シリウス', 'ベガ', 'ベテルギウス'],
+  ['太陽の光が地球に届くまでにかかる時間はおよそ？', '約8分', '約8秒', '約1時間', '約1日'],
+  ['元素記号「Fe」が表すのは？', '鉄', '銅', '亜鉛', '鉛'],
+  ['元素記号「Au」が表すのは？', '金', '銀', 'アルミニウム', '白金'],
+  ['光の三原色に含まれないのは？', '黄', '赤', '緑', '青'],
+  ['雷の光と音、先に届くのは？', '光', '音', '同時', '天気による'],
+  ['大人の人間の骨の数はおよそ？', '約206本', '約106本', '約306本', '約406本'],
+  ['血液を全身に送り出す臓器は？', '心臓', '肺', '肝臓', '腎臓'],
+  ['1ダースはいくつ？', '12', '10', '20', '24'],
+  ['三角形の内角の和は？', '180°', '360°', '90°', '270°'],
+  ['正六角形の1つの内角の大きさは？', '120°', '108°', '135°', '144°'],
+  ['1時間は何秒？', '3600秒', '6000秒', '360秒', '1800秒'],
+  ['2の10乗は？', '1024', '1000', '512', '2048'],
+  ['円周率を小数第2位まで書くと？', '3.14', '3.16', '3.12', '3.41'],
+  ['1バイトは何ビット？', '8', '4', '16', '10'],
+  ['IPv4アドレスの長さは何ビット？', '32ビット', '64ビット', '128ビット', '16ビット'],
+  ['HTTPSの標準のポート番号は？', '443', '80', '22', '8080'],
+  ['「HTML」の「M」は何の略？', 'Markup', 'Machine', 'Media', 'Module'],
+  ['1円玉1枚の重さは？', '1g', '2g', '0.5g', '3g'],
+  ['『源氏物語』の作者は？', '紫式部', '清少納言', '和泉式部', '小野小町'],
+  ['「春はあけぼの」で始まる作品は？', '枕草子', '徒然草', '方丈記', '源氏物語'],
+  ['江戸幕府を開いたのは？', '徳川家康', '豊臣秀吉', '織田信長', '徳川家光'],
+  ['関ヶ原の戦いがあった年は？', '1600年', '1582年', '1615年', '1573年'],
+  ['本能寺の変がおきた年は？', '1582年', '1600年', '1560年', '1590年'],
+  ['桶狭間の戦いで織田信長が破った大名は？', '今川義元', '武田信玄', '上杉謙信', '北条氏康'],
+  ['名古屋城の天守の屋根にある金色の飾りは？', '金のしゃちほこ', '金の鳳凰', '金の龍', '金の鯉'],
+  ['「ひつまぶし」「味噌煮込みうどん」で知られる都市は？', '名古屋', '大阪', '福岡', '仙台'],
+  ['日本の国会は衆議院と何で構成される？', '参議院', '貴族院', '元老院', '枢密院'],
+  ['オリンピックの五輪の色に含まれないのは？', '紫', '青', '黄', '緑'],
+  ['世界でいちばん面積が大きい国は？', 'ロシア', 'カナダ', '中国', 'アメリカ'],
+  ['世界でいちばん高い山は？', 'エベレスト', 'K2', 'カンチェンジュンガ', 'マッターホルン'],
+  ['オーストラリアの首都は？', 'キャンベラ', 'シドニー', 'メルボルン', 'パース'],
+  ['カナダの首都は？', 'オタワ', 'トロント', 'バンクーバー', 'モントリオール'],
+  ['ブラジルの公用語は？', 'ポルトガル語', 'スペイン語', '英語', 'フランス語'],
+  ['『ハムレット』を書いたのは？', 'シェイクスピア', 'ゲーテ', 'ディケンズ', 'トルストイ'],
+  ['「モナ・リザ」を描いたのは？', 'レオナルド・ダ・ヴィンチ', 'ミケランジェロ', 'ラファエロ', 'ゴッホ'],
+  ['サッカーで、試合中にコートに立つ1チームの人数は？', '11人', '9人', '10人', '12人'],
+  ['野球で、守備につく1チームの人数は？', '9人', '10人', '11人', '8人'],
+  ['バスケットボールで、コートに立つ1チームの人数は？', '5人', '6人', '7人', '4人'],
+  ['「ツール・ド・フランス」は何の競技？', '自転車', 'マラソン', '自動車', '競馬'],
+  ['チェスで、はじめに1人が持つポーンの数は？', '8', '6', '10', '16'],
+  ['将棋で、はじめに1人1枚だけ持つ駒は？', '飛車', '金将', '銀将', '桂馬'],
+  ['ことわざ「猿も木から〜」の続きは？', '落ちる', '登る', '降りる', '飛ぶ'],
+  ['ことわざ「石の上にも〜」の続きは？', '三年', '十年', '一年', '百年'],
+  ['日本で虹はふつう何色といわれる？', '7色', '5色', '6色', '8色'],
+  ['パンダが主に食べるものは？', '竹やササ', 'ユーカリの葉', 'バナナ', '魚'],
+  ['コアラが主に食べるものは？', 'ユーカリの葉', '竹', '果物', '昆虫'],
+  ['円の記号は？', '¥', '$', '€', '£'],
+];
+
+/* ==========================================================
+   保存（localStorage は必ず try/catch）
+   ========================================================== */
+const b64e = s => btoa(unescape(encodeURIComponent(s)));
+const b64d = s => decodeURIComponent(escape(atob(s)));
+const SALT = 'voxel-quiz:nugasete';
+function checksum(str) { let h = 0x811c9dc5; for (const ch of SALT + str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(36); }
+const freshPG = () => ({ coins: 0, unlocked: [], clears: {}, ans: 0, ok: 0 });
+let PG = freshPG(), pgReset = false;
+try {
+  const raw = localStorage.getItem(KEY_PG);
+  if (raw) {
+    const [body, sum] = raw.split('.');
+    if (checksum(body) !== sum) pgReset = true;
+    else PG = Object.assign(freshPG(), JSON.parse(b64d(body)));
+  }
+} catch (e) { pgReset = true; }
+PG.coins = Math.max(0, Math.floor(+PG.coins || 0));
+if (!Array.isArray(PG.unlocked)) PG.unlocked = [];
+PG.unlocked = PG.unlocked.filter(id => ITEM[id]);
+if (!PG.clears || typeof PG.clears !== 'object') PG.clears = {};
+function savePG() { try { const body = b64e(JSON.stringify(PG)); localStorage.setItem(KEY_PG, body + '.' + checksum(body)); } catch (e) {} }
+const unlocked = id => ITEM[id] && (ITEM[id].price === 0 || PG.unlocked.includes(id));
+
+let OPT = { autoFile: true };
+try { Object.assign(OPT, JSON.parse(localStorage.getItem(KEY_OPT) || '{}')); } catch (e) {}
+function saveOpt() { try { localStorage.setItem(KEY_OPT, JSON.stringify(OPT)); } catch (e) {} }
+
+/* ---------- キャラのデータベース ----------
+   本体はファイル（voxel-quiz-db.json）。localStorage は作業用のコピー。
+   将来 Cloudflare（D1 など）に置くときは、DB.load / DB.save の中身を差しかえる */
+let chars = [];
+function cleanChar(o) {
+  if (!o || typeof o !== 'object') return null;
+  const age = Math.floor(+o.age);
+  if (!(age >= TUNING.minAge && age <= TUNING.maxAge)) return null;   // 18歳未満・不正な年齢は読み込まない
+  const wear = {};
+  if (o.wear && typeof o.wear === 'object') for (const s of SLOTS) {
+    const w = o.wear[s.k];
+    if (w && ITEM[w.id] && ITEM[w.id].slot === s.k) wear[s.k] = { id: w.id, color: isHex(w.color) ? w.color : ITEM[w.id].def };
+  }
+  return {
+    id: String(o.id || uid()).replace(/[^\w-]/g, '').slice(0, 40) || uid(),
+    name: String(o.name || 'ななし').slice(0, TUNING.nameMax),
+    age,
+    skin: isHex(o.skin) ? o.skin : SKIN[0],
+    hair: HAIRS.some(h => h.k === o.hair) ? o.hair : 'short',
+    hairColor: isHex(o.hairColor) ? o.hairColor : HAIRC[1],
+    eye: isHex(o.eye) ? o.eye : EYE[0],
+    under: isHex(o.under) ? o.under : '#FFFFFF',
+    wear, body: cleanBody(o.body),
+    created: +o.created || Date.now(), updated: +o.updated || Date.now(),
+  };
+}
+const DB = {
+  toJSON() { return JSON.stringify({ app: DB_APP, kind: 'characters', version: DB_VER, savedAt: new Date().toISOString(), chars }, null, 1); },
+  /* テキストを読んで、キャラの配列と読みとばした数を返す */
+  parse(text) {
+    let o; try { o = JSON.parse(text); } catch (e) { throw new Error('JSON として読めませんでした'); }
+    if (!o || o.app !== DB_APP || !Array.isArray(o.chars)) throw new Error('このゲームのデータベースファイルではありません');
+    const list = [], seen = new Set(); let skipped = 0;
+    for (const c of o.chars) { const k = cleanChar(c); if (!k || seen.has(k.id)) { skipped++; continue; } seen.add(k.id); list.push(k); }
+    return { list: list.slice(0, TUNING.maxChars), skipped: skipped + Math.max(0, list.length - TUNING.maxChars) };
+  },
+  saveLocal() { try { localStorage.setItem(KEY_CHARS, JSON.stringify({ v: 1, chars })); } catch (e) {} },
+  loadLocal() {
+    try { const o = JSON.parse(localStorage.getItem(KEY_CHARS) || 'null'); return o && Array.isArray(o.chars) ? o.chars.map(cleanChar).filter(Boolean) : []; } catch (e) { return []; }
+  },
+  /* ファイルとして書き出す（アーティファクトでは働かない） */
+  download() {
+    try {
+      const blob = new Blob([DB.toJSON()], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = DB_FILE;
+      document.body.append(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      return true;
+    } catch (e) { return false; }
+  },
+};
+function commit(msg) {
+  DB.saveLocal();
+  if (OPT.autoFile) { DB.download(); toast(msg + '。データベースファイルを書き出しました'); }
+  else toast(msg);
+}
+
+/* ==========================================================
+   画面
+   ========================================================== */
+let timerId = 0;
+function show(id) {
+  if (id !== 'sQuiz') stopTimer();
+  document.querySelectorAll('.screen').forEach(s => { s.hidden = s.id !== id; });
+  window.scrollTo(0, 0);
+  for (const v of VIEWERS) v.dirty = true;
+}
+let toastId = 0;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastId); toastId = setTimeout(() => { el.hidden = true; }, 2600); }
+/* ページ内の確認画面（confirm の代わり） */
+function ask(text, yes = 'OK', no = 'やめる') {
+  return new Promise(res => {
+    $('#mdText').textContent = text; $('#mdYes').textContent = yes; $('#mdNo').textContent = no; $('#modal').hidden = false;
+    const done = v => { $('#modal').hidden = true; $('#mdYes').onclick = $('#mdNo').onclick = null; res(v); };
+    $('#mdYes').onclick = () => done(true); $('#mdNo').onclick = () => done(false);
+  });
+}
+function pickFile() {
+  return new Promise(res => {
+    const inp = $('#fileIn'); inp.value = '';
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0]; if (!f) return res(null);
+      const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = () => res(null); r.readAsText(f);
+    };
+    inp.click();
+  });
+}
+
+/* ---------- サンプル（タイトル・ショップの試着用。保存しない） ---------- */
+const SAMPLE = {
+  id: 'sample', name: 'サンプル', age: 24, skin: SKIN[1], hair: 'bob', hairColor: '#5B3A26', eye: EYE[1], under: '#FFFFFF',
+  wear: { hat: { id: 'cap', color: '#E8483A' }, inner: { id: 'tshirt', color: '#FFFFFF' }, outer: { id: 'jacket', color: '#2F4D9A' },
+    bottoms: { id: 'skirt', color: '#3A3F4A' }, shoes: { id: 'sneakers', color: '#F2C14E' } },
+};
+SAMPLE.body = defBody();
+const newChar = () => ({
+  body: defBody(),
+  id: uid(), name: '', age: 20, skin: SKIN[0], hair: 'short', hairColor: HAIRC[1], eye: EYE[0], under: '#FFFFFF',
+  wear: { inner: { id: 'tshirt', color: '#5B8DD9' }, bottoms: { id: 'pants', color: '#3A3F4A' }, shoes: { id: 'sneakers', color: '#E8483A' } },
+  created: Date.now(), updated: Date.now(),
+});
+
+let vTitle, vEdit, vDetail, vQuiz, vResult, vShop;
+
+/* ---------- 年齢確認・タイトル ---------- */
+function gotoTitle() {
+  const n = DB.loadLocal().length;
+  $('#btnContinue').hidden = n === 0;
+  $('#btnContinue').textContent = `この端末の前回のデータで始める（${n}人）`;
+  vTitle.set(buildModel(SAMPLE));
+  show('sTitle');
+}
+$('#gateYes').onclick = () => { try { localStorage.setItem(KEY_AGE, '1'); } catch (e) {} gotoTitle(); };
+$('#gateNo').onclick = () => { location.href = '../'; };
+$('#btnLoadFile').onclick = async () => {
+  const text = await pickFile(); if (text == null) return;
+  try {
+    const r = DB.parse(text); chars = r.list; DB.saveLocal();
+    toast(`${chars.length}人を読み込みました` + (r.skipped ? `（${r.skipped}件は読みとばし）` : ''));
+    gotoMenu();
+  } catch (e) { toast(e.message); }
+};
+$('#btnContinue').onclick = () => { chars = DB.loadLocal(); gotoMenu(); };
+$('#btnNew').onclick = async () => {
+  if (DB.loadLocal().length && !await ask('この端末に保存されている前回のキャラは、新しく保存したときに上書きされます。キャラ0人から始めますか？（データベースファイルは消えません）', '始める')) return;
+  chars = []; gotoMenu();
+};
+
+/* ---------- メニュー ---------- */
+function gotoMenu() {
+  $('#mCoins').textContent = PG.coins; $('#mChars').textContent = chars.length;
+  $('#mItems').textContent = `${ITEMS.filter(it => unlocked(it.id)).length}/${ITEMS.length}`;
+  $('#optAuto').checked = !!OPT.autoFile;
+  show('sMenu');
+}
+$('#mNew').onclick = () => openEdit(null);
+$('#mCol').onclick = () => gotoCol();
+$('#mShop').onclick = () => gotoShop();
+$('#mHelp').onclick = () => show('sHelp');
+$('#hBack').onclick = () => gotoMenu();
+$('#mTitle').onclick = () => gotoTitle();
+$('#mExport').onclick = () => { DB.download(); toast(`${chars.length}人をファイル（${DB_FILE}）に書き出しました`); };
+async function importMerge() {
+  const text = await pickFile(); if (text == null) return false;
+  try {
+    const r = DB.parse(text); let add = 0, up = 0;
+    for (const c of r.list) {
+      const i = chars.findIndex(x => x.id === c.id);
+      if (i >= 0) { chars[i] = c; up++; } else if (chars.length < TUNING.maxChars) { chars.push(c); add++; }
+    }
+    DB.saveLocal();
+    toast(`${add}人を追加、${up}人を更新しました` + (r.skipped ? `（${r.skipped}件は読みとばし）` : ''));
+    return true;
+  } catch (e) { toast(e.message); return false; }
+}
+$('#mImport').onclick = async () => { if (await importMerge()) gotoMenu(); };
+$('#optAuto').onchange = e => { OPT.autoFile = e.target.checked; saveOpt(); };
+
+/* ---------- キャラ作成・編集 ---------- */
+let draft = null, editing = null, eTab = 'base';
+function openEdit(id) {
+  if (!id && chars.length >= TUNING.maxChars) { toast(`キャラは${TUNING.maxChars}人までです`); return; }
+  editing = id;
+  draft = id ? clone(chars.find(c => c.id === id)) : newChar();
+  eTab = 'base';
+  $('#eTitle').textContent = id ? 'キャラを編集' : 'キャラをつくる';
+  $('#eErr').textContent = '';
+  renderEdit(); show('sEdit');
+}
+function sw(act, list, cur) { return `<div class="sw">${list.map(c => `<button data-act="${act}" data-v="${c}" style="background:${c}" aria-label="${c}" aria-pressed="${c.toLowerCase() === String(cur).toLowerCase()}"></button>`).join('')}</div>`; }
+function renderEdit() {
+  vEdit.set(buildModel(draft));
+  const n = Object.keys(draft.wear).length;
+  $('#eCount').textContent = `装飾 ${n}/${SLOTS.length}（クイズ ${n}問）`;
+  $('#eTabs').innerHTML = [{ k: 'base', name: '基本' }, { k: 'shape', name: '体型' }, ...PARTS].map(t => `<button data-tab="${t.k}" aria-pressed="${t.k === eTab}">${t.name}</button>`).join('');
+  let h = '';
+  if (eTab === 'base') {
+    h += `<div class="field"><label for="eName">名前</label><input id="eName" maxlength="${TUNING.nameMax}" value="${esc(draft.name)}" placeholder="12文字まで"></div>`;
+    h += `<div class="field"><label for="eAge">年齢</label><input id="eAge" type="number" inputmode="numeric" min="${TUNING.minAge}" max="${TUNING.maxAge}" value="${draft.age}"><span class="muted">18歳以上</span></div>`;
+    h += `<h3>肌の色</h3>${sw('skin', SKIN, draft.skin)}`;
+    h += `<h3>髪型</h3><div class="chips">${HAIRS.map(x => `<button data-act="hair" data-v="${x.k}" aria-pressed="${x.k === draft.hair}">${x.name}</button>`).join('')}</div>`;
+    h += `<h3>髪の色</h3>${sw('hairColor', HAIRC, draft.hairColor)}`;
+    h += `<h3>目の色</h3>${sw('eye', EYE, draft.eye)}`;
+    h += `<h3>下着の色</h3>${sw('under', CLOTH, draft.under)}`;
+  } else if (eTab === 'shape') {
+    for (const k in BODY_RANGE) {
+      const [lo, hi] = BODY_RANGE[k], v = (draft.body || defBody())[k];
+      h += `<div class="sl"><label for="sl-${k}">${BODY_LABEL[k]}</label><input type="range" id="sl-${k}" data-body="${k}" min="${lo}" max="${hi}" step="0.01" value="${v}"><output id="o-${k}">${v.toFixed(2)}</output></div>`;
+    }
+    h += '<button class="wide" data-act="bodyreset">体型をふつうに戻す</button><p class="muted" style="margin-top:8px">1.00 がふつうです。服やパーツは体型に合わせて変わります。</p>';
+  } else {
+    for (const s of SLOTS.filter(s => s.part === eTab)) {
+      const w = draft.wear[s.k];
+      h += `<h3>${s.name}</h3><div class="chips"><button data-act="item" data-slot="${s.k}" data-v="" aria-pressed="${!w}">なし</button>`;
+      for (const it of ITEMS.filter(it => it.slot === s.k)) {
+        const ok = unlocked(it.id);
+        h += `<button data-act="item" data-slot="${s.k}" data-v="${it.id}" aria-pressed="${!!w && w.id === it.id}"${ok ? '' : ' class="locked"'}>${ok ? '' : '🔒 '}${it.name}</button>`;
+      }
+      h += '</div>';
+      if (w) h += `<div style="margin-top:8px">${sw('color:' + s.k, CLOTH, w.color)}</div>`;
+      if (NEEDS_OFF[s.k]) h += `<p class="muted" style="margin-top:6px">クイズでは${SLOT[NEEDS_OFF[s.k]].name}を脱がせてから${s.name}を脱がせます。</p>`;
+    }
+  }
+  $('#ePane').innerHTML = h;
+}
+$('#eTabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (!b) return; syncInputs(); eTab = b.dataset.tab; renderEdit(); };
+function syncInputs() {
+  const n = $('#eName'), a = $('#eAge');
+  if (n) draft.name = n.value.slice(0, TUNING.nameMax);
+  if (a) draft.age = Math.floor(+a.value || 0);
+}
+let modelTimer = 0;
+function scheduleModel() { clearTimeout(modelTimer); modelTimer = setTimeout(() => { vEdit.set(buildModel(draft)); }, 60); }
+$('#ePane').addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.body;
+  if (k) {   // 体型のスライダー
+    draft.body = cleanBody(Object.assign({}, draft.body, { [k]: e.target.value }));
+    $('#o-' + k).textContent = draft.body[k].toFixed(2); scheduleModel(); return;
+  }
+  syncInputs(); $('#eErr').textContent = '';
+});
+$('#ePane').onclick = e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  syncInputs();
+  const act = b.dataset.act, v = b.dataset.v;
+  if (act === 'bodyreset') { draft.body = defBody(); renderEdit(); return; }
+  if (act === 'item') {
+    const s = b.dataset.slot;
+    if (!v) delete draft.wear[s];
+    else if (!unlocked(v)) { toast(`ショップで解放できます（${ITEM[v].price}コイン）`); return; }
+    else draft.wear[s] = { id: v, color: draft.wear[s] && draft.wear[s].id === v ? draft.wear[s].color : ITEM[v].def };
+  } else if (act.startsWith('color:')) { const s = act.slice(6); if (draft.wear[s]) draft.wear[s].color = v; }
+  else draft[act] = v;
+  renderEdit();
+};
+$('#eCancel').onclick = () => { editing ? openDetail(editing) : gotoMenu(); };
+$('#eSave').onclick = () => {
+  syncInputs();
+  const err = $('#eErr');
+  draft.name = draft.name.trim();
+  if (!draft.name) { err.textContent = '名前を入れてください'; eTab = 'base'; renderEdit(); return; }
+  if (!(draft.age >= TUNING.minAge && draft.age <= TUNING.maxAge)) { err.textContent = `年齢は${TUNING.minAge}〜${TUNING.maxAge}歳で入れてください（18歳以上のキャラだけ作れます）`; eTab = 'base'; renderEdit(); return; }
+  err.textContent = '';
+  draft.updated = Date.now();
+  const c = cleanChar(draft);
+  const i = chars.findIndex(x => x.id === c.id);
+  if (i >= 0) chars[i] = c; else chars.push(c);
+  commit(`「${c.name}」を保存しました`);
+  openDetail(c.id);
+};
+
+/* ---------- コレクション ---------- */
+function gotoCol() {
+  const g = $('#cGrid');
+  if (!chars.length) g.innerHTML = '<div class="empty" style="grid-column:1/-1">まだキャラがいません。<br>「新しくつくる」から作ってみよう。</div>';
+  else g.innerHTML = chars.map(c => {
+    const cl = PG.clears[c.id], n = Object.keys(c.wear).length;
+    return `<button class="cc" data-id="${esc(c.id)}"><canvas></canvas><div class="nm">${cl ? '<span class="star">★</span>' : ''}${esc(c.name)}</div><div class="sub">${c.age}歳・装飾${n}</div></button>`;
+  }).join('');
+  show('sCol');
+  queueThumbs([...g.querySelectorAll('.cc')]);
+}
+/* サムネイルは1人ずつ順番に作り、同じ見た目なら作り直さない（1人あたり約0.2秒かかるため） */
+const THUMBS = new Map();
+const thumbKey = c => JSON.stringify([c.skin, c.hair, c.hairColor, c.eye, c.under, c.wear, c.body]);
+let thumbRun = 0;
+function queueThumbs(cards) {
+  const run = ++thumbRun;
+  const step = () => {
+    if (run !== thumbRun) return;
+    const b = cards.shift(); if (!b) return;
+    const cv = b.querySelector('canvas'), c = chars.find(x => x.id === b.dataset.id);
+    if (cv && cv.isConnected && c) {
+      const key = thumbKey(c);
+      let img = THUMBS.get(key);
+      if (!img) { drawThumb(cv, buildModel(c)); img = document.createElement('canvas'); img.width = cv.width; img.height = cv.height; img.getContext('2d').drawImage(cv, 0, 0); THUMBS.set(key, img); }
+      else { cv.width = img.width; cv.height = img.height; cv.getContext('2d').drawImage(img, 0, 0); }
+    }
+    setTimeout(step, 0);
+  };
+  setTimeout(step, 0);
+}
+$('#cGrid').onclick = e => { const b = e.target.closest('[data-id]'); if (b) openDetail(b.dataset.id); };
+$('#cBack').onclick = () => gotoMenu();
+$('#cNew').onclick = () => openEdit(null);
+$('#cImport').onclick = async () => { if (await importMerge()) gotoCol(); };
+
+/* ---------- キャラの詳細 ---------- */
+let detailId = null, peek = false;
+function openDetail(id) {
+  const c = chars.find(x => x.id === id); if (!c) return gotoCol();
+  detailId = id; peek = false;
+  const cl = PG.clears[id], n = Object.keys(c.wear).length;
+  $('#dName').textContent = c.name;
+  $('#dTag').textContent = `${c.age}歳`;
+  const worn = DRAW_ORDER.filter(s => c.wear[s]).map(s => ITEM[c.wear[s].id].name);
+  $('#dInfo').innerHTML = `装飾 ${n}つ：${worn.length ? esc(worn.join('・')) : 'なし'}<br>` + (cl ? `★ クリア ${cl.n}回` : 'まだクリアしていません');
+  $('#dPlay').disabled = n === 0;
+  $('#dPlay').textContent = n ? `クイズで挑戦する（${n}問正解でクリア）` : '装飾パーツをつけると挑戦できます';
+  $('#dPeek').hidden = !cl; $('#dPeek').textContent = 'クリア後の姿を見る';
+  vDetail.set(buildModel(c));
+  show('sDetail');
+}
+$('#dBack').onclick = () => gotoCol();
+$('#dEdit').onclick = () => openEdit(detailId);
+$('#dPlay').onclick = () => startQuiz(detailId);
+$('#dPeek').onclick = () => {
+  const c = chars.find(x => x.id === detailId); peek = !peek;
+  vDetail.set(buildModel(c, peek ? new Set(SLOTS.map(s => s.k)) : null));
+  $('#dPeek').textContent = peek ? '元の姿にもどす' : 'クリア後の姿を見る';
+};
+$('#dDel').onclick = async () => {
+  const c = chars.find(x => x.id === detailId);
+  if (!await ask(`「${c.name}」を削除しますか？`, '削除する')) return;
+  chars = chars.filter(x => x.id !== detailId); delete PG.clears[detailId]; savePG();
+  commit(`「${c.name}」を削除しました`);
+  gotoCol();
+};
+
+/* ---------- クイズ ---------- */
+let Q = null;
+function startQuiz(id) {
+  const ch = chars.find(x => x.id === id); if (!ch) return;
+  const slots = DRAW_ORDER.filter(s => ch.wear[s]);
+  if (!slots.length) return;
+  Q = { ch, total: slots.length, removed: new Set(), lives: TUNING.lives, coins: 0, ok: 0, pool: shuffle(QUIZ.slice()), qi: 0, cur: null, busy: false };
+  $('#qName').textContent = ch.name;
+  vQuiz.yaw = -0.4; vQuiz.set(buildModel(ch, Q.removed));
+  show('sQuiz'); nextQ();
+}
+function qHead() {
+  $('#qLives').textContent = '♥'.repeat(Q.lives) + '♡'.repeat(TUNING.lives - Q.lives);
+  $('#qLeft').textContent = `のこり ${Q.total - Q.removed.size}`;
+}
+function nextQ() {
+  if (Q.qi >= Q.pool.length) { Q.pool = shuffle(QUIZ.slice()); Q.qi = 0; }
+  const [q, a, ...w] = Q.pool[Q.qi++];
+  Q.cur = { q, a, opts: shuffle([a, ...w]) }; Q.busy = false;
+  qHead();
+  $('#qPane').innerHTML = `<div class="qtext">${esc(q)}</div><div class="opts">${Q.cur.opts.map((o, i) => `<button data-i="${i}">${esc(o)}</button>`).join('')}</div>`;
+  startTimer();
+}
+function startTimer() {
+  stopTimer();
+  const t0 = performance.now(), bar = $('#qBar');
+  bar.style.width = '100%';
+  timerId = setInterval(() => {
+    const left = 1 - (performance.now() - t0) / (TUNING.timeLimit * 1000);
+    bar.style.width = Math.max(0, left * 100) + '%';
+    bar.style.background = left < 0.3 ? 'var(--red)' : 'var(--teal)';
+    if (left <= 0) answer(-1);
+  }, 100);
+}
+function stopTimer() { clearInterval(timerId); timerId = 0; }
+$('#qPane').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.i != null) answer(+b.dataset.i);
+  else if (b.dataset.slot) strip(b.dataset.slot);
+};
+function answer(i) {
+  if (!Q || Q.busy) return;
+  Q.busy = true; stopTimer();
+  const ok = i >= 0 && Q.cur.opts[i] === Q.cur.a;
+  PG.ans++; if (ok) PG.ok++;
+  $('#qPane').querySelectorAll('[data-i]').forEach(b => {
+    b.disabled = true;
+    if (Q.cur.opts[+b.dataset.i] === Q.cur.a) b.classList.add('ok');
+    else if (+b.dataset.i === i) b.classList.add('ng');
+  });
+  if (ok) {
+    Q.coins += TUNING.coinCorrect; Q.ok++;
+    setTimeout(choose, 650);
+  } else {
+    Q.lives--; qHead();
+    $('#qPane').insertAdjacentHTML('afterbegin', `<p class="err" style="font-weight:700">${i < 0 ? '時間切れ！' : 'ざんねん！'} 正解は「${esc(Q.cur.a)}」</p>`);
+    setTimeout(() => { Q.lives > 0 ? nextQ() : finish(false); }, 1500);
+  }
+}
+/* 正解したら、どれを脱がせるか選ぶ */
+function choose() {
+  const left = DRAW_ORDER.filter(s => Q.ch.wear[s] && !Q.removed.has(s));
+  let h = '<div class="qtext">正解！ どれを脱がせる？</div><div class="opts">';
+  for (const s of left) {
+    const need = NEEDS_OFF[s], wait = need && Q.ch.wear[need] && !Q.removed.has(need);
+    h += `<button data-slot="${s}"${wait ? ' disabled' : ''}>${SLOT[s].name}：${esc(ITEM[Q.ch.wear[s].id].name)}${wait ? `（${SLOT[need].name}のあと）` : ''}</button>`;
+  }
+  $('#qPane').innerHTML = h + '</div>';
+  $('#qBar').style.width = '100%'; $('#qBar').style.background = 'var(--gold)';
+}
+function strip(s) {
+  if (!Q || Q.removed.has(s)) return;
+  Q.removed.add(s);
+  vQuiz.set(buildModel(Q.ch, Q.removed));
+  const st = $('#cvQuiz').parentNode; st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash');
+  qHead();
+  if (Q.removed.size >= Q.total) setTimeout(() => finish(true), 600);
+  else nextQ();
+}
+function finish(win) {
+  stopTimer();
+  const id = Q.ch.id, first = win && !PG.clears[id];
+  let gain = Q.coins, lines = [`正解 ${Q.ok}問：${Q.coins}コイン`];
+  if (win) {
+    const b = TUNING.coinClear + Q.lives * TUNING.coinLife + (first ? TUNING.coinFirst : 0);
+    gain += b;
+    lines.push(`クリア：${TUNING.coinClear}コイン`, `のこりライフ ${Q.lives}：${Q.lives * TUNING.coinLife}コイン`);
+    if (first) lines.push(`はじめてのクリア：${TUNING.coinFirst}コイン`);
+    const c = PG.clears[id] || { n: 0, best: 0 };
+    PG.clears[id] = { n: c.n + 1, best: Math.max(c.best, Q.lives) };
+  }
+  PG.coins += gain; savePG();
+  $('#rTitle').textContent = win ? 'クリア！' : 'しっぱい…';
+  $('#rInfo').innerHTML = `<p>${lines.map(esc).join('<br>')}</p><p><b style="color:var(--gold)">+${gain}コイン</b>（所持 ${PG.coins}）</p>` + (first ? '<p class="muted">コレクションに★がつき、詳細画面でクリア後の姿を見られるようになりました。</p>' : '');
+  vResult.yaw = -0.4; vResult.set(buildModel(Q.ch, Q.removed));
+  show('sResult');
+}
+$('#qQuit').onclick = async () => {
+  if (!Q) return;
+  stopTimer();
+  if (await ask('クイズをやめますか？（ここまでの正解のコインはもらえます）', 'やめる', 'つづける')) {
+    PG.coins += Q.coins; savePG(); const id = Q.ch.id; Q = null; openDetail(id);
+  } else if (!Q.busy) startTimer();
+};
+$('#rAgain').onclick = () => startQuiz(Q.ch.id);
+$('#rCol').onclick = () => gotoCol();
+$('#rMenu').onclick = () => gotoMenu();
+
+/* ---------- ショップ ---------- */
+let tryChar = null;
+function gotoShop() { tryChar = clone(chars[0] || SAMPLE); vShop.set(buildModel(tryChar)); $('#sTry').textContent = `${tryChar.name}で試着`; renderShop(); show('sShop'); }
+function renderShop() {
+  $('#sCoins').textContent = PG.coins;
+  let h = '';
+  for (const p of PARTS) {
+    h += `<div class="card"><h2>${p.name}</h2>`;
+    for (const s of SLOTS.filter(s => s.part === p.k)) for (const it of ITEMS.filter(it => it.slot === s.k)) {
+      const ok = unlocked(it.id);
+      h += `<div class="shop-item"><span class="nm" data-try="${it.id}">${it.name} <span class="muted">${s.name}</span></span>` +
+        (ok ? '<span class="got">解放ずみ</span>' : `<button data-buy="${it.id}"${PG.coins < it.price ? ' disabled' : ''}>${it.price}コイン</button>`) + '</div>';
+    }
+    h += '</div>';
+  }
+  $('#sList').innerHTML = h;
+}
+$('#sList').onclick = e => {
+  const t = e.target.closest('[data-try]'), b = e.target.closest('[data-buy]');
+  if (t) { const it = ITEM[t.dataset.try]; tryChar.wear[it.slot] = { id: it.id, color: it.def }; vShop.set(buildModel(tryChar)); $('#sTry').textContent = `試着：${it.name}`; }
+  if (b) {
+    const it = ITEM[b.dataset.buy]; if (unlocked(it.id) || PG.coins < it.price) return;
+    PG.coins -= it.price; PG.unlocked.push(it.id); savePG(); renderShop();
+    tryChar.wear[it.slot] = { id: it.id, color: it.def }; vShop.set(buildModel(tryChar));
+    toast(`「${it.name}」を解放しました`);
+  }
+};
+$('#sBack').onclick = () => gotoMenu();
+
+/* ---------- はじまり ---------- */
+$('#verLabel').textContent = 'v' + VERSION;
+$('#hist').innerHTML = HISTORY.map(([v, d, t]) => `<li><b>v${v}</b>（${d}）${esc(t)}</li>`).join('');
+vTitle = new Viewer($('#cvTitle'), { spin: 0.6 });
+vEdit = new Viewer($('#cvEdit'));
+vDetail = new Viewer($('#cvDetail'), { spin: 0.4 });
+vQuiz = new Viewer($('#cvQuiz'));
+vResult = new Viewer($('#cvResult'), { spin: 0.4 });
+vShop = new Viewer($('#cvShop'));
+requestAnimationFrame(loop);
+let ageOk = false;
+try { ageOk = localStorage.getItem(KEY_AGE) === '1'; } catch (e) {}
+if (ageOk) gotoTitle(); else show('sGate');
+if (pgReset) setTimeout(() => toast('記録が読めなかったため、コインと解放パーツを最初からにしました'), 400);
+</script>
+</body>
+</html>
