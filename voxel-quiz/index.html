@@ -253,9 +253,9 @@ button.danger{color:#FFB4AA;border-color:#6A2F2B}
    ボクセルのオリジナルキャラを作ってデータベースファイルに保存し、
    クイズに正解するたびに装飾パーツを1つずつ脱がせる（下着姿まで）
    ========================================================== */
-const VERSION = '1.0.0';
+const VERSION = 'β0.1.0';
 const HISTORY = [
-  ['1.0.0', '2026-10-23', '公開。細かいボクセル（一辺4倍）のキャラ作成（体型・身長のスライダー、部位ごとの装飾パーツ、下着の色）、データベースファイルの書き出しと読み込み、コレクション、クイズ、ショップでの装飾パーツの解放'],
+  ['β0.1.0', '2026-10-24', 'ベータ版として公開。細かいボクセル（一辺4倍）のキャラ作成（体型・身長のスライダー、部位ごとの装飾パーツ、下着の色）、データベースファイルの書き出しと読み込み、コレクション、クイズ、ショップでの装飾パーツの解放'],
 ];
 
 /* ---------- 調整用の数値 ---------- */
@@ -1334,8 +1334,8 @@ $('#sList').onclick = e => {
 $('#sBack').onclick = () => gotoMenu();
 
 /* ---------- はじまり ---------- */
-$('#verLabel').textContent = 'v' + VERSION;
-$('#hist').innerHTML = HISTORY.map(([v, d, t]) => `<li><b>v${v}</b>（${d}）${esc(t)}</li>`).join('');
+$('#verLabel').textContent = (VERSION.startsWith('β') ? '' : 'v') + VERSION;
+$('#hist').innerHTML = HISTORY.map(([v, d, t]) => `<li><b>${v.startsWith('β') ? '' : 'v'}${v}</b>（${d}）${esc(t)}</li>`).join('');
 vTitle = new Viewer($('#cvTitle'), { spin: 0.6 });
 vEdit = new Viewer($('#cvEdit'));
 vDetail = new Viewer($('#cvDetail'), { spin: 0.4 });
