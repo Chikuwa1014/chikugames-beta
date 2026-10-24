@@ -404,7 +404,7 @@ function soloStart(kind) {
   S = { kind, times: [], fouls: 0, misses: 0, phase: 'ready', timer: 0, shownAt: 0, at: 0 };
   $('#solo-title').textContent = KINDS[kind].icon + ' ' + KINDS[kind].name;
   show('solo-play');
-  soloReady('タップで スタート', KINDS[kind].desc);
+  soloReady('タップで スタート', '');
 }
 function soloHud() { $('#solo-hud').textContent = `${Math.min(S.times.length + 1, TUNING.rounds)} / ${TUNING.rounds} 回目 ・ お手つき ${S.fouls}`; }
 function soloReady(main, sub) { S.phase = 'ready'; S.at = performance.now(); setPad($('#pad'), 'idle', main, sub); soloHud(); }
