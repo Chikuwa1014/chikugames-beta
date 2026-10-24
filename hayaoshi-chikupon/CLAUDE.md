@@ -9,8 +9,7 @@
 
 ## URL
 
-- 公開：**開発に公開**（β版の `cards.js` で `dev: true`）。URL は公開しない（`.assetsignore` に `hayaoshi-chikupon/`）。
-- 公開するときは、正式版の `CLAUDE.md` 3 章に従い、開発者の指示を仰いでから `.assetsignore` の行を消す。
+- 公開：**開発に公開**（β版の `cards.js` で `dev: true`）。URL を公開していて、知っている人だけが開ける。トップのカードはリンクなし。
 - アーティファクトでは確認しない（正式版の方針）。手元のサーバーで確かめる
 
 ## コードの地図（`index.html` の `<script>` 内）

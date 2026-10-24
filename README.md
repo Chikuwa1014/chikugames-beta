@@ -9,7 +9,7 @@
 - `shisaku/`：正式版トップの試作環境（どこからもリンクしない）
 - `gatasu/index.html`：がたす、モテる。のベータ（`/gatasu/`。β0.1.0・限定公開）
 - `voxel-quiz/index.html`：ぬがせて！ボクセルクイズのベータ（`/voxel-quiz/`。β0.1.0・限定公開）
-- `hayaoshi-chikupon/`：早押し！ちくぽん！（β0.1.0・開発に公開。URL は公開しない）
+- `hayaoshi-chikupon/`：早押し！ちくぽん！（β0.1.0・開発に公開。URL を知っている人だけが開ける。トップのカードにはリンクなし）
 - `common/v1/`：共通部品（本番と同じ中身）
 - `worker/index.js`：マルチの仲介（本番と同じ `MultiRoom`）
 - `dev/`・`claude/`・各ゲームの `dev/`：手元のテスト・引き継ぎ（公開しない）
