@@ -1061,6 +1061,29 @@ button.achr {
 @media (prefers-reduced-motion:reduce) {
   #px.shake { animation:none; }
 }
+
+/* ---- v1.4.2：ドット絵の右上にセキュリティのストック残数 ---- */
+.pxw {
+  position:relative;
+}
+
+.secn {
+  position:absolute;
+  top:12px;
+  right:6px;
+  padding:1px 7px;
+  border-radius:999px;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  pointer-events:none;
+}
+
+.secn[hidden] {
+  display:none;
+}
 </style>
 </head>
 <body>
@@ -1652,13 +1675,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '1.4.1';
+const VERSION = '1.4.2';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['1.4.2', '2026-10-24', 'セキュリティのストック残数を、店の様子の絵の右上に「🛡×数」で表示（0のときは出さない）'],
     ['1.4.1', '2026-10-24', '営業中の現在時刻を購買欲ゲージの上に表示。投資の「棚を増やす」に、増やしたあとの月のテナント料を表示。お金や棚が減るイベントの日は、空が赤くなりカラスが飛び、お客さんがうつむいて歩く（起きた瞬間は店の絵が揺れる）'],
     ['1.4.0', '2026-10-24', '更新履歴を設定タブに表示。実績を所持金の横のバッジ（🏅）に移し、タップで一覧を開くように。実績のリセットを追加（確認画面つき）。一時停止・倍速ボタンをタブの行の右端にまとめ、倍速は押すたびに×1→×2→×4→×8と切り替え。営業タブのログ欄を4行分の枠にし、直近50件までさかのぼれるように（売れた商品を時刻つきで記録）。デバッグ欄の見出しを「🐞 デバッグ」に'],
     ['1.3.0', '2026-10-24', '実績（累計売上・営業・貯金・インフェルノの18個）を追加。季節を実際の1年と同じ3ヶ月ごとに（1ヶ月目＝4月）。日付に暦の月を表示'],
@@ -3910,6 +3934,12 @@ function render() {
     else
         a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
     byId('act').innerHTML = a;
+    {
+        const n = state.ss || 0, e = byId('secn');
+        e.hidden = n <= 0;
+        e.textContent = '🛡×' + n;
+        e.title = 'セキュリティのストック ' + n + '/5';
+    }
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
     if (state.phase === 'open')
@@ -4261,6 +4291,12 @@ function initLayout() {
     tp.append(hr);
     const dd = byId('px').closest('details');
     dd.style.margin = '4px 0';
+    // ドット絵の右上にセキュリティのストック残数（v1.4.2〜。0のときは出さない）
+    const pw = document.createElement('div');
+    pw.className = 'pxw';
+    byId('px').before(pw);
+    pw.append(byId('px'));
+    pw.insertAdjacentHTML('beforeend', '<span class="secn" id="secn" hidden></span>');
     tp.append(dd);
     byId('sd').remove();
     const tb = document.createElement('div');
