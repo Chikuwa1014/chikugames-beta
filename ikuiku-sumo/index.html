@@ -102,7 +102,7 @@ header a{color:var(--muted);text-decoration:none}
     <div class="rules" id="how" hidden>
       <b>あそびかた</b><br>
       ・上から流れてくる<b>色のバー</b>が下の線に来たら、同じ色のボタンを押す。<br>
-      ・<b>難易度</b>は、バーのリズムの細かさ。イージー＝4つ打ち／ノーマル＝8つ打ち／ハード＝16打ち／ベリーハード＝32打ち。<br>
+      ・<b>難易度</b>は、バーのリズムと速さ。イージー＝4つ打ち／ノーマル＝8つ打ち／ハード・ベリーハード＝8つ打ちでバーが速く落ちてくる（難しいほどミスで漏らしやすい）。薄い横線は拍の目安です。<br>
       ・<b>曲</b>は5ジャンル×4曲の20曲（クラシック・ポップ・ハードロック・ハードメタル・EDM）。ランダムも選べる。<br>
       ・<b>押し出し！</b>と<b>はっけい！</b>で前に進む（押し出しのほうが大きく進む）。<br>
       ・<b>お漏らし💦</b>は進めず、塩をまく。割合が増えすぎるとトイレへダッシュ！<br>
@@ -144,12 +144,12 @@ header a{color:var(--muted);text-decoration:none}
    リズム（3レーン）で「押し出し！／はっけい！／お漏らし💦」を判定し、
    お相撲さんがシコを踏みながらママのもとへ進む。コードの地図は ikuiku-sumo/CLAUDE.md
    ===================================================================== */
-const VERSION = 'β0.3.1';
+const VERSION = 'β0.3.2';
 CG.init({ game: 'ikuiku-sumo', title: 'いくいく！雲紅亭珍光〜すもう編〜', version: VERSION });
 
 /* ---- 調整用の数値（バランスはここだけ直す） ---- */
 const CFG = {
-  TRAVEL: 1.5,         // 上から判定線まで落ちる秒数
+  TRAVEL: 1.5,         // 上から判定線まで落ちる秒数（難易度ごとの値は DIFFS の travel。これは予備）
   LEAD_IN: 2.0,        // 最初のノーツが判定線に来るまでの秒数
   WIN_PERFECT: 0.075,  // 押し出し！になるずれ（秒）
   WIN_GOOD: 0.16,      // はっけい！になるずれ（秒）
@@ -176,17 +176,19 @@ const JUDGE = {
   good: { text: 'はっけい！', col: '#7BE39A' },
   leak: { text: 'お漏らし💦', col: '#6FB8FF' }
 };
+const TOILET_FROM_X = -36;   // トイレへ走るお相撲さんの出発位置（画面の左の外。ここから走り込む）
 const CUT = { DELAY: 1.8, LENGTH: 3.2 };   // 成功のカット：ついてからカットまでの秒数／カットの長さ
 const KEY_MUTE = 'ikuiku-sumo-mute';
 const KEY_BEST = 'ikuiku-sumo-best-v2';   // { easy, normal, hard, vhard }（難易度ごとのベスト押し出し数）。v1 は { perfect }＝ノーマル扱い
 const KEY_BEST_V1 = 'ikuiku-sumo-best-v1';
 const KEY_PREF = 'ikuiku-sumo-pref-v1';   // { diff, song }
-/* 難易度：sub＝1拍を何分割してバーを置くか（1＝4つ打ち／2＝8つ打ち／4＝16打ち／8＝32打ち）、prob＝その格子点にバーが出る確率、step＝進む距離の倍率 */
+/* 難易度：sub＝1拍を何分割してバーを置くか（1＝4つ打ち／2＝8つ打ち）、prob＝その格子点にバーが出る確率、step＝進む距離の倍率、
+   travel＝バーが上から判定線まで落ちる秒数（小さいほど速い）、leakW＝ミス（お漏らし）1回が割合に足される重み（大きいほどすぐ漏らす） */
 const DIFFS = [
-  { id: 'easy', name: 'イージー', note: '4つ打ち', sub: 1, prob: 0.85, step: 1, desc: '4つ打ち（1拍に1回の、ゆっくりしたリズム）' },
-  { id: 'normal', name: 'ノーマル', note: '8つ打ち', sub: 2, prob: 0.42, step: 1, desc: '8つ打ち（8分音符のリズム）' },
-  { id: 'hard', name: 'ハード', note: '16打ち', sub: 4, prob: 0.30, step: 0.7, desc: '16打ち（16分音符の細かいリズム）' },
-  { id: 'vhard', name: 'ベリーハード', note: '32打ち', sub: 8, prob: 0.24, step: 0.45, desc: '32打ち（32分音符の超高速リズム）' }
+  { id: 'easy', name: 'イージー', note: '4つ打ち', sub: 1, prob: 0.85, step: 1, travel: 1.5, leakW: 1, desc: '4つ打ち（1拍に1回の、ゆっくりしたリズム）' },
+  { id: 'normal', name: 'ノーマル', note: '8つ打ち', sub: 2, prob: 0.42, step: 1, travel: 1.5, leakW: 1.25, desc: '8つ打ち（8分音符のリズム）' },
+  { id: 'hard', name: 'ハード', note: '8つ打ち・速い', sub: 2, prob: 0.62, step: 0.75, travel: 1.15, leakW: 1.6, desc: '8つ打ちで、バーが速く落ちてくる。ミスで漏らしやすい' },
+  { id: 'vhard', name: 'ベリーハード', note: '8つ打ち・超速', sub: 2, prob: 0.85, step: 0.55, travel: 0.85, leakW: 2, desc: '8つ打ちで、バーが超高速で落ちてくる。ミスですぐ漏らす' }
 ];
 
 const $ = s => document.querySelector(s);
@@ -199,7 +201,20 @@ $('#mute').textContent = muted ? '🔇' : '🔊';
 /* ---------------- 音（Web Audio の簡単な効果音） ---------------- */
 let ac = null;
 function unlockAudio() {
-  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { ac = null; }
+  try {
+    if (ac && ac.state === 'closed') ac = null;                       // ホームへ戻ったあとなどで閉じられていたら作り直す
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      ac.onstatechange = () => { if (!document.hidden && ac && ac.state !== 'running' && ac.state !== 'closed') ac.resume().catch(() => { }); };
+    }
+    if (ac.state !== 'running') ac.resume().catch(() => { });         // suspended だけでなく、iPhone の interrupted も再開する
+  } catch (e) { ac = null; }
+}
+/* 画面にもどったとき（ホームから復帰・タブにもどる・戻るボタン）に音を再開する。作り直したときはBGMも鳴らし直す */
+function reviveAudio() {
+  const old = ac;
+  unlockAudio();
+  if (ac && ac !== old && S && (S.mode === 'count' || S.mode === 'play') && S.song) BGM.start(S.song);
 }
 function tone(freq, dur, type = 'square', vol = 0.06, slide = 0) {
   if (muted || !ac) return;
@@ -486,7 +501,7 @@ let S = null;                                      // 1プレイ分の状態
 function fresh() {
   return {
     mode: 'title', t0: 0, notes: [], nextStep: 0, lastT: [-9, -9, -9], diff: DIFFS[1], song: SONGS[0], grid: 0.25,
-    prog: 0, shown: 0, judged: 0, leaks: 0, perfect: 0, good: 0, combo: 0, maxCombo: 0,
+    prog: 0, shown: 0, judged: 0, leaks: 0, leakPt: 0, perfect: 0, good: 0, combo: 0, maxCombo: 0,
     parts: [], pops: [], phase: 0, shake: 0, stomp: 0, endAt: 0, hiddenAt: 0, bursts: []
   };
 }
@@ -573,7 +588,7 @@ function startGame() {
 /* ---------------- ノーツの生成と判定 ---------------- */
 function genNotes(st) {
   const gd = S.grid, D = S.diff;
-  while (CFG.LEAD_IN + S.nextStep * gd < st + CFG.TRAVEL + 0.6) {
+  while (CFG.LEAD_IN + S.nextStep * gd < st + D.travel + 0.6) {
     const t = CFG.LEAD_IN + S.nextStep * gd;
     if (S.nextStep === 0 || Math.random() < D.prob) {
       const ok = [0, 1, 2].filter(l => t - S.lastT[l] >= CFG.LANE_GAP);   // 同じレーンに近すぎるバーは置かない
@@ -605,7 +620,7 @@ function judge(kind, lane, missed) {
   S.judged++;
   const sx = sumoX(), gy = GY;
   if (kind === 'leak') {
-    S.leaks++; S.combo = 0; sfx.leak();
+    S.leaks++; S.leakPt += S.diff.leakW; S.combo = 0; sfx.leak();
     spawnSalt(sx + 16, gy - 24);
   } else {
     S.prog = Math.min(CFG.GOAL, S.prog + (kind === 'perfect' ? CFG.STEP_PERFECT : CFG.STEP_GOOD) * S.diff.step);
@@ -618,7 +633,7 @@ function judge(kind, lane, missed) {
   updateHud();
   checkEnd();
 }
-function leakRatio() { return S.judged ? S.leaks / S.judged : 0; }
+function leakRatio() { return S.judged ? S.leakPt / S.judged : 0; }   // ミス1回は難易度の重み（leakW）ぶん数える
 function checkEnd() {
   if (S.mode !== 'play') return;
   if (S.prog >= CFG.GOAL) { endSuccess(); return; }
@@ -638,7 +653,7 @@ function endSuccess() {
 }
 function resetCutUi() { $('#hud').style.visibility = ''; const b = $('#bubble'); b.style.top = ''; b.hidden = true; }
 function endToilet() {
-  S.mode = 'toilet'; S.endAt = nowSec(); S.fromX = sumoX();
+  S.mode = 'toilet'; S.endAt = nowSec(); S.fromX = TOILET_FROM_X;   // 進んだ位置からではなく、画面の左端から走ってくる
   BGM.stop(); playVoice('toilet'); playVoice('toiletBgm'); save();   // 叫び声とトイレのBGMを同時に
   setTimeout(() => { if (S.mode === 'toilet') resultPanel(false); }, 4200);
 }
@@ -653,7 +668,7 @@ function resultPanel(ok) {
     <div class="stats">
       <span>押し出し！</span><span>${S.perfect}回</span>
       <span>はっけい！</span><span>${S.good}回</span>
-      <span>お漏らし💦</span><span>${S.leaks}回（${Math.round(leakRatio() * 100)}%）</span>
+      <span>お漏らし💦</span><span>${S.leaks}回（${Math.min(100, Math.round(leakRatio() * 100))}%）</span>
       <span>最大コンボ</span><span>${S.maxCombo}</span>
     </div>
     <div class="row"><button class="big" id="again">もう一回</button></div>
@@ -685,7 +700,7 @@ function updateHud() {
   const pr = Math.round(S.prog / CFG.GOAL * 100);
   $('#progfill').style.width = pr + '%';
   $('#pct').textContent = pr + '%';
-  const lr = Math.round(leakRatio() * 100), lim = Math.round(CFG.LEAK_LIMIT * 100);
+  const lr = Math.min(100, Math.round(leakRatio() * 100)), lim = Math.round(CFG.LEAK_LIMIT * 100);
   $('#leaktxt').textContent = lr + '% / ' + lim + '%';
   $('#leakfill').style.width = Math.min(100, lr / lim * 100) + '%';
 }
@@ -712,8 +727,13 @@ addEventListener('keydown', e => {
 $('#mute').onclick = () => { muted = !muted; if (muted) ALL_VOICES.forEach(stopVoice); CG.ls.set(KEY_MUTE, muted ? '1' : '0'); $('#mute').textContent = muted ? '🔇' : '🔊'; };
 document.addEventListener('visibilitychange', () => {   // タブを離れたら時間を止める
   if (document.hidden) S.hiddenAt = nowSec();
-  else if (S.hiddenAt) { S.t0 += nowSec() - S.hiddenAt; S.endAt && (S.endAt += nowSec() - S.hiddenAt); S.hiddenAt = 0; }
+  else {
+    if (S.hiddenAt) { S.t0 += nowSec() - S.hiddenAt; S.endAt && (S.endAt += nowSec() - S.hiddenAt); S.hiddenAt = 0; }
+    if (ac) reviveAudio();                                   // 復帰したらBGMの音も再開する
+  }
 });
+addEventListener('pageshow', () => { if (ac) reviveAudio(); });                                   // 戻るボタンで復元されたとき
+addEventListener('pointerdown', () => { if (ac && ac.state !== 'running') reviveAudio(); }, true);   // 自動で再開できなかったら、最初のタップで再開
 
 /* ======================= 描画：シーン（120×120 のドットを3倍） ======================= */
 const GY = 98;                                   // 足もとの高さ
@@ -887,7 +907,7 @@ function drawScene(now, dt) {
   if (S.mode === 'toilet') {
     drawToilet(tt);
     const gx = 70;                                                                           // トイレの前
-    const p = Math.min(1, tt / 1.7), e = p * p * (3 - 2 * p);
+    const p = Math.min(1, tt / 1.7), e = 1 - (1 - p) * (1 - p);   // 左から勢いよく走り込み、トイレの前でゆるむ
     const x = S.fromX + (gx - S.fromX) * e, run = Math.floor(tt * 14) % 2;
     if (tt < 1.9) {
       for (let i = 0; i < 4; i++) R(x - 6 - i * 5 - (Math.floor(tt * 30) % 3) * 2, GY - 30 + i * 7, 8, 1, 'rgba(255,255,255,.55)');   // 走るスピード線
@@ -933,8 +953,21 @@ function drawLane(st) {
     lc.strokeStyle = L.col; lc.lineWidth = 3; lc.globalAlpha = .9;
     rr(i * lw + 8, hitY - nh / 2 - 2, lw - 16, nh + 4, 8); lc.stroke(); lc.globalAlpha = 1;
   });
+  // ガイドライン（グリッド）：バーが乗る格子を横線で見せる。小節の頭＞拍の頭＞その間の順に濃い
+  const gd = S.grid, trv = S.diff.travel, sub = S.diff.sub;
+  if (gd > 0) {
+    const k0 = Math.max(0, Math.ceil((st - 0.3 - CFG.LEAD_IN) / gd)), k1 = Math.floor((st + trv + 0.05 - CFG.LEAD_IN) / gd);
+    for (let k = k0; k <= k1; k++) {
+      const y = hitY - (CFG.LEAD_IN + k * gd - st) / trv * hitY;
+      if (y < -2 || y > h + 2) continue;
+      const bar = k % (sub * 4) === 0, beat = k % sub === 0;
+      lc.fillStyle = bar ? 'rgba(255,255,255,.42)' : beat ? 'rgba(255,255,255,.26)' : 'rgba(255,255,255,.12)';
+      const th = bar ? 3 : beat ? 2 : 1;
+      lc.fillRect(0, y - th / 2, w, th);
+    }
+  }
   for (const n of S.notes) {
-    const y = hitY - (n.t - st) / CFG.TRAVEL * hitY;
+    const y = hitY - (n.t - st) / S.diff.travel * hitY;
     if (n.judged && !n.missed) continue;
     if (y < -nh || y > h + nh) continue;
     lc.globalAlpha = n.missed ? .3 : 1;
@@ -955,7 +988,7 @@ function rr(x, y, w, h, r) { lc.beginPath(); lc.moveTo(x + r, y); lc.arcTo(x + w
 
 /* ---------------- 起動 ---------------- */
 buildTitleOptions(); showTitle(); requestAnimationFrame(frame);
-window.__IKU = { get S() { return S; }, CFG, DIFFS, SONGS, press, startGame, nowSec, renderSong, pref, parseMel };   // テスト用（dev/test.py）
+window.__IKU = { get S() { return S; }, get ac() { return ac; }, CFG, DIFFS, SONGS, press, startGame, nowSec, renderSong, pref, parseMel };   // テスト用（dev/test.py）
 </script>
 </body>
 </html>
