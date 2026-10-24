@@ -633,7 +633,20 @@ function alive(tok) { if (!G || G.token !== tok) throw ABORT; }
 let advance = null;
 function onBoxTap() { if (advance) advance(); }
 $("box").addEventListener("click", onBoxTap);
-$("box").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onBoxTap(); } });
+// キー操作（PC）：スペース／Enter でセリフ送り、1〜4 で選択肢。フォーカスの場所に関係なくページ全体で受ける
+let pickKey = null;
+document.addEventListener("keydown", e => {
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target, tag = t && t.tagName;
+  const onField = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  if (onField) return;
+  if (pickKey && e.key >= "1" && e.key <= "9") { if (pickKey(+e.key - 1)) e.preventDefault(); return; }
+  if (e.key === " " || e.key === "Enter") {
+    if ((tag === "BUTTON" || tag === "A") && t.id !== "box") return;   // ボタン自身の操作を優先
+    if (S.mini || !advance || $("box").hidden) return;
+    e.preventDefault(); onBoxTap();
+  }
+});
 $("stage").addEventListener("click", () => { if (!S.mini) onBoxTap(); });
 
 function say(who, text) {
@@ -662,11 +675,14 @@ function choose(list) {
   const tok = G.token;
   return new Promise((res, rej) => {
     const box = $("choices"); box.innerHTML = ""; $("boxNext").hidden = true; advance = null;
+    const btns = [];
+    const pick = i => { pickKey = null; if (!G || G.token !== tok) return rej(ABORT); SFX.pick(); box.innerHTML = ""; res(i); };
     list.forEach((it, i) => {
-      const b = document.createElement("button"); b.type = "button"; b.className = "ch"; b.textContent = it.t;
-      b.onclick = () => { if (!G || G.token !== tok) return rej(ABORT); SFX.pick(); box.innerHTML = ""; res(i); };
-      box.appendChild(b);
+      const b = document.createElement("button"); b.type = "button"; b.className = "ch"; b.textContent = (i + 1) + "　" + it.t;
+      b.onclick = () => pick(i);
+      box.appendChild(b); btns.push(b);
     });
+    pickKey = i => { if (i >= list.length || !btns[i] || !btns[i].isConnected) return false; pick(i); return true; };
   });
 }
 function wait(ms) { const tok = G.token; return new Promise((res, rej) => setTimeout(() => (G && G.token === tok) ? res() : rej(ABORT), ms)); }
@@ -761,7 +777,7 @@ const HEROINES = [
 
 /* ===================== ゲームの流れ ===================== */
 function showTitle() {
-  G = null; advance = null; S.mini = null; S.big = null; S.fx = [];
+  G = null; advance = null; pickKey = null; S.mini = null; S.big = null; S.fx = [];
   $("title").hidden = false; $("play").hidden = true; $("homeBtn").hidden = true; $("chapterTag").hidden = true;
   setScene("title", [{ id: "gatasu", x: 180, s: 5, y: 222, mood: "normal" }]);
   const b = load(KEY_BEST, null);
