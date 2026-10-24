@@ -90,11 +90,11 @@ header a{color:var(--muted);text-decoration:none}
 <script>
 'use strict';
 /* =====================================================================
-   いくいく！雲紅亭珍光〜すもう編〜  β0.1.2
+   いくいく！雲紅亭珍光〜すもう編〜  β0.1.3
    リズム（3レーン）で「押し出し！／はっけい！／お漏らし💦」を判定し、
    お相撲さんがシコを踏みながらママのもとへ進む。コードの地図は ikuiku-sumo/CLAUDE.md
    ===================================================================== */
-const VERSION = 'β0.1.2';
+const VERSION = 'β0.1.3';
 CG.init({ game: 'ikuiku-sumo', title: 'いくいく！雲紅亭珍光〜すもう編〜', version: VERSION });
 
 /* ---- 調整用の数値（バランスはここだけ直す） ---- */
@@ -114,7 +114,9 @@ const CFG = {
 };
 /* ---- セリフと音声（音声は後で吹き込む。ファイルを置いてパスを書けば、成功のカットが始まるときに鳴る） ---- */
 const LINES = { success: 'ママ！', toilet: 'ま、まにあわなかった…！' };   // success：着いた瞬間のひとこと
-const VOICE = { success: '', toilet: '' };   // 例：'./voice/success.mp3'
+const VOICE = { title: '', mama: '', kiss: '', toilet: '', toiletBgm: '' };   // 例：'./voice/title.wav'
+/* 鳴る場所：title＝スタートを押した直後／mama＝ママに到着した瞬間（ふきだし「ママ！」）／kiss＝頬キスのカットの始まり（ふきだしなし）／
+   toilet＝トイレへ駆け込む叫び声／toiletBgm＝トイレのカットの間だけ流れるBGM。プレイ中のBGMはこのファイルの bgm 〜（音源なしで生成） */
 const LANES = [
   { name: 'あか', col: '#E8483A', key: ['a', 'j', '1'] },
   { name: 'みどり', col: '#3FB86B', key: ['s', 'k', '2'] },
@@ -155,15 +157,61 @@ const sfx = {
   perfect() { tone(180, .14, 'sawtooth', .09, -110); tone(880, .08, 'square', .05); },
   good() { tone(160, .12, 'sawtooth', .07, -90); tone(660, .06, 'square', .04); },
   leak() { tone(300, .25, 'triangle', .07, -200); },
-  beat() { tone(110, .06, 'sine', .05, -40); },
   win() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, .18, 'square', .06), i * 130)); },
   run() { tone(140, .07, 'sawtooth', .05, -50); },
   slam() { tone(90, .3, 'sawtooth', .1, -50); }
 };
+const voiceAudio = {};
 function playVoice(key) {
   if (muted || !VOICE[key]) return;
-  try { const a = new Audio(VOICE[key]); a.play().catch(() => { }); } catch (e) { }
+  try { const a = new Audio(VOICE[key]); voiceAudio[key] = a; a.play().catch(() => { }); } catch (e) { }
 }
+function stopVoice(key) { try { voiceAudio[key] && voiceAudio[key].pause(); } catch (e) { } }
+
+/* ---- プレイ中のBGM：音源ファイルなしで、Web Audio でその場で鳴らす（陽旋法のこぶし回しの和風ロック調） ----
+   8分音符×32（4小節）をくり返す。ノーツと同じ BPM・同じ拍の頭にそろえ、S.t0 から数える */
+const BGM = (() => {
+  const F = { D3: 146.83, E3: 164.81, G3: 196, A3: 220, B3: 246.94, D4: 293.66, E4: 329.63, G4: 392, A4: 440, B4: 493.88, D5: 587.33, E5: 659.25 };
+  const bar = (...n) => n.map(x => x && F[x]);      // 0 は休み
+  const bass = [...bar('D3', 0, 'D3', 0, 'D3', 0, 'A3', 0), ...bar('G3', 0, 'G3', 0, 'G3', 0, 'E3', 0), ...bar('D3', 0, 'D3', 0, 'D3', 0, 'A3', 0), ...bar('G3', 0, 'A3', 0, 'B3', 0, 'A3', 0)];
+  const lead = [...bar('D5', 0, 'B4', 'A4', 0, 'G4', 'A4', 0), ...bar('B4', 0, 'A4', 'G4', 0, 'E4', 'G4', 0), ...bar('D5', 0, 'E5', 'D5', 0, 'B4', 'A4', 0), ...bar('G4', 'A4', 'B4', 0, 'A4', 'G4', 'E4', 'D4')];
+  let noiseBuf = null, idx = 0, on = false;
+  const T = (t0, f, dur, type, vol) => {
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(vol, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+  };
+  const taiko = t0 => {           // 太鼓：低い音が下がる
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(130, t0); o.frequency.exponentialRampToValueAtTime(45, t0 + 0.18);
+    g.gain.setValueAtTime(0.28, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + 0.3);
+  };
+  const hit = (t0, vol, dur, hp) => {   // 手拍子・ハイハット（ノイズ）
+    if (!noiseBuf) { noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.3, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = hp;
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); s.connect(f); f.connect(g); g.connect(ac.destination); s.start(t0); s.stop(t0 + dur + 0.02);
+  };
+  const step = (i, at) => {
+    const k = i % 8, n = i % 32;
+    if (k === 0 || k === 4) taiko(at);
+    if (k === 2 || k === 6) hit(at, 0.09, 0.09, 1800);
+    hit(at, 0.025, 0.03, 7000);
+    if (bass[n]) T(at, bass[n], 0.22, 'triangle', 0.16);
+    if (lead[n]) T(at, lead[n], 0.2, 'square', 0.035);
+  };
+  return {
+    start() { idx = 0; on = !!ac; },
+    stop() { on = false; },
+    tick() {         // 毎フレーム：0.4秒先まで予約する
+      if (!on || muted || !ac || !S || S.mode === 'title') return;
+      const sd = stepDur(), origin = S.t0 + CFG.LEAD_IN - 4 * 60 / CFG.BPM;   // ノーツの拍の4拍前から
+      while (origin + idx * sd < nowSec() + 0.4) {
+        const at = ac.currentTime + (origin + idx * sd - nowSec());
+        if (at >= ac.currentTime - 0.01) step(idx, Math.max(at, ac.currentTime));
+        idx++;
+      }
+    }
+  };
+})();
 
 /* ---------------- ゲームの状態 ---------------- */
 const nowSec = () => performance.now() / 1000;
@@ -202,6 +250,7 @@ function startGame() {
   unlockAudio();
   hidePanel(); resetCutUi();
   S = fresh(); S.mode = 'count'; S.t0 = nowSec() + 3;   // 3・2・1 のあとが曲の 0 秒
+  playVoice('title'); BGM.start();
   updateHud();
 }
 
@@ -259,19 +308,19 @@ function checkEnd() {
 function endSuccess() {
   // 着いたら「ママ！」→（少し間をおいて）成功のカット。音声はカットが始まるときに流す
   S.mode = 'success'; S.endAt = nowSec(); S.cutAt = S.endAt + CUT.DELAY;
-  save();
+  save(); BGM.stop(); playVoice('mama');                          // 着いた瞬間に「ままぁ〜」
   const b = $('#bubble'); b.textContent = LINES.success; b.hidden = false;
   setTimeout(() => {
     if (S.mode !== 'success') return;
     $('#hud').style.visibility = 'hidden'; b.style.top = '4%';   // カットでは頭と重ならないよう、ふきだしを上へ
-    sfx.win(); playVoice('success');
+    sfx.win(); playVoice('kiss');                                  // 頬キスのカットの始まり（ふきだしなし）
   }, CUT.DELAY * 1000);
   setTimeout(() => { if (S.mode === 'success') resultPanel(true); }, (CUT.DELAY + CUT.LENGTH) * 1000);
 }
 function resetCutUi() { $('#hud').style.visibility = ''; const b = $('#bubble'); b.style.top = ''; b.hidden = true; }
 function endToilet() {
   S.mode = 'toilet'; S.endAt = nowSec(); S.fromX = sumoX();
-  playVoice('toilet'); save();
+  BGM.stop(); playVoice('toilet'); playVoice('toiletBgm'); save();   // 叫び声とトイレのBGMを同時に
   setTimeout(() => { if (S.mode === 'toilet') resultPanel(false); }, 4200);
 }
 function save() {
@@ -340,7 +389,7 @@ addEventListener('keydown', e => {
   const b = document.querySelector('.btn[data-lane="' + lane + '"]'); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90);
   unlockAudio(); press(lane);
 });
-$('#mute').onclick = () => { muted = !muted; CG.ls.set(KEY_MUTE, muted ? '1' : '0'); $('#mute').textContent = muted ? '🔇' : '🔊'; };
+$('#mute').onclick = () => { muted = !muted; if (muted) ['title', 'mama', 'kiss', 'toilet', 'toiletBgm'].forEach(stopVoice); CG.ls.set(KEY_MUTE, muted ? '1' : '0'); $('#mute').textContent = muted ? '🔇' : '🔊'; };
 document.addEventListener('visibilitychange', () => {   // タブを離れたら時間を止める
   if (document.hidden) S.hiddenAt = nowSec();
   else if (S.hiddenAt) { S.t0 += nowSec() - S.hiddenAt; S.endAt && (S.endAt += nowSec() - S.hiddenAt); S.hiddenAt = 0; }
@@ -470,6 +519,7 @@ let last = performance.now() / 1000;
 function frame() {
   const now = nowSec(), dt = Math.min(0.05, now - last); last = now;
   const st = now - S.t0;
+  BGM.tick();
 
   // 進行
   if (S.mode === 'count') {
@@ -482,8 +532,6 @@ function frame() {
     for (const n of S.notes) {
       if (!n.judged && st - n.t > CFG.WIN_BAD) { n.judged = true; n.missed = true; judge('leak', n.lane, true); if (S.mode !== 'play') break; }
     }
-    const beat = Math.floor((st - CFG.LEAD_IN) / (60 / CFG.BPM));
-    if (st >= CFG.LEAD_IN - 1 && beat !== S.lastBeat) { S.lastBeat = beat; sfx.beat(); }
     S.notes = S.notes.filter(n => st - n.t < 1.2);
   }
   S.shown += (S.prog - S.shown) * Math.min(1, dt * 8);
