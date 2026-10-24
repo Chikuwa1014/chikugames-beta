@@ -6,7 +6,7 @@
 
 - `index.html`：ベータのトップ。開くと、ちくわげーむず本番（https://chikuwa-games.chikuwa-hookah.workers.dev/）のトップへ自動で移動する
 - `cards.js`：本番トップの「Beta」欄に出すカード（紹介文・版数・サムネイル・鍵または開発中）
-- `staging/`：正式版トップの試作環境（どこからもリンクしない）
+- `shisaku/`：正式版トップの試作環境（どこからもリンクしない）
 - `gatasu/index.html`：がたす、モテる。のベータ（`/gatasu/`。β0.1.0・限定公開）
 - `voxel-quiz/index.html`：ぬがせて！ボクセルクイズのベータ（`/voxel-quiz/`。β0.1.0・限定公開）
 - `hayaoshi-chikupon/`：早押し！ちくぽん！（β0.1.0・開発に公開。URL は公開しない）
