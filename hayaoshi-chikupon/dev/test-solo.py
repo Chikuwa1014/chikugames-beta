@@ -23,7 +23,7 @@ with sync_playwright() as p:
     pg.on("console", lambda m: m.type == "error" and not any(s in m.text for s in IGNORE) and errors.append(f"console: {m.text}"))
     pg.goto(BASE)
     check("早押し" in pg.title(), "タイトル: " + pg.title())
-    check(pg.inner_text("#ver") == "β0.1.0", "版数 β0.1.0")
+    check(pg.inner_text("#ver") == "β0.2.0", "版数 β0.1.0")
     pg.screenshot(path=f"{OUT}/solo-home.png")
 
     pg.click('[data-go="solo-select"]')

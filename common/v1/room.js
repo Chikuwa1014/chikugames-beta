@@ -446,7 +446,8 @@
      * opt.inviteMsg：招待を送るときの文面（#ちくわげーむず は自動で付く）
      * opt.tags：招待の文面に付けるゲーム固有のハッシュタグ
      * room を作るときの name に CG.room.lobbyName(opt) を渡すと、名前欄の値を使う。
-     * ロビーの表示中に ?room= 付きで開かれていたら、自動で参加する（autoJoin: false で止められる）
+     * ロビーの表示中に ?room= 付きで開かれていたら、部屋コードを入れておく（autoJoin: false で止められる）。
+     * 名前欄があるときは名前を入れてから「参加する」を押してもらう。名前欄がないときは、そのまま自動で参加する
      */
     function lobby(el, room, opt) {
         opt = Object.assign({ autoJoin: true, title: 'みんなで遊ぶ' }, opt || {});
@@ -522,7 +523,7 @@
             }
         });
         el.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && e.target.classList.contains('cg-room-code'))
+            if (e.key === 'Enter' && (e.target.classList.contains('cg-room-code') || (e.target.classList.contains('cg-room-name') && el.querySelector('.cg-room-code').value)))
                 el.querySelector('[data-cg="join"]').click();
         });
         function saveName() {
@@ -536,7 +537,17 @@
             const i = el.querySelector('.cg-room-code');
             if (i)
                 i.value = c;
-            room.join(c);
+            if (el.querySelector('.cg-room-name')) {
+                // 名前欄があるときは、すぐには参加しない。名前を入れてから「参加する」を押してもらう
+                // （招待リンク・QR で開いた人が名前を入れられないのを防ぐ）
+                st.status('部屋 ' + c + ' に招待されています。なまえを入れて「参加する」を押してください', false);
+                try {
+                    el.querySelector('.cg-room-name').focus();   // status で書き直したあとの欄
+                }
+                catch (e) { }
+            }
+            else
+                room.join(c);
         }
         return st;
     }

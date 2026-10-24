@@ -40,7 +40,8 @@ with sync_playwright() as p:
 
     def page(name):
         ctx = b.new_context(viewport={"width": 400, "height": 860}, device_scale_factor=1)
-        ctx.add_init_script(f"localStorage.setItem('hayaoshi-chikupon-name', '{name}')")
+        if name == "おや":
+            ctx.add_init_script(f"localStorage.setItem('hayaoshi-chikupon-name', '{name}')")
         pg = ctx.new_page()
         pg.on("pageerror", lambda e: errors.append(f"{name}: pageerror {e}"))
         pg.on("console", lambda m: m.type == "error" and not any(s in m.text for s in IGNORE) and errors.append(f"{name}: console {m.text}"))
@@ -57,11 +58,19 @@ with sync_playwright() as p:
     guests = []
     for n in NAMES:
         g = page(n)
-        g.goto(BASE + "?room=" + code)
+        g.goto(BASE + "?room=" + code)   # 招待リンク・QR と同じ開き方。名前を入れてから参加する
+        g.wait_for_selector(".cg-room-name", timeout=8000)
+        check(g.input_value(".cg-room-code") == code and "招待" in g.inner_text("#lobby"), f"{n}：招待リンクで開くと、部屋コード入り・名前を入れる案内")
+        check(g.locator("#guest-panel:not([hidden])").count() == 0, f"{n}：名前を入れるまでは参加しない")
+        g.fill(".cg-room-name", n)
+        g.click('[data-cg="join"]')
         g.wait_for_selector("#guest-panel:not([hidden])", timeout=15000)
         guests.append(g)
-    host.wait_for_function("document.querySelector('#host-panel .hp-title').innerText.includes('子 3人')", timeout=10000)
+        host.wait_for_function(f"window.__chikupon.room.members.length === {len(guests) + 1}", timeout=10000)   # 1人ずつ入る
+    host.wait_for_function("document.querySelector('#host-panel .hp-title').innerText.includes('回答者（子） 3人')", timeout=10000)
     check(True, "子3人が参加")
+    host.wait_for_function("document.querySelector('#host-panel .score').innerText.includes('い子')", timeout=5000)
+    check(all(n in host.inner_text("#host-panel .score") for n in NAMES), "入れた名前で参加している")
     host.screenshot(path=f"{OUT}/m-host-idle.png")
     guests[0].screenshot(path=f"{OUT}/m-guest-idle.png")
     check("おまちください" in guests[0].inner_text("#gpad"), "子：出題者を待つ表示")
@@ -154,6 +163,63 @@ with sync_playwright() as p:
     check(True, "だれも押さなかったとき、時間で打ち切り")
     guests[0].wait_for_function("document.querySelector('#gpad .pad-main').innerText.includes('だれも')", timeout=5000)
 
+    # ---- 第4問：スタック。あ子→い子→う子の順に押す。あ子× → い子に回答権 → い子× → う子× → 流局 ----
+    host.evaluate("window.__chikupon.TUNING.openTimeout = 4000")
+    host.click('[data-h="stim:color"]')
+    host.click('[data-h="mode:stack"]')
+    host.click('[data-h="start"]')
+    for g in guests:
+        g.wait_for_function("window.__chikupon.G.st.phase === 'armed' && window.__chikupon.G.st.n === 4 && window.__chikupon.G.st.mode === 'stack'", timeout=5000)
+    host.click('[data-h="go"]', force=True)
+    for g in guests:
+        g.wait_for_function("window.__chikupon.G.local && window.__chikupon.G.local.shownAt > 0", timeout=5000)
+    time.sleep(0.25); guests[0].click("#gpad")
+    time.sleep(0.15); guests[1].click("#gpad")
+    time.sleep(0.15); guests[2].click("#gpad")
+    host.wait_for_function("window.__chikupon.H.phase === 'judge'", timeout=8000)
+    rk = host.evaluate("window.__chikupon.H.ranks")
+    print("   スタック:", [(r["name"], r["d"]) for r in rk])
+    check([r["name"] for r in rk] == ["あ子", "い子", "う子"] and rk[0]["d"] == 0 and rk[1]["d"] > 0, "押した順に3人スタック（1番との差つき）")
+    check("+0." in host.inner_text("#host-panel"), "親の画面に 1番との差（+○秒）")
+    guests[2].wait_for_function("document.querySelector('#gpad').innerText.includes('3番目')", timeout=5000)
+    check(True, "う子の画面：3番目に控えています")
+    host.screenshot(path=f"{OUT}/m-host-stack.png")
+    guests[2].screenshot(path=f"{OUT}/m-guest-stack.png")
+    host.click('[data-h="ng"]')
+    host.wait_for_function("window.__chikupon.H.phase === 'judge' && window.__chikupon.H.winner.name === 'い子'", timeout=5000)
+    check(True, "あ子× → い子に回答権がうつる")
+    guests[1].wait_for_function("document.querySelector('#gpad .pad-main').innerText.includes('回答権')", timeout=5000)
+    check("あなた" in guests[1].inner_text("#gpad"), "い子の画面：あなたが回答権")
+    guests[0].wait_for_function("document.querySelector('#gpad').innerText.includes('お手つき')", timeout=5000)
+    check(True, "あ子の画面：お手つき")
+    host.screenshot(path=f"{OUT}/m-host-stack-pass.png")
+    host.click('[data-h="ng"]')
+    host.wait_for_function("window.__chikupon.H.phase === 'judge' && window.__chikupon.H.winner.name === 'う子'", timeout=5000)
+    host.click('[data-h="ng"]')
+    host.wait_for_function("window.__chikupon.H.phase === 'after' && window.__chikupon.H.last.kind === 'ryukyoku'", timeout=5000)
+    check("流局" in host.inner_text("#host-panel") and host.locator('[data-h="reopen"]').count() == 0, "全員× → 🀄️流局🐉（もういちど回答許可は出ない）")
+    guests[0].wait_for_function("document.querySelector('#gpad').innerText.includes('流局')", timeout=5000)
+    check(True, "子の画面も 流局")
+    host.screenshot(path=f"{OUT}/m-host-ryukyoku.png")
+    # スタックで正解：つぎの問題で あ子× → い子○
+    host.click('[data-h="start"]')
+    for g in guests:
+        g.wait_for_function("window.__chikupon.G.st.phase === 'armed' && window.__chikupon.G.st.n === 5", timeout=5000)
+    host.click('[data-h="go"]', force=True)
+    for g in guests[:2]:
+        g.wait_for_function("window.__chikupon.G.local && window.__chikupon.G.local.shownAt > 0", timeout=5000)
+    time.sleep(0.25); guests[0].click("#gpad")
+    time.sleep(0.15); guests[1].click("#gpad")
+    host.wait_for_function("window.__chikupon.H.phase === 'judge'", timeout=8000)
+    host.click('[data-h="ng"]')
+    host.wait_for_function("window.__chikupon.H.winner.name === 'い子'", timeout=5000)
+    host.click('[data-h="ok"]')
+    host.wait_for_function("window.__chikupon.H.phase === 'after' && window.__chikupon.H.last.kind === 'ok'")
+    scores = {s[1]["name"]: s[1]["pt"] for s in host.evaluate("[...window.__chikupon.H.scores]")}
+    print("   得点:", scores)
+    check(scores.get("い子") == 1 and scores.get("あ子") == 2, "スタックの正解も +1点（い子1点）")
+    host.click('[data-h="mode:normal"]')
+
     # ---- 終了 ----
     host.click('[data-h="finish"]')
     host.click('[data-h="finish-yes"]')
@@ -169,7 +235,7 @@ with sync_playwright() as p:
 
     # ---- 子の退出 ----
     guests[2].click('[data-cg="leave"]')
-    host.wait_for_function("document.querySelector('#host-panel .hp-title').innerText.includes('子 2人')", timeout=8000)
+    host.wait_for_function("document.querySelector('#host-panel .hp-title').innerText.includes('回答者（子） 2人')", timeout=8000)
     check(True, "子が退出すると、親の人数が減る")
     b.close()
 
