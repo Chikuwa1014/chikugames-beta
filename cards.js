@@ -96,8 +96,8 @@ add({
   href: BETA + '/hayaoshi-chikupon/', kicker: 'はやおし', title: '早押し！ちくぽん！', sub: '合図が出たらすぐ押せ！',
   desc: 'いろ・おと・しんどうの合図で反応のはやさをはかる「ひとりで」と、出題者の回答許可で早押し対決する「みんなで」（最大8人）。',
   tags: ['反射神経', 'ひとりで遊ぶ', '最大8人で通信'], version: 'β0.1.0', updated: '2026-10-24',
-  /* 開発中：中身をぼかし、リンクを貼らない（鍵の値は誰も知らない） */
-  lock: 'a33440a86bd8f0bdf169976f7e516aa6caa1dd76c96d2f3650121fc2c1d995ab',
+  /* 開発に公開：中身をぼかして「開発中」。リンクは貼らない（トップの表示は正式版の index.html が担当） */
+  dev: true,
   /* 160×90 のサムネイル（ドット絵）。t は秒 */
   draw(c, t) {
     const r = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };

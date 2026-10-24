@@ -1,6 +1,6 @@
 # 早押し！ちくぽん！ 引き継ぎメモ
 
-全ゲーム共通のルールはリポジトリ直下の `CLAUDE.md`（正式版の `CLAUDE.md` に準拠）。ここにはこのゲームだけのことを書く。
+全ゲーム共通のルールは正式版（`Chikuwa1014/chikugames`）の `CLAUDE.md` を参照する。ここにはこのゲームだけのことを書く。
 
 ## 概要
 
@@ -9,8 +9,9 @@
 
 ## URL
 
-- 公開（β）：`/hayaoshi-chikupon/`
-- アーティファクト：なし（方針どおり、アーティファクトでは確認しない。マルチは手元のテストと β の公開後に確認する）
+- 公開：**開発に公開**（β版の `cards.js` で `dev: true`）。URL は公開しない（`.assetsignore` に `hayaoshi-chikupon/`）。
+- 公開するときは、正式版の `CLAUDE.md` 3 章に従い、開発者の指示を仰いでから `.assetsignore` の行を消す。
+- アーティファクトでは確認しない（正式版の方針）。手元のサーバーで確かめる
 
 ## コードの地図（`index.html` の `<script>` 内）
 
@@ -44,7 +45,7 @@
 
 ## テスト
 
-- `dev/server.mjs`：本物の `worker/index.js` を Node で動かす手元サーバー（`node hayaoshi-chikupon/dev/server.mjs` → `http://localhost:8787/hayaoshi-chikupon/`）
+- `dev/server.mjs`：本物の `worker/index.js` を Node で動かす手元サーバー（`node hayaoshi-chikupon/dev/server.mjs` → `http://localhost:8787/hayaoshi-chikupon/`。公開していなくても手元では開ける）
 - `dev/test-solo.py`：ひとりの通しテスト（3種類・お手つき・結果・保存）
 - `dev/test-multi.py`：みんなでの通しテスト（親＋子3人。お手つき・いろ／おと・回答権・○×・やり直し・打ち切り・終了・退出）
 
