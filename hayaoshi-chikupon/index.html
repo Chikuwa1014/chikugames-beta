@@ -177,7 +177,8 @@ h2{margin:2px 0;font-size:22px;font-weight:900}
       <summary>あそびかた</summary>
       <ul>
         <li><b>ひとりで</b>：「いろ」「おと」「しんどう」から1つえらんで、5回はかります。合図が出たらすぐタップ！ 合図より前に押すと「お手つき」です。</li>
-        <li><b>みんなで</b>：1人が出題者（親）になって部屋を作り、みんなは部屋コードで参加（親＋子で最大8台）。親が「回答許可！」を押すと、子の端末に合図が出ます。いちばん速く押した子が回答権！ 親が ○ か × を決めます。</li>
+        <li><b>みんなで</b>：1人が出題者（親）になって部屋を作り、ほかの人は回答者（子）として部屋コードで参加（出題者（親）＋回答者（子）で最大8台）。出題者（親）が「回答許可！」を押すと、回答者（子）の端末に合図が出ます。いちばん速く押した回答者（子）が回答権！ 出題者（親）が ○ か × を決めます。</li>
+        <li><b>回答のしかた</b>：「⚡ ふつう」は いちばん速い人だけが回答権。「📚 スタック」は 押した人全員が 1番との差（何秒差か）の順に ならび、まちがえると お手つきで 次の人に回答権がうつります。全員まちがえたら「🀄️流局🐉」。</li>
         <li>合図の前（「よーい…」のあいだ）に押すと、その問題はお休みです。</li>
         <li>端末のおくれ（画面・音・しんどう）も ふくんだ数字です。</li>
       </ul>
@@ -185,6 +186,7 @@ h2{margin:2px 0;font-size:22px;font-weight:900}
     <details class="card log">
       <summary>更新履歴</summary>
       <ul>
+        <li>β0.2.0（2026-10-24）みんなでに「📚 スタック」（1番との差の順に回答権がうつる）を追加。招待リンク・QRで参加するときも名前を入れられるように。「子」の表記を「回答者（子）」に。ひとりのスタート画面の説明を整理。</li>
         <li>β0.1.0（2026-10-24）はじめての公開。ひとりで（いろ・おと・しんどう）と、みんなで（親の回答許可で早押し）。</li>
       </ul>
     </details>
@@ -232,7 +234,7 @@ h2{margin:2px 0;font-size:22px;font-weight:900}
       <button class="btn alt wide" id="g-share" type="button" hidden>📤 けっかをシェア</button>
     </div>
     <div id="lobby" class="card"></div>
-    <p class="hint">親＋子で最大8台まで。部屋を作った人が出題者（親）になります。</p>
+    <p class="hint">出題者（親）＋回答者（子）で最大8台まで。部屋を作った人が出題者（親）になります。</p>
   </section>
 </div>
 
@@ -245,7 +247,7 @@ h2{margin:2px 0;font-size:22px;font-weight:900}
 'use strict';
 (() => {
 /* ============ 設定・調整用の数値 ============ */
-const VERSION = 'β0.1.0';
+const VERSION = 'β0.2.0';
 const GAME = 'hayaoshi-chikupon';
 const KEY_BEST = 'hayaoshi-chikupon-best-v1';      // ひとり：合図ごとのベスト記録
 const KEY_NAME = 'hayaoshi-chikupon-name';          // みんなで：名前
@@ -259,6 +261,7 @@ const TUNING = {
   vibeMs: 180,        // しんどうの合図の長さ（ミリ秒）
   grace: 350,         // みんなで：最初の1人が押してから、ほかの人の分を待つ時間（ミリ秒）
   openTimeout: 6000,  // みんなで：回答許可を出してから、だれも押さないときに打ち切る時間（ミリ秒）
+  stackWait: 2000,    // みんなで（スタック）：最初の1人が押してから、ほかの人が押すのを待つ時間（ミリ秒）。全員押したらすぐ決める
 };
 const RANKS = [     // ひとり：平均（ミリ秒）の称号
   [180, '光速ちくわ', '⚡'], [220, '俊足だいこん', '💨'], [270, 'ふつうのたまご', '🥚'],
@@ -487,7 +490,7 @@ document.addEventListener('keydown', e => {
 /* ============ みんなで ============ */
 let room = null;
 const H = {   // 親（出題者）の状態
-  phase: 'idle', n: 0, stimMode: 'color', stim: 'color', scores: new Map(), locked: new Set(), presses: new Map(),
+  phase: 'idle', n: 0, mode: 'normal', stimMode: 'color', stim: 'color', scores: new Map(), locked: new Set(), presses: new Map(),
   ranks: [], winner: null, last: null, grace: 0, tmo: 0, confirmEnd: false,
 };
 const G = { st: null, local: null, localFoulN: -1 };   // 子の状態
@@ -537,7 +540,7 @@ function hReset(keepScores) {
   if (!keepScores) H.scores = new Map();
 }
 function stateMsg() {
-  return { t: 'st', phase: H.phase, n: H.n, scores: scoreList(), locked: [...H.locked], ranks: H.ranks, winner: H.winner, last: H.last };
+  return { t: 'st', phase: H.phase, n: H.n, mode: H.mode, scores: scoreList(), locked: [...H.locked], ranks: H.ranks, winner: H.winner, last: H.last };
 }
 function pushState() {
   if (!room || room.role !== 'host') return;
@@ -573,7 +576,7 @@ function hOnMessage(from, m) {
     let ms = Number(m.ms); if (!isFinite(ms)) return;
     ms = Math.max(TUNING.minValid, Math.min(9999, Math.round(ms)));
     H.presses.set(from, ms);
-    if (!H.grace) H.grace = setTimeout(hDecide, TUNING.grace);   // ほかの子の分を、すこしだけ待つ
+    if (!H.grace) H.grace = setTimeout(hDecide, H.mode === 'stack' ? TUNING.stackWait : TUNING.grace);   // ほかの子の分を待つ（スタックは長め）
     hCheckAll(); renderHost();
   } else if (m.t === 'foul') {
     if ((H.phase === 'armed' || H.phase === 'open') && !H.locked.has(from) && !H.presses.has(from)) {
@@ -591,7 +594,8 @@ function hDecide() {
   if (H.phase !== 'open') return;
   clearTimers();
   const ranks = [...H.presses].map(([id, ms]) => ({ id, ms, name: nameOf(id) })).sort((a, b) => a.ms - b.ms);
-  H.ranks = ranks;
+  ranks.forEach(r => { r.d = r.ms - ranks[0].ms; });   // 1番との差（ミリ秒）
+  H.ranks = ranks; H.last = null;
   if (!ranks.length) { H.winner = null; H.phase = 'after'; H.last = { kind: 'none' }; }
   else { H.winner = ranks[0]; H.phase = 'judge'; }
   pushState();
@@ -600,12 +604,21 @@ function hJudge(ok) {
   if (H.phase !== 'judge' || !H.winner) return;
   const w = H.winner;
   if (ok) { syncScores(); const s = H.scores.get(w.id) || { name: w.name, pt: 0 }; s.pt++; H.scores.set(w.id, s); H.last = { kind: 'ok', id: w.id, name: w.name, ms: w.ms }; }
-  else { H.locked.add(w.id); H.last = { kind: 'ng', id: w.id, name: w.name, ms: w.ms }; }
+  else {
+    H.locked.add(w.id); H.last = { kind: 'ng', id: w.id, name: w.name, ms: w.ms };
+    if (H.mode === 'stack') {   // スタック：まちがえたらお手つき。次に控える人に回答権がうつる
+      const here = new Set(kids().map(k => k.id));
+      const next = H.ranks.find(r => !H.locked.has(r.id) && here.has(r.id));
+      if (next) { H.winner = next; pushState(); return; }
+      H.last = { kind: 'ryukyoku', id: w.id, name: w.name, ms: w.ms };   // 全員まちがえた
+    }
+  }
   H.phase = 'after';
   pushState();
 }
 function hAction(a) {
   if (a.startsWith('stim:')) { H.stimMode = a.slice(5); renderHost(); return; }
+  if (a.startsWith('mode:')) { H.mode = a.slice(5); pushState(); return; }
   if (a === 'start') hStart();
   else if (a === 'reopen') hReopen();
   else if (a === 'go') hGo();
@@ -621,6 +634,9 @@ function hAction(a) {
 $('#host-panel').addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (b && !b.disabled) hAction(b.dataset.h); });
 
 const STIM_LABEL = { color: '🎨 いろ', sound: '🔊 おと', vibe: '📳 しんどう', random: '🎲 ランダム' };
+const MODE_LABEL = { normal: '⚡ ふつう', stack: '📚 スタック' };
+const RYUKYOKU = '🀄️流局🐉';
+const diffTxt = d => '+' + (d / 1000).toFixed(3) + '秒';
 function scoreHtml(list, meId) {
   return list.map((s, i) => `<li class="${s.id === meId ? 'me' : ''}${s.here ? '' : ' out'}"><span>${i + 1}</span><span class="n">${esc(s.name)}${s.here ? '' : '（退出）'}</span><span class="pt">${s.pt}<small> 点</small></span></li>`).join('');
 }
@@ -631,36 +647,46 @@ function renderHost() {
   const canSeg = ph !== 'open' && ph !== 'judge' && ph !== 'end';
   let stage = '', act = '';
   if (ph === 'idle') {
-    stage = ks.length ? `<span class="big-t">じゅんびOK</span><small>問題を出す じゅんびが できたら「問題をはじめる」</small>` : `<span class="big-t">子が入るのを まっています…</span><small>下の 部屋コード・リンク・QR を みんなに伝えよう</small>`;
+    stage = ks.length ? `<span class="big-t">じゅんびOK</span><small>問題を出す じゅんびが できたら「問題をはじめる」</small>` : `<span class="big-t">回答者（子）が入るのを まっています…</span><small>下の 部屋コード・リンク・QR を みんなに伝えよう</small>`;
     act = `<button class="bigbtn" data-h="start"${ks.length ? '' : ' disabled'}>▶ 問題をはじめる</button>`;
   } else if (ph === 'armed') {
-    stage = `<span class="big-t">第${H.n}問 ・ よーい…</span><small>子の画面は「よーい…」。問題を出して、準備ができたら 回答許可！${lockedNames.length ? '<br>お手つき・お休み：' + lockedNames.join('、') : ''}</small>`;
+    stage = `<span class="big-t">第${H.n}問 ・ よーい…</span><small>回答者（子）の画面は「よーい…」。問題を出して、準備ができたら 回答許可！${lockedNames.length ? '<br>お手つき・お休み：' + lockedNames.join('、') : ''}</small>`;
     act = `<button class="bigbtn go" data-h="go">🔔 回答許可！</button><button class="btn alt wide" data-h="cancel">この問題を やめる</button>`;
   } else if (ph === 'open') {
     const el2 = ks.filter(k => !H.locked.has(k.id));
     stage = `<span class="big-t">${STIM_LABEL[H.stim]} の合図を 出しました！</span><small>おしている人：${H.presses.size} / ${el2.length}</small>`;
     act = `<button class="bigbtn" disabled>判定中…</button>`;
   } else if (ph === 'judge') {
-    const w = H.winner;
-    stage = `<div class="stage-msg win" style="margin:0"><span class="big-t">🔔 ${esc(w.name)} さん！</span><small>${sec(w.ms)}で いちばん はやい。答えを 聞いて ○× を 決めよう</small></div>` +
-      `<ol style="margin:8px 0 0;padding-left:1.4em;font-size:14px;color:var(--muted)">${H.ranks.map(r => `<li>${esc(r.name)}　${sec(r.ms)}</li>`).join('')}</ol>`;
+    const w = H.winner, l = H.last, stack = H.mode === 'stack';
+    const first = H.ranks[0] && H.ranks[0].id === w.id;
+    const head = l && l.kind === 'ng' ? `<small>❌ ${esc(l.name)} さんは お手つき。回答権は ${esc(w.name)} さんへ</small><br>` : '';
+    const why = first ? `${sec(w.ms)}で いちばん はやい` : `1番との差 ${diffTxt(w.d)}`;
+    stage = `<div class="stage-msg win" style="margin:0">${head}<span class="big-t">🔔 ${esc(w.name)} さん！</span><small>${why}。答えを 聞いて ○× を 決めよう</small></div>` +
+      `<ol style="margin:8px 0 0;padding-left:1.4em;font-size:14px;color:var(--muted)">${H.ranks.map(r => {
+        const mark = r.id === w.id ? '🔔 ' : stack && H.locked.has(r.id) ? '❌ ' : '';
+        return `<li${r.id === w.id ? ' style="color:var(--ink);font-weight:800"' : ''}>${mark}${esc(r.name)}　${sec(r.ms)}${stack && r.d > 0 ? `（${diffTxt(r.d)}）` : ''}</li>`;
+      }).join('')}</ol>`;
     act = `<div class="row"><button class="bigbtn" style="background:var(--green)" data-h="ok">⭕ 正解 +1点</button><button class="bigbtn" style="background:var(--ng)" data-h="ng">❌ ちがう</button></div>`;
   } else if (ph === 'after') {
     const l = H.last || {};
     stage = l.kind === 'ok' ? `<span class="big-t">⭕ ${esc(l.name)} さん 正解！ +1点</span>` :
-      l.kind === 'ng' ? `<span class="big-t">❌ ${esc(l.name)} さん ざんねん…</span><small>この子は この問題は お休み。ほかの子で もういちど 回答許可できます</small>` :
+      l.kind === 'ng' ? `<span class="big-t">❌ ${esc(l.name)} さん ざんねん…</span><small>この回答者（子）は この問題は お休み。ほかの回答者（子）で もういちど 回答許可できます</small>` :
+      l.kind === 'ryukyoku' ? `<span class="big-t">${RYUKYOKU}</span><small>押した人が 全員 まちがえました</small>` :
       `<span class="big-t">だれも 押しませんでした</span><small>もういちど 回答許可を 出せます</small>`;
-    act = (l.kind === 'ok' ? '' : `<button class="bigbtn go" style="animation:none" data-h="reopen">🔁 もういちど 回答許可へ</button>`) +
-      `<button class="bigbtn" style="${l.kind === 'ok' ? '' : 'background:var(--indigo)'}" data-h="start"${ks.length ? '' : ' disabled'}>▶ つぎの問題</button>`;
+    act = (l.kind === 'ok' || l.kind === 'ryukyoku' ? '' : `<button class="bigbtn go" style="animation:none" data-h="reopen">🔁 もういちど 回答許可へ</button>`) +
+      `<button class="bigbtn" style="${l.kind === 'ok' || l.kind === 'ryukyoku' ? '' : 'background:var(--indigo)'}" data-h="start"${ks.length ? '' : ' disabled'}>▶ つぎの問題</button>`;
   } else if (ph === 'end') {
     stage = `<span class="big-t">🏁 おしまい！</span><small>${list.length ? '1位は ' + esc(list[0].name) + ' さん（' + list[0].pt + '点）' : ''}</small>`;
     act = `<button class="bigbtn" data-h="again">もういちど（点数リセット）</button><button class="btn alt wide" data-h="share">📤 けっかをシェア</button>`;
   }
   const seg = ['color', 'sound', 'vibe', 'random'].map(k => `<button type="button" data-h="stim:${k}" class="${H.stimMode === k ? 'on' : ''}"${canSeg ? '' : ' disabled'}>${STIM_LABEL[k]}</button>`).join('');
+  const mseg = ['normal', 'stack'].map(k => `<button type="button" data-h="mode:${k}" class="${H.mode === k ? 'on' : ''}"${canSeg ? '' : ' disabled'}>${MODE_LABEL[k]}</button>`).join('');
   const fin = ph === 'end' ? '' : H.confirmEnd
     ? `<div class="row"><button class="btn ng" data-h="finish-yes">ほんとうに おわる</button><button class="btn alt" data-h="finish-no">やめる</button></div>`
     : `<button class="btn alt wide" data-h="finish">ゲームを おわる</button>`;
-  el.innerHTML = `<div class="hp-title"><span class="chip">👑 あなたは 出題者（親）</span><span class="chip">子 ${ks.length}人 ・ 第${H.n}問</span></div>
+  el.innerHTML = `<div class="hp-title"><span class="chip">👑 あなたは 出題者（親）</span><span class="chip">回答者（子） ${ks.length}人 ・ 第${H.n}問</span></div>
+    <div><div class="hint" style="margin-bottom:4px">回答のしかた</div><div class="seg">${mseg}</div>
+    <p class="hint" style="margin-top:4px">${H.mode === 'stack' ? '押した人全員が 1番との差の順に ならびます。まちがえると お手つきで 次の人へ' : 'いちばん速い人だけが 回答権'}</p></div>
     <div><div class="hint" style="margin-bottom:4px">回答許可の合図</div><div class="seg">${seg}</div>
     ${H.stimMode === 'vibe' || H.stimMode === 'random' ? '<p class="hint" style="margin-top:4px">しんどうに対応していない端末には、いろで知らせます。</p>' : ''}</div>
     ${ph === 'judge' ? stage : `<div class="stage-msg">${stage}</div>`}
@@ -676,7 +702,8 @@ function gOnMessage(from, m) {
     G.st = m;
     if (m.phase === 'armed') G.local = null;
     if (m.phase === 'idle') { G.local = null; G.localFoulN = -1; }
-    if (!prev || prev.phase !== m.phase) gSounds(m);
+    const passed = prev && prev.phase === 'judge' && m.phase === 'judge' && prev.winner && m.winner && prev.winner.id !== m.winner.id;
+    if (!prev || prev.phase !== m.phase || passed) gSounds(m);
     renderGuest();
   } else if (m.t === 'go') {
     const lockedNow = G.localFoulN === m.n || ((G.st && G.st.locked) || []).includes(room.myId);
@@ -689,8 +716,12 @@ function gOnMessage(from, m) {
 }
 function gSounds(m) {
   const me = room.myId;
-  if (m.phase === 'judge' && m.winner) { if (m.winner.id === me) { Sound.chime(); vib([60, 40, 60]); } else Sound.tick(); }
-  else if (m.phase === 'after' && m.last) { if (m.last.kind === 'ok') Sound.chime(); else if (m.last.kind === 'ng') Sound.buzz(); }
+  if (m.phase === 'judge' && m.winner) {
+    if (m.winner.id === me) { Sound.chime(); vib([60, 40, 60]); }
+    else if (m.last && m.last.kind === 'ng') Sound.buzz();   // スタック：前の人がまちがえた
+    else Sound.tick();
+  }
+  else if (m.phase === 'after' && m.last) { if (m.last.kind === 'ok') Sound.chime(); else if (m.last.kind === 'ng' || m.last.kind === 'ryukyoku') Sound.buzz(); }
   else if (m.phase === 'end') Sound.chime();
 }
 function gLocked() { const st = G.st; return !!st && (G.localFoulN === st.n || (st.locked || []).includes(room.myId)); }
@@ -723,14 +754,18 @@ function renderGuest() {
       else setPad(p, 'quiet', 'よーい…', '合図まで 押さない！');   // おと・しんどうの合図のときは、見た目を変えない
       break;
     case 'judge': {
-      const mine = (st.ranks || []).findIndex(r => r.id === me);
-      if (w && w.id === me) setPad(p, 'ok', 'あなたが 回答権！', `${sec(w.ms)} ・ 答えを どうぞ！`);
+      const ranks = st.ranks || [], mine = ranks.findIndex(r => r.id === me), stack = st.mode === 'stack';
+      const wi = w ? ranks.findIndex(r => r.id === w.id) : -1;
+      if (w && w.id === me) setPad(p, 'ok', 'あなたが 回答権！', (wi > 0 ? `1番との差 ${diffTxt(w.d)}` : sec(w.ms)) + ' ・ 答えを どうぞ！');
+      else if (lk && stack && mine >= 0) setPad(p, 'foul', 'お手つき', w ? `回答権は ${w.name} さんへ` : '');
       else if (lk) setPad(p, 'foul', 'お休み', w ? `${w.name} さんが 回答権` : '');
-      else setPad(p, 'idle', w ? `${w.name} さんが 回答権` : '…', mine >= 0 ? `あなたは ${mine + 1}位 ${sec(st.ranks[mine].ms)}` : 'あなたは 押せませんでした');
+      else if (stack && mine > wi) setPad(p, 'idle', w ? `${w.name} さんが 回答権` : '…', `あなたは ${mine + 1}番目に 控えています（${diffTxt(ranks[mine].d)}）`);
+      else setPad(p, 'idle', w ? `${w.name} さんが 回答権` : '…', mine >= 0 ? `あなたは ${mine + 1}位 ${sec(ranks[mine].ms)}` : 'あなたは 押せませんでした');
       break;
     }
     case 'after':
       if (l.kind === 'ok') l.id === me ? setPad(p, 'ok', 'せいかい！ +1点', 'ナイス早押し！') : setPad(p, 'idle', `${l.name} さん 正解`, 'つぎの問題を まってね');
+      else if (l.kind === 'ryukyoku') setPad(p, 'foul', RYUKYOKU, '押した人が 全員 まちがえました');
       else if (l.kind === 'ng') l.id === me ? setPad(p, 'foul', 'ざんねん…', 'この問題は お休み') : setPad(p, 'idle', `${l.name} さん ざんねん…`, 'もういちど 回答許可が 出るかも！');
       else setPad(p, 'idle', 'だれも 押さなかった', 'もういちど 回答許可を まってね');
       p.classList.add('static');
