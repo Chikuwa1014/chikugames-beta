@@ -85,6 +85,28 @@ def revive_test(p):
     good = r['resumed'] and r['recreated'] and r['state'] == 'running' and r['advancing']
     print('revive', r, 'OK' if good else 'NG'); b.close(); return good
 
+HOLD = """async () => { const I = window.__IKU; I.pref.diff = 'vhard'; I.startGame();
+  const wait = f => new Promise(r => { const g = () => f() ? r() : setTimeout(g, 5); g(); });
+  const out = {}; I.CFG.LEAK_LIMIT = 99;                                  // 放っておいても途中でゲームオーバーにならないように
+  for (const mode of ['early', 'full']) {
+    await wait(() => I.S.mode === 'play');
+    let n; await wait(() => (n = I.S.notes.find(x => x.len > 0 && !x.judged && x.t - (I.nowSec() - I.S.t0) > 0.12)));
+    await wait(() => I.nowSec() - I.S.t0 >= n.t);                       // 頭が判定線に来たら押す
+    const before = { perfect: I.S.perfect, leaks: I.S.leaks }; I.press(n.lane);
+    out[mode + 'Held'] = n.holding;
+    if (mode === 'early') { I.release(n.lane); out.earlyLeak = I.S.leaks - before.leaks >= 1; }
+    else { await wait(() => I.nowSec() - I.S.t0 >= n.t + n.len + 0.05); out.fullPerfect = I.S.perfect - before.perfect >= 2; out.fullDone = !n.holding; }
+  }
+  const hasDbl = I.S.notes.some(a => I.S.notes.some(b => a !== b && a.t === b.t));
+  out.len = I.S.notes.filter(x => x.len > 0).length; return out; }"""
+
+def hold_test(p):
+    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required']); pg = b.new_page(viewport={'width': 400, 'height': 800})
+    pg.goto(URL); pg.wait_for_timeout(300); r = pg.evaluate(HOLD)
+    pg.screenshot(path=f'{OUT}/vhard-hold.png')
+    good = r['earlyHeld'] and r['earlyLeak'] and r['fullHeld'] and r['fullPerfect'] and r['fullDone']
+    print('hold', r, 'OK' if good else 'NG'); b.close(); return good
+
 def toilet_test(p):
     b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required']); pg = b.new_page(viewport={'width': 400, 'height': 800})
     pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("window.__IKU.pref.diff='hard'; window.__IKU.startGame()")
@@ -103,7 +125,7 @@ def songs_test(p):
     print('songs 20 OK' if ok else 'songs NG'); b.close(); return ok
 
 with sync_playwright() as p:
-    ok = songs_test(p) and grid_test(p) and revive_test(p) and toilet_test(p)
+    ok = songs_test(p) and grid_test(p) and revive_test(p) and hold_test(p) and toilet_test(p)
     ok &= run(p, 'win', {'width': 400, 'height': 800}, 'vhard') == 'success'
     ok &= run(p, 'win', {'width': 400, 'height': 800}, 'hard') == 'success'
     ok &= run(p, 'win', {'width': 400, 'height': 800}) == 'success'
