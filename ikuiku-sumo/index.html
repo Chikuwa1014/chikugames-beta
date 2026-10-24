@@ -90,11 +90,11 @@ header a{color:var(--muted);text-decoration:none}
 <script>
 'use strict';
 /* =====================================================================
-   いくいく！雲紅亭珍光〜すもう編〜  β0.1.1
+   いくいく！雲紅亭珍光〜すもう編〜  β0.1.2
    リズム（3レーン）で「押し出し！／はっけい！／お漏らし💦」を判定し、
    お相撲さんがシコを踏みながらママのもとへ進む。コードの地図は ikuiku-sumo/CLAUDE.md
    ===================================================================== */
-const VERSION = 'β0.1.1';
+const VERSION = 'β0.1.2';
 CG.init({ game: 'ikuiku-sumo', title: 'いくいく！雲紅亭珍光〜すもう編〜', version: VERSION });
 
 /* ---- 調整用の数値（バランスはここだけ直す） ---- */
@@ -112,8 +112,8 @@ const CFG = {
   LEAK_LIMIT: 0.35,    // お漏らしの割合がこれを超えたらゲームオーバー
   LEAK_MIN: 10         // 判定がこの回数に達するまでは割合で終わらない
 };
-/* ---- セリフと音声（音声は後で吹き込む。ファイルを置いてパスを書けば鳴る） ---- */
-const LINES = { success: 'ママ〜！ ぼく、ついたよ〜！', toilet: 'ま、まにあわなかった…！' };
+/* ---- セリフと音声（音声は後で吹き込む。ファイルを置いてパスを書けば、成功のカットが始まるときに鳴る） ---- */
+const LINES = { success: 'ママ！', toilet: 'ま、まにあわなかった…！' };   // success：着いた瞬間のひとこと
 const VOICE = { success: '', toilet: '' };   // 例：'./voice/success.mp3'
 const LANES = [
   { name: 'あか', col: '#E8483A', key: ['a', 'j', '1'] },
@@ -125,6 +125,7 @@ const JUDGE = {
   good: { text: 'はっけい！', col: '#7BE39A' },
   leak: { text: 'お漏らし💦', col: '#6FB8FF' }
 };
+const CUT = { DELAY: 1.3, LENGTH: 3.2 };   // 成功のカット：ついてからカットまでの秒数／カットの長さ
 const KEY_MUTE = 'ikuiku-sumo-mute';
 const KEY_BEST = 'ikuiku-sumo-best-v1';
 
@@ -199,7 +200,7 @@ function titlePanel() {
 
 function startGame() {
   unlockAudio();
-  hidePanel(); $('#bubble').hidden = true;
+  hidePanel(); resetCutUi();
   S = fresh(); S.mode = 'count'; S.t0 = nowSec() + 3;   // 3・2・1 のあとが曲の 0 秒
   updateHud();
 }
@@ -256,15 +257,18 @@ function checkEnd() {
   if (S.judged >= CFG.LEAK_MIN && leakRatio() > CFG.LEAK_LIMIT) endToilet();
 }
 function endSuccess() {
-  S.mode = 'success'; S.endAt = nowSec();
-  sfx.win(); playVoice('success');
+  // 着いたら「ママ！」→（少し間をおいて）成功のカット。音声はカットが始まるときに流す
+  S.mode = 'success'; S.endAt = nowSec(); S.cutAt = S.endAt + CUT.DELAY;
   save();
+  const b = $('#bubble'); b.textContent = LINES.success; b.hidden = false;
   setTimeout(() => {
     if (S.mode !== 'success') return;
-    $('#bubble').textContent = LINES.success; $('#bubble').hidden = false;
-  }, 900);
-  setTimeout(() => { if (S.mode === 'success') resultPanel(true); }, 2600);
+    $('#hud').style.visibility = 'hidden'; b.style.top = '4%';   // カットでは頭と重ならないよう、ふきだしを上へ
+    sfx.win(); playVoice('success');
+  }, CUT.DELAY * 1000);
+  setTimeout(() => { if (S.mode === 'success') resultPanel(true); }, (CUT.DELAY + CUT.LENGTH) * 1000);
 }
+function resetCutUi() { $('#hud').style.visibility = ''; const b = $('#bubble'); b.style.top = ''; b.hidden = true; }
 function endToilet() {
   S.mode = 'toilet'; S.endAt = nowSec(); S.fromX = sumoX();
   playVoice('toilet'); save();
@@ -286,7 +290,7 @@ function resultPanel(ok) {
     <div class="row"><button class="big" id="again">もう一回</button></div>
     <div class="row"><button class="sub" id="share">シェアする</button><button class="sub" id="toTitle">タイトルへ</button></div>`);
   $('#again').onclick = startGame;
-  $('#toTitle').onclick = () => { S = fresh(); $('#bubble').hidden = true; updateHud(); titlePanel(); };
+  $('#toTitle').onclick = () => { S = fresh(); resetCutUi(); updateHud(); titlePanel(); };
   $('#share').onclick = () => {
     const msg = ok
       ? `雲紅亭珍光がママのもとへたどり着いた！（押し出し${S.perfect}回・お漏らし${S.leaks}回）`
@@ -423,6 +427,32 @@ function drawParts(dt) {
   });
 }
 
+function heartAt(x, y, col) { R(x, y, 1, 1, col); R(x + 2, y, 1, 1, col); R(x - 1, y + 1, 5, 1, col); R(x, y + 2, 3, 1, col); R(x + 1, y + 3, 1, 1, col); }
+
+/* 成功のカット：ママと肩を組んで、ママが頬に勝利のキス（健全なごほうび）。2倍の大きさで描く */
+function drawCut(tt, now, dt) {
+  drawBg(now);
+  c.save(); c.globalAlpha = 0.2; c.fillStyle = '#FFE9A0';                                       // 放射状の光
+  for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2 + tt * 0.3; c.beginPath(); c.moveTo(60, 66); c.lineTo(60 + Math.cos(a) * 95, 66 + Math.sin(a) * 95); c.lineTo(60 + Math.cos(a + 0.14) * 95, 66 + Math.sin(a + 0.14) * 95); c.closePath(); c.fill(); }
+  c.restore();
+  c.save(); c.scale(2, 2);
+  const gy = 54, sx = 14, mx = 31, yb = gy - 38, y0 = gy - 36, SK = '#EDBB8E', SKN = '#F8D5BE', D = '#2A1A10';
+  drawMama(mx, gy, { t: now, mood: 'idle' });
+  [4, 10].forEach(ex => { R(mx + ex, y0 + 7, 3, 3, SKN); R(mx + ex, y0 + 9, 1, 1, D); R(mx + ex + 1, y0 + 8, 1, 1, D); R(mx + ex + 2, y0 + 9, 1, 1, D); });   // ママは目をとじてにっこり
+  drawSumo(sx, gy, { phase: 0, lift: 0, bob: 0, mood: 'happy', arms: '' });
+  R(sx + 20, yb + 16, 13, 3, SK); R(sx + 31, yb + 15, 3, 5, SK);                                 // お相撲さんの腕：ママの肩を組む
+  R(sx + 9, y0 + 19, 25, 2, SKN); R(sx + 7, y0 + 18, 3, 4, SKN);                                // ママの腕：お相撲さんの腰にまわす
+  R(sx + 16, yb + 11, 3, 2, '#F2808A'); R(sx + 6, yb + 11, 3, 2, '#F29B8E');                     // ほっぺ（キスで真っ赤）
+  if (tt > 0.25) heartAt(sx + 19, yb + 7 - Math.round(Math.abs(Math.sin(tt * 6)) * 2), '#FF4D7A');   // キスのハート
+  c.restore();
+  if (tt > 0.25) { c.fillStyle = '#FFFFFF'; c.strokeStyle = '#C23A60'; c.lineWidth = 2; c.font = 'bold 8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.strokeText('チュッ！', 84, 34 + Math.sin(tt * 8)); c.fillText('チュッ！', 84, 34 + Math.sin(tt * 8)); }
+  if (Math.random() < 0.2) spawnHeart(Math.random() < 0.5 ? 4 + Math.random() * 22 : 94 + Math.random() * 20, 96);   // ハートは左右の余白から
+  for (let i = 0; i < 10; i++) if ((Math.floor(tt * 6) + i) % 3 === 0) R((i * 37) % 120, (i * 23) % 70 + 6, 1, 1, '#FFFFFF');   // キラキラ
+  drawParts(dt);
+  if (tt < 0.15) { c.globalAlpha = 1 - tt / 0.15; R(0, 0, 120, 120, '#FFFFFF'); c.globalAlpha = 1; }   // カットが始まる白いフラッシュ
+}
+
 function drawToilet(tt) {
   // 廊下とトイレ
   const g = c.createLinearGradient(0, 0, 0, 82); g.addColorStop(0, '#2C3A50'); g.addColorStop(1, '#46566E'); c.fillStyle = g; c.fillRect(0, 0, 120, 82);
@@ -493,6 +523,7 @@ function drawScene(now, dt) {
     c.restore(); return;
   }
 
+  if (S.mode === 'success' && now >= S.cutAt) { drawCut(now - S.cutAt, now, dt); c.restore(); return; }
   drawBg(now);
   const x = sumoX();
   const ending = S.mode === 'success';
@@ -501,7 +532,6 @@ function drawScene(now, dt) {
   const walking = S.stomp > 0;
   const mood = ending ? 'happy' : (leakRatio() > CFG.LEAK_LIMIT * 0.8 && S.judged >= CFG.LEAK_MIN ? 'panic' : 'normal');
   drawSumo(x, GY, { phase: S.phase, lift: walking ? 4 : 0, bob: walking ? -1 : Math.round(Math.sin(now * 3)), arms: ending ? 'up' : (walking ? 'up' : ''), mood });
-  if (ending && Math.random() < 0.15) spawnHeart(mx + 4 + Math.random() * 10, GY - 40);
   drawParts(dt);
   c.restore();
 }
