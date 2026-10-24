@@ -1,7 +1,13 @@
+# 公開しないファイル（遊ぶのに不要なもの）
 .git
 .assetsignore
 wrangler.jsonc
-README.md
+**/CLAUDE.md
+**/README.md
+**/claude
+**/dev
+**/worker
+worker
 node_modules
 .wrangler
-CLAUDE.md
+.gitignore

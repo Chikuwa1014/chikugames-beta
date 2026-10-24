@@ -1,7 +1,22 @@
 // βテスト用の専用 Worker（本番の chikuwa-games とは別）。リポジトリのルートをそのまま静的配信する
 // （Cloudflare Pages として作られていても、ルートの index.html がそのまま表示される）
+// 静的ファイルは assets が先に返す。assets に無いパス（/hayaoshi-chikupon/ws）だけ worker/index.js が受ける
 {
   "name": "chikuwagames-beta",
+  "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "." }
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  // マルチプレイの部屋（WebRTC の接続情報を交換するだけ）。本番と同じ仕組み
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "MultiRoom" }
+    ]
+  },
+  // 無料プランでは SQLite 版の Durable Objects を使う
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["MultiRoom"] }
+  ]
 }
