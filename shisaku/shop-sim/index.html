@@ -1058,8 +1058,20 @@ button.achr {
   80% { transform:translate(-1px,0); }
 }
 
+/* ---- v1.5.0：大地震の日は店の絵が揺れ続ける ---- */
+#px.quake {
+  animation:pxquake .28s linear infinite;
+}
+
+@keyframes pxquake {
+  0%, 100% { transform:translate(0,0); }
+  25% { transform:translate(-2px,1px); }
+  50% { transform:translate(2px,-1px); }
+  75% { transform:translate(-1px,0); }
+}
+
 @media (prefers-reduced-motion:reduce) {
-  #px.shake { animation:none; }
+  #px.shake, #px.quake { animation:none; }
 }
 
 /* ---- v1.4.2：ドット絵の右上にセキュリティのストック残数 ---- */
@@ -1091,7 +1103,7 @@ button.achr {
 <div class="awning"></div>
 <div class="money" id="m"></div>
 <div class="meta" id="dt"></div>
-<details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="192" height="92" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
+<details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="384" height="184" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
 <div id="sp" style="display:none"></div>
 <div class="sd" id="sd"></div>
 <div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div></div>
@@ -1675,13 +1687,15 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '1.4.2';
+const VERSION = '1.5.0';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['1.5.0', '2026-10-24', 'イベントが起きた日は、店の絵にも反映（台風の浸水で店が水没・土嚢の壁、大雪で雪に埋もれる、車や6台の事故で窓が割れる、爆発・炎上・大地震（絵が揺れ続ける）、強盗・窃盗・泥棒の人影、超セレブのリムジン、パパ活のハート、バナナの皮・おにぎり・ブームの行列、テナント料の看板、決済ステッカー、清掃のモップがけなど）。翌日に戻る'],
+    ['1.4.3', '2026-10-24', '店の様子の絵の解像度を2倍に（お客さんや店員の表情・服・足の動き、店の窓の商品、OPEN/CLOSEの札がわかりやすく）。買えて帰るお客さんはにこにこ、買えずに帰るとがっかり、マイナスのイベントの日は落ち込んだ顔'],
     ['1.4.2', '2026-10-24', 'セキュリティのストック残数を、店の様子の絵の右上に「🛡×数」で表示（0のときは出さない）'],
     ['1.4.1', '2026-10-24', '営業中の現在時刻を購買欲ゲージの上に表示。投資の「棚を増やす」に、増やしたあとの月のテナント料を表示。お金や棚が減るイベントの日は、空が赤くなりカラスが飛び、お客さんがうつむいて歩く（起きた瞬間は店の絵が揺れる）'],
     ['1.4.0', '2026-10-24', '更新履歴を設定タブに表示。実績を所持金の横のバッジ（🏅）に移し、タップで一覧を開くように。実績のリセットを追加（確認画面つき）。一時停止・倍速ボタンをタブの行の右端にまとめ、倍速は押すたびに×1→×2→×4→×8と切り替え。営業タブのログ欄を4行分の枠にし、直近50件までさかのぼれるように（売れた商品を時刻つきで記録）。デバッグ欄の見出しを「🐞 デバッグ」に'],
@@ -2315,6 +2329,9 @@ function guard(a) {
 function addEvent(t, bad) {
     state.evs.push(t);
     addLog(t);
+    const fk = fxKind(t);
+    if (fk)
+        markFx(fk);
     if (bad)
         markBad();
 }
@@ -2946,6 +2963,9 @@ function tick() {
 <script>
 /**
  * pixel.js — ドット絵の描画。
+ * v1.4.3〜：キャンバスは 384×184（従来の 192×92 の縦横2倍）。
+ * 座標は従来どおり「論理座標（192×92）」で書き、`Rc` が2倍にして塗る（0.5刻みの位置も使える）。
+ * 人物・商品など細かく描きたいものだけ、実ピクセル（384×184）で塗る `Rp` を使う。
  */
 
 /** ドット絵のキャンバス */
@@ -2957,15 +2977,30 @@ const cx = cv.getContext('2d');
 /** アニメーションのフレーム数 */
 let fr = 0;
 
-/** 四角形を塗る */
-const Rc = (x, y, w, h, c) => {
+/** キャンバスの実ピクセルの大きさ（論理座標の2倍） */
+const PXW = 384, PXH = 184;
+
+/** 四角形を塗る（実ピクセル座標） */
+const Rp = (x, y, w, h, c) => {
+    x = Math.round(x);
+    y = Math.round(y);
     cx.fillStyle = c;
-    cx.fillRect(Math.round(x), Math.round(y), w, h);
+    cx.fillRect(x, y, w, h);
     if (pxDk) {
         cx.fillStyle = 'rgba(8,16,48,0.5)';
-        cx.fillRect(Math.round(x), Math.round(y), w, h);
+        cx.fillRect(x, y, w, h);
     }
 };
+
+/** 四角形を塗る（論理座標。実ピクセルでは2倍） */
+const Rc = (x, y, w, h, c) => Rp(x * 2, y * 2, w * 2, h * 2, c);
+
+/** 色を明るく（k>0）・暗く（k<0）する */
+function shade(c, k) {
+    const n = parseInt(c.slice(1), 16), t = k < 0 ? 0 : 255, a = Math.abs(k);
+    const f = v => Math.round(v + (t - v) * a);
+    return '#' + [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => f(v).toString(16).padStart(2, '0')).join('');
+}
 
 /** 夜に人物を描き直すとき、夜の暗さを重ねる */
 let pxDk = false;
@@ -2973,11 +3008,25 @@ let pxDk = false;
 /** 来店中のお客さん */
 const PXC = [];
 
-/** ドット文字を描く */
+/** ドット文字を描く（1ドット＝論理1px） */
 function pxText(x, y, t, c) {
     [...t].forEach((ch, i) => PXF[ch].forEach((r, j) => [...r].forEach((v, k) => {
         if (v === '1')
             Rc(x + i * 4 + k, y + j, 1, 1, c);
+    })));
+}
+
+/** 小さなドット文字（3×5・実ピクセル）。OPEN／CLOSE の札に使う */
+const PXG = {
+    O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100'], E: ['111', '100', '110', '100', '111'], N: ['111', '101', '101', '101', '101'],
+    C: ['111', '100', '100', '100', '111'], L: ['100', '100', '100', '100', '111'], S: ['111', '100', '111', '001', '111']
+};
+
+/** 小さなドット文字を描く（実ピクセル座標。文字間1px） */
+function pxTextP(x, y, t, c) {
+    [...t].forEach((ch, i) => PXG[ch].forEach((r, j) => [...r].forEach((v, k) => {
+        if (v === '1')
+            Rp(x + i * 4 + k, y + j, 1, 1, c);
     })));
 }
 
@@ -2994,28 +3043,89 @@ function pxArrive(gs, bc) {
     });
 }
 
-/** 人物を描く */
+/**
+ * 人物を描く（実ピクセルで 10×約19。顔の表情つき）。x・y は論理座標（0.5刻みで動ける）
+ * o.mood：'neutral'（ふつう）・'happy'（にこにこ・ほほ染め）・'meh'（がっかり）・'sad'（落ち込み・まゆと涙）
+ * o.g：女性（長い髪・スカート）／o.bag：買い物袋／o.dir：左へ進む／o.down：うつむく
+ * o.walk：歩きのコマ（0・1。足が交互に出る）／o.apron：エプロン（店員）／o.shades：サングラス
+ */
 function pp(x, y, b, o) {
     o = o || {};
-    const h = o.hair || '#3b2a20';
-    x = Math.round(x);
-    y = Math.round(y);
-    // うつむく（マイナスのイベントの日のお客さん）：頭を1つ下げ、進む向きへ少し前に出す
-    const hx = x + 1 + (o.down ? (o.dir ? -1 : 1) : 0), hy = y + (o.down ? 1 : 0);
-    Rc(hx, hy, 3, 3, '#f1c27d');
-    Rc(hx, hy, 3, o.down ? 2 : 1, h);
+    const h = o.hair || '#3b2a20', sk = '#f1c27d', mood = o.mood || (o.sad ? 'sad' : 'neutral');
+    const X = Math.round(x * 2), Y = Math.round(y * 2), d = o.dir ? -1 : 1;
+    const R = (dx, dy, w, hh, c) => Rp(X + dx, Y + dy, w, hh, c);
+    const legH = o.g ? 3 : 4, fy = o.g ? 16 : 13;
+    // 足もとの影
+    R(0, fy + legH + 1, 10, 1, 'rgba(0,0,0,.18)');
+    // 足（歩くときは片足ずつ上げる）
+    const lh = o.walk === 1 ? legH - 1 : legH, rh = o.walk === 0 ? legH - 1 : legH;
+    const lc = o.g ? sk : '#2f3b52';
+    R(o.g ? 3 : 2, fy, o.g ? 1 : 2, lh, lc);
+    R(o.g ? 6 : 6, fy, o.g ? 1 : 2, rh, lc);
+    R((o.g ? 3 : 2) + (d > 0 ? 0 : -1), fy + lh, o.g ? 2 : 3, 1, '#1a1a1a');
+    R((o.g ? 6 : 6) + (d > 0 ? 0 : -1), fy + rh, o.g ? 2 : 3, 1, '#1a1a1a');
+    // 服（スカートはすそが広がる）
     if (o.g)
-        Rc(x, y + 1, 1, 3, h);
-    Rc(x, y + 3, 5, 4, b);
+        R(1, 13, 8, 3, shade(b, .12));
+    R(2, 7, 6, 6, b);
+    R(2, 7, 6, 1, shade(b, .22));
+    // 腕と手
+    R(1, 7, 1, 5, shade(b, -.18));
+    R(8, 7, 1, 5, shade(b, -.18));
+    R(1, 12, 1, 1, sk);
+    R(8, 12, 1, 1, sk);
+    if (o.apron) {
+        R(3, 9, 4, 4, '#f6f6f2');
+        R(4, 8, 2, 1, '#f6f6f2');
+        R(4, 10, 2, 1, '#d9d9d2');
+    }
+    if (o.bag) {
+        const bx = o.dir ? -3 : 10;
+        R(bx + (o.dir ? 1 : 0), 8, 2, 1, '#8a6a2a');
+        R(bx, 9, 3, 4, '#d9a441');
+        R(bx, 9, 3, 1, '#ecc16a');
+        R(bx + 1, 11, 1, 1, '#b8842a');
+    }
+    // 頭（うつむくときは頭を下げて、進む向きへ少し前に出す）
+    const hx = o.down ? d : 0, hy = o.down ? 2 : 0;
+    const H = (dx, dy, w, hh, c) => R(hx + dx, hy + dy, w, hh, c);
+    if (o.g) {
+        H(1, 1, 1, 8, h);
+        H(8, 1, 1, 8, h);
+    }
+    H(2, 2, 6, 5, sk);
+    H(o.g ? 1 : 2, 0, o.g ? 8 : 6, 2, h);
+    H(2, 2, 1, o.g ? 2 : 1, h);
+    H(7, 2, 1, o.g ? 2 : 1, h);
     if (o.g)
-        Rc(x, y + 7, 5, 2, b);
-    const ly = y + (o.g ? 9 : 7);
-    Rc(x + 1, ly, 1, 2, '#2a2a2a');
-    Rc(x + 3, ly, 1, 2, '#2a2a2a');
-    if (o.sad)
-        Rc(x + 2, y + 2, 1, 1, '#7a2e2e');
-    if (o.bag)
-        Rc(x + (o.dir ? -2 : 5), y + 5, 2, 3, '#d9a441');
+        H(3, 2, 2, 1, h);
+    // 目・口・まゆ
+    const ey = '#222';
+    if (o.shades)
+        H(2, 3, 6, 2, '#111');
+    else {
+        H(3, 3, 1, 1, ey);
+        H(6, 3, 1, 1, ey);
+    }
+    if (mood === 'happy') {
+        H(3, 4, 1, 1, '#f4a6a0');
+        H(6, 4, 1, 1, '#f4a6a0');
+        H(3, 5, 1, 1, '#b3382c');
+        H(6, 5, 1, 1, '#b3382c');
+        H(4, 6, 2, 1, '#b3382c');
+    }
+    else if (mood === 'sad') {
+        H(3, 2, 1, 1, '#5a3a22');
+        H(6, 2, 1, 1, '#5a3a22');
+        H(4, 5, 2, 1, '#7a2e2e');
+        H(3, 6, 1, 1, '#7a2e2e');
+        H(6, 6, 1, 1, '#7a2e2e');
+        H(3, 4, 1, 1, '#6ab4e8');
+    }
+    else if (mood === 'meh')
+        H(4, 6, 2, 1, '#7a4a3a');
+    else
+        H(4, 5, 2, 1, '#9a5a4a');
 }
 
 /** 窓・ドア・棚の商品を描く */
@@ -3024,24 +3134,39 @@ function pxLights(op, night) {
     [[52, 0], [108, 6]].forEach(([fx, s0]) => {
         Rc(fx, 41, 32, 19, '#3f332b');
         Rc(fx + 1, 42, 30, 17, lit ? '#fff3c4' : '#8fbfd9');
+        // 棚板
+        Rc(fx + 1, 58, 30, 1, '#8a6a45');
+        Rp(fx * 2 + 2, 116, 60, 1, '#b08a5a');
         for (let i = 0; i < 6; i++) {
             const s = state.shelf[s0 + i];
             if (!s)
                 continue;
-            const h = s.st > 0 ? Math.max(2, Math.round(s.st / state.cap * 12)) : 0;
-            Rc(fx + 3 + i * 5, 58 - h, 4, h, COL[s.id]);
+            // 在庫の量だけ箱が積み上がる（1箱＝実ピクセルで4の高さ）
+            const h = s.st > 0 ? Math.max(3, Math.round(s.st / state.cap * 24)) : 0, bx = (fx + 3 + i * 5) * 2, c = COL[s.id];
+            if (!h)
+                continue;
+            Rp(bx, 116 - h, 8, h, c);
+            Rp(bx, 116 - h, 8, 1, shade(c, .35));
+            Rp(bx + 7, 117 - h, 1, h - 1, shade(c, -.25));
+            for (let k = 1; k * 4 < h; k++)
+                Rp(bx, 116 - k * 4, 8, 1, shade(c, -.2));
+            if (h >= 8)
+                Rp(bx + 2, 116 - h + 3, 3, 2, 'rgba(255,255,255,.65)');
         }
-        Rc(fx + 1, 50, 30, 1, '#8a6a45');
-        Rc(fx + 1, 55, 30, 1, '#8a6a45');
-        Rc(fx + 3, 43, 1, 6, 'rgba(255,255,255,.5)');
+        // ガラスの反射
+        Rp(fx * 2 + 8, 86, 2, 12, 'rgba(255,255,255,.5)');
+        Rp(fx * 2 + 12, 86, 1, 6, 'rgba(255,255,255,.4)');
     });
     Rc(88, 38, 16, 24, '#3f332b');
     Rc(90, 40, 12, 22, lit ? '#ffe9a8' : '#6b8296');
     Rc(95, 40, 2, 22, '#3f332b');
     Rc(99, 52, 1, 3, '#ddd');
     if (op)
-        pp(92, 45, '#ffd23f');
-    Rc(93, 41, 6, 3, op ? '#2a9d8f' : '#e63946');
+        pp(92, 45, '#ffd23f', { apron: true, mood: 'happy' });
+    // 札：営業中は OPEN、そのほかは CLOSE
+    Rp(181, 82, 22, 8, op ? '#2a9d8f' : '#e63946');
+    Rp(181, 82, 22, 1, shade(op ? '#2a9d8f' : '#e63946', .35));
+    pxTextP(op ? 184 : 182, 84, op ? 'OPEN' : 'CLOSE', '#fff');
 }
 
 /** セキュリティを描く */
@@ -3088,8 +3213,7 @@ function pxSec() {
         pp(122, 57, '#1d3557');
     }
     if (L === 9) {
-        pp(108, 57, '#6c584c', { hair: '#222' });
-        Rc(109, 58, 3, 1, '#111');
+        pp(108, 57, '#6c584c', { hair: '#222', shades: true });
     }
     if (L === 10) {
         Rc(93, 12, 10, 5, '#444');
@@ -3182,7 +3306,7 @@ function drawPx() {
     });
     if (se === 0 || se === 2)
         for (let i = 0; i < 8; i++)
-            Rc((i * 27 + fr * 0.5) % W, (i * 13 + fr * 0.8) % 66, 1, 1, se ? '#e07b2d' : '#f7b6d2');
+            Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#e07b2d' : '#f7b6d2');
     Rc(40, 38, 2, 24, '#2f2f2f');
     Rc(36, 36, 10, 3, '#2f2f2f');
     Rc(46, 20, 100, 6, '#5b4a3f');
@@ -3209,6 +3333,7 @@ function drawPx() {
     pxSec();
     if (state.kama)
         pxKama();
+    pxFxShop();
     const k = (op ? (state.spd || 1) : 1) * (badDay() ? 0.6 : 1);
     for (const c of PXC) {
         if (c.st === 0) {
@@ -3237,21 +3362,23 @@ function drawPx() {
         if (PXC[i].dead)
             PXC.splice(i, 1);
     pxPeople(op);
+    pxFxTop();
+    cv.classList.toggle('quake', fxList().includes('quake'));
     if (wt === 2)
         for (let i = 0; i < 70; i++)
-            Rc((i * 37 + fr * 2) % W, (i * 23 + fr * 6) % H, 1, 3, '#7ab8ea');
+            Rp((i * 37 + fr * 2) % W * 2, (i * 23 + fr * 6) % H * 2, 1, 5, '#7ab8ea');
     if (wt === 3) {
         for (let i = 0; i < 70; i++)
-            Rc((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W, (i * 17 + fr) % H, 1, 1, '#fff');
+            Rp((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W * 2, (i * 17 + fr) % H * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(0, 62, W, 2, '#f4f8fb');
         Rc(46, 18, 100, 2, '#fff');
     }
     if (night) {
         cx.fillStyle = 'rgba(8,16,48,0.5)';
-        cx.fillRect(0, 0, W, H);
+        cx.fillRect(0, 0, PXW, PXH);
         if (wt === 0)
             for (let i = 0; i < 14; i++)
-                Rc((i * 47) % W, (i * 13) % 24, 1, 1, '#fff');
+                Rp((i * 47) % W * 2, (i * 13) % 24 * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
         Rc(37, 37, 8, 2, '#ffe9a8');
         pxLights(op, true);
@@ -3270,7 +3397,7 @@ function pxKama() {
     Rc(158, 51, 10, 11, '#3b4a5a');
     Rc(159, 53, 8, 9, '#ffb347');
     if (state.kama === 1)
-        pp(144 + (fr % 8 < 4 ? 0 : 1), 52, '#ffd23f');
+        pp(144 + (fr % 8 < 4 ? 0 : 0.5), 52, '#ffd23f', { apron: true, mood: 'happy' });
     else {
         Rc(130, 57, 8, 5, '#555');
         Rc(131, 54 - (fr % 6 < 3 ? 1 : 0), 1, 3, 'rgba(255,255,255,.8)');
@@ -3278,16 +3405,408 @@ function pxKama() {
     }
 }
 
-/** お客さんと店員を描く（夜は窓の明かりより手前に描き直す） */
+/** お客さんと店員を描く（夜は窓の明かりより手前に描き直す）。表情：買えて帰る客はにこにこ、買えずに帰る客はがっかり、マイナスのイベントの日は落ち込み */
 function pxPeople(op) {
+    const bd = badDay();
     PXC.forEach(c => {
-        if (c.st !== 1)
-            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), badDay() ? '#6b6f78' : (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L, down: badDay() });
+        if (c.st === 1)
+            return;
+        const wk = Math.floor((fr + Math.floor(c.x)) / 2) % 2, mood = bd ? 'sad' : (c.st === 2 ? (c.bag ? 'happy' : 'meh') : 'neutral');
+        pp(c.x, 56 + (wk ? 0.5 : 0), bd ? '#6b6f78' : (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L, down: bd, mood, walk: wk });
     });
     const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
     for (let i = 0; i < n; i++) {
         const sad = e < 0 || state.dn > 0;
-        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 1 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { sad });
+        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 0.5 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { mood: sad ? 'sad' : (op ? 'happy' : 'neutral'), apron: !sad });
+    }
+}
+</script>
+<script>
+/**
+ * pixelfx.js — イベントを店の絵に反映する（v1.5.0〜）。
+ * addEvent（events.js）が文面から種類を決め（fxKind）、その日の分を state.fx に記録する（markFx）。
+ * 翌日（state.day が変わる）になると絵は元に戻る。描くのは pixel.js の drawPx から呼ばれる
+ * pxFxShop（人物より奥・店に付くもの）と pxFxTop（人物より手前・動くもの・水・煙）。
+ * 座標は pixel.js と同じ論理座標（192×92）。細かい粒は実ピクセルの Rp。
+ */
+
+/** イベント文面に含まれる言葉 → 絵の種類（上から順に探す） */
+const FXK = [
+    ['台風で浸水', 'flood'], ['土嚢で台風に耐え', 'sandbag'], ['大雪で交通マヒ', 'snow'], ['6台の車', 'crash6'], ['車が店に突っ込み', 'car'],
+    ['爆発', 'bomb'], ['大地震', 'quake'], ['強盗被害', 'robber'], ['従業員の窃盗', 'thief'], ['万年筆を狙った泥棒', 'ninja'],
+    ['超セレブ', 'celeb'], ['パパ活', 'papa'], ['ツモ', 'tsumo'], ['皮が剥けた', 'banana'], ['おにぎりブーム', 'onigiri'],
+    ['教育ママ', 'mama'], ['炎上', 'flame'], ['テナント料の改定', 'tenant'], ['ブーム', 'boom'], ['に対応！客足', 'pay']
+];
+
+/** イベントの文面から絵の種類を決める（絵にしないものは空） */
+function fxKind(t) {
+    const h = FXK.find(([k]) => t.includes(k));
+    if (!h)
+        return '';
+    return h[1] === 'tenant' ? (t.includes('+') ? 'tenantUp' : 'tenantDown') : h[1];
+}
+
+/** その日の絵に反映するイベントを記録する（日が変わったら入れ替え） */
+function markFx(k) {
+    if (state.fxd !== state.day || !state.fx) {
+        state.fx = [];
+        state.fxd = state.day;
+    }
+    if (!state.fx.includes(k))
+        state.fx.push(k);
+}
+
+/** 今日の絵に反映するイベントの一覧 */
+const fxList = () => (state.fxd === state.day && state.fx) ? state.fx : [];
+
+/** 車を描く（x,y は左上。幅14） */
+function pxCar(x, y, c) {
+    Rc(x, y + 3, 14, 4, c);
+    Rc(x + 3, y, 8, 4, c);
+    Rc(x + 4, y + 1, 3, 2, '#bfe3f5');
+    Rc(x + 8, y + 1, 2, 2, '#bfe3f5');
+    Rc(x + 2, y + 6, 3, 2, '#222');
+    Rc(x + 9, y + 6, 3, 2, '#222');
+}
+
+/** 炎を描く（x,y は足もと。s は大きさ） */
+function pxFlame(x, y, s, k) {
+    const f = (fr + k) % 3;
+    Rc(x, y - 3 * s - f, 3 * s, 3 * s + f, '#e8590c');
+    Rc(x + 1, y - 4 * s - f, s, 2 * s, '#e8590c');
+    Rc(x + s * 0.5, y - 2 * s - f * 0.5, 2 * s, 2 * s, '#ffb703');
+    Rc(x + s * 0.5 + 0.5, y - s, s, s, '#fff3b0');
+}
+
+/** 煙のかたまりを上へ流す（x,y は元の位置、n は個数、c は色） */
+function pxSmoke(x, y, n, c, h) {
+    for (let k = 0; k < n; k++) {
+        const t = ((fr * 1.1 + k * (h / n)) % h), r = 2 + t / 6;
+        cx.globalAlpha = Math.max(0, .85 - t / h);
+        Rc(x + Math.sin((fr + k * 5) / 5) * 3 + t / 8 - r / 2, y - t - r / 2, r, r * 0.8, c);
+    }
+    cx.globalAlpha = 1;
+}
+
+/** ハート（5×4 の論理ドット） */
+function pxHeart(x, y, c) {
+    Rc(x, y, 2, 1, c);
+    Rc(x + 3, y, 2, 1, c);
+    Rc(x, y + 1, 5, 1, c);
+    Rc(x + 1, y + 2, 3, 1, c);
+    Rc(x + 2, y + 3, 1, 1, c);
+}
+
+/** ふきだしに「！」を出す */
+function pxBang(x, y) {
+    Rc(x, y, 9, 10, '#fff');
+    Rc(x + 3, y + 10, 2, 2, '#fff');
+    Rc(x + 4, y + 2, 1, 4, '#e63946');
+    Rc(x + 4, y + 7, 1, 1, '#e63946');
+}
+
+/** 割れた窓（窓の左上 fx,41 から。ひびと穴） */
+function pxBroken(fx) {
+    Rc(fx + 1, 42, 30, 17, 'rgba(30,22,18,.55)');
+    [[3, 43, 12, 9], [18, 44, 9, 12], [8, 50, 15, 5]].forEach(([a, b, w, h]) => {
+        for (let i = 0; i < w; i += 2)
+            Rp((fx + a) * 2 + i * 2, (b * 2) + Math.round(i * h / w) * 2, 2, 2, 'rgba(255,255,255,.75)');
+    });
+    for (let i = 0; i < 8; i++)
+        Rc(fx + 2 + i * 4, 60 + (i % 3), 1, 1, '#e6f1f7');
+}
+
+/** 店に付くもの・地面にあるもの（人物より奥） */
+function pxFxShop() {
+    const F = fxList(), has = k => F.includes(k);
+    // 台風（耐えた）：土嚢の壁
+    if (has('sandbag'))
+        for (let r = 0; r < 2; r++)
+            for (let x = 46 + (r ? 3 : 0); x < 146; x += 7) {
+                Rc(x, 60 - r * 3, 7, 3, '#c9a96a');
+                Rc(x, 62 - r * 3, 7, 1, '#9c7f45');
+                Rc(x + 3, 60 - r * 3, 1, 3, '#b08f52');
+            }
+    // 大雪：屋根・ひさし・つらら・吹きだまり
+    if (has('snow')) {
+        Rc(44, 17, 104, 3, '#fff');
+        Rc(44, 19, 104, 1, '#d9e6f0');
+        Rc(48, 27, 96, 2, '#fff');
+        for (let x = 50; x < 142; x += 6)
+            Rc(x, 37, 1, 2 + (x / 6 | 0) % 3, '#dff2ff');
+        Rc(44, 56, 106, 6, '#f4f8fb');
+        Rc(52, 58, 32, 2, '#fff');
+        Rc(108, 58, 32, 2, '#fff');
+        Rc(60, 52, 30, 6, '#fff');
+        Rc(100, 53, 36, 5, '#fff');
+        Rc(86, 50, 20, 12, '#f4f8fb');
+        Rc(90, 47, 12, 4, '#fff');
+        Rc(60, 58, 30, 1, '#cfd8e0');
+    }
+    // 車が突っ込んだ
+    if (has('car')) {
+        pxBroken(52);
+        Rc(54, 52, 26, 7, '#2a6fdb');
+        Rc(60, 47, 14, 6, '#2a6fdb');
+        Rc(62, 48, 4, 4, '#bfe3f5');
+        Rc(68, 48, 4, 4, '#bfe3f5');
+        Rc(54, 52, 5, 4, '#e9c46a');
+        Rc(58, 58, 5, 4, '#222');
+        Rc(72, 58, 5, 4, '#222');
+        Rc(52, 60, 30, 1, 'rgba(0,0,0,.25)');
+    }
+    // 6台の事故：車が山積み・窓は全部割れる
+    if (has('crash6')) {
+        pxBroken(52);
+        pxBroken(108);
+        ['#d62828', '#2a6fdb', '#e9c46a', '#2a9d8f', '#7b5ea7', '#e07b2d'].forEach((c, i) => pxCar(48 + i * 15 - (i % 2) * 2, 53 + (i % 3) * 2 - (i % 2) * 3, c));
+    }
+    // 爆発：すすけた壁・屋根の穴・割れた窓の中の炎
+    if (has('bomb')) {
+        Rc(48, 26, 96, 36, 'rgba(0,0,0,.4)');
+        Rc(70, 20, 26, 6, '#2a2420');
+        Rc(76, 18, 8, 3, '#2a2420');
+        Rc(88, 18, 6, 2, '#2a2420');
+        [52, 108].forEach(fx => {
+            Rc(fx + 1, 42, 30, 17, '#2a1c16');
+            for (let i = 0; i < 4; i++)
+                pxFlame(fx + 3 + i * 7, 59, 2, i);
+        });
+        for (let i = 0; i < 7; i++)
+            Rc(46 + i * 17, 62 + (i % 3), 2, 1 + (i % 2), '#6b4a30');
+    }
+    // 大地震：壁のひび・がれき
+    if (has('quake')) {
+        [[60, 24, 62], [60, 62, 40], [118, 26, 40], [100, 48, 40]].forEach(([x, y, l], j) => {
+            let px = x;
+            for (let i = 0; i < l; i += 2) {
+                px += ((i + j) % 4 < 2 ? 1 : -1);
+                Rc(px, y + i * 0.5, 1, 1, '#2a2420');
+            }
+        });
+        for (let k = 0; k < 6; k++)
+            Rc(50 + k * 16, 62 + (k % 2), 3, 2, '#8a8a8a');
+        for (let k = 0; k < 5; k++)
+            Rc(52 + k * 20, 20 + ((fr * 3 + k * 13) % 40), 2, 2, '#8a5a3c');
+        for (let x = 6; x < 190; x += 14)
+            Rc(x, 70 + (x / 14 | 0) % 3 * 6, 6, 1, '#2a2a2a');
+    }
+    // 強盗：屋根の警報灯
+    if (has('robber')) {
+        Rc(92, 14, 6, 4, fr % 4 < 2 ? '#ff3b3b' : '#661111');
+        Rc(93, 12, 4, 2, '#888');
+    }
+    // 超セレブ：黒いリムジン
+    if (has('celeb')) {
+        Rc(92, 72, 40, 8, '#15151a');
+        Rc(100, 68, 22, 5, '#15151a');
+        Rc(103, 69, 6, 3, '#6b8296');
+        Rc(112, 69, 6, 3, '#6b8296');
+        Rc(92, 76, 40, 1, '#e9c46a');
+        Rc(96, 79, 6, 3, '#222');
+        Rc(122, 79, 6, 3, '#222');
+        Rc(131, 74, 2, 2, '#fff3b0');
+    }
+    // バナナの皮
+    if (has('banana')) {
+        Rc(63, 63, 6, 2, '#ffe14d');
+        Rc(61, 62, 3, 2, '#ffe14d');
+        Rc(68, 62, 3, 1, '#ffe14d');
+        Rc(70, 62, 1, 1, '#7a5a1a');
+    }
+    // おにぎりのはた
+    if (has('onigiri')) {
+        Rc(146, 28, 1, 34, '#555');
+        for (let r = 0; r < 10; r++)
+            Rc(153 - (2 + r) / 2, 31 + r, 2 + r, 1, '#f6f6ee');
+        Rc(150, 38, 6, 3, '#1d3a2c');
+    }
+    // 炎上：看板と店先に炎
+    if (has('flame')) {
+        for (let i = 0; i < 5; i++)
+            pxFlame(78 + i * 8, 22, 2, i);
+        for (let i = 0; i < 9; i++)
+            pxFlame(50 + i * 10, 62, 2, i * 2);
+    }
+    // テナント料の改定：立て看板（上がると赤い↑、下がると青い↓）
+    if (has('tenantUp') || has('tenantDown')) {
+        const up = has('tenantUp'), c = up ? '#e63946' : '#2a6fdb';
+        Rc(26, 50, 11, 12, '#f4f1de');
+        Rc(26, 50, 11, 1, '#8a6a45');
+        Rc(26, 61, 11, 1, '#8a6a45');
+        Rc(24, 62, 2, 2, '#8a6a45');
+        Rc(37, 62, 2, 2, '#8a6a45');
+        for (let r = 0; r < 4; r++)
+            Rc(31 - r, up ? 52 + r : 57 - r, 1 + r * 2, 1, c);
+        Rc(30, up ? 56 : 52, 3, 4, c);
+    }
+    // ブーム：ひさしの旗飾り
+    if (has('boom'))
+        for (let x = 48; x < 144; x += 6) {
+            const c = ['#e63946', '#ffd23f', '#2a9d8f', '#7b5ea7'][(x / 6 | 0) % 4];
+            Rc(x, 28, 5, 2, c);
+            Rc(x + 1, 30, 3, 1, c);
+        }
+    // キャッシュレス対応：窓のステッカー
+    if (has('pay')) {
+        Rc(56, 44, 9, 6, '#2a6fdb');
+        Rc(56, 46, 9, 1, '#e9c46a');
+        Rc(57, 48, 3, 1, '#fff');
+        Rc(112, 44, 8, 6, '#2a9d8f');
+        Rc(113, 46, 6, 1, '#fff');
+    }
+}
+
+/** 人物より手前のもの（動く人物・水・煙・きらめき） */
+function pxFxTop() {
+    const F = fxList(), has = k => F.includes(k), W = 192;
+    // 台風（耐えた）：土砂降りと暗い空
+    if (has('sandbag')) {
+        Rp(0, 0, PXW, PXH, 'rgba(20,30,60,.2)');
+        for (let i = 0; i < 80; i++)
+            Rp((i * 41 + fr * 3) % PXW, (i * 29 + fr * 10) % PXH, 1, 6, '#9cc8ee');
+    }
+    // 大雪：吹雪
+    if (has('snow'))
+        for (let i = 0; i < 110; i++)
+            Rp((i * 31 + Math.sin((fr + i * 7) / 6) * 8 + PXW) % PXW, (i * 19 + fr * 3) % PXH, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
+    // 車の事故：ボンネットの湯気と火花
+    if (has('car')) {
+        pxSmoke(76, 50, 4, '#e6e6e6', 24);
+        if (fr % 3 === 0)
+            Rc(56 + (fr % 5) * 3, 56, 1, 1, '#ffd23f');
+    }
+    if (has('crash6')) {
+        pxSmoke(60, 54, 4, '#555', 40);
+        pxSmoke(112, 54, 4, '#444', 40);
+        pxFlame(70, 56, 2, 0);
+        pxFlame(122, 56, 2, 1);
+    }
+    // 爆発：もくもくの黒煙
+    if (has('bomb')) {
+        pxSmoke(82, 20, 8, '#3a3a3a', 62);
+        pxSmoke(104, 22, 6, '#555', 50);
+    }
+    // 地震：ほこり
+    if (has('quake'))
+        for (let i = 0; i < 12; i++)
+            Rp((i * 53 + fr * 2) % PXW, 110 + (i * 17) % 40 - ((fr + i * 3) % 10), 3, 2, 'rgba(190,170,130,.6)');
+    // 強盗：黒ずくめが売上金の袋を持って走り去る／ふきだし
+    if (has('robber')) {
+        const x = ((fr * 1.8) % 230) - 20;
+        pp(x, 57, '#1a1a1a', { hair: '#111', shades: true, dir: false, walk: fr % 2, mood: 'happy' });
+        Rc(x + 6, 62, 5, 5, '#c8b560');
+        Rc(x + 7, 61, 3, 1, '#c8b560');
+        Rc(x + 8, 63, 1, 2, '#6b5a20');
+        pxBang(120, 20);
+    }
+    // 従業員の窃盗：売上金（小銭）が持ち出される
+    if (has('thief')) {
+        for (let k = 0; k < 5; k++) {
+            const t = (fr + k * 3) % 15, x = 93 + t * 6, y = 52 - t * (15 - t) * 0.22;
+            Rc(x, y, 3, 3, '#ffd23f');
+            Rc(x + 1, y + 1, 1, 1, '#b8860b');
+        }
+        pxBang(100, 28);
+    }
+    // 万年筆泥棒：忍び足の黒ずくめ（光る万年筆）
+    if (has('ninja')) {
+        const x = ((fr * 0.7) % 130) + 30;
+        pp(x, 57, '#161616', { hair: '#161616', shades: true, dir: false, walk: (fr >> 1) % 2, mood: 'neutral' });
+        Rc(x + 9, 58, 1, 5, '#5ce1e6');
+        if (fr % 4 < 2) {
+            Rc(x + 8, 56, 3, 1, '#fff');
+            Rc(x + 9, 55, 1, 3, '#fff');
+        }
+        pxSmoke(x + 4, 66, 2, '#cfcfcf', 8);
+    }
+    // 超セレブ：金のきらめき
+    if (has('celeb'))
+        for (let i = 0; i < 12; i++) {
+            const x = 52 + (i * 37) % 90, y = 24 + (i * 23) % 36;
+            if ((fr + i) % 5 < 3) {
+                Rc(x, y, 1, 3, '#ffd23f');
+                Rc(x - 1, y + 1, 3, 1, '#ffd23f');
+            }
+        }
+    // パパ活：寄りそう二人とハート
+    if (has('papa')) {
+        pp(112, 56, '#2a2a2a', { mood: 'happy', bag: true });
+        pp(119, 56, '#e56b8a', { g: true, hair: '#3a2418', mood: 'happy', bag: true, dir: true });
+        for (let k = 0; k < 3; k++)
+            pxHeart(112 + k * 5, 52 - ((fr + k * 4) % 14), '#ff6fa0');
+    }
+    // ツモ：麻雀牌と落ち込みの縦線
+    if (has('tsumo')) {
+        const y = 4 + ((fr >> 1) % 2);
+        Rc(130, y, 8, 10, '#f4f1d8');
+        Rc(130, y + 9, 8, 1, '#2a9d8f');
+        Rc(133, y + 3, 2, 2, '#d62828');
+        for (let i = 0; i < 4; i++)
+            Rc(90 + i * 4, 44, 1, 6 + (i % 2) * 3, '#6a7aa8');
+    }
+    // バナナの皮：女性客の行列
+    if (has('banana'))
+        for (let i = 0; i < 4; i++)
+            pp(104 + i * 9, 57, FP[i % 4], { g: true, hair: FH[i % 4], mood: 'happy', walk: 0 });
+    // おにぎりブーム：行列
+    if (has('onigiri'))
+        for (let i = 0; i < 4; i++) {
+            const g = i % 2;
+            pp(18 + i * 9, 57, (g ? FP : MP)[i], { g: !!g, hair: (g ? FH : MH)[i], mood: 'happy', walk: 0 });
+        }
+    // 教育ママ：怒りマークと破れた雑誌
+    if (has('mama')) {
+        pp(93, 57, '#7a3b8a', { g: true, hair: '#6b4a2a', mood: 'sad' });
+        Rc(97, 48, 1, 4, '#e63946');
+        Rc(99, 48, 1, 4, '#e63946');
+        Rc(96, 49, 5, 1, '#e63946');
+        Rc(96, 51, 5, 1, '#e63946');
+        for (let k = 0; k < 4; k++)
+            Rc(80 + k * 9 + (fr + k) % 3, 50 + ((fr * 2 + k * 7) % 14), 3, 2, '#f4f1de');
+    }
+    // 炎上：スマホをかざす野次馬
+    if (has('flame'))
+        for (let i = 0; i < 4; i++) {
+            pp(104 + i * 9, 57, '#6b6f78', { mood: 'sad', walk: 0 });
+            Rc(108 + i * 9, 51 - (fr + i) % 2, 2, 3, '#cfe8ff');
+        }
+    // ブーム：行列と紙吹雪
+    if (has('boom')) {
+        for (let i = 0; i < 3; i++) {
+            const g = i % 2;
+            pp(104 + i * 9, 57, (g ? FP : MP)[i], { g: !!g, hair: (g ? FH : MH)[i], mood: 'happy', walk: 0 });
+        }
+        for (let i = 0; i < 24; i++)
+            Rp((i * 47) % PXW, (i * 31 + fr * 4) % PXH, 2, 2, ['#e63946', '#ffd23f', '#2a9d8f', '#7b5ea7'][i % 4]);
+    }
+    // 台風の浸水：店が水没する
+    if (has('flood')) {
+        const wy = 88 + Math.round(Math.sin(fr / 3) * 2);
+        for (let k = 0; k < 3; k++) {
+            const x = ((fr * 0.8 + k * 70) % 220) - 20;
+            Rc(x, wy / 2 - 3, 6, 3, ['#8a5a2c', '#e5989b', '#4fa3d1'][k]);
+        }
+        Rp(0, wy, PXW, PXH - wy, 'rgba(46,120,200,.6)');
+        Rp(0, wy, PXW, 2, 'rgba(210,235,255,.85)');
+        Rp(0, wy + 2, PXW, 8, 'rgba(120,180,235,.35)');
+        for (let i = 0; i < 14; i++) {
+            Rp((i * 37 + fr * 3) % PXW, wy + 6 + (i * 7) % 40, 8, 1, 'rgba(255,255,255,.35)');
+            Rp((i * 29 + fr) % PXW, wy + 4 + (i * 13) % 50 - (fr + i * 5) % 12, 2, 2, 'rgba(255,255,255,.5)');
+        }
+        for (let i = 0; i < 70; i++)
+            Rp((i * 37 + fr * 2) % PXW, (i * 23 + fr * 7) % wy, 1, 5, '#7ab8ea');
+    }
+    // 休業中の清掃（セキュリティLv10が撃退した後）：モップがけ
+    if ((state.clean > 0 || state.cleanDay) && !state.over) {
+        const x = 70 + Math.sin(fr / 2) * 4;
+        Rc(58, 60, 5, 4, '#2a9d8f');
+        Rc(57, 59, 7, 1, '#cfeee9');
+        pp(x, 57, '#4a90b8', { apron: true, mood: 'happy', walk: fr % 2 });
+        Rc(x + 7, 50, 1, 10, '#8a6a45');
+        Rc(x + 5, 60, 5, 2, '#cfd8e0');
+        if (fr % 4 < 2)
+            Rc(x + 11, 58, 1, 3, '#fff');
     }
 }
 </script>
@@ -3357,7 +3876,7 @@ function resultImage() {
     g.fillStyle = '#ff6b76';
     g.font = '900 60px ' + F;
     g.fillText('倒産しました…', 48, 164);
-    // ドット絵（192×92 を3倍、ドットのまま拡大）
+    // ドット絵（384×184 を1.5倍、ドットのまま拡大）
     g.fillStyle = '#27473e';
     g.fillRect(42, 194, 588, 288);
     g.imageSmoothingEnabled = false;
