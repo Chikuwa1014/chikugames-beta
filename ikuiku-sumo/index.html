@@ -90,11 +90,11 @@ header a{color:var(--muted);text-decoration:none}
 <script>
 'use strict';
 /* =====================================================================
-   いくいく！雲紅亭珍光〜すもう編〜  β0.1.3
+   いくいく！雲紅亭珍光〜すもう編〜  β0.1.4
    リズム（3レーン）で「押し出し！／はっけい！／お漏らし💦」を判定し、
    お相撲さんがシコを踏みながらママのもとへ進む。コードの地図は ikuiku-sumo/CLAUDE.md
    ===================================================================== */
-const VERSION = 'β0.1.3';
+const VERSION = 'β0.1.4';
 CG.init({ game: 'ikuiku-sumo', title: 'いくいく！雲紅亭珍光〜すもう編〜', version: VERSION });
 
 /* ---- 調整用の数値（バランスはここだけ直す） ---- */
@@ -114,7 +114,7 @@ const CFG = {
 };
 /* ---- セリフと音声（音声は後で吹き込む。ファイルを置いてパスを書けば、成功のカットが始まるときに鳴る） ---- */
 const LINES = { success: 'ママ！', toilet: 'ま、まにあわなかった…！' };   // success：着いた瞬間のひとこと
-const VOICE = { title: '', mama: '', kiss: '', toilet: '', toiletBgm: '' };   // 例：'./voice/title.wav'
+const VOICE = { title: './voice/title.wav', mama: './voice/mama.wav', kiss: './voice/kiss.wav', toilet: './voice/toilet.wav', toiletBgm: './voice/toilet-bgm.m4a' };   // 空にすると鳴らない
 /* 鳴る場所：title＝スタートを押した直後／mama＝ママに到着した瞬間（ふきだし「ママ！」）／kiss＝頬キスのカットの始まり（ふきだしなし）／
    toilet＝トイレへ駆け込む叫び声／toiletBgm＝トイレのカットの間だけ流れるBGM。プレイ中のBGMはこのファイルの bgm 〜（音源なしで生成） */
 const LANES = [
@@ -127,7 +127,7 @@ const JUDGE = {
   good: { text: 'はっけい！', col: '#7BE39A' },
   leak: { text: 'お漏らし💦', col: '#6FB8FF' }
 };
-const CUT = { DELAY: 1.3, LENGTH: 3.2 };   // 成功のカット：ついてからカットまでの秒数／カットの長さ
+const CUT = { DELAY: 1.8, LENGTH: 3.2 };   // 成功のカット：ついてからカットまでの秒数／カットの長さ
 const KEY_MUTE = 'ikuiku-sumo-mute';
 const KEY_BEST = 'ikuiku-sumo-best-v1';
 
@@ -167,6 +167,12 @@ function playVoice(key) {
   try { const a = new Audio(VOICE[key]); voiceAudio[key] = a; a.play().catch(() => { }); } catch (e) { }
 }
 function stopVoice(key) { try { voiceAudio[key] && voiceAudio[key].pause(); } catch (e) { } }
+function fadeVoice(key, ms = 400) {            // 長い音声（トイレのBGM）を、カットの終わりでなめらかに消す
+  const a = voiceAudio[key]; if (!a) return; const v0 = a.volume, t0 = performance.now();
+  const f = () => { const k = Math.min(1, (performance.now() - t0) / ms); try { a.volume = v0 * (1 - k); } catch (e) { } if (k < 1) requestAnimationFrame(f); else { stopVoice(key); try { a.volume = v0; } catch (e) { } } };
+  f();
+}
+const ALL_VOICES = ['title', 'mama', 'kiss', 'toilet', 'toiletBgm'];
 
 /* ---- プレイ中のBGM：音源ファイルなしで、Web Audio でその場で鳴らす（陽旋法のこぶし回しの和風ロック調） ----
    8分音符×32（4小節）をくり返す。ノーツと同じ BPM・同じ拍の頭にそろえ、S.t0 から数える */
@@ -250,7 +256,7 @@ function startGame() {
   unlockAudio();
   hidePanel(); resetCutUi();
   S = fresh(); S.mode = 'count'; S.t0 = nowSec() + 3;   // 3・2・1 のあとが曲の 0 秒
-  playVoice('title'); BGM.start();
+  ALL_VOICES.forEach(stopVoice); playVoice('title'); BGM.start();
   updateHud();
 }
 
@@ -321,7 +327,7 @@ function resetCutUi() { $('#hud').style.visibility = ''; const b = $('#bubble');
 function endToilet() {
   S.mode = 'toilet'; S.endAt = nowSec(); S.fromX = sumoX();
   BGM.stop(); playVoice('toilet'); playVoice('toiletBgm'); save();   // 叫び声とトイレのBGMを同時に
-  setTimeout(() => { if (S.mode === 'toilet') resultPanel(false); }, 4200);
+  setTimeout(() => { if (S.mode === 'toilet') { fadeVoice('toiletBgm'); resultPanel(false); } }, 4200);
 }
 function save() {
   const b = CG.ls.getJSON(KEY_BEST, null) || { perfect: 0 };
@@ -389,7 +395,7 @@ addEventListener('keydown', e => {
   const b = document.querySelector('.btn[data-lane="' + lane + '"]'); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90);
   unlockAudio(); press(lane);
 });
-$('#mute').onclick = () => { muted = !muted; if (muted) ['title', 'mama', 'kiss', 'toilet', 'toiletBgm'].forEach(stopVoice); CG.ls.set(KEY_MUTE, muted ? '1' : '0'); $('#mute').textContent = muted ? '🔇' : '🔊'; };
+$('#mute').onclick = () => { muted = !muted; if (muted) ALL_VOICES.forEach(stopVoice); CG.ls.set(KEY_MUTE, muted ? '1' : '0'); $('#mute').textContent = muted ? '🔇' : '🔊'; };
 document.addEventListener('visibilitychange', () => {   // タブを離れたら時間を止める
   if (document.hidden) S.hiddenAt = nowSec();
   else if (S.hiddenAt) { S.t0 += nowSec() - S.hiddenAt; S.endAt && (S.endAt += nowSec() - S.hiddenAt); S.hiddenAt = 0; }
