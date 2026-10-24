@@ -6,7 +6,7 @@
 
 const MAX_PEERS = 8;
 // マルチプレイを使うβのゲーム（フォルダ名）と、1部屋に入れる台数（親を含む）。/<フォルダ>/ws で受ける
-export const WS_GAMES = { "hayaoshi-chikupon": 8 };
+export const WS_GAMES = {};   // 早押し！ちくぽん！は号口へ移った（2026-10-24）
 
 export default {
   async fetch(request, env) {
