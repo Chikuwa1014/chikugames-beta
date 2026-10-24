@@ -37,7 +37,7 @@ def run(p, mode, size):
         if m == 'play' and not shot and time.time() - t0 > 6:
             pg.screenshot(path=f'{OUT}/{tag}-3play.png'); shot = True
         if m in ('success', 'toilet'):
-            pg.wait_for_timeout(1100 if m == 'success' else 2600)
+            pg.wait_for_timeout(2300 if m == 'success' else 2600)
             pg.screenshot(path=f'{OUT}/{tag}-4{m}.png')
             pg.wait_for_selector('#again', timeout=8000)
             pg.screenshot(path=f'{OUT}/{tag}-5result.png')
