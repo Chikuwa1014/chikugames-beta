@@ -68,6 +68,31 @@ def grid_test(p):
         pg.evaluate("window.__IKU.S.mode='title'")
     b.close(); return ok
 
+REVIVE = """async () => { const I = window.__IKU; I.pref.diff = 'normal'; I.startGame();
+  await new Promise(r => { const f = () => I.S.mode === 'play' ? r() : setTimeout(f, 50); f(); });
+  const a0 = I.ac; await a0.suspend();                                   // ホームへ戻って止まった状態
+  document.dispatchEvent(new Event('visibilitychange'));                 // 復帰
+  await new Promise(r => setTimeout(r, 400)); const resumed = I.ac === a0 && I.ac.state === 'running';
+  await a0.close();                                                      // 閉じられてしまった状態
+  addEventListener('pageshow', () => {}); window.dispatchEvent(new Event('pageshow'));
+  await new Promise(r => setTimeout(r, 600));
+  const a1 = I.ac; const t = a1.currentTime; await new Promise(r => setTimeout(r, 500));
+  return { resumed, recreated: a1 !== a0, state: a1.state, advancing: a1.currentTime > t }; }"""
+
+def revive_test(p):
+    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required']); pg = b.new_page(viewport={'width': 400, 'height': 800})
+    pg.goto(URL); pg.wait_for_timeout(300); r = pg.evaluate(REVIVE)
+    good = r['resumed'] and r['recreated'] and r['state'] == 'running' and r['advancing']
+    print('revive', r, 'OK' if good else 'NG'); b.close(); return good
+
+def toilet_test(p):
+    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required']); pg = b.new_page(viewport={'width': 400, 'height': 800})
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("window.__IKU.pref.diff='hard'; window.__IKU.startGame()")
+    pg.wait_for_function("window.__IKU.S.mode==='toilet'", timeout=60000)
+    fx = pg.evaluate('window.__IKU.S.fromX'); pg.wait_for_timeout(300)
+    pg.screenshot(path=f'{OUT}/toilet-start.png')
+    good = fx < 0; print('toilet fromX', fx, 'OK' if good else 'NG'); b.close(); return good
+
 def songs_test(p):
     b = p.chromium.launch(); pg = b.new_page(); pg.goto(URL); pg.wait_for_timeout(300); ok = True
     for i in range(20):
@@ -78,8 +103,9 @@ def songs_test(p):
     print('songs 20 OK' if ok else 'songs NG'); b.close(); return ok
 
 with sync_playwright() as p:
-    ok = songs_test(p) and grid_test(p)
+    ok = songs_test(p) and grid_test(p) and revive_test(p) and toilet_test(p)
     ok &= run(p, 'win', {'width': 400, 'height': 800}, 'vhard') == 'success'
+    ok &= run(p, 'win', {'width': 400, 'height': 800}, 'hard') == 'success'
     ok &= run(p, 'win', {'width': 400, 'height': 800}) == 'success'
     ok &= run(p, 'idle', {'width': 400, 'height': 800}) == 'toilet'
     run(p, 'win', {'width': 1100, 'height': 800})
