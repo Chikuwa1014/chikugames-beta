@@ -102,6 +102,7 @@ header a{color:var(--muted);text-decoration:none}
     <div class="rules" id="how" hidden>
       <b>あそびかた</b><br>
       ・上から流れてくる<b>色のバー</b>が下の線に来たら、同じ色のボタンを押す。<br>
+      ・<b>長いバー</b>（ベリーハード）は、頭で押したまま、バーの終わりまで押し続ける。早く離すとお漏らし。<br>
       ・<b>難易度</b>は、バーのリズムと速さ。イージー＝4つ打ち／ノーマル＝8つ打ち／ハード・ベリーハード＝8つ打ちでバーが速く落ちてくる（難しいほどミスで漏らしやすい）。薄い横線は拍の目安です。<br>
       ・<b>曲</b>は5ジャンル×4曲の20曲（クラシック・ポップ・ハードロック・ハードメタル・EDM）。ランダムも選べる。<br>
       ・<b>押し出し！</b>と<b>はっけい！</b>で前に進む（押し出しのほうが大きく進む）。<br>
@@ -144,7 +145,7 @@ header a{color:var(--muted);text-decoration:none}
    リズム（3レーン）で「押し出し！／はっけい！／お漏らし💦」を判定し、
    お相撲さんがシコを踏みながらママのもとへ進む。コードの地図は ikuiku-sumo/CLAUDE.md
    ===================================================================== */
-const VERSION = 'β0.3.2';
+const VERSION = 'β0.3.3';
 CG.init({ game: 'ikuiku-sumo', title: 'いくいく！雲紅亭珍光〜すもう編〜', version: VERSION });
 
 /* ---- 調整用の数値（バランスはここだけ直す） ---- */
@@ -183,12 +184,13 @@ const KEY_BEST = 'ikuiku-sumo-best-v2';   // { easy, normal, hard, vhard }（難
 const KEY_BEST_V1 = 'ikuiku-sumo-best-v1';
 const KEY_PREF = 'ikuiku-sumo-pref-v1';   // { diff, song }
 /* 難易度：sub＝1拍を何分割してバーを置くか（1＝4つ打ち／2＝8つ打ち）、prob＝その格子点にバーが出る確率、step＝進む距離の倍率、
+   dbl＝同じ拍に 2 本目（別レーン）が出る確率、hold＝長押しバー（押し続ける長いバー）になる確率（ベリーハードだけ）、
    travel＝バーが上から判定線まで落ちる秒数（小さいほど速い）、leakW＝ミス（お漏らし）1回が割合に足される重み（大きいほどすぐ漏らす） */
 const DIFFS = [
   { id: 'easy', name: 'イージー', note: '4つ打ち', sub: 1, prob: 0.85, step: 1, travel: 1.5, leakW: 1, desc: '4つ打ち（1拍に1回の、ゆっくりしたリズム）' },
   { id: 'normal', name: 'ノーマル', note: '8つ打ち', sub: 2, prob: 0.42, step: 1, travel: 1.5, leakW: 1.25, desc: '8つ打ち（8分音符のリズム）' },
   { id: 'hard', name: 'ハード', note: '8つ打ち・速い', sub: 2, prob: 0.62, step: 0.75, travel: 1.15, leakW: 1.6, desc: '8つ打ちで、バーが速く落ちてくる。ミスで漏らしやすい' },
-  { id: 'vhard', name: 'ベリーハード', note: '8つ打ち・超速', sub: 2, prob: 0.85, step: 0.55, travel: 0.85, leakW: 2, desc: '8つ打ちで、バーが超高速で落ちてくる。ミスですぐ漏らす' }
+  { id: 'vhard', name: 'ベリーハード', note: '8つ打ち・超速', sub: 2, prob: 0.95, dbl: 0.3, hold: 0.22, step: 0.4, travel: 0.7, leakW: 2, desc: '8つ打ちで、バーが超高速で落ちてくる。同時押しと長押しバーもある。ミスですぐ漏らす' }
 ];
 
 const $ = s => document.querySelector(s);
@@ -501,7 +503,7 @@ let S = null;                                      // 1プレイ分の状態
 function fresh() {
   return {
     mode: 'title', t0: 0, notes: [], nextStep: 0, lastT: [-9, -9, -9], diff: DIFFS[1], song: SONGS[0], grid: 0.25,
-    prog: 0, shown: 0, judged: 0, leaks: 0, leakPt: 0, perfect: 0, good: 0, combo: 0, maxCombo: 0,
+    holds: [null, null, null], prog: 0, shown: 0, judged: 0, leaks: 0, leakPt: 0, perfect: 0, good: 0, combo: 0, maxCombo: 0,
     parts: [], pops: [], phase: 0, shake: 0, stomp: 0, endAt: 0, hiddenAt: 0, bursts: []
   };
 }
@@ -593,8 +595,15 @@ function genNotes(st) {
     if (S.nextStep === 0 || Math.random() < D.prob) {
       const ok = [0, 1, 2].filter(l => t - S.lastT[l] >= CFG.LANE_GAP);   // 同じレーンに近すぎるバーは置かない
       if (ok.length) {
-        const lane = ok[Math.floor(Math.random() * ok.length)]; S.lastT[lane] = t;
-        S.notes.push({ lane, t, judged: false, missed: false });
+        const lane = ok[Math.floor(Math.random() * ok.length)];
+        const len = D.hold && Math.random() < D.hold ? gd * (2 + Math.floor(Math.random() * 3)) : 0;   // 長押しバー：格子 2〜4 こぶんの長さ
+        S.lastT[lane] = t + len;
+        S.notes.push({ lane, t, len, judged: false, missed: false, holding: false });
+        const rest = ok.filter(l => l !== lane);                                                    // 同時押し：同じ拍に、別のレーンにもう 1 本
+        if (rest.length && D.dbl && Math.random() < D.dbl) {
+          const l2 = rest[Math.floor(Math.random() * rest.length)]; S.lastT[l2] = t;
+          S.notes.push({ lane: l2, t, len: 0, judged: false, missed: false, holding: false });
+        }
       }
     }
     S.nextStep++;
@@ -611,10 +620,20 @@ function press(lane) {
   }
   if (best && bd <= CFG.WIN_BAD) {
     best.judged = true;
-    judge(bd <= CFG.WIN_PERFECT ? 'perfect' : bd <= CFG.WIN_GOOD ? 'good' : 'leak', lane);
+    const kind = bd <= CFG.WIN_PERFECT ? 'perfect' : bd <= CFG.WIN_GOOD ? 'good' : 'leak';
+    if (best.len > 0 && kind !== 'leak') { best.holding = true; S.holds[lane] = best; }   // 長押しバー：頭を押せたら、終わりまで押し続ける
+    judge(kind, lane);
   } else {
     judge('leak', lane);      // ノーツが無いのに押した
   }
+}
+/* 長押しバーを離した：終わりの少し手前（0.15 秒）までに離すとお漏らし。そこまで押せていれば成功（押し出し！） */
+function release(lane) {
+  const n = S.holds && S.holds[lane];
+  if (!n || S.mode !== 'play') return;
+  const st = nowSec() - S.t0;
+  S.holds[lane] = null; n.holding = false;
+  judge(st >= n.t + n.len - 0.15 ? 'perfect' : 'leak', lane);
 }
 function judge(kind, lane, missed) {
   S.judged++;
@@ -709,20 +728,30 @@ function updateHud() {
 document.querySelectorAll('.btn').forEach(b => {
   const lane = +b.dataset.lane;
   b.addEventListener('pointerdown', e => { e.preventDefault(); b.classList.add('on'); unlockAudio(); press(lane); });
-  const off = () => b.classList.remove('on');
+  const off = () => { b.classList.remove('on'); release(lane); };   // 離したら、長押しバーも離したことにする
   b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
 });
+const lanePtr = new Map();   // レーンの上を押している指（pointerId → レーン）
 laneEl.addEventListener('pointerdown', e => {   // レーンの上をタップしても押せる
   const r = laneEl.getBoundingClientRect(), lane = Math.min(2, Math.max(0, Math.floor((e.clientX - r.left) / r.width * 3)));
-  const b = document.querySelector('.btn[data-lane="' + lane + '"]'); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90);
+  const b = document.querySelector('.btn[data-lane="' + lane + '"]'); b.classList.add('on'); lanePtr.set(e.pointerId, lane);
   unlockAudio(); press(lane);
 });
+['pointerup', 'pointercancel'].forEach(ev => laneEl.addEventListener(ev, e => {
+  const lane = lanePtr.get(e.pointerId); if (lane === undefined) return;
+  lanePtr.delete(e.pointerId); document.querySelector('.btn[data-lane="' + lane + '"]').classList.remove('on'); release(lane);
+}));
 addEventListener('keydown', e => {
   if (e.repeat || e.ctrlKey || e.metaKey) return;
   const k = e.key.toLowerCase(), lane = LANES.findIndex(l => l.key.includes(k));
   if (lane < 0) return;
-  const b = document.querySelector('.btn[data-lane="' + lane + '"]'); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90);
+  const b = document.querySelector('.btn[data-lane="' + lane + '"]'); b.classList.add('on');
   unlockAudio(); press(lane);
+});
+addEventListener('keyup', e => {                  // キーを離したら、ボタンの光を消し、長押しバーも離したことにする
+  const k = e.key.toLowerCase(), lane = LANES.findIndex(l => l.key.includes(k));
+  if (lane < 0) return;
+  document.querySelector('.btn[data-lane="' + lane + '"]').classList.remove('on'); release(lane);
 });
 $('#mute').onclick = () => { muted = !muted; if (muted) ALL_VOICES.forEach(stopVoice); CG.ls.set(KEY_MUTE, muted ? '1' : '0'); $('#mute').textContent = muted ? '🔇' : '🔊'; };
 document.addEventListener('visibilitychange', () => {   // タブを離れたら時間を止める
@@ -872,7 +901,10 @@ function frame() {
     for (const n of S.notes) {
       if (!n.judged && st - n.t > CFG.WIN_BAD) { n.judged = true; n.missed = true; judge('leak', n.lane, true); if (S.mode !== 'play') break; }
     }
-    S.notes = S.notes.filter(n => st - n.t < 1.2);
+    for (const n of S.notes) {                       // 押し続けて終わりまで来た長押しバーは、離さなくても成功にする
+      if (n.holding && st >= n.t + n.len) { n.holding = false; S.holds[n.lane] = null; judge('perfect', n.lane); if (S.mode !== 'play') break; }
+    }
+    S.notes = S.notes.filter(n => st - (n.t + n.len) < 1.2);
   }
   S.shown += (S.prog - S.shown) * Math.min(1, dt * 8);
   S.shake = Math.max(0, S.shake - dt); S.stomp = Math.max(0, S.stomp - dt);
@@ -968,12 +1000,18 @@ function drawLane(st) {
   }
   for (const n of S.notes) {
     const y = hitY - (n.t - st) / S.diff.travel * hitY;
-    if (n.judged && !n.missed) continue;
-    if (y < -nh || y > h + nh) continue;
+    if (n.judged && !n.missed && !n.holding) continue;
+    const yTail = n.len > 0 ? hitY - (n.t + n.len - st) / S.diff.travel * hitY : y;      // 長押しバーの終わり（上側）
+    const yHead = n.holding ? hitY : y;                                                  // 押している間は、頭を判定線に止める
+    if (yTail - nh / 2 > h + nh || yHead + nh / 2 < -nh) continue;
     lc.globalAlpha = n.missed ? .3 : 1;
     lc.fillStyle = n.missed ? '#6B6B78' : LANES[n.lane].col;
-    rr(n.lane * lw + 12, y - nh / 2, lw - 24, nh, 8); lc.fill();
-    if (!n.missed) { lc.fillStyle = 'rgba(255,255,255,.35)'; rr(n.lane * lw + 16, y - nh / 2 + 3, lw - 32, 5, 3); lc.fill(); }
+    rr(n.lane * lw + 12, yTail - nh / 2, lw - 24, yHead - yTail + nh, 8); lc.fill();
+    if (n.len > 0 && !n.missed) {                                                        // 長押しバー：中に白い芯と、頭の印
+      lc.fillStyle = n.holding ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.28)'; lc.fillRect(n.lane * lw + lw / 2 - 4, yTail, 8, Math.max(0, yHead - yTail));
+      lc.strokeStyle = '#fff'; lc.lineWidth = 2; rr(n.lane * lw + 12, yTail - nh / 2, lw - 24, yHead - yTail + nh, 8); lc.stroke();
+    }
+    if (!n.missed) { lc.fillStyle = 'rgba(255,255,255,.35)'; rr(n.lane * lw + 16, yHead - nh / 2 + 3, lw - 32, 5, 3); lc.fill(); }
     lc.globalAlpha = 1;
   }
   lc.textAlign = 'center'; lc.textBaseline = 'middle'; lc.font = '800 17px "Hiragino Sans","Noto Sans JP",sans-serif';
@@ -988,7 +1026,7 @@ function rr(x, y, w, h, r) { lc.beginPath(); lc.moveTo(x + r, y); lc.arcTo(x + w
 
 /* ---------------- 起動 ---------------- */
 buildTitleOptions(); showTitle(); requestAnimationFrame(frame);
-window.__IKU = { get S() { return S; }, get ac() { return ac; }, CFG, DIFFS, SONGS, press, startGame, nowSec, renderSong, pref, parseMel };   // テスト用（dev/test.py）
+window.__IKU = { get S() { return S; }, get ac() { return ac; }, CFG, DIFFS, SONGS, press, release, startGame, nowSec, renderSong, pref, parseMel };   // テスト用（dev/test.py）
 </script>
 </body>
 </html>
