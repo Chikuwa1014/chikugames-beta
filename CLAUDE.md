@@ -8,7 +8,7 @@
 - 公開先：Worker `chikuwagames-beta`（https://chikuwagames-beta.chikuwa-hookah.workers.dev/）。リポジトリのルートがそのまま公開される（公開しないファイルは `.assetsignore` に書く）。
 - `index.html`：β のトップ。開くと正式版のトップへ自動で移動する。
 - `cards.js`：正式版トップの「Beta」欄に出すカード。カードの書き方（`lock`・`dev`・`href`・`version`）は正式版の `CLAUDE.md` 3 章「β版のカードの書き方」。
-- `staging/`：正式版トップの試作環境。**どこからもリンクしない。** URL は、ユーザーへの返答にだけ書く。
+- `shisaku/`：正式版トップの試作環境。**どこからもリンクしない。** URL は、ユーザーへの返答にだけ書く。
 - `hayaoshi-chikupon/` は、いまは「開発に公開」。`.assetsignore` で公開せず、URL は開けない。公開するときは `.assetsignore` の該当行を消す（正式版の 3 章に従い、開発者の指示を仰いでから）。
 - マルチプレイの仲介は `worker/index.js`（本番と同じ `MultiRoom`。`WS_GAMES` に β のマルチのゲームを書く）。`common/v1/` は本番と同じ中身にそろえる。
 - 版数は頭に `β` を付ける（例：`β0.1.0`）。
