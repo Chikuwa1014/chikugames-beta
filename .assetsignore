@@ -11,5 +11,3 @@ worker
 node_modules
 .wrangler
 .gitignore
-# 開発に公開（URL を開けないように、公開しない）。公開するときはこの行を消す
-hayaoshi-chikupon/
