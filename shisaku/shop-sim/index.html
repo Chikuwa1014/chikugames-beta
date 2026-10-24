@@ -1043,6 +1043,24 @@ button.achr {
   opacity:.8;
   text-align:right;
 }
+
+/* ---- v1.4.1：マイナスのイベントが起きた瞬間に店の絵を揺らす ---- */
+#px.shake {
+  animation:pxshake .6s ease-out;
+}
+
+@keyframes pxshake {
+  0%, 100% { transform:translate(0,0); }
+  15% { transform:translate(-4px,1px); }
+  30% { transform:translate(4px,-1px); }
+  45% { transform:translate(-3px,1px); }
+  60% { transform:translate(3px,0); }
+  80% { transform:translate(-1px,0); }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  #px.shake { animation:none; }
+}
 </style>
 </head>
 <body>
@@ -1641,7 +1659,7 @@ const VERSION = '1.4.1';
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
-    ['1.4.1', '2026-10-24', '営業中の現在時刻を購買欲ゲージの上に大きく表示。投資の「棚を増やす」に、増やしたあとの月のテナント料を表示'],
+    ['1.4.1', '2026-10-24', '営業中の現在時刻を購買欲ゲージの上に表示。投資の「棚を増やす」に、増やしたあとの月のテナント料を表示。お金や棚が減るイベントの日は、空が赤くなりカラスが飛び、お客さんがうつむいて歩く（起きた瞬間は店の絵が揺れる）'],
     ['1.4.0', '2026-10-24', '更新履歴を設定タブに表示。実績を所持金の横のバッジ（🏅）に移し、タップで一覧を開くように。実績のリセットを追加（確認画面つき）。一時停止・倍速ボタンをタブの行の右端にまとめ、倍速は押すたびに×1→×2→×4→×8と切り替え。営業タブのログ欄を4行分の枠にし、直近50件までさかのぼれるように（売れた商品を時刻つきで記録）。デバッグ欄の見出しを「🐞 デバッグ」に'],
     ['1.3.0', '2026-10-24', '実績（累計売上・営業・貯金・インフェルノの18個）を追加。季節を実際の1年と同じ3ヶ月ごとに（1ヶ月目＝4月）。日付に暦の月を表示'],
     ['1.2.0', '2026-10-24', 'セーブコード（コピー・貼り付けで読み込み）を追加。横画面に対応。「最初からやり直す」を目立たせた。共有・セーブ・デバッグ送信をちくわゲームズ共通部品に置き換え'],
@@ -2201,7 +2219,7 @@ function rollProd() {
     const R = Math.random, on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id);
     if (on(0) && R() < 0.02) {
         resetInv(1);
-        addEvent('💣 熱ばくだんおにぎりが爆発！棚が1つだけ残り、投資がすべてリセットされました');
+        addEvent('💣 熱ばくだんおにぎりが爆発！棚が1つだけ残り、投資がすべてリセットされました', 1);
     }
     if (on(1) && R() < 0.02) {
         state.happy = clamp100(state.happy - 25);
@@ -2215,7 +2233,7 @@ function rollProd() {
         const f = 0.75 + R() * 1.2;
         state.cm[6] = Math.min(5, Math.max(0.5, state.cm[6] * f));
         applyUp();
-        addEvent('📈 アップレの原価が' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%変動しました');
+        addEvent('📈 アップレの原価が' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%変動しました', f > 1);
     }
     if (on(7) && R() < 0.25) {
         state.rb = 3;
@@ -2224,13 +2242,13 @@ function rollProd() {
     if (on(8) && R() < 0.05) {
         state.up[4] = 0;
         applyUp();
-        addEvent('👩‍🏫 教育ママが来店。雑誌のアップグレードがリセットされました');
+        addEvent('👩‍🏫 教育ママが来店。雑誌のアップグレードがリセットされました', 1);
     }
     if (on(10) && R() < 0.05) {
         state.flame = 14;
         state.boost = 0;
         state.gauge = Math.min(state.gauge, 4);
-        addEvent('📱 無断撮影（盗撮）トラブルがSNSで炎上。2ヶ月間、購買欲が5以上になりません');
+        addEvent('📱 無断撮影（盗撮）トラブルがSNSで炎上。2ヶ月間、購買欲が5以上になりません', 1);
     }
     if (on(11) && R() < 0.05) {
         let n = 0;
@@ -2240,7 +2258,7 @@ function rollProd() {
             state.money -= 10000;
             state.happy = clamp100(state.happy - 5);
         }
-        addEvent('🛴💥 店前で大事故！6台の車が店に突っ込み、棚' + n + '台を失い修繕費¥60,000');
+        addEvent('🛴💥 店前で大事故！6台の車が店に突っ込み、棚' + n + '台を失い修繕費¥60,000', 1);
     }
 }
 
@@ -2269,11 +2287,27 @@ function guard(a) {
     return a - r;
 }
 
-/** イベントを記録してログに出す */
-function addEvent(t) {
+/** イベントを記録してログに出す。bad が真ならマイナスのイベント（その日は空を赤く・悲しい演出。v1.4.1〜） */
+function addEvent(t, bad) {
     state.evs.push(t);
     addLog(t);
+    if (bad)
+        markBad();
 }
+
+/** マイナスのイベントがあった日にする（空は state.day が変わるまで赤い。起きた瞬間に店の絵を揺らす） */
+function markBad() {
+    state.bad = state.day;
+    const c = byId('px');
+    if (c) {
+        c.classList.remove('shake');
+        void c.offsetWidth;
+        c.classList.add('shake');
+    }
+}
+
+/** 今日はマイナスのイベントがあった日か */
+const badDay = () => state.bad !== undefined && state.bad === state.day && !state.over;
 
 /** 棚を1つ失う */
 function lose() {
@@ -2295,18 +2329,18 @@ function rollEvents() {
     if (state.day > 1 && state.day % MD === 1 && r() < 0.05) {
         const f = Math.round((0.9 + R() * 0.8) * 100) / 100;
         state.feeMul = Math.round(state.feeMul * f * 100) / 100;
-        addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）');
+        addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）', f > 1);
     }
     if (r() < 0.0001) {
         resetInv(2);
         state.happy = clamp100(state.happy - 20);
-        addEvent('🌋 大地震！投資がすべてリセットされました');
+        addEvent('🌋 大地震！投資がすべてリセットされました', 1);
     }
     if (r() < 0.01) {
         const lost = lose();
         state.money -= 10000;
         state.happy = clamp100(state.happy - 5);
-        addEvent('🚗 車が店に突っ込みました。' + (lost ? '棚が減り、' : '') + '修繕費¥10,000');
+        addEvent('🚗 車が店に突っ込みました。' + (lost ? '棚が減り、' : '') + '修繕費¥10,000', 1);
     }
     const pr = state.prep || {}, ok = () => Math.random() < 0.55;
     let typ = false, sn = false;
@@ -2325,7 +2359,7 @@ function rollEvents() {
             if (s)
                 s.st = 0;
         });
-        addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に');
+        addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に', 1);
     }
     if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1) && (sn = true) && pr.snow && ok()) {
         state.kama = 1;
@@ -2339,7 +2373,7 @@ function rollEvents() {
         snow = true;
         state.hol = false;
         state.weather = 3;
-        addEvent('❄️ 大雪で交通マヒ。強制休業（購買力0）');
+        addEvent('❄️ 大雪で交通マヒ。強制休業（購買力0）', 1);
     }
     if ((pr.typ && !typ) || (pr.snow && !sn)) {
         snow = true;
@@ -2586,14 +2620,14 @@ function endDay() {
         state.money -= L0;
         if (!ac)
             state.mSales = 0;
-        addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''));
+        addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''), 1);
     }
     if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
         state.clerk--;
         state.happy = clamp100(state.happy - 4);
-        addEvent('🕵️ 従業員の窃盗！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれ、解雇しました');
+        addEvent('🕵️ 従業員の窃盗！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれ、解雇しました', 1);
     }
     state.happy = clamp100(state.happy + (state.dOpen ? hdl(1.5 - 0.5 * (state.closeH - state.openH - 6)) : (state.cleanDay ? 0 : rec(state.happy))));
     state.low = state.happy < 20 ? (state.low || 0) + 1 : 0;
@@ -2610,7 +2644,7 @@ function endDay() {
     if (state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
-        addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''));
+        addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''), 1);
         if (state.clerk > 0) {
             let f = 1;
             for (let i = 1; i < state.clerk; i++)
@@ -2623,7 +2657,7 @@ function endDay() {
                 state.dn = Math.min((state.dn || 0) + dr, (state.sk || 0) + (difficulty().neg ? 10 : 0));
                 m = '。不当解雇で士気が下がり、残った店員の能力が' + dr + 'Lv低下';
             }
-            addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m);
+            addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m, 1);
         }
     }
     if (state.money < 0 && state.shelf.every(s => !s || s.st <= 0) && !state.over) {
@@ -2942,8 +2976,10 @@ function pp(x, y, b, o) {
     const h = o.hair || '#3b2a20';
     x = Math.round(x);
     y = Math.round(y);
-    Rc(x + 1, y, 3, 3, '#f1c27d');
-    Rc(x + 1, y, 3, 1, h);
+    // うつむく（マイナスのイベントの日のお客さん）：頭を1つ下げ、進む向きへ少し前に出す
+    const hx = x + 1 + (o.down ? (o.dir ? -1 : 1) : 0), hy = y + (o.down ? 1 : 0);
+    Rc(hx, hy, 3, 3, '#f1c27d');
+    Rc(hx, hy, 3, o.down ? 2 : 1, h);
     if (o.g)
         Rc(x, y + 1, 1, 3, h);
     Rc(x, y + 3, 5, 4, b);
@@ -3040,12 +3076,25 @@ function pxSec() {
     cx.globalAlpha = 1;
 }
 
+/** 赤い空を横切るカラス（3羽。羽ばたきは2コマ） */
+function pxCrows(W) {
+    for (let k = 0; k < 3; k++) {
+        const x = W + 20 - ((fr * (1.1 + k * 0.3) + k * 70) % (W + 50)), y = 8 + k * 9 + (((fr >> 1) + k) % 6 < 3 ? 0 : 1), up = ((fr >> 1) + k) % 2;
+        Rc(x, y, 4, 2, '#151015');
+        Rc(x - 1, y, 1, 1, '#151015');
+        Rc(x + 1, y + (up ? -2 : 2), 2, 2, '#151015');
+        Rc(x + 4, y + 1, 2, 1, '#151015');
+    }
+}
+
 /** ドット絵の描画（1フレーム） */
 function drawPx() {
     const W = 192, H = 92, se = seaOf(Math.max(state.day, 1)), wt = state.weather, op = state.phase === 'open';
     const hr = op ? state.openH + Math.floor(state.t / 5) : (state.phase === 'prep' ? state.openH : 21), night = hr >= 19 || hr < 6;
-    ['#5aa9f0,#8cc6f7,#b6dcfb,#d4ecfd,#e6f4fe,#f2faff', '#9aa6b0,#b0bac2,#c3cbd2,#d1d7dc,#dde2e6,#e8ebee', '#69737d,#7a858f,#8a949d,#99a2aa,#a8b0b7,#b5bcc2', '#c8d3dc,#d3dce4,#dde5ec,#e6ecf1,#eef2f6,#f4f7fa'][wt].split(',').forEach((c, i) => Rc(0, i * 10, W, 10, c));
-    if (wt === 0) {
+    const bad = badDay();
+    // マイナスのイベントがあった日は、閉店（翌日）まで空を赤く（v1.4.1〜）
+    (bad ? '#7a1010,#a01818,#c42a22,#d8462e,#e4643c,#ee8a5a' : ['#5aa9f0,#8cc6f7,#b6dcfb,#d4ecfd,#e6f4fe,#f2faff', '#9aa6b0,#b0bac2,#c3cbd2,#d1d7dc,#dde2e6,#e8ebee', '#69737d,#7a858f,#8a949d,#99a2aa,#a8b0b7,#b5bcc2', '#c8d3dc,#d3dce4,#dde5ec,#e6ecf1,#eef2f6,#f4f7fa'][wt]).split(',').forEach((c, i) => Rc(0, i * 10, W, 10, c));
+    if (wt === 0 && !bad) {
         if (night)
             Rc(160, 8, 6, 6, '#f5f0c8');
         else {
@@ -3063,6 +3112,8 @@ function drawPx() {
             Rc(x + 2, y + 4, 18, 1, 'rgba(0,0,0,.08)');
         }
     }
+    if (bad)
+        pxCrows(W);
     [[0, 14, 10], [12, 22, 14], [28, 16, 10], [150, 18, 12], [164, 26, 16], [182, 14, 10]].forEach(([x, h, w]) => {
         Rc(x, 62 - h, w, h, '#8ea4b8');
         for (let j = 0; j < h - 4; j += 4)
@@ -3134,7 +3185,7 @@ function drawPx() {
     pxSec();
     if (state.kama)
         pxKama();
-    const k = op ? (state.spd || 1) : 1;
+    const k = (op ? (state.spd || 1) : 1) * (badDay() ? 0.6 : 1);
     for (const c of PXC) {
         if (c.st === 0) {
             const dx = 93 - c.x;
@@ -3207,7 +3258,7 @@ function pxKama() {
 function pxPeople(op) {
     PXC.forEach(c => {
         if (c.st !== 1)
-            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L });
+            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), badDay() ? '#6b6f78' : (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L, down: badDay() });
     });
     const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
     for (let i = 0; i < n; i++) {
