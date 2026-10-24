@@ -140,11 +140,11 @@ header a{color:var(--muted);text-decoration:none}
 <script>
 'use strict';
 /* =====================================================================
-   いくいく！雲紅亭珍光〜すもう編〜  β0.3.0
+   いくいく！雲紅亭珍光〜すもう編〜  β0.3.1
    リズム（3レーン）で「押し出し！／はっけい！／お漏らし💦」を判定し、
    お相撲さんがシコを踏みながらママのもとへ進む。コードの地図は ikuiku-sumo/CLAUDE.md
    ===================================================================== */
-const VERSION = 'β0.3.0';
+const VERSION = 'β0.3.1';
 CG.init({ game: 'ikuiku-sumo', title: 'いくいく！雲紅亭珍光〜すもう編〜', version: VERSION });
 
 /* ---- 調整用の数値（バランスはここだけ直す） ---- */
@@ -225,7 +225,7 @@ function playVoice(key) {
   try { const a = new Audio(VOICE[key]); voiceAudio[key] = a; a.play().catch(() => { }); } catch (e) { }
 }
 function stopVoice(key) { try { voiceAudio[key] && voiceAudio[key].pause(); } catch (e) { } }
-function fadeVoice(key, ms = 400) {            // 長い音声（トイレのBGM）を、カットの終わりでなめらかに消す
+function fadeVoice(key, ms = 400) {            // 長い音声をなめらかに消す（いまは使っていない。トイレのBGMは最後まで流し切る）
   const a = voiceAudio[key]; if (!a) return; const v0 = a.volume, t0 = performance.now();
   const f = () => { const k = Math.min(1, (performance.now() - t0) / ms); try { a.volume = v0 * (1 - k); } catch (e) { } if (k < 1) requestAnimationFrame(f); else { stopVoice(key); try { a.volume = v0; } catch (e) { } } };
   f();
@@ -640,7 +640,7 @@ function resetCutUi() { $('#hud').style.visibility = ''; const b = $('#bubble');
 function endToilet() {
   S.mode = 'toilet'; S.endAt = nowSec(); S.fromX = sumoX();
   BGM.stop(); playVoice('toilet'); playVoice('toiletBgm'); save();   // 叫び声とトイレのBGMを同時に
-  setTimeout(() => { if (S.mode === 'toilet') { fadeVoice('toiletBgm'); resultPanel(false); } }, 4200);
+  setTimeout(() => { if (S.mode === 'toilet') resultPanel(false); }, 4200);
 }
 function save() {
   const b = loadBest(), id = S.diff.id;
