@@ -1,0 +1,150 @@
+/*
+ * ちくわゲームズ 共通部品 v1 — common.css（ロビー画面 room.js・送信欄 debug.js の mount の見た目）
+ * ゲームの配色に合わせたいときは、ゲーム側で次の変数を上書きする：
+ *   --cg-accent（ボタンの色）・--cg-ink（文字）・--cg-sub（小さい文字）・--cg-card（入力欄の背景）・--cg-line（枠）
+ */
+:root {
+  --cg-accent: #C9772E;
+  --cg-accent-ink: #fff;
+  --cg-ink: inherit;
+  --cg-sub: #8a7a66;
+  --cg-card: rgba(255, 255, 255, .7);
+  --cg-line: rgba(0, 0, 0, .18);
+  --cg-ok: #2e8b57;
+  --cg-ng: #d64545;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cg-sub: #b9a88f;
+    --cg-card: rgba(255, 255, 255, .08);
+    --cg-line: rgba(255, 255, 255, .22);
+    --cg-ok: #6fd39b;
+    --cg-ng: #ff7a7a;
+  }
+}
+
+.cg-room, .cg-dbg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--cg-ink);
+  font: inherit;
+}
+.cg-room-title {
+  font-weight: 800;
+  font-size: 18px;
+}
+.cg-room-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--cg-sub);
+}
+.cg-room input, .cg-dbg textarea {
+  font: inherit;
+  font-size: 16px; /* iPhone で拡大されないように 16px 以上 */
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--cg-line);
+  background: var(--cg-card);
+  color: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cg-room-btn, .cg-dbg button {
+  font: inherit;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--cg-accent);
+  color: var(--cg-accent-ink);
+  cursor: pointer;
+  min-height: 44px;
+}
+.cg-room-btn:disabled, .cg-dbg button:disabled {
+  opacity: .5;
+  cursor: default;
+}
+.cg-room-alt {
+  background: transparent;
+  color: var(--cg-accent);
+  border: 1.5px solid var(--cg-accent);
+}
+.cg-room-or {
+  text-align: center;
+  font-size: 12px;
+  color: var(--cg-sub);
+  margin-top: 4px;
+}
+.cg-room-joinrow {
+  display: flex;
+  gap: 8px;
+}
+.cg-room-joinrow input {
+  flex: 1;
+  letter-spacing: .3em;
+  text-align: center;
+}
+.cg-room-joinrow button {
+  flex: none;
+}
+.cg-room-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.cg-room-head span {
+  font-size: 13px;
+  color: var(--cg-sub);
+}
+.cg-room-num {
+  font-size: 34px;
+  letter-spacing: .15em;
+  font-variant-numeric: tabular-nums;
+}
+.cg-room-role {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--cg-line);
+}
+.cg-room-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cg-room-qr:not(:empty) {
+  align-self: center;
+  padding: 8px;
+  background: #fff;
+  border-radius: 10px;
+}
+.cg-room-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cg-room-members li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--cg-line);
+  background: var(--cg-card);
+  font-size: 14px;
+}
+.cg-room-msg, .cg-dbg-meta {
+  font-size: 13px;
+  color: var(--cg-sub);
+}
+.cg-room-err, .cg-dbg-ng {
+  font-size: 13px;
+  color: var(--cg-ng);
+}
+.cg-dbg-ok {
+  font-size: 13px;
+  color: var(--cg-ok);
+}
