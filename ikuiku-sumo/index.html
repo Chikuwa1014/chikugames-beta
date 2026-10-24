@@ -40,6 +40,19 @@ header a{color:var(--muted);text-decoration:none}
 .btn small{display:block;font-size:11px;font-weight:700;opacity:.85}
 .btn.r{background:var(--red)}.btn.g{background:var(--green)}.btn.b{background:var(--blue)}
 .btn.on{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.45);filter:brightness(1.3)}
+#titleScreen{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:4px 16px calc(14px + env(safe-area-inset-bottom));text-align:center;background:radial-gradient(ellipse at 50% 30%,#3A1F3C 0%,var(--bg) 70%)}
+.tname small{font-size:12px;letter-spacing:.3em;color:var(--gold);font-weight:800}
+.tname h1{margin:2px 0 0;font-size:clamp(28px,9vw,40px);line-height:1.15;font-weight:900;letter-spacing:.02em;text-shadow:0 3px 0 #7A1F16,0 0 22px rgba(217,58,43,.45);text-wrap:balance}
+.tname .tsub{font-size:clamp(15px,4.4vw,19px);font-weight:800;color:var(--gold);margin-top:2px}
+#titleArt{width:min(36dvh,88vw);height:min(36dvh,88vw);image-rendering:pixelated;border:3px solid #000;border-radius:6px;box-shadow:0 6px 0 rgba(0,0,0,.5);flex:none}
+.tbtns{display:flex;flex-direction:column;align-items:center;gap:10px}
+.tbtns .big{font-size:21px;padding:14px 46px}
+.tbtns p{margin:0;font-size:12px;color:var(--muted)}
+#titleScreen .rules{text-align:left;background:var(--panel);border-radius:12px;padding:10px 14px;font-size:13px;max-width:420px;line-height:1.7}
+#titleScreen .rules b{color:var(--gold)}
+#gameScreen{flex:1;min-height:0;display:flex;flex-direction:column}
+@media (prefers-reduced-motion:no-preference){#gameScreen{animation:gin .3s ease-out}}
+@keyframes gin{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:none}}
 #panel{position:absolute;inset:0;background:rgba(27,16,32,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;overflow:auto}
 #panel h1{margin:0;font-size:21px;line-height:1.3}
 #panel h1 small{display:block;font-size:13px;color:var(--gold);margin-top:2px}
@@ -62,6 +75,24 @@ header a{color:var(--muted);text-decoration:none}
     <span><span class="badge" id="ver"></span> <button id="mute" aria-label="音">🔊</button></span>
   </header>
 
+  <div id="titleScreen">
+    <div class="tname"><small>リズムすもう</small><h1>いくいく！<br>雲紅亭珍光</h1><div class="tsub">〜すもう編〜</div></div>
+    <canvas id="titleArt" width="360" height="360" aria-hidden="true"></canvas>
+    <div class="tbtns">
+      <button class="big" id="startBtn">ゲームスタート</button>
+      <button class="sub" id="howBtn" aria-expanded="false">あそびかた</button>
+      <p>ベストの押し出し数：<span id="best">0</span>　／　キーボード：A S D（J K L / 1 2 3）</p>
+    </div>
+    <div class="rules" id="how" hidden>
+      <b>あそびかた</b><br>
+      ・上から流れてくる<b>色のバー</b>が下の線に来たら、同じ色のボタンを押す。<br>
+      ・<b>押し出し！</b>と<b>はっけい！</b>で前に進む（押し出しのほうが大きく進む）。<br>
+      ・<b>お漏らし💦</b>は進めず、塩をまく。割合が増えすぎるとトイレへダッシュ！<br>
+      ・ママに着いたらクリア。
+    </div>
+  </div>
+
+  <div id="gameScreen" hidden>
   <div id="sceneWrap">
     <canvas id="scene" width="360" height="360"></canvas>
     <div id="hud">
@@ -81,7 +112,8 @@ header a{color:var(--muted);text-decoration:none}
       <button class="btn g" data-lane="1">みどり<small>S / K / 2</small></button>
       <button class="btn b" data-lane="2">あお<small>D / L / 3</small></button>
     </div>
-    <div id="panel"></div>
+    <div id="panel" hidden></div>
+  </div>
   </div>
 </div>
 
@@ -90,11 +122,11 @@ header a{color:var(--muted);text-decoration:none}
 <script>
 'use strict';
 /* =====================================================================
-   いくいく！雲紅亭珍光〜すもう編〜  β0.1.4
+   いくいく！雲紅亭珍光〜すもう編〜  β0.2.0
    リズム（3レーン）で「押し出し！／はっけい！／お漏らし💦」を判定し、
    お相撲さんがシコを踏みながらママのもとへ進む。コードの地図は ikuiku-sumo/CLAUDE.md
    ===================================================================== */
-const VERSION = 'β0.1.4';
+const VERSION = 'β0.2.0';
 CG.init({ game: 'ikuiku-sumo', title: 'いくいく！雲紅亭珍光〜すもう編〜', version: VERSION });
 
 /* ---- 調整用の数値（バランスはここだけ直す） ---- */
@@ -132,7 +164,7 @@ const KEY_MUTE = 'ikuiku-sumo-mute';
 const KEY_BEST = 'ikuiku-sumo-best-v1';
 
 const $ = s => document.querySelector(s);
-const scene = $('#scene'), c = scene.getContext('2d');
+const scene = $('#scene'); let c = scene.getContext('2d'); const mainCtx = c;   // c は描く先。タイトル画面の絵は一時的に c を切りかえる
 const laneEl = $('#lane'), lc = laneEl.getContext('2d');
 let muted = CG.ls.get(KEY_MUTE, '0') === '1';
 $('#ver').textContent = VERSION;
@@ -235,28 +267,33 @@ S = fresh();
 /* ---------------- 画面（パネル） ---------------- */
 function showPanel(html) { const p = $('#panel'); p.innerHTML = html; p.hidden = false; }
 function hidePanel() { $('#panel').hidden = true; }
-function titlePanel() {
-  showPanel(`
-    <h1>いくいく！雲紅亭珍光<small>〜すもう編〜</small></h1>
-    <div class="rules">
-      <b>あそびかた</b><br>
-      ・上から流れてくる<b>色のバー</b>が下の線に来たら、同じ色のボタンを押す。<br>
-      ・<b>押し出し！</b>と<b>はっけい！</b>で前に進む（押し出しのほうが大きく進む）。<br>
-      ・<b>お漏らし💦</b>は進めず、塩をまく。割合が増えすぎるとトイレへダッシュ！<br>
-      ・ママに着いたらクリア。
-    </div>
-    <button class="big" id="startBtn">スタート</button>
-    <p>ベストの押し出し数：<span id="best">0</span>　／　キーボード：A S D（J K L / 1 2 3）</p>`);
+/* ---- タイトル（ゲーム開始）画面：プレイ画面とは別の画面。ここでタイトルの音声を流す ---- */
+let titleSpoken = false;
+function speakTitle() {                   // 自動再生がブロックされたら、画面の最初のタップで鳴らす
+  if (titleSpoken || muted || !VOICE.title || S.mode !== 'title') return;
+  titleSpoken = true; ALL_VOICES.forEach(stopVoice);
+  try { const a = new Audio(VOICE.title); voiceAudio.title = a; a.play().catch(() => { titleSpoken = false; }); } catch (e) { titleSpoken = false; }
+}
+function showTitle() {
+  S = fresh(); resetCutUi(); hidePanel(); updateHud();
+  $('#gameScreen').hidden = true; $('#titleScreen').hidden = false; $('#how').hidden = true; $('#howBtn').setAttribute('aria-expanded', 'false');
   const b = CG.ls.getJSON(KEY_BEST, null);
   $('#best').textContent = b && b.perfect != null ? b.perfect : 0;
-  $('#startBtn').onclick = startGame;
+  titleSpoken = false; speakTitle();
 }
+$('#startBtn').onclick = () => startGame();
+$('#howBtn').onclick = () => { const h = $('#how'); h.hidden = !h.hidden; $('#howBtn').setAttribute('aria-expanded', String(!h.hidden)); };
+addEventListener('pointerdown', () => { if (S.mode === 'title') { unlockAudio(); speakTitle(); } }, true);
+addEventListener('keydown', () => { if (S.mode === 'title') { unlockAudio(); speakTitle(); } }, true);
 
 function startGame() {
   unlockAudio();
   hidePanel(); resetCutUi();
+  $('#titleScreen').hidden = true; $('#gameScreen').hidden = false;   // タイトル画面 → プレイ画面
   S = fresh(); S.mode = 'count'; S.t0 = nowSec() + 3;   // 3・2・1 のあとが曲の 0 秒
-  ALL_VOICES.forEach(stopVoice); playVoice('title'); BGM.start();
+  ['mama', 'kiss', 'toilet', 'toiletBgm'].forEach(stopVoice);          // タイトルの音声は、言い終わるまで流しておく
+  if (!titleSpoken) { titleSpoken = true; playVoice('title'); }       // まだ鳴っていなければ、ここで鳴らす
+  BGM.start();
   updateHud();
 }
 
@@ -345,7 +382,7 @@ function resultPanel(ok) {
     <div class="row"><button class="big" id="again">もう一回</button></div>
     <div class="row"><button class="sub" id="share">シェアする</button><button class="sub" id="toTitle">タイトルへ</button></div>`);
   $('#again').onclick = startGame;
-  $('#toTitle').onclick = () => { S = fresh(); resetCutUi(); updateHud(); titlePanel(); };
+  $('#toTitle').onclick = showTitle;
   $('#share').onclick = () => {
     const msg = ok
       ? `雲紅亭珍光がママのもとへたどり着いた！（押し出し${S.perfect}回・お漏らし${S.leaks}回）`
@@ -544,9 +581,22 @@ function frame() {
   S.shake = Math.max(0, S.shake - dt); S.stomp = Math.max(0, S.stomp - dt);
   S.pops.forEach(p => p.age += dt); S.pops = S.pops.filter(p => p.age < 0.7);
 
-  drawScene(now, dt);
-  drawLane(st);
+  if (S.mode === 'title') drawTitleArt(now, dt);
+  else { drawScene(now, dt); drawLane(st); }
   requestAnimationFrame(frame);
+}
+
+/* タイトル画面の絵：土俵でシコを踏むお相撲さんと、手をふるママ */
+function drawTitleArt(now, dt) {
+  const tc = $('#titleArt').getContext('2d'); c = tc;
+  c.setTransform(3, 0, 0, 3, 0, 0); c.imageSmoothingEnabled = false; c.clearRect(0, 0, 120, 120);
+  drawBg(now);
+  const beat = Math.floor(now / 0.5), phase = beat % 2, k = (now % 0.5) / 0.5;
+  if (beat !== S.titleBeat) { S.titleBeat = beat; spawnDust(30 + (phase ? 4 : 12), GY); if (beat % 3 === 0) spawnHeart(98 + Math.random() * 12, GY - 40); }
+  drawMama(98, GY, { t: now, mood: 'wave' });
+  drawSumo(26, GY, { phase, lift: k < 0.5 ? 4 : 0, bob: k < 0.5 ? -1 : 0, arms: k < 0.5 ? 'up' : '', mood: 'happy' });
+  drawParts(dt);
+  c = mainCtx;
 }
 
 function drawScene(now, dt) {
@@ -627,7 +677,7 @@ function drawLane(st) {
 function rr(x, y, w, h, r) { lc.beginPath(); lc.moveTo(x + r, y); lc.arcTo(x + w, y, x + w, y + h, r); lc.arcTo(x + w, y + h, x, y + h, r); lc.arcTo(x, y + h, x, y, r); lc.arcTo(x, y, x + w, y, r); lc.closePath(); }
 
 /* ---------------- 起動 ---------------- */
-titlePanel(); updateHud(); requestAnimationFrame(frame);
+showTitle(); requestAnimationFrame(frame);
 window.__IKU = { get S() { return S; }, CFG, press, startGame, nowSec };   // テスト用（dev/test.py）
 </script>
 </body>
