@@ -1,0 +1,4578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ちいさなお店 - 商品販売シミュレーター</title>
+<style>
+/* 見た目（色・レイアウト）。ダークモードは :root の変数を上書きして対応 */
+:root {
+  --bg:#e6efe9;
+  --card:#fff;
+  --ink:#12332e;
+  --sub:#5b7770;
+  --line:#c9d9d1;
+  --tag:#ffd23f;
+  --tagink:#3a2d00;
+  --red:#e63946;
+  --ok:#1f9d6b;
+  --bar:#d6e4dc;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+
+@media (prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#0e1c19;
+    --card:#173029;
+    --ink:#e4f3ec;
+    --sub:#8fb0a5;
+    --line:#27473e;
+    --red:#ff6b76;
+    --ok:#3ed39a;
+    --bar:#0f2420;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:#0e1c19;
+  --card:#173029;
+  --ink:#e4f3ec;
+  --sub:#8fb0a5;
+  --line:#27473e;
+  --red:#ff6b76;
+  --ok:#3ed39a;
+  --bar:#0f2420;
+}
+
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0 auto;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  max-width:560px;
+  padding:0 12px 40px;
+}
+
+.awning {
+  height:14px;
+  margin:0 -12px;
+  background:repeating-linear-gradient(90deg,var(--red) 0 22px,#fff 22px 44px);
+  border-radius:0 0 10px 10px;
+}
+
+.money {
+  font-size:34px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.5px;
+  margin-top:10px;
+}
+
+.money small {
+  font-size:15px;
+  font-weight:600;
+  color:var(--sub);
+  margin-right:2px;
+}
+
+.money.neg {
+  color:var(--red);
+}
+
+.money {
+  padding:0;
+  margin:0;
+  font-size:24px;
+  flex:none;
+}
+
+#top {
+  flex:none;
+  position:relative;
+  z-index:30;
+  background:var(--bg);
+  margin:0 -12px;
+  padding:2px 12px 6px;
+  box-shadow:0 3px 8px rgba(0,0,0,.18);
+}
+
+#tabs button {
+  padding:6px 0;
+  font-size:13px;
+}
+
+html,body {
+  overflow:hidden;
+}
+
+body {
+  height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+  display:flex;
+  flex-direction:column;
+  padding-bottom:0;
+}
+
+.awning {
+  flex:none;
+}
+
+#scr {
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  padding:10px 0 40px;
+  -webkit-overflow-scrolling:touch;
+}
+
+#mny .card {
+  border:0;
+  border-top:1px solid var(--line);
+  border-radius:0;
+  background:transparent;
+  padding:8px 0;
+  margin:0;
+}
+
+.meta {
+  color:var(--sub);
+  font-size:13px;
+}
+
+.steps {
+  display:flex;
+  gap:6px;
+  margin:10px 0;
+}
+
+.steps span {
+  flex:1;
+  text-align:center;
+  font-size:13px;
+  font-weight:700;
+  padding:6px 0;
+  border-radius:8px;
+  background:var(--bar);
+  color:var(--sub);
+}
+
+.steps span.on {
+  background:var(--ink);
+  color:var(--bg);
+}
+
+.card {
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+  margin-bottom:8px;
+}
+
+.row {
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+  font-size:13px;
+}
+
+.bar {
+  height:10px;
+  background:var(--bar);
+  border-radius:5px;
+  overflow:hidden;
+  margin:6px 0 2px;
+}
+
+.bar i {
+  display:block;
+  height:100%;
+  background:var(--ok);
+  transition:width .9s linear;
+}
+
+.bar.g i {
+  background:linear-gradient(90deg,#4cc9f0,#ffd23f,#e63946);
+}
+
+.bar.low i {
+  background:var(--red);
+}
+
+.boost {
+  color:var(--red);
+  font-weight:800;
+}
+
+.hint {
+  font-size:13px;
+  color:var(--sub);
+  margin:4px 0 8px;
+}
+
+.log {
+  font-size:13px;
+  line-height:1.5;
+  color:var(--ink);
+  font-weight:600;
+  /* 4行分の枠でスクロール（v1.4.0〜）。行が増えてもほかの表示は動かない */
+  height:calc(4 * 1.5em + 8px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:4px 8px;
+  margin-bottom:8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--card);
+}
+
+.log div {
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.log div.sale {
+  color:var(--sub);
+  font-weight:400;
+}
+
+.card.off {
+  opacity:.5;
+}
+
+h2 {
+  font-size:16px;
+  margin:16px 0 8px;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.shelf {
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+}
+
+.shelf.empty {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--sub);
+  border-style:dashed;
+  min-height:132px;
+  text-align:center;
+  font-size:13px;
+  background:transparent;
+}
+
+.top {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.emo {
+  font-size:30px;
+  line-height:1;
+}
+
+.nm {
+  font-weight:700;
+}
+
+.price {
+  display:inline-block;
+  background:var(--tag);
+  color:var(--tagink);
+  font-weight:800;
+  font-size:12px;
+  padding:1px 7px;
+  border-radius:3px 8px 8px 3px;
+}
+
+.cnt {
+  font-size:12px;
+  color:var(--sub);
+  display:flex;
+  justify-content:space-between;
+  font-variant-numeric:tabular-nums;
+}
+
+.btns {
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+}
+
+button {
+  font:inherit;
+  font-weight:700;
+  border:0;
+  border-radius:8px;
+  padding:8px 6px;
+  background:var(--ink);
+  color:var(--bg);
+  flex:1;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+
+button.alt {
+  background:transparent;
+  color:var(--ink);
+  border:1.5px solid var(--ink);
+}
+
+button.big {
+  width:100%;
+  padding:14px;
+  font-size:17px;
+  background:var(--tag);
+  color:var(--tagink);
+  margin-bottom:8px;
+}
+
+button:disabled {
+  opacity:.3;
+  cursor:default;
+}
+
+button:focus-visible {
+  outline:3px solid var(--tag);
+  outline-offset:2px;
+}
+
+.up {
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.up .tx {
+  flex:1;
+  min-width:0;
+}
+
+.up .d {
+  font-size:12px;
+  color:var(--sub);
+}
+
+.up button {
+  flex:0 0 96px;
+  font-variant-numeric:tabular-nums;
+}
+
+.fc {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.fc .emo {
+  font-size:40px;
+}
+
+.over {
+  background:var(--red);
+  color:#fff;
+  text-align:center;
+  font-weight:700;
+}
+
+.ver {
+  margin-top:16px;
+  color:var(--sub);
+  font-size:11px;
+  line-height:1.6;
+}
+
+/* ヘルプ（？アイコンとフロート） */
+button.hp {
+  flex:none;
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:14px;
+  height:14px;
+  margin-left:5px;
+  padding:0;
+  border:1px solid var(--sub);
+  border-radius:50%;
+  background:transparent;
+  color:var(--sub);
+  font-size:9px;
+  font-weight:700;
+  line-height:1;
+  vertical-align:2px;
+}
+
+button.hp::before {
+  content:"";
+  position:absolute;
+  inset:-10px;
+}
+
+#hlp {
+  position:fixed;
+  z-index:45;
+  max-width:min(280px, calc(100vw - 16px));
+  padding:8px 10px;
+  border-radius:8px;
+  background:var(--ink);
+  color:var(--bg);
+  font-size:13px;
+  line-height:1.5;
+  white-space:pre-line;
+  box-shadow:0 6px 20px rgba(0,0,0,.3);
+}
+
+#hlp[hidden] {
+  display:none;
+}
+
+/* セーブデータ欄 */
+.svpend {
+  margin-top:10px;
+  padding:10px;
+  border:1.5px dashed var(--line);
+  border-radius:8px;
+}
+
+.svwarn {
+  color:var(--red);
+}
+
+.svok {
+  color:var(--ok);
+  word-break:break-all;
+}
+
+/* 倒産ポップアップ */
+#ovm {
+  position:fixed;
+  inset:0;
+  z-index:40;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+#ovm[hidden], #ama[hidden] {
+  display:none;
+}
+
+#ama {
+  position:fixed;
+  inset:0;
+  z-index:45;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+.ovbox.amabox {
+  display:flex;
+  flex-direction:column;
+  height:min(560px, 100%);
+  padding:12px;
+  border-top-color:#c8a45a;
+  overflow:hidden;
+}
+
+.amatop {
+  flex:7 1 0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.amahd {
+  display:flex;
+  justify-content:space-between;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+#amacv {
+  flex:1 1 0;
+  min-height:0;
+  width:100%;
+  object-fit:contain;
+  image-rendering:pixelated;
+  border-radius:8px;
+  margin:6px 0;
+  background:#e6ecf1;
+}
+
+.amanum {
+  text-align:center;
+  font-size:22px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+.amanum small {
+  font-size:13px;
+  color:var(--sub);
+  margin-left:6px;
+}
+
+.amabot {
+  flex:3 1 0;
+  min-height:0;
+  display:flex;
+}
+
+.amabtn {
+  flex:1;
+  font-size:28px;
+  font-weight:900;
+  border-radius:14px;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+.amabtn:active {
+  transform:scale(.97);
+}
+
+.amares {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+  gap:6px;
+}
+
+.amares b {
+  font-size:20px;
+}
+
+.ovbox {
+  width:100%;
+  max-width:440px;
+  max-height:100%;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  background:var(--card);
+  color:var(--ink);
+  border-radius:14px;
+  border-top:6px solid var(--red);
+  padding:16px;
+  box-shadow:0 12px 40px rgba(0,0,0,.4);
+  animation:ovpop .3s cubic-bezier(.2,1.4,.4,1);
+}
+
+.ovhd {
+  font-size:24px;
+  font-weight:900;
+  color:var(--red);
+  text-align:center;
+}
+
+.ovmsg {
+  margin:6px 0 10px;
+  text-align:center;
+  font-weight:700;
+}
+
+.ovimg {
+  display:block;
+  width:100%;
+  border-radius:8px;
+  margin-bottom:12px;
+}
+
+.ovbox .share {
+  margin-bottom:12px;
+}
+
+@keyframes ovin {
+  from { opacity:0; }
+}
+
+@keyframes ovpop {
+  from { transform:scale(.85); opacity:0; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  #ovm, .ovbox { animation:none; }
+}
+
+.share textarea {
+  display:block;
+  width:100%;
+  font:inherit;
+  font-size:14px;
+  padding:8px;
+  margin:8px 0 6px;
+  border-radius:8px;
+  border:1.5px solid var(--line);
+  background:var(--bg);
+  color:var(--ink);
+  resize:none;
+  word-break:break-all;
+}
+
+select {
+  font:inherit;
+  padding:8px;
+  border-radius:8px;
+  border:1.5px solid var(--line);
+  background:var(--card);
+  color:var(--ink);
+  flex:1;
+  margin-right:6px;
+}
+
+.sd {
+  display:flex;
+  gap:6px;
+  margin-bottom:8px;
+}
+
+.sd button {
+  padding:3px 0;
+  font-size:13px;
+}
+
+.gr {
+  display:grid;
+  grid-template-columns:64px 1fr auto;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  margin:4px 0;
+}
+
+.gr b {
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  white-space:nowrap;
+}
+
+.pw {
+  float:right;
+  font-size:12px;
+  font-weight:700;
+  color:var(--sub);
+  line-height:22px;
+}
+
+.gr .bar {
+  margin:0;
+}
+
+.gr span {
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+}
+
+details summary {
+  cursor:pointer;
+  color:var(--sub);
+  font-size:12px;
+  margin-top:6px;
+}
+
+details .meta {
+  margin-top:4px;
+}
+
+.foot {
+  margin-top:24px;
+  text-align:center;
+}
+
+.foot button {
+  flex:none;
+  background:transparent;
+  color:var(--sub);
+  font-weight:500;
+  font-size:12px;
+  text-decoration:underline;
+}
+
+/* ---- v1.2.0：セーブコード ---- */
+.svsub {
+  margin-top:10px;
+  font-weight:700;
+  font-size:14px;
+}
+
+textarea.svcode {
+  width:100%;
+  box-sizing:border-box;
+  margin:6px 0;
+  font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;
+  padding:6px;
+  border-radius:8px;
+  border:1.5px solid var(--line);
+  background:var(--bg);
+  color:var(--ink);
+  word-break:break-all;
+  resize:vertical;
+}
+
+/* ---- v1.2.0：最初からやり直す（目立たせる） ---- */
+.rst {
+  border:1.5px solid var(--red);
+}
+
+.rst b {
+  color:var(--red);
+}
+
+button.big.rstb {
+  margin:8px 0 0;
+  background:transparent;
+  color:var(--red);
+  border:2px solid var(--red);
+}
+
+button.big.rstb.arm {
+  background:var(--red);
+  color:#fff;
+}
+
+/* ---- v1.2.0：横画面（スマホを横にしたとき）は左に店の様子、右にタブの中身 ---- */
+@media (orientation:landscape) and (max-height:560px) {
+  body {
+    max-width:none;
+    display:grid;
+    grid-template-columns:minmax(260px,42%) minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
+    column-gap:14px;
+    padding-left:max(12px,env(safe-area-inset-left,0px));
+    padding-right:max(12px,env(safe-area-inset-right,0px));
+  }
+
+  .awning {
+    grid-column:1 / -1;
+    margin:0 calc(-1 * max(12px,env(safe-area-inset-left,0px))) 0 calc(-1 * max(12px,env(safe-area-inset-right,0px)));
+  }
+
+  #top {
+    grid-column:1;
+    grid-row:2;
+    margin:0;
+    padding:2px 0 8px;
+    box-shadow:none;
+    overflow-y:auto;
+    min-height:0;
+  }
+
+  #scr {
+    grid-column:2;
+    grid-row:2;
+    padding-top:6px;
+  }
+
+  #px {
+    max-height:42vh;
+    object-fit:contain;
+  }
+}
+
+/* ---- v1.3.0：実績 ---- */
+.achn {
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+.achg {
+  margin-top:10px;
+}
+
+.achgh {
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+  font-weight:700;
+  font-size:13px;
+}
+
+.achgh .meta {
+  font-weight:400;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+.achl {
+  display:grid;
+  gap:4px;
+  margin-top:4px;
+}
+
+.ach {
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr) auto;
+  align-items:center;
+  gap:6px;
+  padding:5px 8px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  font-size:13px;
+  color:var(--sub);
+}
+
+.ach.on {
+  border-color:var(--tag);
+  background:color-mix(in srgb, var(--tag) 18%, transparent);
+  color:var(--ink);
+  font-weight:700;
+}
+
+.achi {
+  text-align:center;
+}
+
+.achd {
+  font-size:11px;
+  font-weight:400;
+  color:var(--sub);
+  white-space:nowrap;
+}
+
+.achp {
+  width:64px;
+  height:6px;
+  border-radius:3px;
+  background:var(--bar);
+  overflow:hidden;
+}
+
+.achp i {
+  display:block;
+  height:100%;
+  background:var(--ok);
+}
+
+/* ---- v1.4.0：所持金の行の実績バッジ・実績のポップアップ・タブの倍速・更新履歴 ---- */
+.mrow {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.mrow .money {
+  min-width:0;
+}
+
+button.achb {
+  flex:none;
+  width:auto;
+  padding:3px 10px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+#achm {
+  position:fixed;
+  inset:0;
+  z-index:40;
+  background:rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  animation:ovin .25s ease-out;
+}
+
+#achm[hidden] {
+  display:none;
+}
+
+.ovbox.achbox {
+  display:flex;
+  flex-direction:column;
+  height:min(620px, 100%);
+  padding:12px 14px;
+  overflow:hidden;
+}
+
+.achtop {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-bottom:6px;
+  border-bottom:1px solid var(--line);
+}
+
+.achtop .achn {
+  margin-left:auto;
+}
+
+button.achx {
+  flex:none;
+  width:34px;
+  padding:4px 0;
+}
+
+.achbody {
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
+}
+
+button.achr {
+  width:100%;
+  margin-top:10px;
+}
+
+.achask {
+  margin-top:10px;
+}
+
+.achask .btns {
+  margin-top:8px;
+}
+
+#tabs .spd {
+  flex:none;
+  display:flex;
+  gap:3px;
+}
+
+#tabs .spd button {
+  width:36px;
+  flex:none;
+  font-variant-numeric:tabular-nums;
+}
+
+#tabs {
+  gap:5px;
+}
+
+.chg {
+  font-size:13px;
+  color:var(--sub);
+}
+
+.chg b {
+  color:var(--ink);
+}
+
+.chg ul {
+  margin:6px 0 0;
+  padding-left:1.2em;
+}
+
+.chg li {
+  margin:2px 0;
+}
+
+.chg details summary {
+  cursor:pointer;
+  color:var(--ink);
+  font-weight:700;
+  margin-top:6px;
+}
+
+.achask button.rstb {
+  background:var(--red);
+  color:#fff;
+}
+
+.ovbox.achbox {
+  border-top-color:#c8a45a;
+}
+
+/* ---- v1.4.1：営業中の現在時刻（購買欲ゲージの上） ---- */
+.clk {
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  padding:6px 12px;
+  margin-bottom:8px;
+  border-radius:12px;
+  background:var(--ink);
+  color:var(--bg);
+}
+
+.clk[hidden] {
+  display:none;
+}
+
+.clkt {
+  font-size:28px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.5px;
+  line-height:1.2;
+}
+
+.clkr {
+  font-size:12px;
+  font-weight:700;
+  opacity:.8;
+  text-align:right;
+}
+</style>
+</head>
+<body>
+<div id="dfc" style="display:none;position:fixed;inset:0;z-index:50;background:var(--bg);padding:calc(24px + env(safe-area-inset-top,0px)) 16px 24px;overflow:auto"><div style="max-width:560px;margin:0 auto"><h2>難易度を選んでください</h2><button class="big" data-a="diff" data-v="easy" style="text-align:left">イージー<div class="meta" style="color:inherit">病気なし・月収不要。資金に余裕あり、イベントも少なめ。融資・粗利率の調整はできません。</div></button><button class="big" data-a="diff" data-v="normal" style="text-align:left">ノーマル<div class="meta" style="color:inherit">病気あり・自分の月収あり。やや優しめ。融資・粗利率の調整はできません。</div></button><button class="big" data-a="diff" data-v="hard" style="text-align:left">ハード<div class="meta" style="color:inherit">全機能解放（融資・粗利率の調整も可）。標準の難しさ。</div></button><button class="big" data-a="diff" data-v="inferno" style="text-align:left">インフェルノ<div class="meta" style="color:inherit">全機能解放。より厳しく、イベント発生率が約15倍。融資の利子も高め。</div></button></div></div>
+<div class="awning"></div>
+<div class="money" id="m"></div>
+<div class="meta" id="dt"></div>
+<details open class="card" style="padding:6px 10px"><summary style="margin:0">🏪 店の様子 <span id="ph" style="margin-left:8px;font-weight:700;color:var(--ink)"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="192" height="92" style="width:100%;image-rendering:pixelated;display:block;border-radius:8px;margin-top:6px"></canvas></details>
+<div id="sp" style="display:none"></div>
+<div class="sd" id="sd"></div>
+<div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div></div>
+
+
+<div id="act"></div>
+<div class="log" id="lg"></div>
+<div id="pn"></div><div id="mg"></div><details class="card" id="mny" style="padding:6px 10px"><summary style="margin:0">💰 お金の管理（融資・預金・粗利率・月収）</summary><div id="mnyA"></div><div id="mnyB"></div></details>
+<h2>陳列棚</h2>
+<div class="grid" id="sh"></div>
+<h2>投資</h2>
+<div id="up"></div>
+<div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
+<div class="card" id="dbg"></div>
+<div class="card rst"><b>🔄 最初からやり直す</b><div class="meta">今のお店をたたんで、難易度えらびからやり直します。セーブデータを残したいときは、先に書き出してください。</div><button class="big rstb" data-a="reset">最初からやり直す</button></div>
+<div class="card chg" id="chg"></div>
+<div class="foot"><div class="ver" id="ver"></div></div>
+<!-- ちくわゲームズ共通部品（common/v1）。build.py・make-artifact.py が中に埋め込む -->
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — core.js（いちばん最初に読み込む）
+ *
+ * どのゲームでも使う小さな道具をまとめたもの。ほかの共通部品（share・save・debug・room）はこれを前提にする。
+ * すべて window.CG（ちくわゲームズ）の下に置き、ゲームの変数や関数と名前がぶつからないようにする。
+ *
+ *   読み込み：ゲームの HTML で script タグの src に ../common/v1/core.js を書く（ほかの共通部品より先）
+ *   ※ 共通部品のコメントには閉じタグ（スラッシュ＋script）を書かない。1 ファイルに埋め込んだとき、そこで script が終わってしまう
+ *   CG.init({ game: 'shop-sim', title: 'ちいさなお店', version: '1.2.0' });
+ *
+ * 仕様を変えて古いゲームが動かなくなるときは v1 を直さず、common/v2/ を作る（公開済みのゲームを壊さない）。
+ * 使い方の全体はリポジトリ直下の CLAUDE.md「14. 共通部品」と common/README.md。
+ */
+(function () {
+    const CG = window.CG || (window.CG = {});
+    CG.LIB = 'v1';
+
+    /** ゲームの情報（init で決める）。game はフォルダ名＝URL、デバッグ送信・マルチの宛先にも使う */
+    CG.info = { game: '', title: '', version: '' };
+    CG.init = function (o) {
+        Object.assign(CG.info, o || {});
+        return CG;
+    };
+
+    /** localStorage の読み書き（失敗しても止まらない。プライベートモードなど） */
+    CG.ls = {
+        get(k, d = null) {
+            try {
+                const v = localStorage.getItem(k);
+                return v === null ? d : v;
+            }
+            catch (e) {
+                return d;
+            }
+        },
+        set(k, v) {
+            try {
+                localStorage.setItem(k, v);
+                return true;
+            }
+            catch (e) {
+                return false;
+            }
+        },
+        del(k) {
+            try {
+                localStorage.removeItem(k);
+            }
+            catch (e) { }
+        },
+        getJSON(k, d = null) {
+            const v = CG.ls.get(k, null);
+            if (v === null)
+                return d;
+            try {
+                return JSON.parse(v);
+            }
+            catch (e) {
+                return d;
+            }
+        },
+        setJSON(k, v) {
+            return CG.ls.set(k, JSON.stringify(v));
+        }
+    };
+
+    /** HTML に埋め込むときの書き換え（< と & と "） */
+    CG.esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+    /** 2桁ゼロ埋め */
+    CG.p2 = n => String(n).padStart(2, '0');
+
+    /** いま開いているゲームの公開 URL（? と # は付けない） */
+    CG.pageUrl = () => location.origin + location.pathname;
+
+    /**
+     * 文字列をコピーする。成功なら true。
+     * 新しい方法（clipboard）がだめなら、見えない入力欄を使う昔の方法を試す。prompt() は使わない（アーティファクトで働かない）
+     */
+    CG.copy = async function (text) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        }
+        catch (e) { }
+        const t = document.createElement('textarea');
+        t.value = text;
+        t.setAttribute('readonly', '');
+        t.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+        document.body.append(t);
+        t.select();
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        }
+        catch (e) { }
+        t.remove();
+        return ok;
+    };
+
+    /** ファイルとして保存（ダウンロード）。data は文字列か Blob */
+    CG.download = function (name, data, type = 'application/json') {
+        const blob = data instanceof Blob ? data : new Blob([data], { type });
+        const u = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = u;
+        a.download = name;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(u), 10000);
+    };
+
+    /** ファイルを文字列で読む（Promise） */
+    CG.readText = file => new Promise((ok, ng) => {
+        const r = new FileReader();
+        r.onload = () => ok(String(r.result));
+        r.onerror = () => ng(new Error('ファイルを読み取れませんでした。'));
+        r.readAsText(file);
+    });
+
+    /** 画面の下に短いお知らせを出す（ms ミリ秒で消える） */
+    let toastTimer = 0;
+    CG.toast = function (msg, ms = 2200) {
+        let el = document.getElementById('cg-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'cg-toast';
+            el.setAttribute('role', 'status');
+            el.style.cssText = 'position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;' +
+                'max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:rgba(30,30,30,.92);color:#fff;font-size:14px;' +
+                'line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.3);transition:opacity .2s;pointer-events:none;text-align:center';
+            document.body.append(el);
+        }
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.style.opacity = '0', ms);
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — share.js（SNS 共有）。core.js の後に読む。
+ *
+ * 共通ルール「5. SNS 共有」をそのまま形にしたもの。#ちくわげーむず は必ず付く（書き忘れても足す）。
+ *
+ *   const s = { msg: 'ちいさなお店を開いたけど倒産しちゃった！', tags: ['ちいさなお店'], url: CG.pageUrl() };
+ *   CG.share.text(s)         // 文面（URL 込み）。コピー用の窓などに
+ *   CG.share.open(s, file)   // 端末の共有メニュー（画像 file があれば添付）。使えなければ X の投稿画面
+ *   CG.share.links(s)        // { x, line, facebook } のリンク先
+ *   CG.share.copy(s)         // 文面をコピー（成功なら true）
+ *
+ * tags は # を付けずに書く。ゲーム固有のタグを先に、ちくわげーむず が最後に来る。
+ */
+(function () {
+    const CG = window.CG;
+    const SITE_TAG = 'ちくわげーむず';
+
+    /** タグの並び（# なし、重複なし、ちくわげーむず を最後に） */
+    function tagList(s) {
+        const t = (s.tags || []).map(x => String(x).replace(/^#/, '')).filter(x => x && x !== SITE_TAG);
+        return [...new Set(t), SITE_TAG];
+    }
+    const urlOf = s => s.url || CG.pageUrl();
+
+    CG.share = {
+        TAG: SITE_TAG,
+        tags: tagList,
+
+        /** 文面（本文・ハッシュタグ・URL を改行でつなぐ） */
+        text(s) {
+            return s.msg + '\n' + tagList(s).map(t => '#' + t).join(' ') + '\n' + urlOf(s);
+        },
+
+        /** 各 SNS の投稿画面の URL。Facebook は文面を渡せないので hashtag に #ちくわげーむず */
+        links(s) {
+            const e = encodeURIComponent, u = urlOf(s);
+            return {
+                x: 'https://x.com/intent/tweet?text=' + e(s.msg) + '&url=' + e(u) + '&hashtags=' + e(tagList(s).join(',')),
+                line: 'https://social-plugins.line.me/lineit/share?url=' + e(u) + '&text=' + e(s.msg + '\n' + tagList(s).map(t => '#' + t).join(' ')),
+                facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + e(u) + '&hashtag=' + e('#' + SITE_TAG)
+            };
+        },
+
+        /** X の投稿画面を開く */
+        x(s) {
+            window.open(CG.share.links(s).x, '_blank', 'noopener');
+        },
+
+        /**
+         * 共有する。端末の共有メニューが使えればそれ（file があれば画像付き）、だめなら X の投稿画面。
+         * 結果は 'shared'（共有メニュー）・'cancel'（とじた）・'x'（X を開いた）
+         */
+        async open(s, file) {
+            const text = CG.share.text(s);
+            const withFile = file ? { text, files: [file] } : null;
+            const plain = { title: s.title || CG.info.title || document.title, text: s.msg + '\n' + tagList(s).map(t => '#' + t).join(' '), url: urlOf(s) };
+            const data = withFile && navigator.canShare && navigator.canShare(withFile) ? withFile : (navigator.share && !file ? plain : null);
+            if (data) {
+                try {
+                    await navigator.share(data);
+                    return 'shared';
+                }
+                catch (e) {
+                    if (e && e.name === 'AbortError')
+                        return 'cancel';
+                }
+            }
+            CG.share.x(s);
+            return 'x';
+        },
+
+        /** 文面をコピー */
+        copy(s) {
+            return CG.copy(CG.share.text(s));
+        }
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — save.js（セーブデータのファイルとセーブコード）。core.js の後に読む。
+ *
+ * ゲームの自動保存（localStorage）はゲームごとに書く。ここは「端末をまたいで持ち運ぶ」ための部品。
+ * 中身は どちらも同じ「包み」{ game, v, at, data } で、game がちがうデータは読み込めない。
+ *
+ *   const box = CG.save.wrap(state, 2);              // 包み（v はゲームのセーブ形式の版）
+ *   CG.save.toFile(box, 'ちいさなお店_….json');       // ファイルに書き出す
+ *   const box2 = await CG.save.fromFile(file);       // ファイルから読む（だめなら Error。message は日本語）
+ *   const code = await CG.save.toCode(box);          // セーブコード（文字列）にする
+ *   const box3 = await CG.save.fromCode(code);       // セーブコードを読む（だめなら Error）
+ *
+ * セーブコードの形：CK1.<本体>.<チェック値>
+ *   CK1 … 本体は JSON を deflate で縮めて base64url にしたもの
+ *   CK0 … 縮める仕組みが無いブラウザ用（JSON をそのまま base64url）
+ *   チェック値はゲーム名を混ぜたハッシュ。書き換えたコード・別のゲームのコードははじく（共通ルール 7 章）
+ * 読み込み側は、v がゲームの今の版より新しいときは「ゲームを最新にして」とエラーにすること（box.v を見る）。
+ */
+(function () {
+    const CG = window.CG;
+    const err = t => new Error(t);
+
+    /** ハッシュ（FNV-1a。つくれ！おでん横丁の checksum と同じ式。塩はゲーム名） */
+    function checksum(str, game) {
+        let h = 0x811c9dc5;
+        for (const ch of 'chikuwa-' + game + str) {
+            h ^= ch.charCodeAt(0);
+            h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        return h.toString(36);
+    }
+
+    /** バイト列 ⇔ base64url */
+    function b64e(bytes) {
+        let s = '';
+        for (let i = 0; i < bytes.length; i += 0x8000)
+            s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    function b64d(t) {
+        const s = atob(t.replace(/-/g, '+').replace(/_/g, '/'));
+        const b = new Uint8Array(s.length);
+        for (let i = 0; i < s.length; i++)
+            b[i] = s.charCodeAt(i);
+        return b;
+    }
+
+    /** deflate（使えるブラウザだけ） */
+    const canZip = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+    async function pipe(bytes, stream) {
+        const out = new Response(new Blob([bytes]).stream().pipeThrough(stream));
+        return new Uint8Array(await out.arrayBuffer());
+    }
+
+    /** 包みが正しい形か（game が合っているか）。だめなら Error */
+    function check(box) {
+        if (!box || typeof box !== 'object' || typeof box.game !== 'string')
+            throw err('セーブデータの形ではありません。');
+        // 共通部品より前の ちいさなお店（v1.1.x）は中身を state に入れていた。読めるようにそろえる
+        if (!box.data && box.state && typeof box.state === 'object')
+            box.data = box.state;
+        if (box.game !== CG.info.game)
+            throw err('このゲームのセーブデータではありません。');
+        if (typeof box.v !== 'number' || !box.data || typeof box.data !== 'object')
+            throw err('セーブデータが壊れています。');
+        return box;
+    }
+
+    CG.save = {
+        checksum,
+
+        /** 包む（at は保存した日時） */
+        wrap(data, v) {
+            return { game: CG.info.game, v, at: new Date().toISOString(), data };
+        },
+
+        /** ファイルに書き出す */
+        toFile(box, name) {
+            CG.download(name, JSON.stringify(box), 'application/json');
+        },
+
+        /** ファイルから読む */
+        async fromFile(file) {
+            if (!file)
+                throw err('ファイルが選ばれていません。');
+            const t = await CG.readText(file);
+            let box;
+            try {
+                box = JSON.parse(t);
+            }
+            catch (e) {
+                throw err('ファイルを読み取れませんでした（JSONではありません）。');
+            }
+            return check(box);
+        },
+
+        /** セーブコードにする */
+        async toCode(box) {
+            const raw = new TextEncoder().encode(JSON.stringify(box));
+            let head = 'CK0', body = raw;
+            if (canZip) {
+                try {
+                    body = await pipe(raw, new CompressionStream('deflate-raw'));
+                    head = 'CK1';
+                }
+                catch (e) {
+                    body = raw;
+                }
+            }
+            const p = head + '.' + b64e(body);
+            return p + '.' + checksum(p, CG.info.game);
+        },
+
+        /** セーブコードを読む（前後の空白・改行は無視） */
+        async fromCode(code) {
+            const t = String(code || '').replace(/\s+/g, '');
+            const m = t.match(/^(CK[01])\.([A-Za-z0-9_-]+)\.([0-9a-z]+)$/);
+            if (!m)
+                throw err('セーブコードの形ではありません。全部コピーできているか確かめてください。');
+            if (checksum(m[1] + '.' + m[2], CG.info.game) !== m[3])
+                throw err('セーブコードが正しくありません（途中が欠けている・書き換えた・別のゲームのコード）。');
+            let bytes;
+            try {
+                bytes = b64d(m[2]);
+                if (m[1] === 'CK1') {
+                    if (!canZip)
+                        throw err('このブラウザではこのセーブコードを読めません。ブラウザを新しくしてください。');
+                    bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
+                }
+                return check(JSON.parse(new TextDecoder().decode(bytes)));
+            }
+            catch (e) {
+                throw e && /セーブ|ブラウザ/.test(e.message) ? e : err('セーブコードを読み取れませんでした。');
+            }
+        }
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — debug.js（デバッグ報告）。core.js の後に読む。
+ *
+ * 遊んでいる人の端末で「操作・出来事・エラー」を直近 max 件だけ localStorage に残し、
+ * 不具合が起きたらメモを付けて開発者に送る。サーバーは worker/index.js の /<フォルダ>/debug（D1 chikuwa-debug）。
+ * 新しいゲームで使うときは worker/index.js の DEBUG_GAMES にフォルダ名を足す。
+ *
+ *   CG.debug.init({ snap: () => ({ d: state.day }) });  // snap：1件ごとに付ける「いまの状態」の要約（任意）
+ *   CG.debug.add('open', { m: 100 });                    // 1件記録
+ *   CG.debug.wrap('buy', { before: () => state.money, after: (m0) => ({ dm: state.money - m0 }) });
+ *                                                        // window.buy を包んで、呼ばれたことを記録
+ *   const r = await CG.debug.send(note, { state });      // 送信 → { ok:true, code } か { ok:false, t }
+ *   CG.debug.mount(el);                                  // 送信欄（メモ・ボタン・受付番号）を el に作る（自前の見た目にしたいゲームは使わない）
+ *
+ * エラー（error・unhandledrejection）は init だけで自動的に記録される。
+ * アーティファクト版からは送れない（公開サイトのみ）。そのときは「公開サイトから送って」と表示する。
+ */
+(function () {
+    const CG = window.CG;
+    let opt = { key: '', max: 300, url: 'debug', snap: null };
+    let log = [];
+    let started = false;
+
+    function persist() {
+        CG.ls.setJSON(opt.key, log);
+    }
+
+    const D = CG.debug = {
+        /** 記録の一覧（古い順） */
+        get log() {
+            return log;
+        },
+
+        init(o) {
+            opt = Object.assign(opt, o || {});
+            if (!opt.key)
+                opt.key = CG.info.game + '-debuglog';
+            const v = CG.ls.getJSON(opt.key, []);
+            log = Array.isArray(v) ? v : [];
+            if (!started) {
+                started = true;
+                addEventListener('error', e => D.add('error', {
+                    msg: String(e.message), src: (e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno,
+                    st: e.error && e.error.stack ? String(e.error.stack).slice(0, 800) : undefined
+                }));
+                addEventListener('unhandledrejection', e => D.add('error', { msg: 'promise: ' + String(e.reason).slice(0, 300) }));
+            }
+            D.add('boot', { v: CG.info.version });
+            return D;
+        },
+
+        /** 1件記録する（t：時刻、ev：何が起きたか、＋ snap の結果、＋ extra） */
+        add(ev, extra) {
+            let s = {};
+            try {
+                s = opt.snap ? opt.snap() || {} : {};
+            }
+            catch (e) { }
+            log.push(Object.assign({ t: Date.now(), ev }, s, extra || {}));
+            if (log.length > opt.max)
+                log = log.slice(-opt.max);
+            persist();
+        },
+
+        /**
+         * グローバル関数 window[name] を包んで、呼ばれたことを記録する（ゲームの動きは変えない）。
+         * before() の戻り値が after(前の値, 引数, 戻り値) に渡り、after の戻り値（オブジェクト）が記録に足される。
+         */
+        wrap(name, h) {
+            const f = window[name];
+            if (typeof f !== 'function')
+                return;
+            h = h || {};
+            window[name] = function (...args) {
+                let b;
+                try {
+                    b = h.before ? h.before() : undefined;
+                }
+                catch (e) { }
+                const r = f.apply(this, args);
+                let x = {};
+                try {
+                    x = h.after ? h.after(b, args, r) || {} : {};
+                }
+                catch (e) { }
+                D.add(name, Object.assign({ a: args.length ? args : undefined }, x));
+                return r;
+            };
+        },
+
+        /** 記録を消す */
+        clear() {
+            log = [];
+            persist();
+        },
+
+        /**
+         * 送る。extra はゲームの状態など（state 全体を入れてよい。1件 300KB まで）。
+         * 戻り値：{ ok:true, code:'受付番号' } か { ok:false, t:'理由' }
+         */
+        async send(note, extra) {
+            const body = Object.assign({
+                game: CG.info.game, version: CG.info.version, note: String(note || '').trim().slice(0, 500),
+                at: new Date().toISOString(), screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent
+            }, extra || {}, { log });
+            try {
+                const r = await fetch(opt.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+                let j = null;
+                try {
+                    j = await r.json();
+                }
+                catch (e) { }
+                if (r.ok && j && j.ok) {
+                    D.add('sent', { code: j.code });
+                    return { ok: true, code: j.code };
+                }
+                return { ok: false, t: (j && j.error) || '送信できませんでした（' + r.status + '）。公開サイトから送ってください。' };
+            }
+            catch (e) {
+                return { ok: false, t: '送信できませんでした。通信状態を確かめるか、公開サイトから送ってください。' };
+            }
+        },
+
+        /**
+         * 送信欄を el の中に作る（共通の見た目。class は cg-dbg-*）。
+         * o.title：見出し、o.extra()：送るときに足すデータ、o.placeholder：メモの例
+         */
+        mount(el, o) {
+            o = o || {};
+            let msg = null;
+            const draw = () => {
+                const note = el.querySelector('textarea') ? el.querySelector('textarea').value : '';
+                el.innerHTML = '<div class="cg-dbg"><b>' + CG.esc(o.title || '🐞 不具合を報告する') + '</b>' +
+                    '<textarea rows="2" maxlength="500" placeholder="' + CG.esc(o.placeholder || 'どんなことが起きた？（任意）') + '"></textarea>' +
+                    '<button type="button"' + (msg && msg.busy ? ' disabled' : '') + '>' + (msg && msg.busy ? '送信中…' : '🐞 デバッグログを送る') + '</button>' +
+                    '<div class="cg-dbg-meta">直近' + log.length + '件の操作と、いまのゲームの状態を開発者に送ります。</div>' +
+                    (msg && msg.ok ? '<div class="cg-dbg-ok">✅ 送信しました。受付番号 <b>' + CG.esc(msg.code) + '</b>（開発者に伝えてください）</div>' : '') +
+                    (msg && msg.t ? '<div class="cg-dbg-ng">⚠ ' + CG.esc(msg.t) + '</div>' : '') + '</div>';
+                el.querySelector('textarea').value = msg && msg.ok ? '' : note;
+                el.querySelector('button').onclick = async () => {
+                    const n = el.querySelector('textarea').value;
+                    msg = { busy: true };
+                    draw();
+                    msg = await D.send(n, o.extra ? o.extra() : {});
+                    draw();
+                };
+            };
+            draw();
+        }
+    };
+})();
+</script>
+<script>
+/**
+ * data.js — データ定義（商品・季節・天気・難易度・各種テーブル）。ここは数値の調整だけで済む。
+ */
+
+/** 商品マスタ（e=絵文字, c=原価, p=基準売値）。アップグレードで c と n が書き換わる */
+const PRODUCTS = [
+    { n: 'おにぎり', e: '🍙', c: 80, p: 130, u: 0 },
+    { n: 'のみもの', e: '🍵', c: 100, p: 170, u: 400 },
+    { n: 'おかし', e: '🍫', c: 150, p: 260, u: 1200 },
+    { n: '文房具', e: '✏️', c: 220, p: 380, u: 2500 },
+    
+    { n: '雑誌', e: '📖', c: 350, p: 600, u: 5000 },
+    { n: '化粧品', e: '💄', c: 700, p: 1200, u: 10000 },
+    { n: 'イヤホン', e: '🎧', c: 1600, p: 2800, u: 0 },
+    { n: '米袋', e: '🌾', c: 1800, p: 3000, u: 0 },
+    { n: '健康食品', e: '💪', c: 3000, p: 5000, u: 0 },
+    { n: '腕時計', e: '⌚', c: 4200, p: 7500, u: 0 },
+    { n: 'スマートフォン', e: '📱', c: 48000, p: 80000, u: 0 },
+    { n: '乗り物', e: '🛴', c: 90000, p: 150000, u: 0 }
+
+];
+
+/** 季節（春夏秋冬）と購買力の倍率。巡り方は util.js の seaOf（3ヶ月ずつ） */
+const SEA = [
+    { n: '春', e: '🌸', p: 1.1 },
+    { n: '夏', e: '🌻', p: 1.25 },
+    { n: '秋', e: '🍁', p: 1.0 },
+    { n: '冬', e: '⛄', p: 0.98 }
+];
+
+/** 天気と購買力の倍率 */
+const WE = [
+    { n: '晴れ', e: '☀️', p: 1.125 },
+    { n: '曇り', e: '☁️', p: 1.0 },
+    { n: '雨', e: '🌧️', p: 0.98 },
+    { n: '雪', e: '❄️', p: 0.95 }
+];
+
+/** 季節ごとの天気の出やすさ（晴・曇・雨・雪の重み） */
+const WW = [
+    [40, 30, 30, 0],
+    [55, 25, 20, 0],
+    [35, 35, 30, 0],
+    [25, 30, 10, 35]
+];
+
+/** フェーズ名 */
+const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
+
+/** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
+const VERSION = '1.4.1';
+
+/**
+ * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
+ * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
+ */
+const CHANGES = [
+    ['1.4.1', '2026-10-24', '営業中の現在時刻を購買欲ゲージの上に大きく表示。投資の「棚を増やす」に、増やしたあとの月のテナント料を表示'],
+    ['1.4.0', '2026-10-24', '更新履歴を設定タブに表示。実績を所持金の横のバッジ（🏅）に移し、タップで一覧を開くように。実績のリセットを追加（確認画面つき）。一時停止・倍速ボタンをタブの行の右端にまとめ、倍速は押すたびに×1→×2→×4→×8と切り替え。営業タブのログ欄を4行分の枠にし、直近50件までさかのぼれるように（売れた商品を時刻つきで記録）。デバッグ欄の見出しを「🐞 デバッグ」に'],
+    ['1.3.0', '2026-10-24', '実績（累計売上・営業・貯金・インフェルノの18個）を追加。季節を実際の1年と同じ3ヶ月ごとに（1ヶ月目＝4月）。日付に暦の月を表示'],
+    ['1.2.0', '2026-10-24', 'セーブコード（コピー・貼り付けで読み込み）を追加。横画面に対応。「最初からやり直す」を目立たせた。共有・セーブ・デバッグ送信をちくわゲームズ共通部品に置き換え'],
+    ['1.1.1', '2026-10-23', 'デバッグログの送信（設定タブ）を追加。投資タブに「投資できない理由」を表示'],
+    ['1.1.0', '2026-10-22', '台風・大雪の新しい仕様（土嚢・かまくら・甘酒ミニゲーム）。ゲージの説明を「？」アイコンに。購買力を店の様子の行に表示'],
+    ['1.0.1', '2026-10-22', '直近の販売をログ欄に表示。開店中のお金タブをグレーアウト。×8速でお客さんの歩く速さを合わせた。夜に人が窓の明かりに隠れる不具合を修正'],
+    ['1.0.0', '2026-10-22', 'バージョン表記を開始。倒産ポップアップ・セーブのファイル書き出し／読み込み・「？」の説明を含む']
+];
+
+/** 著作権表記 */
+const COPYRIGHT = '© 2026 ちくわげーむず';
+
+/** localStorage のセーブキー */
+const KEY = 'shopsim8';
+
+/** ちくわゲームズ共通部品（common/v1）にゲームの情報を伝える。game はフォルダ名（デバッグ送信の宛先・セーブの目印） */
+CG.init({ game: 'shop-sim', title: 'ちいさなお店', version: VERSION });
+
+/** 1ヶ月の日数 */
+const MD = 7;
+
+/** 1ヶ月目が暦の何月か（季節の巡りと日付の表示に使う。4月＝春から） */
+const START_MONTH = 4;
+
+/** 時給の基準額（愛知県の最低賃金） */
+const BASEW = 1195;
+
+/** 商品ごとのアップグレード名（7段階） */
+const NM = [
+    ['しおむすび', 'うめ', 'こんぶ', 'しぐれ', 'ツナマヨ', 'めんたいこ', '熱ばくだん'],
+    ['おいちい水', '炭酸水', 'むぎ茶', '緑茶', 'ジャスミン茶', '烏龍茶', '黒烏龍茶'],
+    ['ガム', '太郎', 'タラタラ', 'カリカリ梅', '板チョコ', 'ポテチ', '硬バナナ'],
+    ['えんぴつ', '消しゴム', 'シャーペン', 'ボールペン', 'サインペン', 'ミリペン', 'ダイヤモンド万年筆'],
+    ['新聞', 'ビッグイシュー', 'なかおし', 'コリコリコミック', 'チンピャオン', 'アンアン', '週刊春芸'],
+    ['リップクリーム', '日焼け止め', 'ファンデーション', 'ボディローション', '乳液', '化粧水', 'エクセレント香水'],
+    ['機内配布用', '100均', '無名メーカー', 'オーディオマテニカ', 'パナソニー', '坊主', 'アップレ'],
+    ['古古米', '玄米', 'ブレンド米', 'あきたこまち', 'つや姫', 'ひとめぼれ', '魚沼産コシヒカリ'],
+    ['ミルワーム', 'ざざ虫', 'えんどう豆', '豆乳', 'ささみ', 'ホエイ', 'ザマス'],
+    ['キッチンタイマー', '目覚まし時計', '懐中時計', 'ハチズン', 'アップレウォッチ', 'グランドサイコー', 'ロリックス'],
+    ['石版', '文鎮', '中古アンドロイド', '新品アンドロイド', 'エクシペリア', 'アイピョン', 'AIスマートグラス'],
+    ['ヒーリーズ', 'インラインスケート', 'スケボー', 'キックボード', 'ママチャリ', 'ロードバイク', '電動キックボード']
+];
+
+/** アップグレード解放に必要な累計販売数 */
+const TH = [50, 100, 250, 500, 1000, 5000, 10000];
+
+/** 融資の選択肢（金額） */
+const LA = [30000, 50000, 100000, 250000, 750000, 1000000, 1500000, 5000000, 10000000, 100000000];
+
+/** 難易度ごとのパラメータ */
+const DF = {
+    easy: {
+       n: 'イージー', ama: 1.2, money: 30000, ev: 0.5, fee: 0.5, wage: 0.6, cust: 1.3, bank: 0.3, gr: 1, hd: 0.3, sick: 0, sal: 0, full: 0, mg: 50, fl: 0.9
+    },
+    normal: {
+       n: 'ノーマル', ama: 1.5, money: 10000, ev: 1.1, fee: 0.75, wage: 0.8, cust: 1.15, bank: 0.2, gr: 1.01, hd: 0.7, sick: 1, sal: 1, full: 0, mg: 45, fl: 0.8
+    },
+    hard: {
+       n: 'ハード', ama: 2.0, money: 5000, ev: 2.2, fee: 1, wage: 1, cust: 1, bank: 0.1, gr: 1.03, hd: 1, sick: 1, sal: 1, full: 1, mg: 40, fl: 0.7
+    },
+    inferno: {
+       n: 'インフェルノ', ama: 3.5, money: 3000, ev: 15, fee: 1.3, wage: 1.2, cust: 0.85, bank: 0.05, gr: 1.05, hd: 1.3, sick: 1, sal: 1, full: 1, mg: 40, neg: 1, fl: 0.5
+    }
+};
+
+/** 棚の容量の段階 */
+const CAPS = [10, 15, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000];
+
+/** セキュリティの名前（Lv1〜10） */
+const SECN = [
+    'お守り',
+    'おふだ',
+    '仏壇',
+    'AI防犯カメラ',
+    '赤外線センサー',
+    '能面',
+    'SECOM',
+    '防災センター',
+    '私服警官',
+    '高出力レーザー'
+];
+
+/** セキュリティの破損までの日数 */
+const SECD = [
+    84,
+    84,
+    84,
+    21,
+    21,
+    42,
+    7,
+    21,
+    42,
+    84
+];
+
+/** セキュリティのストック購入費用 */
+const PR = [1500, 4000, 12000, 30000, 60000, 120000, 250000, 500000, 1000000, 2000000];
+
+/** セキュリティのレベルアップ費用の基準 */
+const PRL = [3000, 8000, 25000, 70000, 150000, 300000, 600000, 1200000, 2500000, 5000000];
+
+/** セキュリティの効果の説明 */
+const SECX = [
+    '被害-¥5,000',
+    '被害-¥10,000',
+    '被害-¥100,000',
+    '被害1割減（最低¥100,000）',
+    '被害5割減',
+    '被害8割減',
+    '被害10割減（1ヶ月ごと更新）',
+    '被害10割減（3ヶ月ごと）',
+    '被害10割減（半年ごと）',
+    '被害10割減（擃退後に1ヶ月休業）'
+];
+
+/** 商品ごとのドット絵の色 */
+const COL = ['#f2efe6', '#4fa3d1', '#8b5a3c', '#f2c94c', '#e07a5f', '#e5989b', '#6d6875', '#d9c9a3', '#52b788', '#adb5bd', '#264653', '#e63946'];
+
+/** ドット文字（3x5） */
+const PXF = {
+    S: ['111', '100', '111', '001', '111'], H: ['101', '101', '111', '101', '101'], O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100']
+};
+
+/** 男性客の服の色 */
+const MP = ['#3a6ea5', '#6b705c', '#9a3b3b', '#444'];
+
+/** 女性客の服の色 */
+const FP = ['#e56b8a', '#e9b44c', '#7b5ea7', '#2a9d8f'];
+
+/** 男性客の髪の色 */
+const MH = ['#2b2118', '#5a3a22', '#8a8a8a', '#111'];
+
+/** 女性客の髪の色 */
+const FH = ['#3a2418', '#7a4a21', '#d9a441', '#111'];
+
+/** ヘルプ（？アイコンを触ったときだけ出す説明）。改行は \n */
+const HELP = {
+    gauge: '販売で上昇、取り逃がしで減少。MAXで10秒間、来店数2倍。',
+    quota: '今月の売上の目標（損益分岐点）。2ヶ月目以降は前月比+3%も必要。',
+    happy: '休業で回復、長時間営業や赤字で低下。低いほど病気になりやすく、低迷が続くと深刻な状態に。',
+    sandbag: '無料。台風が来たら55%で被害なし（幸福度+25、台風の次の日は店員の能力+1段階）。失敗すると通常の被害。予報が外れたら、備えのため休業します。',
+    kama: '無料。大雪が来たら55%で「かまくらボーナス」：休業の代わりに、12:00から甘酒を配るミニゲーム（10秒間の連打で売上）。失敗すると強制休業。予報が外れたら、備えのため休業します。',
+    phase: '① 開店準備：棚の「補充」で在庫を整えて開店します。\n② 開店：販売しながら補充できます。\n③ 閉店後：投資・店休日の選択・天気予報の確認ができます。',
+    hol: '売上ゼロですが、購買欲+8、幸福度も回復します（高いほど大きく回復）。テナント料は発生します。',
+    loan: '150万円以上は、月平均売上の10倍まで借りられます。',
+    mg: '高くすると1個あたりの利益は増えますが、来店数が減ります。',
+    sal: '月末に引かれます。年収中央値（約400万円＝月約33万円）が目安。多いと幸福度が上がり、少ないと下がります。',
+    hours: '長時間営業は幸福度を下げます。',
+    sv: '月末に所持金がマイナスになると、自動で預金から引き出されます。',
+    save: 'ファイルに書き出して保管し、別の端末やブラウザでも続きから遊べます。営業中は使えません。',
+    achv: '条件を満たすと解除されます。最初からやり直しても、倒産しても消えません。1年＝12ヶ月（84日）。インフェルノの実績は、倒産せずにその日数まで続けると解除。',
+    code: 'ゲームの状態を1行の文字列（セーブコード）にします。メモ帳やLINEに貼って保管し、別の端末で貼り付けると続きから遊べます。途中が欠けたり書き換えたりしたコードは読み込めません。',
+    dbg: '不具合を見つけたときに押してください。直近の操作の記録といまのゲームの状態を開発者に送ります。名前や端末の情報は送りません（ブラウザの種類だけ）。'
+};
+</script>
+<script>
+/**
+ * util.js — 小さな共通関数。
+ */
+
+/** 要素の取得 */
+const byId = id => document.getElementById(id);
+
+/** 金額などを桁区切りで整形 */
+const fmt = n => Math.round(n).toLocaleString();
+
+/** 100円単位に丸める（最低100） */
+const r100 = x => Math.max(100, Math.round(x / 100) * 100);
+
+/** 日付から、通算の月（1〜） */
+const monOf = d => Math.floor((Math.max(d, 1) - 1) / MD) + 1;
+
+/** 日付から暦の月（1〜12）。1ヶ月目＝4月（START_MONTH） */
+const calOf = d => (monOf(d) - 1 + START_MONTH - 1) % 12 + 1;
+
+/** 日付から季節番号（0〜3：春夏秋冬）。実際の1年と同じく3ヶ月ずつ（春4〜6月・夏7〜9月・秋10〜12月・冬1〜3月） */
+const seaOf = d => Math.floor((calOf(d) + 8) % 12 / 3);
+
+/** 季節に応じた天気を抽選 */
+function roll(d) {
+    const w = WW[seaOf(d)];
+    let r = Math.random() * 100;
+    for (let i = 0; i < 4; i++) {
+        if ((r -= w[i]) < 0)
+            return i;
+    }
+    return 1;
+}
+
+/** 0〜100に収める */
+const clamp100 = v => Math.max(0, Math.min(100, v));
+
+/** ヘルプの？アイコン（k は data.js の HELP のキー） */
+const helpIcon = k => '<button type="button" class="hp" data-a="help" data-k="' + k + '" aria-label="説明">?</button>';
+
+/** ヘルプのフロート表示（同じアイコンをもう一度触ると閉じる） */
+function showHelp(b) {
+    let f = byId('hlp');
+    if (!f) {
+        f = document.createElement('div');
+        f.id = 'hlp';
+        f.setAttribute('role', 'tooltip');
+        f.hidden = true;
+        document.body.append(f);
+    }
+    const k = b.dataset.k;
+    if (!f.hidden && f.dataset.k === k) {
+        hideHelp();
+        return;
+    }
+    f.dataset.k = k;
+    f.textContent = HELP[k] || '';
+    f.hidden = false;
+    const r = b.getBoundingClientRect(), W = innerWidth, H = innerHeight, fw = f.offsetWidth, fh = f.offsetHeight;
+    f.style.left = Math.max(8, Math.min(W - fw - 8, r.left + r.width / 2 - fw / 2)) + 'px';
+    f.style.top = (r.bottom + 6 + fh > H - 8 ? Math.max(8, r.top - fh - 6) : r.bottom + 6) + 'px';
+}
+
+/** ヘルプを閉じる */
+function hideHelp() {
+    const f = byId('hlp');
+    if (f)
+        f.hidden = true;
+}
+</script>
+<script>
+/**
+ * state.js — ゲームの状態（state）の初期化・読み込み・保存、ログ。
+ */
+
+/** 店員の時給（難易度で変わる） */
+let WAGE = 1195;
+
+/** 倒産ライン（毎日の閉店時に再計算） */
+let LIMIT = -1000;
+
+/** 新規ゲームの初期状態 */
+const fresh = () => ({
+    money: 5000,
+    day: 0,
+    t: 0,
+    phase: 'closed',
+    slots: 2,
+    cap: 10,
+    ad: 0,
+    clerk: 0,
+    own: [0, 1],
+    shelf: [{ id: 0, st: 5 }, { id: 1, st: 0 }],
+    sold: 0,
+    miss: 0,
+    gauge: 50,
+    boost: 0,
+    weather: 0,
+    next: 0,
+    hol: false,
+    mSales: 0,
+    tot: 0,
+    dRev: 0,
+    dSold: 0,
+    dMiss: 0,
+    rep: '',
+    over: false,
+    ovx: false,
+    margin: 40,
+    feeMul: 1,
+    spd: 1,
+    happy: 60,
+    sick: 0,
+    dep: 0,
+    low: 0,
+    low5: 0,
+    up: PRODUCTS.map(() => 0),
+    sd: PRODUCTS.map(() => 0),
+    cm: PRODUCTS.map(() => 1),
+    fem: 0,
+    rb: 0,
+    flame: 0,
+    sk: 0,
+    dn: 0,
+    sl: 0,
+    ss: 0,
+    sb: 0,
+    clean: 0,
+    sv: 0,
+    svs: 0,
+    sal: 0,
+    openH: 9,
+    closeH: 19,
+    dOpen: false,
+    dWage: 0,
+    prev: null,
+    loans: [],
+    ln: { a: 30000, m: 3 },
+    pays: [],
+    boom: 0,
+    evs: [],
+    prep: { typ: false, snow: false },
+    kama: 0,
+    mbDay: 0,
+    log: ['開業前です。投資や天気予報を確認して「開業する」を押しましょう。']
+});
+
+/** スライダー操作中のフラグ（設定欄の再描画を止める） */
+let dragMg = false;
+
+/** ゲームの状態（唯一のセーブ対象） */
+let state;
+
+try {
+    state = JSON.parse(localStorage.getItem(KEY));
+}
+catch (e) { }
+
+if (!state || !state.shelf) {
+    state = fresh();
+    state.next = roll(1);
+    state.weather = state.next;
+}
+
+/**
+ * 営業タブのログ欄に出す履歴（v1.4.0〜）。直近 LOGN 件。セーブには入れない（再読み込みで消える）。
+ * 形：{ t: 文, s: 販売の行なら true }。state が入れ替わったら（やり直し・読み込み）state.log から作り直す
+ */
+const LOGN = 50;
+let logHist = [], logOwner = null, logSeq = 0;
+const logList = () => {
+    if (logOwner !== state) {
+        logOwner = state;
+        logSeq++;
+        logHist = (state.log || []).map(t => ({ t }));
+    }
+    return logHist;
+};
+const pushHist = (t, s) => {
+    const L = logList();
+    L.unshift({ t, s: !!s });
+    logSeq++;
+    if (L.length > LOGN)
+        L.length = LOGN;
+};
+
+/** ログに1行追加（state.log は最新3件。noHist なら履歴には足さない＝販売の行は engine.js がまとめて足す） */
+const addLog = (t, noHist) => {
+    if (!noHist)
+        pushHist(t);
+    state.log.unshift(t);
+    state.log = state.log.slice(0, 3);
+};
+
+/** ブラウザへ保存 */
+const save = () => {
+    try {
+       localStorage.setItem(KEY, JSON.stringify(state));
+    }
+    catch (e) { }
+};
+</script>
+<script>
+/**
+ * rules.js — ゲームのルール計算（購買力・費用・ノルマなど。状態は変えない純粋な計算が中心）。
+ */
+
+/** 購買力＝季節×天気（×炎上） */
+const pwr = d => SEA[seaOf(d)].p * WE[d === state.day ? state.weather : state.next].p * (state.flame > 0 ? difficulty().fl : 1);
+
+/** 月のテナント料（棚数で指数的に増加） */
+const tenantFee = (n = state.slots) => r100(4000 * Math.pow(1.6, n - 2) * state.feeMul * difficulty().fee);
+
+/** 現在の売値（原価÷(1-粗利率)） */
+const priceOf = p => Math.max(p.c + 1, Math.round(p.c / (1 - state.margin / 100)));
+
+/** 粗利率が高いほど来店数が減る補正 */
+const demandFactor = () => Math.min(1.6, Math.max(0.5, 1 - (state.margin - 40) * 0.015));
+
+/** 融資の月々の返済額の合計 */
+const loanPay = () => state.loans.reduce((a, l) => a + l.pay, 0);
+
+/** 1日の営業ティック数 */
+const dayTicks = () => (state.closeH - state.openH) * 5;
+
+/** 店員の1日あたり給料（基準） */
+const wageDay = () => {
+    let w = 0;
+    for (let h = state.openH; h < state.closeH; h++)
+       w += WAGE * (h < 7 || h >= 22 ? 1.25 : 1);
+    return w * state.clerk;
+};
+
+/** 今月の売上ノルマ（損益分岐点＋前月比） */
+function quota() {
+    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
+    return r100(state.prev == null ? b : Math.max(b, state.prev * difficulty().gr));
+}
+
+/** 投資の費用 */
+const cost = {
+    slot: () => r100(1500 * Math.pow(1.7, state.slots - 2)),
+    cap: () => r100(600 * Math.pow(1.6, Math.max(0, CAPS.indexOf(state.cap)))),
+    ad: () => r100(800 * Math.pow(1.5, state.ad)),
+    clerk: () => r100(4000 * Math.pow(1.5, state.clerk)),
+    skill: () => r100(5000 * Math.pow(2.5, state.sk || 0) * Math.max(1, state.clerk)),
+    seclv: () => PRL[state.sl || 0] * 3,
+    secbuy: () => PR[Math.max(0, (state.sl || 1) - 1)]
+};
+
+/** 投資の上限レベル */
+const MAX = {
+    slot: 12,
+    cap: 5000,
+    ad: 20,
+    clerk: 12,
+    skill: 10,
+    seclv: 10,
+    secbuy: 5 
+};
+
+/** 休業日の幸福度の回復量 */
+const rec = h => h >= 80 ? 20 : h >= 50 ? 18 : h >= 35 ? 10 : h >= 15 ? 5 : h >= 5 ? 2 : 1;
+
+/** 幸福度に応じた病気の確率 */
+const sickP = h => h >= 80 ? 0 : h >= 50 ? 0.05 : h >= 35 ? 0.1 : h >= 15 ? 0.15 : h >= 5 ? 0.25 : 0.45;
+
+/** 商品アップグレードの費用 */
+const upCost = (id, L) => r100(PRODUCTS[id].b * 15 * Math.pow(1.8, L));
+
+/** 客の性別による商品の買いやすさ */
+const gf = (id, g) => (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
+
+/** アップグレードと原価変動を商品へ反映 */
+function applyUp() {
+    PRODUCTS.forEach((p, i) => {
+        const L = state.up[i] || 0;
+        p.c = Math.round(p.b * (1 + 0.4 * L) * (state.cm ? state.cm[i] : 1));
+        p.n = L > 0 ? NM[i][L - 1] : p.n0;
+    });
+}
+
+/** 投資のリセット（地震・爆発） */
+function resetInv(n) {
+    state.slots = n;
+    state.cap = 10;
+    state.ad = 0;
+    state.clerk = 0;
+    state.sk = 0;
+    state.dn = 0;
+    state.sl = 0;
+    state.ss = 0;
+    state.own = n > 1 ? [0, 1] : [0];
+    state.shelf = n > 1 ? [{ id: 0, st: 0 }, { id: 1, st: 0 }] : [{ id: 0, st: 0 }];
+    state.up = PRODUCTS.map(() => 0);
+    applyUp();
+}
+
+/** 月平均売上 */
+const avgSales = () => {
+    const a = state.msl || [];
+    return a.length ? a.reduce((p, q) => p + q, 0) / a.length : 0;
+};
+
+/** 大口融資の上限（月平均売上×10） */
+const loanCap = () => Math.floor(avgSales() * 10);
+
+/** 現在の難易度の設定を返す */
+const difficulty = () => DF[state.diff] || DF.hard;
+
+/** 長時間営業の幸福度低下に難易度補正をかける */
+const hdl = d => d < 0 ? d * difficulty().hd : d;
+
+/** 融資の利子率 */
+const intr = m => (state.diff === 'inferno' ? 0.25 : 0.15) * (1 + Math.max(0, m - 12) / 48);
+
+/** 難易度を時給へ反映 */
+function applyDiff() {
+    WAGE = Math.round(BASEW * difficulty().wage);
+}
+
+/** 店員の実効レベル */
+const eff = () => Math.max(difficulty().neg ? -10 : 0, (state.sk || 0) - (state.dn || 0) + (state.mbDay && state.day === state.mbDay ? 1 : 0));
+
+/** 店員の1回の補充量 */
+const clAmt = () => {
+    const e = eff();
+    return e >= 10 ? 1e9 : e < 0 ? 0 : 5 * Math.pow(2, e);
+};
+
+/** 病気またはうつ病で休養中か */
+function ill() {
+    return state.sick > 0 || state.dep > 0;
+}
+
+/** いま投資できない理由（できるときは空文字）。投資タブの表示とデバッグログで使う */
+function investBlock() {
+    if (state.over)
+        return '倒産しているため投資できません。';
+    if (!state.diff)
+        return '難易度を選ぶと投資できるようになります。';
+    if (state.dep > 0)
+        return '😔 うつ病の休養中のため投資できません（あと' + state.dep + '日）。' + (state.clerk > 0 ? '店員が営業を続けています。' : '');
+    if (state.sick > 0)
+        return '🤒 病気の休養中のため投資できません（あと' + state.sick + '日）。' + (state.clerk > 0 ? '店員が営業を続けています。' : '');
+    if (state.phase === 'prep')
+        return '開店準備中です。投資は閉店後にできます。';
+    if (state.phase === 'open')
+        return (state.kama ? '⛄ かまくらの日です。' : '営業中です。') + '投資は閉店後にできます。';
+    if (state.phase !== 'closed')
+        return '投資できない状態です（' + state.phase + '）。';
+    return '';
+}
+</script>
+<script>
+/**
+ * events.js — イベント（盗難・セキュリティ・最終段階の商品イベントなど）。
+ */
+
+/** イベントで商品を直接売る */
+function sellUnit(s, q, m) {
+    const a = Math.round(priceOf(PRODUCTS[s.id]) * m) * q;
+    s.st -= q;
+    state.sd[s.id] += q;
+    state.money += a;
+    state.mSales += a;
+    state.tot = (state.tot || 0) + a;
+    state.dRev += a;
+    state.dSold += q;
+    state.sold += q;
+    return a;
+}
+
+/** 開店時のイベント（超セレブ・パパ活） */
+function openEv() {
+    const on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id), sh = state.shelf.filter(Boolean);
+    if (on(5) && Math.random() < 0.05) {
+        let t = 0;
+        sh.forEach(s => {
+            if (s.st > 0)
+                t += sellUnit(s, s.st, 1.15);
+        });
+        addEvent('💎 超セレブが来店！全商品を+15%の価格で買い占め（+¥' + fmt(t) + '）');
+    }
+    if (on(9) && Math.random() < 0.15) {
+        const top = sh.filter(s => s.st > 0).sort((a, b) => PRODUCTS[b.id].c - PRODUCTS[a.id].c).slice(0, 3);
+        let t = 0;
+        for (let i = 0; i < 3; i++) {
+            const c = top.filter(s => s.st > 0);
+            if (!c.length)
+                break;
+            t += sellUnit(c[Math.floor(Math.random() * c.length)], 1, 1);
+        }
+        if (t)
+            addEvent('💸 パパ活カップルが来店。高額商品を3つ購入（+¥' + fmt(t) + '）');
+    }
+}
+
+/** 最終段階の商品によるイベント抽選 */
+function rollProd() {
+    const R = Math.random, on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id);
+    if (on(0) && R() < 0.02) {
+        resetInv(1);
+        addEvent('💣 熱ばくだんおにぎりが爆発！棚が1つだけ残り、投資がすべてリセットされました');
+    }
+    if (on(1) && R() < 0.02) {
+        state.happy = clamp100(state.happy - 25);
+        addEvent('🀄 黒烏龍茶がツモでアガった…！（幸福度-25%）');
+    }
+    if ((on(2) && R() < 0.18) || (on(4) && R() < 0.15)) {
+        state.fem = 3;
+        addEvent('🍌 皮が剥けた！女性客が5倍に（3日間）');
+    }
+    if (on(6) && R() < 0.05) {
+        const f = 0.75 + R() * 1.2;
+        state.cm[6] = Math.min(5, Math.max(0.5, state.cm[6] * f));
+        applyUp();
+        addEvent('📈 アップレの原価が' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%変動しました');
+    }
+    if (on(7) && R() < 0.25) {
+        state.rb = 3;
+        addEvent('🍙 おにぎりブーム到来！おにぎりの購入客とまとめ買いが80%増（3日間）');
+    }
+    if (on(8) && R() < 0.05) {
+        state.up[4] = 0;
+        applyUp();
+        addEvent('👩‍🏫 教育ママが来店。雑誌のアップグレードがリセットされました');
+    }
+    if (on(10) && R() < 0.05) {
+        state.flame = 14;
+        state.boost = 0;
+        state.gauge = Math.min(state.gauge, 4);
+        addEvent('📱 無断撮影（盗撮）トラブルがSNSで炎上。2ヶ月間、購買欲が5以上になりません');
+    }
+    if (on(11) && R() < 0.05) {
+        let n = 0;
+        for (let i = 0; i < 6; i++) {
+            if (lose())
+                n++;
+            state.money -= 10000;
+            state.happy = clamp100(state.happy - 5);
+        }
+        addEvent('🛴💥 店前で大事故！6台の車が店に突っ込み、棚' + n + '台を失い修繕費¥60,000');
+    }
+}
+
+/** セキュリティで盗難被害を軽減（1日1ストック消費） */
+function guard(a) {
+    const L = state.sl || 0;
+    if (L < 1 || a <= 0)
+        return a;
+    if (!state.gu) {
+        if ((state.ss || 0) < 1)
+            return a;
+        state.ss--;
+        state.gu = true;
+        if (L === 10) {
+            state.clean = 7;
+            state.gm = 1;
+        }
+    }
+    let r = L === 1 ? 5000 : L === 2 ? 10000 : L === 3 ? 100000 : L === 4 ? Math.max(a * 0.1, 100000) : L === 5 ? Math.max(a * 0.5, 100000) : L === 6 ? Math.max(a * 0.8, 100000) : a;
+    r = Math.min(a, Math.round(r));
+    addEvent('🛡 ' + SECN[L - 1] + 'が盗難被害を¥' + fmt(r) + '軽減（残りストック' + state.ss + '）');
+    if (L === 10 && state.gm) {
+        state.gm = 0;
+        addEvent('🧹 侵入者が撃退されました。店の清掃のため、1ヶ月休業します');
+    }
+    return a - r;
+}
+
+/** イベントを記録してログに出す */
+function addEvent(t) {
+    state.evs.push(t);
+    addLog(t);
+}
+
+/** 棚を1つ失う */
+function lose() {
+    if (state.slots > 1 && state.day > MD) {
+        state.shelf.splice(Math.floor(Math.random() * state.shelf.length), 1);
+        state.slots--;
+        return true;
+    }
+    return false;
+}
+
+/** 日の始まりのイベント抽選 */
+function rollEvents() {
+    const R = Math.random, r = () => {
+        const x = R();
+        return x < 0.5 ? x / difficulty().ev : 9;
+    }, se = seaOf(state.day);
+    let snow = false;
+    if (state.day > 1 && state.day % MD === 1 && r() < 0.05) {
+        const f = Math.round((0.9 + R() * 0.8) * 100) / 100;
+        state.feeMul = Math.round(state.feeMul * f * 100) / 100;
+        addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）');
+    }
+    if (r() < 0.0001) {
+        resetInv(2);
+        state.happy = clamp100(state.happy - 20);
+        addEvent('🌋 大地震！投資がすべてリセットされました');
+    }
+    if (r() < 0.01) {
+        const lost = lose();
+        state.money -= 10000;
+        state.happy = clamp100(state.happy - 5);
+        addEvent('🚗 車が店に突っ込みました。' + (lost ? '棚が減り、' : '') + '修繕費¥10,000');
+    }
+    const pr = state.prep || {}, ok = () => Math.random() < 0.55;
+    let typ = false, sn = false;
+    state.prep = { typ: false, snow: false };
+    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05) && (typ = true) && pr.typ && ok()) {
+        state.happy = clamp100(state.happy + 25);
+        state.mbDay = state.day + 1;
+        addEvent('🧱 土嚢で台風に耐えました！被害なし（幸福度+25、明日は店員の士気アップ）');
+    }
+    else if (typ) {
+        if (pr.typ)
+            addEvent('🧱 土嚢を積みましたが、耐えきれませんでした…');
+        lose();
+        state.happy = clamp100(state.happy - 5);
+        state.shelf.forEach(s => {
+            if (s)
+                s.st = 0;
+        });
+        addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に');
+    }
+    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1) && (sn = true) && pr.snow && ok()) {
+        state.kama = 1;
+        state.hol = false;
+        state.weather = 3;
+        addEvent('⛄ 大雪！休業してかまくらで遊んでいたら、お客さんが集まってきました（12:00から甘酒ボーナス）');
+    }
+    else if (sn) {
+        if (pr.snow)
+            addEvent('⛄ かまくらを作りましたが、崩れてしまいました…');
+        snow = true;
+        state.hol = false;
+        state.weather = 3;
+        addEvent('❄️ 大雪で交通マヒ。強制休業（購買力0）');
+    }
+    if ((pr.typ && !typ) || (pr.snow && !sn)) {
+        snow = true;
+        state.hol = false;
+        addEvent((pr.typ ? '🧱 台風' : '⛄ 大雪') + 'の予報は外れました。備えのため休業しました');
+    }
+    if (r() < 0.05) {
+        state.boom = 3;
+        addEvent(['🌸 お花見ブーム', '🏖️ 夏休みブーム', '🍂 行楽シーズンのブーム', '🎄 クリスマス・年末ブーム'][se] + '！まとめ買いが増えます（3日間）');
+    }
+    if (state.pays.length < 3 && r() < 0.02) {
+        const n = ['クレジットカード', '交通系IC', 'バーコード決済'][state.pays.length];
+        state.pays.push(n);
+        addEvent('💳 ' + n + 'に対応！客足×1.2（月末に手数料）');
+    }
+    rollProd();
+    return snow;
+}
+</script>
+<script>
+/**
+ * actions.js — プレイヤーの操作（補充・投資・融資・預金・開店など）。
+ */
+
+/** 空き棚に未陳列の商品を並べる */
+function fill() {
+    for (let i = 0; i < state.shelf.length; i++) {
+        if (state.shelf[i])
+            continue;
+        const sh = state.shelf.filter(Boolean).map(s => s.id);
+        const nx = state.own.find(id => !sh.includes(id));
+        if (nx !== undefined)
+            state.shelf[i] = { id: nx, st: 0 };
+    }
+}
+
+/** 1つの棚を補充 */
+function restock(i, n) {
+    if (state.phase === 'closed' || state.over || ill())
+        return;
+    const s = state.shelf[i];
+    if (!s)
+        return;
+    const p = PRODUCTS[s.id];
+    const q = Math.min(n, state.cap - s.st, Math.floor(state.money / p.c));
+    if (q <= 0)
+        return;
+    s.st += q;
+    state.money -= q * p.c;
+    render();
+    save();
+}
+
+/** 投資ボタンの処理 */
+function buy(k, id) {
+    if (state.phase !== 'closed' || state.over || ill())
+        return;
+    if (k === 'upg') {
+        upgrade(id);
+        return;
+    }
+    if (k === 'new') {
+        const p = PRODUCTS[id];
+        if (state.money < p.u || state.own.includes(id))
+            return;
+        state.money -= p.u;
+        state.own.push(id);
+        fill();
+        addLog(p.e + ' ' + p.n + 'を扱い始めました。');
+    }
+    else {
+        const c = cost[k]();
+        const cur = {
+            slot: state.slots, cap: state.cap, ad: state.ad, clerk: state.clerk, skill: state.sk || 0, seclv: state.sl || 0, secbuy: state.ss || 0
+        }[k];
+        if (state.money < c || cur >= MAX[k] || (k === 'secbuy' && !(state.sl > 0)))
+            return;
+        state.money -= c;
+        if (k === 'slot') {
+            state.slotQ = (state.slotQ || 0) + 1;
+            addSlot();
+            addLog('棚が' + state.slots + '台に。テナント料は月¥' + fmt(tenantFee()) + 'になります。');
+        }
+        if (k === 'cap') {
+            state.cap = CAPS[CAPS.indexOf(state.cap) + 1] || state.cap;
+            addLog('1棚' + state.cap + '個まで置けます。');
+        }
+        if (k === 'ad') {
+            state.ad++;
+            addLog('広告を出しました。来店数が増えます。');
+        }
+        if (k === 'seclv') {
+            state.sl = (state.sl || 0) + 1;
+            addLog('🛡 ' + SECN[state.sl - 1] + 'を導入できるようになりました。');
+        }
+        if (k === 'secbuy') {
+            if ((state.ss || 0) === 0)
+                state.sb = state.day + SECD[state.sl - 1];
+            state.ss = (state.ss || 0) + 1;
+            addLog('🛡 ' + SECN[state.sl - 1] + 'を購入（ストック' + state.ss + '/5）');
+        }
+        if (k === 'skill') {
+            state.sk = (state.sk || 0) + 1;
+            addLog('🧠 店員の能力が上がりました。');
+        }
+        if (k === 'clerk') {
+            state.clerk++;
+            addLog('店員を雇いました。営業中に自動補充します。');
+        }
+    }
+    render();
+    save();
+}
+
+/** 棚を1台増やす（上位商品を解放） */
+function addSlot() {
+    state.slots++;
+    state.shelf.push(null);
+    if (state.own.length < state.slots && state.own.length < PRODUCTS.length) {
+        state.own.push(state.own.length);
+        const q = PRODUCTS[state.own.length - 1];
+        addLog(q.e + ' ' + q.n + 'が解放されました。');
+    }
+    fill();
+}
+
+/** 開店前の一括満タン */
+function fillAll() {
+    if (state.phase !== 'prep' || state.over || ill())
+        return;
+    state.shelf.map((s, i) => i).filter(i => state.shelf[i]).sort((a, b) => PRODUCTS[state.shelf[a].id].c - PRODUCTS[state.shelf[b].id].c).forEach(i => {
+        const s = state.shelf[i], p = PRODUCTS[s.id], q = Math.min(state.cap - s.st, Math.floor(state.money / p.c));
+        if (q > 0) {
+            s.st += q;
+            state.money -= q * p.c;
+        }
+    });
+    addLog('📦 一括補充しました。');
+    render();
+    save();
+}
+
+/** 商品のアップグレード */
+function upgrade(id) {
+    const L = state.up[id];
+    if (L >= 7 || state.sd[id] < TH[L])
+        return;
+    const c = upCost(id, L);
+    if (state.money < c)
+        return;
+    state.money -= c;
+    state.up[id]++;
+    applyUp();
+    addLog('⬆ ' + PRODUCTS[id].e + ' ' + PRODUCTS[id].n + 'にアップグレード！');
+    render();
+    save();
+}
+
+/** 難易度を選んで新規開始 */
+function newGame(v) {
+    const d = DF[v];
+    if (!d)
+        return;
+    state = fresh();
+    state.diff = v;
+    state.money = d.money;
+    state.margin = d.mg;
+    state.sal = 0;
+    applyDiff();
+    applyUp();
+    state.next = roll(1);
+    state.weather = state.next;
+    render();
+    save();
+}
+
+/** 預金の預け入れ・引き出し */
+function svMove(dir) {
+    if (state.phase !== 'closed' || state.over)
+        return;
+    const a = dir > 0 ? Math.min(state.svs || 0, Math.floor(Math.max(0, state.money) / 1000) * 1000) : Math.min(state.svs || 0, state.sv || 0);
+    if (a <= 0)
+        return;
+    if (dir > 0) {
+        state.money -= a;
+        state.sv = (state.sv || 0) + a;
+    }
+    else {
+        state.money += a;
+        state.sv -= a;
+    }
+    addLog('🏦 預金' + (dir > 0 ? 'に¥' + fmt(a) + 'を預けました' : 'から¥' + fmt(a) + 'を引き出しました'));
+    render();
+    save();
+}
+
+/** 融資を借りる */
+function takeLoan() {
+    if (state.phase !== 'closed' || state.over || state.loans.length >= 3)
+        return;
+    const a = state.ln.a, m = state.ln.m;
+    if (a >= 1500000 && a > loanCap())
+        return;
+    if (m > 12 && a < 1500000)
+        return;
+    const p = Math.round(a * (1 + intr(m)) / m);
+    state.money += a;
+    state.loans.push({ left: m, pay: p });
+    addLog('🏦 ¥' + fmt(a) + 'を借りました。月¥' + fmt(p) + '×' + m + 'ヶ月');
+    render();
+    save();
+}
+
+/** 開店する */
+function openShop() {
+    if (state.phase !== 'prep')
+        return;
+    state.phase = 'open';
+    lastSale = '';
+    state.t = 0;
+    state.dOpen = true;
+    addLog('開店！');
+    state.paused = false;
+    openEv();
+    render();
+    save();
+}
+</script>
+<script>
+/**
+ * engine.js — 時間の進行（営業中の1秒、閉店、翌日）。
+ */
+
+/** 直近の販売（営業タブのログ欄の一番上に表示。開店時に空にする） */
+let lastSale = '';
+
+/** 閉店処理（盗難・月末・倒産判定） */
+function endDay() {
+    LIMIT = -Math.floor(quota() * difficulty().bank / 1000) * 1000;
+    state.gu = false;
+    if (state.dSold > 0 && Math.random() < 0.01 * difficulty().ev) {
+        state.happy = clamp100(state.happy - 5);
+        const s0 = state.ss || 0, L0 = guard(state.dRev), ac = (state.ss || 0) < s0;
+        state.money -= L0;
+        if (!ac)
+            state.mSales = 0;
+        addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''));
+    }
+    if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev) {
+        const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
+        state.money -= guard(a);
+        state.clerk--;
+        state.happy = clamp100(state.happy - 4);
+        addEvent('🕵️ 従業員の窃盗！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれ、解雇しました');
+    }
+    state.happy = clamp100(state.happy + (state.dOpen ? hdl(1.5 - 0.5 * (state.closeH - state.openH - 6)) : (state.cleanDay ? 0 : rec(state.happy))));
+    state.low = state.happy < 20 ? (state.low || 0) + 1 : 0;
+    state.low5 = state.happy < 5 ? (state.low5 || 0) + 1 : 0;
+    if (difficulty().sick && state.low5 >= 7 && !state.over) {
+        state.over = true;
+        state.overMsg = '幸福度5%未満が7日続き、店主は限界を迎えて店を続けられなくなりました。';
+        addLog(state.overMsg);
+    }
+    if (state.money < LIMIT && !state.over) {
+        state.over = true;
+        addLog('資金が' + fmt(LIMIT) + '円を下回り、倒産しました。');
+    }
+    if (state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
+        const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
+        state.money -= guard(a);
+        addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（¥' + fmt(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''));
+        if (state.clerk > 0) {
+            let f = 1;
+            for (let i = 1; i < state.clerk; i++)
+                if (Math.random() < 0.3)
+                    f++;
+            state.clerk -= f;
+            let m = '';
+            if (Math.random() < 0.6) {
+                const dr = 1 + Math.floor(Math.random() * 10);
+                state.dn = Math.min((state.dn || 0) + dr, (state.sk || 0) + (difficulty().neg ? 10 : 0));
+                m = '。不当解雇で士気が下がり、残った店員の能力が' + dr + 'Lv低下';
+            }
+            addEvent('😢 誤解されたまま店員' + f + '名が解雇されました' + m);
+        }
+    }
+    if (state.money < 0 && state.shelf.every(s => !s || s.st <= 0) && !state.over) {
+        state.over = true;
+        state.overMsg = '商品が尽き、資金もマイナス。もうダメだ…';
+        addLog(state.overMsg);
+    }
+    if (!state.dOpen && (state.dn || 0) > 0)
+        state.dn--;
+    state.next = roll(state.day + 1);
+    {
+        const sn = seaOf(state.day + 1), pe = b => Math.min(0.5, b * difficulty().ev), fa = p => Math.random() < 0.25 * p / (1 - p);
+        state.pre = { snow: false, typ: false };
+        state.warn = { snow: false, typ: false };
+        state.prep = { typ: false, snow: false };
+        if (sn === 3 && state.next >= 1) {
+            const p = pe(0.1), h = Math.random() < p;
+            state.pre.snow = h;
+            state.warn.snow = h || fa(p);
+        }
+        if ((sn === 1 || sn === 2) && (state.next === 1 || state.next === 2)) {
+            const p = pe(0.05), h = Math.random() < p;
+            state.pre.typ = h;
+            state.warn.typ = h || fa(p);
+        }
+    }
+    if (state.day > 0 && state.day % MD === 0) {
+        const f = tenantFee(), q = quota(), ok = state.mSales >= q, cf = Math.round(state.mSales * 0.0375 * state.pays.length), lp = loanPay();
+        const wg = Math.round(state.mWage || 0);
+        state.money -= f + cf + lp + state.sal + wg;
+        state.mWage = 0;
+        state.prev = state.mSales;
+        (state.msl = state.msl || []).push(state.mSales);
+        state.happy = clamp100(state.happy + (difficulty().sal ? (state.sal - 330000) / 330000 * 8 : 0) + (ok ? 3 : -3));
+        state.loans.forEach(l => l.left--);
+        state.loans = state.loans.filter(l => l.left > 0);
+        state.rep = '月末: テナント料¥' + fmt(f) + (cf ? '・決済手数料¥' + fmt(cf) : '') + (lp ? '・融資返済¥' + fmt(lp) : '') + (state.sal ? '・自分の給料¥' + fmt(state.sal) : '') + (wg ? '・店員の給料¥' + fmt(wg) : '') + 'を支払い。売上¥' + fmt(state.mSales) + ' / ノルマ¥' + fmt(q) + ' → ' + (ok ? '達成' : '未達');
+        addLog(state.rep);
+        state.mSales = 0;
+        if (state.money < 0 && (state.sv || 0) > 0) {
+            const w = Math.min(state.sv, Math.ceil(-state.money));
+            state.money += w;
+            state.sv -= w;
+            addLog('🏦 預金から¥' + fmt(w) + 'を自動で引き出しました。');
+        }
+        if (state.day % (MD * 3) === 0) {
+            if (!state.slotQ && state.slots < MAX.slot) {
+                const c = cost.slot();
+                state.money -= c;
+                addSlot();
+                addEvent('🏗️ 3ヶ月ごとの投資チェック：棚を強制的に増設（¥' + fmt(c) + '）。テナント料は月¥' + fmt(tenantFee()) + 'に');
+            }
+            else if (state.slotQ)
+                addLog('投資チェック：期間中に棚を増やしたのでスキップ');
+            state.slotQ = 0;
+        }
+        if (state.money < LIMIT) {
+            state.over = true;
+            addLog('資金が' + fmt(LIMIT) + '円を下回り、倒産しました。');
+        }
+    }
+    state.phase = 'closed';
+}
+
+/** 翌日へ（イベント・病気・休業の判定） */
+function nextDay() {
+    if (state.phase !== 'closed' || state.over)
+        return;
+    state.day++;
+    state.weather = state.next;
+    state.t = 0;
+    state.dRev = state.dSold = state.dMiss = 0;
+    state.evs = [];
+    if (state.boom > 0)
+        state.boom--;
+    if (state.fem > 0)
+        state.fem--;
+    if (state.rb > 0)
+        state.rb--;
+    if (state.flame > 0)
+        state.flame--;
+    let snow = rollEvents();
+    state.pre = null;
+    state.dOpen = false;
+    state.dWage = 0;
+    state.dM = state.dF = 0;
+    state.cleanDay = false;
+    if ((state.ss || 0) > 0 && state.day >= (state.sb || 0)) {
+        state.ss = 0;
+        addEvent('🛡 セキュリティが破損し、ストックが0になりました');
+    }
+    if (state.clean > 0) {
+        state.clean--;
+        state.cleanDay = true;
+        snow = true;
+        state.hol = false;
+        addEvent('🧹 店の清掃のため休業中（あと' + state.clean + '日）');
+    }
+    if (state.dep > 0) {
+        state.dep--;
+        if (state.dep === 0) {
+            state.happy = 50;
+            state.low = 0;
+            state.low5 = 0;
+            addEvent('💪 うつ病の休養を終えて復帰しました（幸福度50%）');
+        }
+    }
+    else if (difficulty().sick && (state.low || 0) >= 14) {
+        state.dep = 14;
+        state.sick = 0;
+        state.low = 0;
+        addEvent('😔 幸福度の低迷が続き、うつ病になりました。2ヶ月（14日）の休養が必要です' + (state.clerk > 0 ? '（店員が営業を続けます）' : ''));
+    }
+    if (state.sick > 0) {
+        state.sick--;
+        if (state.sick === 0) {
+            state.happy = Math.max(state.happy, 25);
+            addEvent('💪 病気から復帰しました（幸福度' + Math.floor(state.happy) + '%）');
+        }
+    }
+    else if (state.dep <= 0 && difficulty().sick && Math.random() < sickP(state.happy)) {
+        state.sick = 7;
+        addEvent('🤒 病気になりました。7日間' + (state.clerk > 0 ? 'は店員が営業します（給料150%）' : '休業します'));
+    }
+    if ((state.sick > 0 || state.dep > 0) && state.clerk === 0) {
+        snow = true;
+        state.hol = false;
+    }
+    if (snow) {
+        state.kama = 0;
+        endDay();
+    }
+    else if (state.kama) {
+        state.hol = false;
+        state.phase = 'open';
+        state.t = 0;
+        state.paused = false;
+        lastSale = '';
+        addLog('⛄ かまくらを作っています…（12:00から甘酒ボーナス）');
+        if (state.openH >= 12)
+            amaStart();
+    }
+    else if (state.hol) {
+        state.hol = false;
+        state.gauge = Math.min(99, state.gauge + 8);
+        addLog('店休日。お客さんが開店を待ちわびています（購買欲+8）。');
+        endDay();
+    }
+    else {
+        state.phase = 'prep';
+        addLog('開店準備。商品を補充しましょう。');
+    }
+    render();
+    save();
+}
+
+/** 営業中の1秒ごとの処理（客の来店・販売） */
+function tick() {
+    if (state.phase !== 'open' || state.paused)
+        return;
+    if (state.kama) {
+        kamaTick();
+        return;
+    }
+    state.t++;
+    const pw = pwr(state.day), sh = state.shelf.filter(Boolean);
+    if (state.boost > 0) {
+        state.boost--;
+        state.gauge = 100;
+        if (state.boost === 0) {
+            state.gauge = 50;
+            addLog('ブースト終了。');
+        }
+    }
+    else
+        state.gauge = Math.max(0, state.gauge + (pw - 1) * 4 - 0.6);
+    const rate = (0.35 + 0.18 * state.ad + 0.08 * sh.length) * pw * (0.8 + state.gauge / 250) * (state.boost > 0 ? 2 : 1) * demandFactor() * Math.pow(1.2, state.pays.length) * difficulty().cust;
+    const cnt = x => Math.floor(x) + (Math.random() < x % 1 ? 1 : 0), gs = [];
+    for (let i = cnt(rate / 2); i > 0; i--)
+        gs.push(0);
+    for (let i = cnt(rate / 2 * (state.fem > 0 ? 5 : 1)); i > 0; i--)
+        gs.push(1);
+    let bc = 0, sy = 0;
+    const sl = {};
+    for (const g of gs) {
+        if (g)
+            state.dF = (state.dF || 0) + 1;
+        else
+            state.dM = (state.dM || 0) + 1;
+        const wt = sh.map(t => Math.pow(80 / PRODUCTS[t.id].c, 0.6) * gf(t.id, g) * (state.rb > 0 && t.id === 0 ? 1.8 : 1));
+        let x = Math.random() * wt.reduce((a, b) => a + b, 0), s = sh[sh.length - 1];
+        for (let i = 0; i < sh.length; i++) {
+            if ((x -= wt[i]) < 0) {
+                s = sh[i];
+                break;
+            }
+        }
+        if (!s || s.st <= 0) {
+            state.miss++;
+            state.dMiss++;
+            if (state.boost === 0)
+                state.gauge = Math.max(0, state.gauge - 3);
+            continue;
+        }
+        const p = PRODUCTS[s.id], pp = priceOf(p), q = Math.min(s.st, Math.round((1 + (Math.random() < 0.25 + 0.05 * state.ad ? 1 : 0) + (state.boom > 0 && Math.random() < 0.5 ? 1 : 0)) * (state.rb > 0 && s.id === 0 ? 1.8 : 1)));
+        s.st -= q;
+        state.sd[s.id] += q;
+        bc++;
+        state.money += q * pp;
+        state.mSales += q * pp;
+        state.tot = (state.tot || 0) + q * pp;
+        state.dRev += q * pp;
+        state.dSold += q;
+        state.sold += q;
+        sl[s.id] = (sl[s.id] || 0) + q;
+        sy += q * pp;
+        if (state.boost === 0)
+            state.gauge = Math.min(100, state.gauge + 2);
+        if (q * pp >= 1000)
+            addLog(p.e + ' ' + p.n + 'が売れました +¥' + fmt(q * pp), true);
+    }
+    if (bc)
+        lastSale = Object.keys(sl).map(i => PRODUCTS[i].e + PRODUCTS[i].n + '×' + sl[i]).join('・') + ' +¥' + fmt(sy);
+    if (bc)
+        pushHist('🛒 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + ' ' + lastSale, true);
+    pxArrive(gs, bc);
+    if (state.flame > 0)
+        state.gauge = Math.min(state.gauge, 4);
+    if (state.boost === 0 && state.gauge >= 100) {
+        state.boost = 10;
+        addLog('🔥 購買欲MAX！10秒間、来店数2倍');
+    }
+    for (let k = 0; k < state.clerk; k++) {
+        const c = state.shelf.filter(s => s && s.st < state.cap && state.money >= PRODUCTS[s.id].c);
+        if (!c.length)
+            break;
+        const b = c[Math.floor(Math.random() * c.length)], q = Math.min(clAmt(), state.cap - b.st, Math.floor(state.money / PRODUCTS[b.id].c));
+        b.st += q;
+        state.money -= q * PRODUCTS[b.id].c;
+    }
+    if (state.clerk > 0 && eff() < 0)
+        for (let k = 0; k < state.clerk; k++) {
+            const c = state.shelf.filter(s => s && s.st > 0);
+            if (!c.length)
+                break;
+            const b = c[Math.floor(Math.random() * c.length)];
+            b.st = Math.max(0, b.st - Math.ceil(b.st * 0.01 * -eff()));
+        }
+    if (state.clerk > 0) {
+        const h = state.openH + Math.floor((state.t - 1) / 5), w = WAGE * (h < 7 || h >= 22 ? 1.25 : 1) * state.clerk / 5 * (state.sick > 0 || state.dep > 0 ? 1.5 : 1);
+        state.mWage = (state.mWage || 0) + w;
+        state.dWage += w;
+    }
+    if (state.t >= dayTicks()) {
+        addLog('閉店。本日の売上 ¥' + fmt(state.dRev) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : ''));
+        endDay();
+    }
+    render();
+    save();
+}
+</script>
+<script>
+/**
+ * pixel.js — ドット絵の描画。
+ */
+
+/** ドット絵のキャンバス */
+const cv = byId('px');
+
+/** 描画コンテキスト */
+const cx = cv.getContext('2d');
+
+/** アニメーションのフレーム数 */
+let fr = 0;
+
+/** 四角形を塗る */
+const Rc = (x, y, w, h, c) => {
+    cx.fillStyle = c;
+    cx.fillRect(Math.round(x), Math.round(y), w, h);
+    if (pxDk) {
+        cx.fillStyle = 'rgba(8,16,48,0.5)';
+        cx.fillRect(Math.round(x), Math.round(y), w, h);
+    }
+};
+
+/** 夜に人物を描き直すとき、夜の暗さを重ねる */
+let pxDk = false;
+
+/** 来店中のお客さん */
+const PXC = [];
+
+/** ドット文字を描く */
+function pxText(x, y, t, c) {
+    [...t].forEach((ch, i) => PXF[ch].forEach((r, j) => [...r].forEach((v, k) => {
+        if (v === '1')
+            Rc(x + i * 4 + k, y + j, 1, 1, c);
+    })));
+}
+
+/** お客さんを来店させる */
+function pxArrive(gs, bc) {
+    const o = gs.map((g, i) => i).sort(() => Math.random() - .5);
+    gs.forEach((g, i) => {
+        if (PXC.length >= 14)
+            return;
+        const L = Math.random() < .5;
+        PXC.push({
+            x: L ? -6 : 198, L, g, bag: o.indexOf(i) < bc, st: 0, t: 0, sp: 0.8 + Math.random() * 0.7, c: Math.floor(Math.random() * 4)
+        });
+    });
+}
+
+/** 人物を描く */
+function pp(x, y, b, o) {
+    o = o || {};
+    const h = o.hair || '#3b2a20';
+    x = Math.round(x);
+    y = Math.round(y);
+    Rc(x + 1, y, 3, 3, '#f1c27d');
+    Rc(x + 1, y, 3, 1, h);
+    if (o.g)
+        Rc(x, y + 1, 1, 3, h);
+    Rc(x, y + 3, 5, 4, b);
+    if (o.g)
+        Rc(x, y + 7, 5, 2, b);
+    const ly = y + (o.g ? 9 : 7);
+    Rc(x + 1, ly, 1, 2, '#2a2a2a');
+    Rc(x + 3, ly, 1, 2, '#2a2a2a');
+    if (o.sad)
+        Rc(x + 2, y + 2, 1, 1, '#7a2e2e');
+    if (o.bag)
+        Rc(x + (o.dir ? -2 : 5), y + 5, 2, 3, '#d9a441');
+}
+
+/** 窓・ドア・棚の商品を描く */
+function pxLights(op, night) {
+    const lit = op || night;
+    [[52, 0], [108, 6]].forEach(([fx, s0]) => {
+        Rc(fx, 41, 32, 19, '#3f332b');
+        Rc(fx + 1, 42, 30, 17, lit ? '#fff3c4' : '#8fbfd9');
+        for (let i = 0; i < 6; i++) {
+            const s = state.shelf[s0 + i];
+            if (!s)
+                continue;
+            const h = s.st > 0 ? Math.max(2, Math.round(s.st / state.cap * 12)) : 0;
+            Rc(fx + 3 + i * 5, 58 - h, 4, h, COL[s.id]);
+        }
+        Rc(fx + 1, 50, 30, 1, '#8a6a45');
+        Rc(fx + 1, 55, 30, 1, '#8a6a45');
+        Rc(fx + 3, 43, 1, 6, 'rgba(255,255,255,.5)');
+    });
+    Rc(88, 38, 16, 24, '#3f332b');
+    Rc(90, 40, 12, 22, lit ? '#ffe9a8' : '#6b8296');
+    Rc(95, 40, 2, 22, '#3f332b');
+    Rc(99, 52, 1, 3, '#ddd');
+    if (op)
+        pp(92, 45, '#ffd23f');
+    Rc(93, 41, 6, 3, op ? '#2a9d8f' : '#e63946');
+}
+
+/** セキュリティを描く */
+function pxSec() {
+    const L = state.sl || 0;
+    if (!L)
+        return;
+    const ss = state.ss || 0;
+    cx.globalAlpha = ss > 0 ? 0.45 + 0.11 * ss : 0.18;
+    if (L === 1) {
+        Rc(86, 36, 3, 5, '#d62828');
+        Rc(87, 34, 1, 2, '#e9c46a');
+    }
+    if (L === 2) {
+        Rc(105, 40, 3, 9, '#f4f1de');
+        Rc(106, 42, 1, 1, '#d62828');
+        Rc(106, 45, 1, 1, '#d62828');
+    }
+    if (L === 3) {
+        Rc(110, 53, 9, 9, '#5a3a22');
+        Rc(111, 54, 7, 3, '#e9c46a');
+        Rc(113, 58, 3, 3, '#e9c46a');
+    }
+    if (L === 4) {
+        Rc(104, 28, 7, 4, '#8d99ae');
+        Rc(105, 29, 1, 1, fr % 6 < 3 ? '#ff3b3b' : '#661111');
+    }
+    if (L === 5) {
+        for (let i = 0; i < 4; i++)
+            if ((fr + i) % 4 < 3)
+                Rc(88, 44 + i * 5, 16, 1, '#ff2d2d');
+    }
+    if (L === 6) {
+        Rc(89, 34, 8, 8, '#f1ece0');
+        Rc(91, 37, 1, 1, '#222');
+        Rc(94, 37, 1, 1, '#222');
+        Rc(92, 40, 3, 1, '#b22');
+    }
+    if (L === 7)
+        pp(108, 57, '#1d3557', { hair: '#222' });
+    if (L === 8) {
+        pp(108, 57, '#1d3557');
+        pp(115, 57, '#1d3557');
+        pp(122, 57, '#1d3557');
+    }
+    if (L === 9) {
+        pp(108, 57, '#6c584c', { hair: '#222' });
+        Rc(109, 58, 3, 1, '#111');
+    }
+    if (L === 10) {
+        Rc(93, 12, 10, 5, '#444');
+        Rc(96, 9, 4, 3, '#888');
+        if (fr % 8 < 3)
+            Rc(97, 17, 2, 45, 'rgba(255,40,40,.7)');
+    }
+    cx.globalAlpha = 1;
+}
+
+/** ドット絵の描画（1フレーム） */
+function drawPx() {
+    const W = 192, H = 92, se = seaOf(Math.max(state.day, 1)), wt = state.weather, op = state.phase === 'open';
+    const hr = op ? state.openH + Math.floor(state.t / 5) : (state.phase === 'prep' ? state.openH : 21), night = hr >= 19 || hr < 6;
+    ['#5aa9f0,#8cc6f7,#b6dcfb,#d4ecfd,#e6f4fe,#f2faff', '#9aa6b0,#b0bac2,#c3cbd2,#d1d7dc,#dde2e6,#e8ebee', '#69737d,#7a858f,#8a949d,#99a2aa,#a8b0b7,#b5bcc2', '#c8d3dc,#d3dce4,#dde5ec,#e6ecf1,#eef2f6,#f4f7fa'][wt].split(',').forEach((c, i) => Rc(0, i * 10, W, 10, c));
+    if (wt === 0) {
+        if (night)
+            Rc(160, 8, 6, 6, '#f5f0c8');
+        else {
+            Rc(158, 6, 10, 10, se === 1 ? '#ffb300' : '#ffd54a');
+            Rc(155, 10, 16, 2, 'rgba(255,230,120,.4)');
+            Rc(162, 3, 2, 16, 'rgba(255,230,120,.4)');
+        }
+    }
+    if (wt > 0) {
+        const cc = wt === 2 ? '#6f7b87' : '#fff';
+        for (let k = 0; k < 4; k++) {
+            const x = ((fr * 0.25 + k * 60) % (W + 40)) - 24, y = 6 + k * 7;
+            Rc(x, y, 22, 5, cc);
+            Rc(x + 5, y - 3, 12, 4, cc);
+            Rc(x + 2, y + 4, 18, 1, 'rgba(0,0,0,.08)');
+        }
+    }
+    [[0, 14, 10], [12, 22, 14], [28, 16, 10], [150, 18, 12], [164, 26, 16], [182, 14, 10]].forEach(([x, h, w]) => {
+        Rc(x, 62 - h, w, h, '#8ea4b8');
+        for (let j = 0; j < h - 4; j += 4)
+            Rc(x + 2, 62 - h + 3 + j, 2, 2, '#aebfcf');
+    });
+    const gr = ['#8fd16a', '#4fae4a', '#c9a14a', '#f4f8fb'][se];
+    Rc(0, 54, 48, 8, gr);
+    Rc(146, 54, 46, 8, gr);
+    Rc(0, 62, W, 6, '#cfcab9');
+    for (let x = 0; x < W; x += 12)
+        Rc(x, 62, 1, 6, '#b8b3a1');
+    Rc(0, 68, W, 24, '#5d636b');
+    Rc(0, 68, W, 1, '#8a8f98');
+    for (let x = 0; x < W; x += 32)
+        Rc(x, 80, 16, 1, '#e9e2b4');
+    {
+        const cxp = ((fr * 1.6) % 260) - 40, ci = Math.floor(fr * 1.6 / 260) % 3, cc = ['#d62828', '#2a6fdb', '#e9c46a'][ci];
+        Rc(cxp, 74, 20, 6, cc);
+        Rc(cxp + 4, 71, 11, 4, cc);
+        Rc(cxp + 5, 72, 4, 3, '#bfe3f5');
+        Rc(cxp + 10, 72, 4, 3, '#bfe3f5');
+        Rc(cxp + 3, 79, 4, 3, '#222');
+        Rc(cxp + 13, 79, 4, 3, '#222');
+    }
+    [4, 172].forEach(x => {
+        Rc(x + 7, 46, 3, 16, '#5b3f28');
+        Rc(x + 8, 46, 1, 16, '#74513a');
+        if (se === 3) {
+            Rc(x + 1, 40, 16, 2, '#5b3f28');
+            Rc(x + 8, 32, 2, 10, '#5b3f28');
+            Rc(x + 3, 34, 2, 6, '#5b3f28');
+            Rc(x + 13, 34, 2, 6, '#5b3f28');
+            Rc(x + 1, 39, 16, 1, '#fff');
+        }
+        else {
+            const c = [['#f4a6c6', '#e58bb0'], ['#3f9e44', '#2f7d34'], ['#e07b2d', '#c45e1a']][se];
+            Rc(x, 32, 18, 14, c[0]);
+            Rc(x + 2, 28, 14, 5, c[0]);
+            Rc(x + 2, 40, 16, 6, c[1]);
+            Rc(x + 10, 32, 6, 8, c[1]);
+        }
+    });
+    if (se === 0 || se === 2)
+        for (let i = 0; i < 8; i++)
+            Rc((i * 27 + fr * 0.5) % W, (i * 13 + fr * 0.8) % 66, 1, 1, se ? '#e07b2d' : '#f7b6d2');
+    Rc(40, 38, 2, 24, '#2f2f2f');
+    Rc(36, 36, 10, 3, '#2f2f2f');
+    Rc(46, 20, 100, 6, '#5b4a3f');
+    Rc(46, 20, 100, 1, '#7a6657');
+    Rc(48, 26, 96, 36, '#b95c3e');
+    for (let y = 28, r = 0; y < 62; y += 3, r++) {
+        Rc(48, y, 96, 1, '#9c4a31');
+        for (let x = 48 + (r % 2) * 4; x < 144; x += 8)
+            Rc(x, y + 1, 1, 2, '#9c4a31');
+    }
+    Rc(140, 26, 4, 36, 'rgba(0,0,0,.12)');
+    Rc(76, 10, 40, 12, '#1f3a5f');
+    Rc(76, 10, 40, 1, '#e9c46a');
+    Rc(76, 21, 40, 1, '#e9c46a');
+    pxText(88, 13, 'SHOP', '#ffd23f');
+    for (let i = 0; i < 16; i++) {
+        const c = i % 2 ? '#f4f1de' : '#d62828';
+        Rc(48 + i * 6, 30, 6, 6, c);
+        Rc(48 + i * 6, 36, 6, 1, c);
+        Rc(49 + i * 6, 37, 4, 1, c);
+    }
+    Rc(48, 38, 96, 2, 'rgba(0,0,0,.25)');
+    pxLights(op, night);
+    pxSec();
+    if (state.kama)
+        pxKama();
+    const k = op ? (state.spd || 1) : 1;
+    for (const c of PXC) {
+        if (c.st === 0) {
+            const dx = 93 - c.x;
+            if (Math.abs(dx) <= c.sp * k + 1) {
+                c.x = 93;
+                c.st = 1;
+                c.t = 8;
+            }
+            else
+                c.x += Math.sign(dx) * c.sp * k;
+        }
+        else if (c.st === 1) {
+            if ((c.t -= k) <= 0) {
+                c.st = 2;
+                c.L = Math.random() < .5;
+            }
+        }
+        else {
+            c.x += (c.L ? -1 : 1) * c.sp * k;
+            if (c.x < -8 || c.x > 200)
+                c.dead = 1;
+        }
+    }
+    for (let i = PXC.length; i--;)
+        if (PXC[i].dead)
+            PXC.splice(i, 1);
+    pxPeople(op);
+    if (wt === 2)
+        for (let i = 0; i < 70; i++)
+            Rc((i * 37 + fr * 2) % W, (i * 23 + fr * 6) % H, 1, 3, '#7ab8ea');
+    if (wt === 3) {
+        for (let i = 0; i < 70; i++)
+            Rc((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W, (i * 17 + fr) % H, 1, 1, '#fff');
+        Rc(0, 62, W, 2, '#f4f8fb');
+        Rc(46, 18, 100, 2, '#fff');
+    }
+    if (night) {
+        cx.fillStyle = 'rgba(8,16,48,0.5)';
+        cx.fillRect(0, 0, W, H);
+        if (wt === 0)
+            for (let i = 0; i < 14; i++)
+                Rc((i * 47) % W, (i * 13) % 24, 1, 1, '#fff');
+        Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
+        Rc(37, 37, 8, 2, '#ffe9a8');
+        pxLights(op, true);
+        pxDk = true;
+        pxPeople(op);
+        pxDk = false;
+    }
+}
+
+/** かまくらボーナスの日：店の前のかまくらと甘酒の鍋 */
+function pxKama() {
+    Rc(150, 46, 26, 16, '#ffffff');
+    Rc(153, 42, 20, 4, '#ffffff');
+    Rc(157, 39, 12, 3, '#ffffff');
+    Rc(150, 61, 26, 1, '#cfd8e0');
+    Rc(158, 51, 10, 11, '#3b4a5a');
+    Rc(159, 53, 8, 9, '#ffb347');
+    if (state.kama === 1)
+        pp(144 + (fr % 8 < 4 ? 0 : 1), 52, '#ffd23f');
+    else {
+        Rc(130, 57, 8, 5, '#555');
+        Rc(131, 54 - (fr % 6 < 3 ? 1 : 0), 1, 3, 'rgba(255,255,255,.8)');
+        Rc(135, 53 - (fr % 6 < 3 ? 0 : 1), 1, 3, 'rgba(255,255,255,.8)');
+    }
+}
+
+/** お客さんと店員を描く（夜は窓の明かりより手前に描き直す） */
+function pxPeople(op) {
+    PXC.forEach(c => {
+        if (c.st !== 1)
+            pp(c.x, 56 + ((fr + Math.floor(c.x)) % 4 < 2 ? 0 : 1), (c.g ? FP : MP)[c.c], { g: c.g, hair: (c.g ? FH : MH)[c.c], bag: c.bag && c.st === 2, dir: c.L });
+    });
+    const n = Math.min(state.clerk, 12), e = eff(), pal = ['#2b7fd1', '#e86a5c', '#4caf72', '#8e5bd1'];
+    for (let i = 0; i < n; i++) {
+        const sad = e < 0 || state.dn > 0;
+        pp(8 + i * 14.8, 57 + (op && ((fr >> 1) + i) % 4 < 2 ? 1 : 0), e < 0 ? '#7a2e2e' : (state.dn > 0 ? '#7f8c99' : pal[i % 4]), { sad });
+    }
+}
+</script>
+<script>
+/**
+ * share.js — 倒産時のポップアップとSNS共有（リザルト画像・Xへの投稿・文面のコピー）。
+ * 共有の文面・共有メニュー・X の投稿画面・コピーは共通部品 common/v1/share.js（CG.share）。
+ */
+
+/** 共有する文面とハッシュタグ */
+const SHARE_MSG = 'ちいさなお店を開いたけど倒産しちゃった！残念😢';
+const SHARE_TAG = 'ちくわげーむず';
+
+/** ゲームのURL（今開いているページ。#以降は除く） */
+const shareUrl = () => location.href.split('#')[0];
+
+/** CG.share に渡す中身（#ちくわげーむず は CG.share が付ける） */
+const shareData = () => ({ msg: SHARE_MSG, url: shareUrl() });
+
+/** コピー用・共有メニュー用の文面（URL込み） */
+const shareText = () => CG.share.text(shareData());
+
+/** 作成済みのリザルト画像（ゲームが変わったら作り直す） */
+let shareFile = null, shareFor = null;
+
+/** 画像用：幅に収まるように折り返す（最大 max 行） */
+function wrapText(g, t, w, max) {
+    const L = [];
+    let s = '';
+    for (const ch of t) {
+        if (g.measureText(s + ch).width > w) {
+            L.push(s);
+            s = ch;
+        }
+        else
+            s += ch;
+    }
+    if (s)
+        L.push(s);
+    if (L.length > max) {
+        L.length = max;
+        L[max - 1] = L[max - 1].slice(0, -1) + '…';
+    }
+    return L;
+}
+
+/** リザルト画像（1200×630）を作る */
+function resultImage() {
+    const W = 1200, H = 630, c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const g = c.getContext('2d'), F = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif';
+    // 背景と屋根
+    g.fillStyle = '#0e1c19';
+    g.fillRect(0, 0, W, H);
+    for (let x = 0; x < W; x += 44) {
+        g.fillStyle = '#e63946';
+        g.fillRect(x, 0, 22, 32);
+        g.fillStyle = '#ffffff';
+        g.fillRect(x + 22, 0, 22, 32);
+    }
+    // タイトル
+    g.textBaseline = 'alphabetic';
+    g.fillStyle = '#8fb0a5';
+    g.font = '700 34px ' + F;
+    g.fillText('🏪 ちいさなお店', 48, 92);
+    g.fillStyle = '#ff6b76';
+    g.font = '900 60px ' + F;
+    g.fillText('倒産しました…', 48, 164);
+    // ドット絵（192×92 を3倍、ドットのまま拡大）
+    g.fillStyle = '#27473e';
+    g.fillRect(42, 194, 588, 288);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(byId('px'), 48, 200, 576, 276);
+    // 成績
+    const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1;
+    const yen = v => (v < 0 ? '-' : '') + '¥' + fmt(Math.abs(Math.round(v)));
+    const rows = [
+        ['難易度', difficulty().n],
+        ['営業日数', m + 'ヶ月目・通算' + state.day + '日'],
+        ['累計売上', yen(state.tot || 0)],
+        ['最終所持金', yen(state.money)],
+        ['預金', yen(state.sv || 0)],
+        ['棚の数', state.slots + '台']
+    ];
+    rows.forEach(([k, v], i) => {
+        const y = 230 + i * 46;
+        g.fillStyle = '#8fb0a5';
+        g.font = '700 24px ' + F;
+        g.textAlign = 'left';
+        g.fillText(k, 668, y);
+        g.fillStyle = k === '最終所持金' && state.money < 0 ? '#ff6b76' : '#e4f3ec';
+        g.font = '800 30px ' + F;
+        g.textAlign = 'right';
+        g.fillText(v, 1152, y);
+        g.fillStyle = '#27473e';
+        g.fillRect(668, y + 14, 484, 2);
+    });
+    // 倒産理由
+    g.textAlign = 'left';
+    g.fillStyle = '#e4f3ec';
+    g.font = '700 26px ' + F;
+    wrapText(g, state.overMsg || '資金が倒産ラインを下回り、倒産しました。', W - 96, 2).forEach((t, i) => g.fillText(t, 48, 530 + i * 36));
+    // ハッシュタグ
+    g.fillStyle = '#ffd23f';
+    g.font = '800 24px ' + F;
+    g.textAlign = 'right';
+    g.fillText('#' + SHARE_TAG, W - 48, 606);
+    return c;
+}
+
+/** 倒産時にリザルト画像を先に作っておく（共有ボタンを押した瞬間に渡せるように） */
+function prepShare() {
+    if (!state.over || shareFor === state)
+        return;
+    shareFor = state;
+    shareFile = null;
+    setTimeout(() => {
+        const s = state;
+        resultImage().toBlob(b => {
+            if (b && s === state)
+                shareFile = new File([b], 'chiisana-omise.png', { type: 'image/png' });
+        }, 'image/png');
+    }, 0);
+}
+
+/** 共有欄（ポップアップの中に出す） */
+function shareBox() {
+    const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    return '<div class="share"><b>📣 結果をシェア</b>' +
+        '<div class="row"><button data-a="share">📤 結果をシェア</button><button class="alt" data-a="shimg">🖼 画像を保存</button></div>' +
+        '<textarea id="shtx" readonly rows="4">' + esc(shareText()) + '</textarea>' +
+        '<button class="alt" data-a="shcopy" style="width:100%">📋 文面をコピー</button></div>';
+}
+
+/** 表示中のポップアップがどのゲームのものか（作り直しの判定） */
+let ovFor = null;
+
+/** 倒産ポップアップの表示・非表示を状態に合わせる（render のたびに呼ぶ。中身は1回だけ作る） */
+function syncOver() {
+    let o = byId('ovm');
+    const show = state.over && !state.ovx;
+    if (!show) {
+        if (o)
+            o.hidden = true;
+        return;
+    }
+    if (!o) {
+        o = document.createElement('div');
+        o.id = 'ovm';
+        o.setAttribute('role', 'dialog');
+        o.setAttribute('aria-modal', 'true');
+        document.body.append(o);
+    }
+    if (ovFor !== state || o.hidden) {
+        ovFor = state;
+        prepShare();
+        let img = '';
+        try {
+            img = '<img class="ovimg" alt="リザルト画像" src="' + resultImage().toDataURL('image/png') + '">';
+        }
+        catch (e) { }
+        o.innerHTML = '<div class="ovbox"><div class="ovhd">💸 倒産しました…</div>' +
+            '<div class="ovmsg">' + (state.overMsg || '資金が倒産ラインを下回り、倒産しました。') + '</div>' + img + shareBox() +
+            '<button class="big" data-a="restart">🔄 最初からやり直す</button>' +
+            '<button class="alt" data-a="ovclose" style="width:100%">閉じる（お店の様子を見る）</button></div>';
+        o.hidden = false;
+        o.scrollTop = 0;
+    }
+}
+
+/** 共有：使えれば端末の共有メニュー（画像付き）、だめならXの投稿画面（画像は手で添付） */
+function shareResult() {
+    if (shareFile)
+        CG.share.open(shareData(), shareFile);
+    else
+        CG.share.x(shareData());
+}
+
+/** リザルト画像を保存（ダウンロード） */
+function saveResultImage() {
+    resultImage().toBlob(b => {
+        if (b)
+            CG.download('chiisana-omise.png', b);
+    }, 'image/png');
+}
+
+/** 文面をコピー */
+function copyShareText(b) {
+    CG.share.copy(shareData()).then(ok => {
+        b.textContent = ok ? '✅ コピーしました' : '⚠ 文面を長押ししてコピーしてください';
+        setTimeout(() => b.textContent = '📋 文面をコピー', 2000);
+    });
+}
+</script>
+<script>
+/**
+ * save.js — セーブデータのファイル書き出し・読み込みと、セーブコード（「設定」タブ）。
+ * 自動保存（localStorage）は state.js の save()。こちらは端末をまたぐバックアップ用。
+ * ファイル・コードの作り方と読み方は共通部品 common/v1/save.js（CG.save）。ここはゲームに合わせた確認と画面だけ。
+ * 包みの形：{ game:'shop-sim', v:SAVE_VER, at, data:state, key }（v1.1.x までのファイルは data の代わりに state。CG.save が読める形にそろえる）
+ */
+
+/** ファイルの目印と版番号（state の形を変えたら SAVE_VER を上げ、loadFix に移行処理を書く） */
+const SAVE_GAME = 'shop-sim', SAVE_VER = 2;
+
+/** 読み込み待ちのデータ（確認してから反映）、欄に出すメッセージ、作ったセーブコード、コード入力欄を開いているか */
+let svPend = null, svMsg = null, svSig = '', svCode = '', svIn = false;
+
+/** セーブ・ロードできるか（営業中は不可。倒産後は可） */
+const canSL = () => state.over || state.phase !== 'open';
+
+/** 2桁ゼロ埋め */
+const p2 = CG.p2;
+
+/** データの概要（難易度・時期・所持金） */
+function saveSummary(s, at) {
+    const d = Math.max(s.day || 0, 1), m = Math.floor((d - 1) / MD) + 1, df = DF[s.diff];
+    const yen = v => (v < 0 ? '-' : '') + '¥' + fmt(Math.abs(Math.round(v || 0)));
+    let t = (df ? df.n : '?') + ' / ' + (s.day ? m + 'ヶ月目・通算' + s.day + '日' : '開業前') + ' / 所持金 ' + yen(s.money);
+    if (s.over)
+        t += '（倒産済み）';
+    if (at) {
+        const a = new Date(at);
+        if (!isNaN(a))
+            t += '<br>保存 ' + a.getFullYear() + '/' + (a.getMonth() + 1) + '/' + a.getDate() + ' ' + a.getHours() + ':' + p2(a.getMinutes());
+    }
+    return t;
+}
+
+/** ファイルに書き出す（.json をダウンロード） */
+function exportSave() {
+    if (!canSL())
+        return;
+    const now = new Date(), d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1;
+    const box = Object.assign(CG.save.wrap(state, SAVE_VER), { key: KEY });
+    const name = 'ちいさなお店_' + difficulty().n + '_' + (state.day ? m + 'ヶ月目' : '開業前') + '_' +
+        now.getFullYear() + p2(now.getMonth() + 1) + p2(now.getDate()) + '-' + p2(now.getHours()) + p2(now.getMinutes()) + '.json';
+    CG.save.toFile(box, name);
+    svPend = null;
+    svMsg = { ok: true, t: '書き出しました：' + name };
+    syncSave();
+}
+
+/** 読み込んだデータが正しいか確かめる（だめなら理由の文字列、OKなら null）。形とゲーム名は CG.save が確かめ済み */
+function checkSave(o) {
+    if (!o || typeof o !== 'object' || o.game !== SAVE_GAME)
+        return 'このゲームのセーブデータではありません。';
+    if (typeof o.v !== 'number' || o.v > SAVE_VER)
+        return '新しい版のセーブデータです。ゲームを最新にしてから読み込んでください。';
+    const s = o.data;
+    if (!s || typeof s !== 'object' || !Array.isArray(s.shelf) || !Array.isArray(s.own) || typeof s.money !== 'number' || typeof s.day !== 'number' || !DF[s.diff])
+        return 'セーブデータが壊れています。';
+    return null;
+}
+
+/** 古い版のデータを今の形にそろえる（足りない項目は初期値で埋める） */
+function loadFix(o) {
+    const s = Object.assign(fresh(), o.data);
+    ['up', 'sd'].forEach(k => {
+        s[k] = PRODUCTS.map((_, i) => (s[k] && s[k][i]) || 0);
+    });
+    s.cm = PRODUCTS.map((_, i) => (s.cm && s.cm[i]) || 1);
+    // o.v が古いときの移行処理はここに追加する（例：if (o.v < 2) { ... }）
+    // v2：土嚢・かまくら（prep・kama・mbDay）を追加。初期値で埋まるので移行処理なし
+    return s;
+}
+
+/** 読んだ包み（Promise）を確かめて、反映待ちにする */
+async function pendFrom(p) {
+    let o = null, err = null;
+    try {
+        o = await p;
+        err = checkSave(o);
+    }
+    catch (e) {
+        err = e.message;
+    }
+    svPend = err ? null : o;
+    svMsg = err ? { ok: false, t: err } : null;
+    syncSave();
+}
+
+/** ファイルを選んだら中身を確認して、反映待ちにする */
+function importFile(f) {
+    if (f)
+        pendFrom(CG.save.fromFile(f));
+}
+
+/** セーブコードを作ってコピーする（コピーできなくても、欄に出すので手でコピーできる） */
+async function makeCode() {
+    if (!canSL())
+        return;
+    try {
+        svCode = await CG.save.toCode(Object.assign(CG.save.wrap(state, SAVE_VER), { key: KEY }));
+    }
+    catch (e) {
+        svCode = '';
+        svMsg = { ok: false, t: 'セーブコードを作れませんでした。' };
+        syncSave();
+        return;
+    }
+    svPend = null;
+    svIn = false;
+    const ok = await CG.copy(svCode);
+    svMsg = ok ? { ok: true, t: 'セーブコードをコピーしました（' + fmt(svCode.length) + '文字）。メモ帳などに貼って保管してください。' } : { ok: false, t: 'コピーできませんでした。下の欄を長押しして全部コピーしてください。' };
+    syncSave();
+}
+
+/** 貼り付けたセーブコードを確かめて、反映待ちにする */
+function readCode() {
+    const t = byId('svci');
+    const v = t ? t.value.trim() : '';
+    if (!v) {
+        svMsg = { ok: false, t: 'セーブコードを貼り付けてください。' };
+        syncSave();
+        return;
+    }
+    pendFrom(CG.save.fromCode(v));
+}
+
+/** 反映待ちのデータで再開する */
+function applyLoad() {
+    if (!svPend || !canSL())
+        return;
+    state = loadFix(svPend);
+    svPend = null;
+    svCode = '';
+    svIn = false;
+    if (!LA.includes(state.ln.a))
+        state.ln.a = LA[0];
+    state.paused = false;
+    state.tab = 0;
+    applyDiff();
+    applyUp();
+    dragMg = false;
+    ovFor = null;
+    addLog('💾 セーブデータを読み込みました。');
+    svMsg = { ok: true, t: '読み込みました。' };
+    render();
+    save();
+    byId('scr').scrollTop = 0;
+}
+
+/** 「設定」タブのセーブ欄（内容が変わったときだけ作り直す） */
+function syncSave() {
+    const el = byId('svd');
+    if (!el)
+        return;
+    const ok = canSL(), sig = [ok, svPend && svPend.at, svMsg && svMsg.t, svCode, svIn].join('|');
+    if (sig === svSig)
+        return;
+    svSig = sig;
+    const old = byId('svci'), typed = old ? old.value : '';
+    const dis = ok ? '' : ' disabled';
+    let h = '<b>💾 セーブデータ</b>' + helpIcon('save');
+    if (!ok)
+        h += '<div class="meta svwarn">営業中はセーブ・ロードできません。閉店後に操作してください。</div>';
+    h += '<div class="row"><button data-a="fsave"' + dis + '>📤 ファイルに書き出す</button><button class="alt" data-a="fload"' + dis + '>📥 ファイルから読み込む</button></div>';
+    h += '<div class="svsub">🔑 セーブコード' + helpIcon('code') + '</div>' +
+        '<div class="row"><button data-a="ccopy"' + dis + '>📋 コードをコピー</button><button class="alt" data-a="cin"' + dis + '>⌨ コードで読み込む</button></div>';
+    if (svCode)
+        h += '<textarea class="svcode" readonly rows="3" onfocus="this.select()">' + CG.esc(svCode) + '</textarea>';
+    if (svIn)
+        h += '<textarea class="svcode" id="svci" rows="3" placeholder="ここにセーブコード（CK1.〜）を貼り付け"></textarea>' +
+            '<div class="row"><button data-a="cread"' + dis + '>このコードを読み込む</button><button class="alt" data-a="cno">やめる</button></div>';
+    if (svPend)
+        h += '<div class="svpend"><b>このデータで再開しますか？</b><div class="meta">' + saveSummary(svPend.data, svPend.at) + '</div><div class="meta svwarn">今のデータは上書きされます。必要なら先に書き出してください。</div>' +
+            '<div class="row"><button data-a="fok"' + (ok ? '' : ' disabled') + '>このデータで再開</button><button class="alt" data-a="fno">やめる</button></div></div>';
+    if (svMsg)
+        h += '<div class="meta ' + (svMsg.ok ? 'svok' : 'svwarn') + '">' + (svMsg.ok ? '✅ ' : '⚠ ') + svMsg.t + '</div>';
+    el.innerHTML = h;
+    const ni = byId('svci');
+    if (ni)
+        ni.value = typed;
+}
+</script>
+<script>
+/**
+ * amazake.js — かまくらボーナスの日（大雪＋かまくら成功）と甘酒ミニゲーム。
+ * state.kama：1＝かまくら作り中（通常の販売なし）、2＝ミニゲーム中。終了後に閉店する。
+ */
+
+/** ミニゲームの長さ（実時間・ミリ秒） */
+const AMA_MS = 10000;
+
+/** ミニゲームの進行（保存しない。途中で再読み込みしたら最初から） */
+let ama = null;
+
+/** 終了時の一言（連打数の下限と文言） */
+const AMA_MSG = [[1000, '伝説の甘酒屋'], [600, '指が見えない…'], [300, '町じゅうが甘酒まみれ'], [120, '指がつりそう！'], [70, '行列ができた！'], [30, '大にぎわい'], [1, 'ちらほら'], [0, 'だれも来なかった…']];
+
+/** 甘酒1杯の売上：解放済みで一番安い商品の販売価格 × 難易度倍率 */
+const amaPer = () => Math.round(Math.min(...state.own.map(i => priceOf(PRODUCTS[i]))) * (difficulty().ama || 1));
+
+/** かまくらの日の1秒（12:00 か閉店時刻でミニゲームを始める） */
+function kamaTick() {
+    if (state.kama !== 1)
+        return;
+    state.t++;
+    if (state.openH + Math.floor(state.t / 5) >= 12 || state.t >= dayTicks())
+        amaStart();
+    render();
+    save();
+}
+
+/** ミニゲームを始める（時間を止めてポップアップ） */
+function amaStart() {
+    state.kama = 2;
+    state.paused = true;
+    addLog('🍵 12:00 甘酒ボーナス開始！');
+    ama = null;
+    syncAma();
+    save();
+}
+
+/** ポップアップの表示（render から呼ぶ。再読み込み後も開き直す） */
+function syncAma() {
+    let o = byId('ama');
+    if (state.kama === 3 && !ama) {
+        // 結果を見る前に再読み込みした（報酬は加算済み）→ そのまま閉店
+        state.kama = 0;
+        state.paused = false;
+        setTimeout(() => {
+            endDay();
+            render();
+            save();
+        });
+    }
+    if ((state.kama !== 2 && state.kama !== 3) || state.over) {
+        if (o)
+            o.hidden = true;
+        return;
+    }
+    if (o && !o.hidden && ama)
+        return;
+    if (!o) {
+        o = document.createElement('div');
+        o.id = 'ama';
+        o.setAttribute('role', 'dialog');
+        o.setAttribute('aria-modal', 'true');
+        document.body.append(o);
+        o.addEventListener('pointerdown', e => {
+            if (e.target.closest('#amab')) {
+                e.preventDefault();
+                amaTap();
+            }
+        });
+    }
+    ama = { n: 0, t0: 0, done: false, q: [], fx: [], f: 0, per: amaPer() };
+    for (let i = 0; i < 4; i++)
+        ama.q.push(amaGuest(60 + i * 12));
+    o.innerHTML = '<div class="ovbox amabox"><div class="amatop"><div class="amahd"><span>🍵 甘酒ボーナス</span><span id="amat">10.0秒</span></div>' +
+        '<canvas id="amacv" width="96" height="60"></canvas><div class="amanum"><span id="aman">0</span>杯 <small id="amay">押すとスタート</small></div></div>' +
+        '<div class="amabot" id="amabot"><button class="amabtn" id="amab" type="button">🍵 甘酒</button></div></div>';
+    o.hidden = false;
+    clearInterval(ama.iv);
+    ama.iv = setInterval(amaFrame, 60);
+    amaFrame();
+}
+
+/** 並ぶお客さん（服と髪の色はドット絵と同じ表から） */
+function amaGuest(x) {
+    const g = Math.random() < .5, c = Math.floor(Math.random() * 4);
+    return { x, g, b: (g ? FP : MP)[c], h: (g ? FH : MH)[c] };
+}
+
+/** 連打1回 */
+function amaTap() {
+    if (!ama || ama.done)
+        return;
+    if (!ama.t0)
+        ama.t0 = performance.now();
+    ama.n++;
+    const c = ama.q.shift();
+    if (c)
+        ama.fx.push({ x: c.x, g: c, t: 0 });
+    ama.q.push(amaGuest(Math.max(96, (ama.q.length ? ama.q[ama.q.length - 1].x : 56) + 12)));
+    byId('aman').textContent = ama.n;
+    byId('amay').textContent = '+¥' + fmt(ama.n * ama.per);
+}
+
+/** 1コマ進める（残り時間・アニメ） */
+function amaFrame() {
+    if (!ama || !byId('amacv'))
+        return;
+    ama.f++;
+    if (ama.t0 && !ama.done) {
+        const left = Math.max(0, AMA_MS - (performance.now() - ama.t0));
+        byId('amat').textContent = (left / 1000).toFixed(1) + '秒';
+        if (left <= 0)
+            amaFinish();
+    }
+    amaDraw();
+}
+
+/** 終了：報酬を加算して結果を表示 */
+function amaFinish() {
+    ama.done = true;
+    const y = ama.n * ama.per, m = AMA_MSG.find(([k]) => ama.n >= k)[1];
+    state.money += y;
+    state.mSales += y;
+    state.tot = (state.tot || 0) + y;
+    state.dRev += y;
+    addEvent('🍵 甘酒を' + ama.n + '杯ふるまいました（' + m + '）+¥' + fmt(y));
+    state.kama = 3;
+    save();
+    byId('amabot').innerHTML = '<div class="amares"><b>' + m + '</b><div class="meta">' + ama.n + '杯 × ¥' + fmt(ama.per) + ' ＝ +¥' + fmt(y) + '（今月の売上に加算）</div>' +
+        '<button class="big" data-a="amaclose">閉店する</button></div>';
+}
+
+/** 結果を閉じて閉店 */
+function amaClose() {
+    if (!ama || !ama.done)
+        return;
+    clearInterval(ama.iv);
+    ama = null;
+    byId('ama').hidden = true;
+    state.kama = 0;
+    state.paused = false;
+    addLog('閉店。本日の売上 ¥' + fmt(state.dRev) + '（甘酒）');
+    endDay();
+    render();
+    save();
+}
+
+/** ミニゲームのドット絵（96×60：雪・かまくら・店主・行列） */
+function amaDraw() {
+    const c = byId('amacv').getContext('2d'), R = (x, y, w, h, k) => {
+        c.fillStyle = k;
+        c.fillRect(Math.round(x), Math.round(y), w, h);
+    }, P = (x, y, b, h, cup) => {
+        R(x + 1, y, 3, 3, '#f1c27d');
+        R(x + 1, y, 3, 1, h);
+        R(x, y + 3, 5, 4, b);
+        R(x + 1, y + 7, 1, 2, '#2a2a2a');
+        R(x + 3, y + 7, 1, 2, '#2a2a2a');
+        if (cup) {
+            R(x - 2, y + 4, 2, 2, '#fff8e7');
+            R(x - 2, y + 3, 1, 1, 'rgba(255,255,255,.7)');
+        }
+    }, f = ama.f;
+    ['#c8d3dc', '#d3dce4', '#dde5ec', '#e6ecf1'].forEach((k, i) => R(0, i * 10, 96, 10, k));
+    R(0, 40, 96, 20, '#f4f8fb');
+    R(0, 40, 96, 1, '#dfe7ee');
+    // かまくら
+    R(6, 22, 26, 18, '#ffffff');
+    R(9, 18, 20, 4, '#ffffff');
+    R(13, 15, 12, 3, '#ffffff');
+    R(6, 39, 26, 1, '#cfd8e0');
+    R(14, 28, 10, 12, '#3b4a5a');
+    R(15, 30, 8, 10, '#ffb347');
+    R(16, 36, 6, 4, '#c44d2d');
+    // 鍋と店主
+    R(36, 34, 8, 5, '#555');
+    R(35, 33, 10, 1, '#777');
+    R(37, 30 - (f % 6 < 3 ? 1 : 0), 1, 3, 'rgba(255,255,255,.8)');
+    R(41, 29 - (f % 6 < 3 ? 0 : 1), 1, 3, 'rgba(255,255,255,.8)');
+    P(46, 30, '#ffd23f', '#3b2a20', ama.n > 0 && f % 4 < 2);
+    // 行列（先頭は x=56、後ろに12ずつ並ぶ）
+    ama.q.forEach((g, i) => {
+        g.x = Math.max(56 + i * 12, g.x - 2);
+        P(g.x, 31 + ((f + Math.floor(g.x)) % 4 < 2 ? 0 : 1), g.b, g.h);
+    });
+    // 甘酒をもらって帰る人
+    ama.fx.forEach(e => {
+        e.t++;
+        e.x -= 2.5;
+        P(e.x, 31 - Math.min(6, e.t), e.g.b, e.g.h, true);
+    });
+    ama.fx = ama.fx.filter(e => e.x > -8);
+    // 雪
+    for (let i = 0; i < 24; i++)
+        R((i * 29 + Math.sin((f + i * 9) / 9) * 3 + 96) % 96, (i * 17 + f) % 60, 1, 1, '#fff');
+}
+</script>
+<script>
+/**
+ * ui.js — 画面の描画とボタン操作。
+ */
+
+/** 営業時間の選択肢（option）を作る */
+const hrs = (a, b, v) => Array.from({ length: b - a + 1 }, (_, i) => {
+    const h = a + i;
+    return '<option' + (h === v ? ' selected' : '') + ' value="' + h + '">' + h + ':00</option>';
+}).join('');
+
+/** 最初からやり直す（難易度選択へ戻る） */
+function restart() {
+    state = fresh();
+    applyUp();
+    state.next = roll(1);
+    state.weather = state.next;
+    dragMg = false;
+    render();
+    save();
+}
+
+/**
+ * 営業タブのログ欄（v1.4.0〜）。高さ4行分の枠でスクロールし、直近 LOGN 件までさかのぼれる。
+ * 新しい行は上に足す。さかのぼって読んでいる間は、新しい行が来ても読んでいる位置がずれないようにする
+ */
+let logSig = '';
+function syncLog() {
+    const el = byId('lg'), L = logList(), sig = logSeq + '|' + L.length;
+    if (sig === logSig && el.innerHTML)
+        return;
+    logSig = sig;
+    const st = el.scrollTop, sh = el.scrollHeight;
+    el.innerHTML = L.map(l => '<div' + (l.s ? ' class="sale"' : '') + '>' + l.t + '</div>').join('');
+    if (st > 0)
+        el.scrollTop = st + (el.scrollHeight - sh);
+}
+
+/** 画面全体の描画 */
+/** 閉店後以外は、お金の欄を無効化してグレーアウトする（？アイコンは押せるまま） */
+const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g, 'class="card off"').replace(/<(input|select)/g, '<$1 disabled').replace(/<button data-a="sv/g, '<button disabled data-a="sv').replace(/<button class="alt" data-a="sv/g, '<button class="alt" disabled data-a="sv');
+
+function render() {
+    const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
+    byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
+    byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
+    byId('dt').textContent = state.day === 0 ? '開業前' : sea.e + sea.n + ' / ' + calOf(d) + '月' + ((d - 1) % MD + 1) + '日目（通算' + m + 'ヶ月' + state.day + '日）' + we.e + we.n;
+    byId('sp').innerHTML = Object.keys(PHN).map(k => '<span class="' + (state.phase === k ? 'on' : '') + '">' + PHN[k] + '</span>').join('');
+    byId('gl').innerHTML = state.boost > 0 ? '<span class="boost">🔥ブースト中 残り' + state.boost + '秒</span>' : Math.floor(state.gauge) + ' / 100';
+    byId('gb').style.width = state.gauge + '%';
+    const pw = pwr(state.day);
+    byId('pw').textContent = state.day === 0 ? '' : '購買力×' + (Math.round(pw * 1000) / 1000);
+    byId('pw').title = '季節×' + sea.p + ' 天気×' + we.p;
+    const q = quota();
+    byId('ql').textContent = '¥' + fmt(state.mSales) + ' / ¥' + fmt(q);
+    byId('qi').style.width = Math.min(100, state.mSales / q * 100) + '%';
+    byId('qb').className = 'bar' + (state.mSales >= q ? '' : ' low');
+    const left = state.day === 0 ? MD : MD - ((d - 1) % MD) - 1;
+    byId('fe').textContent = 'テナント料 月¥' + fmt(tenantFee()) + '（棚' + state.slots + '台）' + (loanPay() ? ' / 返済 月¥' + fmt(loanPay()) : '') + (state.mWage > 0 ? ' / 給料未払 ¥' + fmt(state.mWage) : '');
+    byId('qd').textContent = (left === 0 ? '本日が月末' : '月末まであと' + left + '日') + ' / 棚増設チェック' + (state.slotQ > 0 ? '済' : 'あと' + (3 - (Math.floor((d - 1) / MD) % 3)) + 'ヶ月');
+    let a = '';
+    if (state.over)
+        a = '<div class="card over">' + (state.overMsg || '倒産しました。') + '</div><button class="big" data-a="ovshow">📣 結果を見る・シェアする</button>';
+    else if (state.phase === 'prep')
+        a = '<button class="big" data-a="fillall"' + (ill() ? ' disabled' : '') + ' style="background:transparent;color:var(--ink);border:1.5px solid var(--ink)">一括満タン（所持金の範囲で）</button><button class="big" data-a="open">開店する</button>';
+    else if (state.phase === 'open')
+        a = state.kama ? '<div class="hint">⛄ かまくら作り中（12:00から甘酒ボーナス）</div>' : '';
+    else
+        a = '<button class="big" data-a="next">' + (state.day === 0 ? '開業する' : state.hol ? '店休日を過ごす' : '翌日へ進む') + '</button>';
+    byId('act').innerHTML = a;
+    // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
+    byId('clk').hidden = state.phase !== 'open' || state.over;
+    if (state.phase === 'open')
+        byId('clk').innerHTML = '<span class="clkt">🕘 ' + (state.openH + Math.floor(state.t / 5)) + ':' + String((state.t % 5) * 12).padStart(2, '0') + '</span><span class="clkr">' + (state.paused ? '⏸ 一時停止中 / ' : '営業中 ') + state.openH + ':00〜' + state.closeH + ':00</span>';
+    syncOver();
+    syncSave();
+    syncAma();
+    syncLog();
+    let pn = '';
+    if (state.evs.length)
+        pn += '<div class="card"><b>本日のできごと</b>' + state.evs.map(t => '<div class="meta">' + t + '</div>').join('') + '</div>';
+    const tags = [state.fem > 0 ? '🍌女性客×5（あと' + state.fem + '日）' : '', state.rb > 0 ? '🍙おにぎりブーム（あと' + state.rb + '日）' : '', state.flame > 0 ? '🔥炎上中（あと' + state.flame + '日）' : ''].filter(Boolean);
+    if (tags.length)
+        pn += '<div class="card meta">' + tags.join('　') + '</div>';
+    if (state.boom > 0 || state.pays.length)
+        pn += '<div class="card meta">' + (state.boom > 0 ? '🎉 ブーム中（あと' + state.boom + '日）：まとめ買い増　' : '') + (state.pays.length ? '💳 ' + state.pays.join('・') + '（客足×' + Math.round(Math.pow(1.2, state.pays.length) * 100) / 100 + '）' : '') + '</div>';
+    if (state.phase === 'closed' && !state.over) {
+        const nd = state.day + 1, nw = WE[state.next], ns = SEA[seaOf(nd)];
+        if (state.day > 0)
+            pn += '<div class="card"><b>本日の結果</b><div class="meta">売上 ¥' + fmt(state.dRev) + ' / 販売 ' + state.dSold + '個 / 取り逃がし ' + state.dMiss + '人 / 来店 男' + (state.dM || 0) + '・女' + (state.dF || 0) + (state.dWage ? ' / 給料 ¥' + fmt(state.dWage) : '') + '</div></div>';
+        pn += '<div class="card fc"><span class="emo">' + nw.e + '</span><div style="flex:1"><b>翌日の天気予報：' + nw.n + '</b><div class="meta">' + ns.e + ns.n + ' ／ 購買力 ×' + (Math.round(ns.p * nw.p * 1000) / 1000) + (nd % MD === 0 ? ' ／ 明日は月末（テナント料¥' + fmt(tenantFee()) + '）' : '') + '</div>' + (state.warn && state.warn.snow ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 大雪の予報（交通マヒの恐れ・信頼度約80%）</div>' : '') + (state.warn && state.warn.typ ? '<div class="meta" style="color:var(--red);font-weight:700">⚠ 台風の予報（浸水の恐れ・信頼度約80%）</div>' : '') + '</div></div>';
+        if (state.warn && (state.warn.typ || state.warn.snow)) {
+            const k = state.warn.typ ? 'typ' : 'snow', on = state.prep && state.prep[k];
+            pn += '<div class="card up"><div class="tx"><div class="nm">' + (k === 'typ' ? '🧱 土嚢を積んで耐える' + helpIcon('sandbag') : '⛄ かまくらを作る' + helpIcon('kama')) + '</div><div class="meta">無料・成功率55%</div></div><button class="' + (on ? '' : 'alt') + '" data-a="prep" data-v="' + k + '" style="flex:0 0 96px">' + (on ? '準備済み✓' : '備える') + '</button></div>';
+        }
+        pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
+        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">¥' + fmt(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ¥' + fmt(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済¥' + fmt(state.ln.a * (1 + intr(state.ln.m))) + '（月¥' + fmt(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月¥' + fmt(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
+    }
+    byId('hp').textContent = Math.floor(state.happy) + '%';
+    byId('hb').style.width = state.happy + '%';
+    byId('hb').parentNode.className = 'bar' + (state.happy < 15 ? ' low' : '');
+    byId('hs').textContent = state.sick > 0 ? '🤒 病気中（復帰まであと' + state.sick + '日）' + (state.clerk > 0 ? '・店員が営業中（給料150%）' : '・強制休業') : '15%未満で病気になります';
+    byId('hs').textContent = state.dep > 0 ? '😔 うつ病で休養中（あと' + state.dep + '日）補充・投資不可' + (state.clerk > 0 ? '・店員が営業中（給料150%）' : '・休業') : state.sick > 0 ? '🤒 病気中（あと' + state.sick + '日）補充・投資不可' + (state.clerk > 0 ? '・店員が営業中（給料150%）' : '・休業') : (state.low || 0) >= 7 ? '⚠ 幸福度が20%未満の日が' + state.low + '日続いています' : '';
+    {
+        const e = eff();
+        if (state.clerk > 0 && e < 0)
+            byId('hs').textContent += ' 😡負の感情モード（店員Lv' + e + '・盗難中）休業か投資で回復';
+        else if (state.mbDay && state.day === state.mbDay && state.clerk > 0)
+            byId('hs').textContent += ' 💪士気アップ（店員+1Lv・本日のみ）';
+        else if ((state.dn || 0) > 0)
+            byId('hs').textContent += ' 😞士気低下（-' + state.dn + 'Lv）休業で1Lv/日回復';
+    }
+    byId('pn').innerHTML = pn;
+    if (!dragMg)
+        byId('mnyA').innerHTML = '';
+    if (!dragMg)
+        byId('mg').innerHTML = !state.over ? lockMoney('<div class="card"><div class="row"><b>粗利率の設定' + helpIcon('mg') + '</b><span id="mgv"></span></div><input type="range" min="10" max="70" step="1" value="' + state.margin + '" data-a="mg" style="width:100%"></div>' + '<div class="card"><div class="row"><b>自分の月収' + helpIcon('sal') + '</b><span id="slv"></span></div><input type="range" min="0" max="600000" step="10000" value="' + state.sal + '" data-a="sal" style="width:100%"></div><div class="card"><b>営業時間</b>' + helpIcon('hours') + '<div class="row" style="margin-top:6px"><select data-a="oh">' + hrs(5, 22, state.openH) + '</select><select data-a="ch">' + hrs(6, 23, state.closeH) + '</select></div></div>' + '<div class="card"><div class="row"><b>🏦 預金' + helpIcon('sv') + '</b><span>残高 ¥' + fmt(state.sv || 0) + '</span></div><input type="range" min="0" max="' + Math.max(Math.floor(Math.max(0, state.money) / 1000) * 1000, state.sv || 0) + '" step="1000" value="' + (state.svs || 0) + '" data-a="svx" style="width:100%"><div class="row"><span id="svv"></span></div><div class="btns"><button data-a="svin">預ける</button><button class="alt" data-a="svout">引き出す</button></div></div>') : '';
+    const mv = byId('mgv');
+    if (mv)
+        mv.textContent = state.margin + '%（来店数 ×' + Math.round(demandFactor() * 100) / 100 + '）';
+    const sv = byId('slv');
+    if (sv)
+        sv.textContent = '¥' + fmt(state.sal) + (state.sal >= 330000 ? '（中央値以上）' : '（中央値未満）');
+    {
+        const dd = difficulty();
+        [['[data-a="mg"]', dd.full], ['[data-a="sal"]', dd.sal], ['[data-a="la"]', dd.full]].forEach(([q, v]) => {
+            const e = document.querySelector(q);
+            if (e && !v)
+                e.closest('.card').style.display = 'none';
+        });
+        byId('dt').textContent = dd.n + ' / ' + byId('dt').textContent;
+        byId('dfc').style.display = state.diff ? 'none' : 'block';
+    }
+    {
+        const sw = byId('svv');
+        if (sw)
+            sw.textContent = '金額 ¥' + fmt(state.svs || 0);
+        const A = byId('mnyA'), B = byId('mnyB');
+        B.innerHTML = '';
+        const lc = document.querySelector('[data-a="la"]');
+        if (lc)
+            B.appendChild(lc.closest('.card'));
+        if (!dragMg) {
+            A.innerHTML = '';
+            ['mg', 'sal', 'svx'].forEach(k => {
+                const e = document.querySelector('[data-a="' + k + '"]');
+                if (e)
+                    A.appendChild(e.closest('.card'));
+            });
+            if (A.children.length && state.phase !== 'closed')
+                A.insertAdjacentHTML('afterbegin', '<div class="meta svwarn">粗利率・月収・預金は、閉店後に変更できます。</div>');
+        }
+        byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
+        byId('ph').textContent = PHN[state.phase] || '';
+        // タブの右端に一時停止と倍速（v1.4.0〜。倍速は押すたび×1→×2→×4→×8）
+        byId('tabs').innerHTML = ['🏪 営業', '🛒 投資', '💰 お金', '⚙ 設定'].map((t, i) => '<button class="' + ((state.tab || 0) === i ? '' : 'alt') + '" data-a="tab" data-v="' + i + '">' + t + '</button>').join('') +
+            '<span class="spd"><button class="' + (state.paused ? '' : 'alt') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? '' : 'alt') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button></span>';
+        [0, 1, 2, 3].forEach(i => {
+            const e = byId('p' + i);
+            if (e)
+                e.style.display = (state.tab || 0) === i ? '' : 'none';
+        });
+    }
+    const can = state.phase !== 'closed' && !state.over && !ill();
+    byId('sh').innerHTML = state.shelf.map((s, i) => {
+        if (!s)
+            return '<div class="shelf empty">空き棚<br>新商品を扱うと並びます</div>';
+        const p = PRODUCTS[s.id], dis = (!can || state.money < p.c || s.st >= state.cap) ? ' disabled' : '';
+        return '<div class="shelf"><div class="top"><span class="emo">' + p.e + '</span><div><div class="nm">' + p.n + (state.up[s.id] ? ' <small>Lv' + state.up[s.id] + '</small>' : '') + '</div><span class="price">¥' + fmt(priceOf(p)) + '</span></div></div>' +
+            '<div class="bar' + (s.st <= Math.ceil(state.cap * .2) ? ' low' : '') + '"><i style="width:' + (s.st / state.cap * 100) + '%"></i></div>' +
+            '<div class="cnt"><span>' + s.st + ' / ' + state.cap + '個</span><span>原価 ¥' + fmt(p.c) + '</span></div>' +
+            '<div class="btns"><button class="alt" data-a="r" data-i="' + i + '" data-n="5"' + dis + '>+5</button><button data-a="r" data-i="' + i + '" data-n="999"' + dis + '>満タン</button></div></div>';
+    }).join('');
+    const ok = state.phase === 'closed' && !state.over && !ill();
+    const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : '¥' + fmt(price)) + '</button></div>';
+    const R = [];
+    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < PRODUCTS.length ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月¥' + fmt(tenantFee()) + ' → <b>月¥' + fmt(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
+    R.push(row('cap', '', '📦 棚の容量アップ（' + state.cap + '個）', '次の容量: ' + (CAPS[CAPS.indexOf(state.cap) + 1] || '最大') + '個', cost.cap(), state.cap >= MAX.cap));
+    R.push(row('ad', '', '📣 広告（Lv.' + state.ad + '）', '来店数とまとめ買いが増える', cost.ad(), state.ad >= MAX.ad));
+    R.push(row('clerk', '', '🧑‍🍳 店員（' + state.clerk + '人）', '営業中、毎秒ランダムな棚へ自動補充（補充量は能力で上がる）。時給¥' + fmt(WAGE) + '（〜7時・22時〜は125%）・給料は月末払い', cost.clerk(), state.clerk >= MAX.clerk));
+    PRODUCTS.forEach((p, id) => {
+        if (false)
+            R.push(row('new', id, p.e + ' ' + p.n + 'を扱う', '原価¥' + fmt(p.c) + ' → 売値¥' + fmt(priceOf(p)) + '（利益¥' + fmt(priceOf(p) - p.c) + '）', p.u, false));
+    });
+    const SECR = [];
+    SECR.push(row('seclv', '', '🛡 セキュリティ Lv.' + (state.sl || 0) + '/10' + (state.sl ? ' ' + SECN[state.sl - 1] : ''), (state.sl >= 10 ? '最大レベル' : '次: ' + SECN[state.sl || 0] + '（' + SECX[state.sl || 0] + '）'), cost.seclv(), (state.sl || 0) >= 10));
+    SECR.push(row('secbuy', '', '🛡 ストックを買う（' + (state.ss || 0) + '/5）', (state.sl > 0 ? SECN[state.sl - 1] + '：' + SECX[state.sl - 1] + '。破損まで' + ((state.ss || 0) > 0 ? Math.max(0, (state.sb || 0) - state.day) + '日' : (SECD[state.sl - 1] / 7) + 'ヶ月') + '（盗難1回ごとに1つ消費）' : 'まずレベルを上げてください'), cost.secbuy(), !(state.sl > 0) ? 1 : (state.ss || 0) >= 5));
+    R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）', '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
+    R.push(...SECR);
+    PRODUCTS.forEach((p, i) => {
+        if (!state.own.includes(i))
+            return;
+        const L = state.up[i];
+        let d, pc = 0, dn = false;
+        if (L >= 7) {
+            d = '最大レベル';
+            dn = true;
+        }
+        else if (state.sd[i] < TH[L]) {
+            d = '解放まであと' + (TH[L] - state.sd[i]) + '個販売 → ' + NM[i][L];
+            dn = 1;
+        }
+        else {
+            pc = upCost(i, L);
+            d = '→ ' + NM[i][L] + '（原価・売価アップ）';
+        }
+        R.push(row('upg', i, '⬆ ' + p.e + ' ' + p.n + ' Lv.' + L + '/7', d, pc, dn));
+    });
+    const ib = investBlock();
+    byId('up').innerHTML = (ib ? '<div class="meta svwarn ivb">⚠ ' + ib + '</div>' : '') + R.join('');
+}
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('[data-a="help"]'))
+        hideHelp();
+}, true);
+document.addEventListener('scroll', hideHelp, true);
+addEventListener('resize', hideHelp);
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'help') {
+        e.preventDefault();
+        showHelp(b);
+        return;
+    }
+    if (a === 'r')
+        restock(+b.dataset.i, +b.dataset.n);
+    if (a === 'b')
+        buy(b.dataset.k, b.dataset.id === '' ? null : +b.dataset.id);
+    if (a === 'diff')
+        newGame(b.dataset.v);
+    if (a === 'tab') {
+        state.tab = +b.dataset.v;
+        render();
+        save();
+        byId('scr').scrollTop = 0;
+    }
+    if (a === 'svin')
+        svMove(1);
+    if (a === 'svout')
+        svMove(-1);
+    if (a === 'pause') {
+        state.paused = !state.paused;
+        render();
+    }
+    if (a === 'fillall')
+        fillAll();
+    if (a === 'ovshow' || a === 'ovclose') {
+        state.ovx = a === 'ovclose';
+        render();
+        save();
+    }
+    if (a === 'restart')
+        restart();
+    if (a === 'fsave')
+        exportSave();
+    if (a === 'fload') {
+        svMsg = null;
+        byId('svf').click();
+    }
+    if (a === 'fok')
+        applyLoad();
+    if (a === 'ccopy')
+        makeCode();
+    if (a === 'cin' || a === 'cno') {
+        svIn = a === 'cin';
+        svCode = '';
+        svMsg = null;
+        syncSave();
+        const t = byId('svci');
+        if (t)
+            t.focus();
+    }
+    if (a === 'cread')
+        readCode();
+    if (a === 'fno') {
+        svPend = null;
+        svMsg = null;
+        syncSave();
+    }
+    if (a === 'share')
+        shareResult();
+    if (a === 'shimg')
+        saveResultImage();
+    if (a === 'shcopy')
+        copyShareText(b);
+    if (a === 'spd' || a === 'spdc') {
+        const S = [1, 2, 4, 8];
+        state.spd = a === 'spd' ? +b.dataset.v : S[(S.indexOf(state.spd || 1) + 1) % S.length];
+        render();
+        save();
+    }
+    if (a === 'loan')
+        takeLoan();
+    if (a === 'open')
+        openShop();
+    if (a === 'next')
+        nextDay();
+    if (a === 'prep') {
+        state.prep = state.prep || { typ: false, snow: false };
+        state.prep[b.dataset.v] = !state.prep[b.dataset.v];
+        render();
+        save();
+    }
+    if (a === 'amaclose')
+        amaClose();
+    if (a === 'hol') {
+        state.hol = !state.hol;
+        render();
+        save();
+    }
+    if (a === 'reset') {
+        if (!window.rs) {
+            window.rs = 1;
+            b.textContent = '⚠ もう一度押すとリセットします';
+            b.classList.add('arm');
+            setTimeout(() => {
+                window.rs = 0;
+                b.textContent = '最初からやり直す';
+                b.classList.remove('arm');
+            }, 4000);
+        }
+        else {
+            window.rs = 0;
+            b.textContent = '最初からやり直す';
+            b.classList.remove('arm');
+            restart();
+        }
+    }
+});
+
+document.addEventListener('input', e => {
+    const a = e.target.dataset.a;
+    if (a === 'mg') {
+        dragMg = true;
+        state.margin = +e.target.value;
+        render();
+    }
+    if (a === 'sal') {
+        dragMg = true;
+        state.sal = +e.target.value;
+        render();
+    }
+    if (a === 'svx') {
+        dragMg = true;
+        state.svs = +e.target.value;
+        render();
+    }
+});
+
+document.addEventListener('change', e => {
+    const t = e.target, a = t.dataset.a;
+    if (t.id === 'svf') {
+        importFile(t.files && t.files[0]);
+        t.value = '';
+    }
+    if (a === 'mg') {
+        dragMg = false;
+        state.margin = +t.value;
+        render();
+        save();
+    }
+    if (a === 'sal') {
+        dragMg = false;
+        state.sal = +t.value;
+        render();
+        save();
+    }
+    if (a === 'svx') {
+        dragMg = false;
+        state.svs = +t.value;
+        render();
+        save();
+    }
+    if (a === 'oh') {
+        state.openH = +t.value;
+        if (state.closeH <= state.openH)
+            state.closeH = state.openH + 1;
+        render();
+        save();
+    }
+    if (a === 'ch') {
+        state.closeH = +t.value;
+        if (state.closeH <= state.openH)
+            state.openH = state.closeH - 1;
+        render();
+        save();
+    }
+    if (a === 'la') {
+        state.ln.a = +t.value;
+        if (state.ln.a < 1500000 && state.ln.m > 12)
+            state.ln.m = 12;
+        render();
+    }
+    if (a === 'lm') {
+        state.ln.m = +t.value;
+        render();
+    }
+});
+
+/** 画面の組み替え（固定の上部・タブ・スクロール領域）。起動時に1回だけ呼ぶ */
+function initLayout() {
+    const tp = document.createElement('div');
+    tp.id = 'top';
+    document.querySelector('.awning').after(tp);
+    const hr = document.createElement('div');
+    // 1行目に所持金と実績のバッジ（v1.4.0〜）、2行目に難易度・季節・日付・天気（右揃え。v1.3.0〜）
+    hr.style.cssText = 'display:flex;flex-direction:column;align-items:stretch;gap:0';
+    byId('dt').style.cssText = 'font-size:12px;text-align:right';
+    const mr = document.createElement('div');
+    mr.className = 'mrow';
+    mr.append(byId('m'));
+    mr.insertAdjacentHTML('beforeend', '<button class="alt achb" id="achb" data-a="achopen" aria-label="実績"></button>');
+    hr.append(mr, byId('dt'));
+    tp.append(hr);
+    const dd = byId('px').closest('details');
+    dd.style.margin = '4px 0';
+    tp.append(dd);
+    byId('sd').remove();
+    const tb = document.createElement('div');
+    tb.id = 'tabs';
+    tb.className = 'sd';
+    tp.append(tb);
+    const mk = i => {
+        const d = document.createElement('div');
+        d.id = 'p' + i;
+        return d;
+    }, P0 = mk(0), P1 = mk(1), P2 = mk(2), P3 = mk(3);
+    P0.insertAdjacentHTML('afterbegin', '<div class="clk" id="clk" hidden></div>');
+    [byId('gl').closest('.card'), byId('act'), byId('lg'), byId('pn'), byId('sh').previousElementSibling, byId('sh')].forEach(e => P0.append(e));
+    P1.append(byId('up').previousElementSibling, byId('up'));
+    const my = byId('mny');
+    my.open = true;
+    P2.append(my);
+    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
+    const sc = document.createElement('div');
+    sc.id = 'scr';
+    sc.append(P0, P1, P2, P3);
+    tp.after(sc);
+}
+</script>
+<script>
+/**
+ * achv.js — 実績（v1.3.0〜）。
+ *
+ * 条件を満たすと解除される。所持金の行のバッジ「🏅 解除数/18」（#achb）をタップすると一覧のポップアップ（#achm）が開く（v1.4.0〜。
+ * それまでは設定タブに置いていた）。解除の瞬間は画面下にお知らせ（CG.toast）。
+ * 一覧の下の「実績をリセット」で、ページ内の確認画面を出してから ACH_KEY を消す（v1.4.0〜）。
+ * 保存はゲームとは別の localStorage（ACH_KEY）なので、最初からやり直しても・倒産しても消えない。
+ *   形：{ <実績のid>: { at: 解除した日時(ISO), diff: 難易度のキー } }
+ * 判定（achCheck）は閉店のあと（endDay）と預金の操作のあと（svMove）。ほかの関数を包むだけで、ゲームの動きは変えない。
+ * 1年＝12ヶ月＝84日（1ヶ月＝MD日）。
+ * ui.js の後、debuglog.js の前に読み込むこと。
+ */
+
+const ACH_KEY = 'shop-sim-achv';
+
+/** 1年の日数（12ヶ月） */
+const YEAR = MD * 12;
+
+/** 金額を「1億」「1000億」「1兆」の形にする */
+const achYen = v => v >= 1e12 ? (v / 1e12) + '兆' : v >= 1e8 ? (v / 1e8) + '億' : (v / 1e4) + '万';
+
+/** 期間（日数）を「6ヶ月」「10年」の形にする */
+const achTerm = d => d % YEAR === 0 ? (d / YEAR) + '年' : (d / MD) + 'ヶ月';
+
+/**
+ * 実績の一覧。g：見出し、v()：いまの値、n：目標、ok()：追加の条件（なければ値が目標以上で解除）
+ * id は保存に使うので、公開後は変えない
+ */
+const ACH_GROUPS = [
+    { g: '💴 累計売上', e: '💴', v: () => state.tot || 0, ns: [1e8, 1e9, 1e10, 1e11, 1e12], id: n => 'tot' + n, name: n => '累計売上 ' + achYen(n), fmt: v => '¥' + fmt(v) },
+    { g: '🏪 営業', e: '🏪', v: () => state.day || 0, ns: [10 * YEAR, 50 * YEAR, 100 * YEAR], id: n => 'day' + n, name: n => '営業 ' + achTerm(n), fmt: v => '通算' + fmt(v) + '日' },
+    { g: '🏦 貯金', e: '🏦', v: () => state.sv || 0, ns: [1e7, 1e8, 1e9, 1e10, 1e11, 1e12], id: n => 'sv' + n, name: n => '貯金 ' + achYen(n), fmt: v => '預金 ¥' + fmt(v) },
+    { g: '🔥 インフェルノ', e: '🔥', v: () => state.diff === 'inferno' && !state.over ? state.day || 0 : 0, ns: [6 * MD, YEAR, 5 * YEAR, 10 * YEAR], id: n => 'inf' + n, name: n => 'インフェルノで ' + achTerm(n), fmt: v => state.diff === 'inferno' ? '通算' + fmt(v) + '日' : 'インフェルノで遊ぶと進みます' }
+];
+
+/** すべての実績（並び順どおり） */
+const ACHS = ACH_GROUPS.flatMap(G => G.ns.map(n => ({ id: G.id(n), G, n, name: G.name(n) })));
+
+/** 解除済み */
+let achGot = CG.ls.getJSON(ACH_KEY, {});
+if (!achGot || typeof achGot !== 'object' || Array.isArray(achGot))
+    achGot = {};
+
+let achSig = '';
+
+/** ポップアップを開いているか／リセットの確認画面を出しているか */
+let achOpen = false, achAsk = false;
+
+/** 条件を満たしたものを解除する（新しく解除したものの一覧を返す） */
+function achCheck() {
+    if (!state || !state.diff)
+        return [];
+    const nw = [];
+    ACHS.forEach(a => {
+        if (achGot[a.id] || a.G.v() < a.n)
+            return;
+        achGot[a.id] = { at: new Date().toISOString(), diff: state.diff };
+        nw.push(a);
+    });
+    if (nw.length) {
+        CG.ls.setJSON(ACH_KEY, achGot);
+        CG.toast('🏅 実績解除：' + nw.map(a => a.name).join('・'), 3500);
+        if (typeof dbgAdd === 'function')
+            dbgAdd('achv', { got: nw.map(a => a.id) });
+        syncAchBadge();
+        syncAch(true);
+    }
+    return nw;
+}
+
+/** 所持金の行のバッジ（解除数） */
+function syncAchBadge() {
+    const b = byId('achb');
+    if (!b)
+        return;
+    const t = '🏅 ' + ACHS.filter(a => achGot[a.id]).length + '/' + ACHS.length;
+    if (b.textContent !== t)
+        b.textContent = t;
+}
+
+/** 実績のポップアップ（開いているときだけ、内容が変わったら作り直す） */
+function syncAch(force) {
+    let el = byId('achm');
+    if (!achOpen) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'achm';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                achShow(false);
+        });
+        document.body.appendChild(el);
+    }
+    el.hidden = false;
+    const got = ACHS.filter(a => achGot[a.id]).length;
+    const sig = got + '|' + achAsk + '|' + state.day + '|' + Math.floor((state.tot || 0) / 1e6) + '|' + Math.floor((state.sv || 0) / 1e5);
+    if (!force && sig === achSig && el.innerHTML)
+        return;
+    achSig = sig;
+    const box = el.querySelector('.achbody'), st = box ? box.scrollTop : 0;
+    let h = '<div class="ovbox achbox"><div class="achtop"><b>🏅 実績' + helpIcon('achv') + '</b><span class="achn">' + got + ' / ' + ACHS.length + '</span><button class="alt achx" data-a="achclose" aria-label="閉じる">✕</button></div><div class="achbody">';
+    ACH_GROUPS.forEach(G => {
+        const cur = G.v();
+        h += '<div class="achg"><div class="achgh"><span>' + G.g + '</span><span class="meta">' + G.fmt(cur) + '</span></div><div class="achl">';
+        G.ns.forEach(n => {
+            const a = ACHS.find(x => x.id === G.id(n)), r = achGot[a.id];
+            if (r) {
+                const d = new Date(r.at), df = DF[r.diff];
+                h += '<div class="ach on" title="' + (isNaN(d) ? '' : d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate()) + (df ? '・' + df.n : '') + '">' +
+                    '<span class="achi">🏅</span><span class="acht">' + a.name + '</span><span class="achd">' + (isNaN(d) ? '' : (d.getMonth() + 1) + '/' + d.getDate()) + (df ? ' ' + df.n : '') + '</span></div>';
+            }
+            else {
+                const pc = Math.max(0, Math.min(100, cur / n * 100));
+                h += '<div class="ach"><span class="achi">🔒</span><span class="acht">' + a.name + '</span><span class="achp"><i style="width:' + pc + '%"></i></span></div>';
+            }
+        });
+        h += '</div></div>';
+    });
+    h += '<div class="meta" style="margin-top:10px">実績は最初からやり直しても消えません。</div>';
+    if (achAsk)
+        h += '<div class="card rst achask"><b>⚠ 本当に消しますか？</b><div class="meta">解除した実績' + got + '個がすべて消え、元に戻せません。今のお店の数字がすでに条件を満たしている実績は、次の閉店のあとにもう一度解除されます。</div><div class="btns"><button class="rstb" data-a="achdel">消す</button><button class="alt" data-a="achno">やめる</button></div></div>';
+    else
+        h += '<button class="alt achr" data-a="achask"' + (got ? '' : ' disabled') + '>🗑 実績をリセット</button>';
+    h += '</div></div>';
+    el.innerHTML = h;
+    const nb = el.querySelector('.achbody');
+    if (nb)
+        nb.scrollTop = achAsk ? nb.scrollHeight : st;
+}
+
+/** ポップアップを開く・閉じる */
+function achShow(on) {
+    achOpen = on;
+    achAsk = false;
+    achSig = '';
+    if (!on)
+        hideHelp();
+    syncAch(true);
+}
+
+/** 実績をすべて消す（確認画面の「消す」） */
+function achReset() {
+    achGot = {};
+    CG.ls.setJSON(ACH_KEY, achGot);
+    achAsk = false;
+    if (typeof dbgAdd === 'function')
+        dbgAdd('achv', { reset: true });
+    CG.toast('🗑 実績をリセットしました', 2500);
+    syncAchBadge();
+    syncAch(true);
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'achopen')
+        achShow(true);
+    if (a === 'achclose')
+        achShow(false);
+    if (a === 'achask' || a === 'achno') {
+        achAsk = a === 'achask';
+        syncAch(true);
+    }
+    if (a === 'achdel')
+        achReset();
+});
+
+// 閉店のあと・預金の操作のあとに判定する
+['endDay', 'svMove'].forEach(name => {
+    const f = window[name];
+    window[name] = function () {
+        const r = f.apply(this, arguments);
+        achCheck();
+        return r;
+    };
+});
+
+// 描画のたびにバッジをそろえる（ポップアップは開いているときだけ中身を作り直す）
+{
+    const r0 = render;
+    window.render = function () {
+        r0.apply(this, arguments);
+        syncAchBadge();
+        syncAch();
+    };
+}
+</script>
+<script>
+/**
+ * debuglog.js — バグ調査用のデバッグログ（記録と送信）。
+ *
+ * 記録・エラーの捕捉・送信は共通部品 common/v1/debug.js（CG.debug）。ここは「何を記録するか」と送信欄の見た目だけ。
+ * 記録するもの（localStorage の DBG_KEY に直近 DBG_MAX 件。再読み込みしても残る）：
+ *   - 操作（投資・融資・預金・開店・翌日・閉店・甘酒など）と、その前後のフェーズ・所持金
+ *   - 投資ボタンが無視されたときの理由（investBlock）
+ *   - イベントの文言（addEvent）
+ *   - JavaScript のエラー（CG.debug が自動で記録）
+ * 送信：「⚙設定」タブの「🐞 デバッグログを送る」。サーバー（worker/index.js の /shop-sim/debug）が
+ *   D1（chikuwa-debug の debug_logs）に保存し、受付番号を返す。送る中身は state 全体＋上の記録。
+ * ほかのファイルの関数を「包んで」記録するだけなので、ゲームの動きは変えない。
+ * ui.js の後、main.js の前に読み込むこと。
+ */
+
+const DBG_KEY = 'shop-sim-debuglog';
+const DBG_MAX = 300;
+
+/** 送信欄の状態（null＝未送信、{busy}・{ok, code}・{ok:false, t}） */
+let dbgMsg = null;
+let dbgSig = '';
+
+/** いまの状態の要約（1件の記録に付ける） */
+const dbgSnap = () => typeof state !== 'undefined' && state ? {
+    d: state.day, ph: state.phase, m: Math.round(state.money), sk: state.sick || 0, dp: state.dep || 0,
+    ov: !!state.over, km: state.kama || 0, cl: state.clean || 0, sl: state.slots
+} : {};
+
+CG.debug.init({ key: DBG_KEY, max: DBG_MAX, snap: dbgSnap });
+
+/** 1件記録する（ほかのファイルから呼んでもよい） */
+const dbgAdd = (ev, extra) => CG.debug.add(ev, extra);
+
+/** 関数を包んで、前後のフェーズ・所持金の変化を記録する。why：お金が動かなかったら「無視された理由」も残す */
+function dbgWrap(name, opt) {
+    CG.debug.wrap(name, {
+        before: () => ({ ph0: state && state.phase, m0: state && state.money, l0: state && state.log[0] }),
+        after: b => {
+            const x = { ph0: b.ph0 };
+            if (state && state.money !== b.m0)
+                x.dm = Math.round(state.money - b.m0);
+            else if (opt && opt.why)
+                x.ign = investBlock() || 'お金不足か上限';
+            if (state && state.log[0] !== b.l0)
+                x.lg = state.log[0];
+            return x;
+        }
+    });
+}
+
+['buy', 'upgrade', 'takeLoan', 'svMove'].forEach(n => dbgWrap(n, { why: true }));
+['fillAll', 'openShop', 'nextDay', 'endDay', 'newGame', 'restart', 'applyLoad', 'amaStart', 'amaFinish', 'amaClose'].forEach(n => dbgWrap(n));
+{
+    const f = addEvent;
+    window.addEvent = function (t) {
+        dbgAdd('event', { lg: t });
+        return f.apply(this, arguments);
+    };
+}
+
+/** 送信する */
+async function dbgSend() {
+    if (dbgMsg && dbgMsg.busy)
+        return;
+    const nt = byId('dbgn');
+    dbgMsg = { busy: true };
+    syncDbg();
+    const r = await CG.debug.send(nt ? nt.value : '', { why: investBlock(), state });
+    dbgMsg = r.ok ? { ok: true, code: r.code } : { ok: false, t: r.t };
+    if (r.ok) {
+        const n2 = byId('dbgn');
+        if (n2)
+            n2.value = '';
+    }
+    syncDbg(true);
+}
+
+/** 「設定」タブのデバッグログ欄（内容が変わったときだけ作り直す。入力中のメモは消さない） */
+function syncDbg(force) {
+    const el = byId('dbg');
+    if (!el)
+        return;
+    const sig = JSON.stringify(dbgMsg);
+    if (!force && sig === dbgSig && el.innerHTML)
+        return;
+    dbgSig = sig;
+    const old = byId('dbgn'), note = old ? old.value : '';
+    let h = '<b>🐞 デバッグ</b>' + helpIcon('dbg') +
+        '<textarea id="dbgn" rows="2" maxlength="500" placeholder="どんなことが起きた？（任意）例：2ヶ月目に投資ボタンが押せない" style="width:100%;box-sizing:border-box;margin:6px 0;font:inherit;font-size:13px;padding:6px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)"></textarea>' +
+        '<button data-a="dbgsend"' + (dbgMsg && dbgMsg.busy ? ' disabled' : '') + '>' + (dbgMsg && dbgMsg.busy ? '送信中…' : '🐞 デバッグログを送る') + '</button>' +
+        '<div class="meta">直近' + CG.debug.log.length + '件の操作と、いまのゲームの状態を開発者に送ります。</div>';
+    if (dbgMsg && dbgMsg.ok)
+        h += '<div class="meta svok">✅ 送信しました。受付番号 <b>' + dbgMsg.code + '</b>（開発者に伝えてください）</div>';
+    else if (dbgMsg && dbgMsg.t)
+        h += '<div class="meta svwarn">⚠ ' + dbgMsg.t + '</div>';
+    el.innerHTML = h;
+    byId('dbgn').value = note;
+}
+
+{
+    const r0 = render;
+    window.render = function () {
+        r0.apply(this, arguments);
+        syncDbg();
+    };
+}
+document.addEventListener('click', e => {
+    const b = e.target.closest('button[data-a="dbgsend"]');
+    if (b && !b.disabled)
+        dbgSend();
+});
+</script>
+<script>
+/**
+ * main.js — 起動処理（読み込みの最後に実行）。
+ */
+
+PRODUCTS.forEach(p => {
+    p.b = p.c;
+    p.n0 = p.n;
+});
+applyUp();
+if (!LA.includes(state.ln.a))
+    state.ln.a = LA[0];
+applyDiff();
+initLayout();
+byId('ver').innerHTML = 'ちいさなお店 v' + VERSION + '<br>' + COPYRIGHT;
+{
+    // 更新履歴（最新だけ表示し、過去の分は開いて見る）
+    const li = c => '<li><b>v' + c[0] + '</b>（' + c[1] + '）' + c[2] + '</li>';
+    byId('chg').innerHTML = '<b>📝 更新履歴</b><ul>' + li(CHANGES[0]) + '</ul>' +
+        (CHANGES.length > 1 ? '<details><summary>過去の更新履歴</summary><ul>' + CHANGES.slice(1).map(li).join('') + '</ul></details>' : '');
+}
+setInterval(() => {
+    fr++;
+    drawPx();
+}, 180);
+drawPx();
+fill();
+render();
+(function loop() {
+    tick();
+    setTimeout(loop, 1000 / (state.spd || 1));
+})();
+</script>
+</body>
+</html>
