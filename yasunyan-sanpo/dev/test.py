@@ -80,6 +80,14 @@ with sync_playwright() as p:
                 pg.wait_for_timeout(2500); pg.screenshot(path=f'{OUT}/{tag}-result-{label}.png')
                 st = pg.evaluate("[state, G_.rank, G_.key, G_.ok]")
                 print(label, st)
+            # 名前づけ：はじめて出た子には自動でダイアログ → 🎲 → 決定
+            pg.evaluate("showTitle()"); pg.evaluate("setGender('f'); SAVE.names = {}; startRun(); clearInterval(window.__bot); CFG.sChance = 0; got = {chikuwa: 6}; pts = 400; P.x = WORLD.goalX - 130")
+            pg.wait_for_timeout(8200); pg.screenshot(path=f'{OUT}/{tag}-naming.png')
+            assert pg.evaluate("!document.querySelector('#modal').hidden && !!document.querySelector('#nmIn')"), 'naming dialog'
+            pg.click('#nmDice'); nm = pg.evaluate("document.querySelector('#nmIn').value"); assert nm, 'dice'
+            pg.click('#nmOk'); pg.wait_for_timeout(300)
+            assert pg.evaluate("document.querySelector('#rName').textContent.includes(%r)" % nm), 'name shown'
+            print('named:', nm)
             pg.click('#btnZukan2'); pg.wait_for_timeout(500); pg.screenshot(path=f'{OUT}/{tag}-zukan.png')
             pg.click('#btnZclose'); pg.click('#btnShare'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-share.png')
             # --- おでん恋ン・食べる数・歩く速さ・能力 ---
@@ -97,7 +105,7 @@ with sync_playwright() as p:
             c1 = pg.evaluate("SAVE.coin"); print('coin', coin0, '->', c1, pg.evaluate("document.querySelector('#rCoin').innerText"))
             assert c1 - coin0 == 1300, 'coin gain A = 800 + 500'
             pg.screenshot(path=f'{OUT}/{tag}-result-coin.png')
-            pg.click('#btnTop'); pg.wait_for_timeout(300)
+            pg.evaluate("document.querySelector('#modal').hidden = true"); pg.click('#btnTop'); pg.wait_for_timeout(300)
             pg.evaluate("SAVE.coin = 100000; SAVE.abil = {}; writeSave(); refreshTitle()")
             pg.click('#btnAbil'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-abil.png')
             pg.click('#abBody button[data-a=dj]'); pg.wait_for_timeout(200)
@@ -138,20 +146,31 @@ with sync_playwright() as p:
                   got = {{chikuwa: 6, tamago: 2}}; pts = {800 if label in 'AS' else 600}; P.x = WORLD.goalX - 130""")
                 pg.wait_for_timeout(7800); pg.screenshot(path=f'{OUT}/{tag}-result-{gd}-{label}.png')
                 print(gd, label, pg.evaluate("[state, G_.rank, G_.key, G_.ok, G_.img.naturalWidth + 'x' + G_.img.naturalHeight]"))
-            pg.click('#btnZukan2'); pg.wait_for_timeout(600); pg.screenshot(path=f'{OUT}/{tag}-zukan-m.png')
+            pg.evaluate("document.querySelector('#modal').hidden = true"); pg.click('#btnZukan2'); pg.wait_for_timeout(600); pg.screenshot(path=f'{OUT}/{tag}-zukan-m.png')
             pg.click('#zF'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-zukan-f.png')
             pg.click('#zM'); pg.wait_for_timeout(200)
             pg.click('#zbody .slot[data-k]'); pg.wait_for_timeout(400); pg.screenshot(path=f'{OUT}/{tag}-detail.png')
             pg.click('#dFav'); pg.wait_for_timeout(300)
             print('fav:', pg.evaluate("SAVE.fav"))
-            pg.click('#zbody .slot.fav'); pg.wait_for_timeout(300); pg.click('#dTalk'); pg.wait_for_timeout(900)
+            pg.evaluate("SAVE.coin = 20000; writeSave()")
+            pg.click('#zbody .slot.fav'); pg.wait_for_timeout(300); pg.click('#dTalk'); pg.wait_for_timeout(500)
+            pg.screenshot(path=f'{OUT}/{tag}-meet-confirm.png')
+            c0 = pg.evaluate("SAVE.coin"); pg.click('#mGo'); pg.wait_for_timeout(900)
+            assert pg.evaluate("SAVE.coin") == c0 - 1500 and pg.evaluate("state") == 'talk', 'entrance fee'
             pg.screenshot(path=f'{OUT}/{tag}-talk0.png')
-            for i in range(3):   # 3 往復で会話がおわる
-                pg.click('#tChoices button:first-child'); pg.wait_for_timeout(500)
-                pg.click('#tChoices button:first-child'); pg.wait_for_timeout(400)
-                if i == 0: pg.screenshot(path=f'{OUT}/{tag}-talk1.png')
-            pg.screenshot(path=f'{OUT}/{tag}-talk2.png')
-            print('love:', pg.evaluate("[state, TK && TK.love, SAVE.love[SAVE.fav]]"))
+            pg.click('#tChoices button:nth-child(1)'); pg.wait_for_timeout(300)   # 話す
+            pg.click('#tChoices button:nth-child(1)'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-talk1.png')
+            pg.click('#tChoices button:nth-child(1)'); pg.wait_for_timeout(300)   # つづける
+            pg.click('#tChoices button:nth-child(2)'); pg.wait_for_timeout(300)   # 食事を頼む
+            c1 = pg.evaluate("SAVE.coin"); pg.click('#tChoices button:nth-child(1)'); pg.wait_for_timeout(300)
+            assert pg.evaluate("SAVE.coin") == c1 - 300, 'food price'
+            pg.click('#tChoices button:nth-child(1)'); pg.wait_for_timeout(300)
+            pg.click('#tChoices button:nth-child(3)'); pg.wait_for_timeout(300)   # チェキ
+            pg.click('#tChoices button:nth-child(2)'); pg.wait_for_timeout(500)   # ソロコメント付き
+            pg.screenshot(path=f'{OUT}/{tag}-cheki.png')
+            assert pg.evaluate("!!document.querySelector('#chDl') && document.querySelector('#chDl').href.startsWith('data:image/png')"), 'cheki'
+            pg.click('#mClose'); pg.wait_for_timeout(200)
+            print('meet:', pg.evaluate("[state, TK.used, TK.maxT, SAVE.rel[TK.rk].love, SAVE.rel[TK.rk].spent, SAVE.cheki]"))
             pg.click('#btnTback'); pg.wait_for_timeout(300)
             print('back:', pg.evaluate("[state, document.querySelector('#title').hidden]"))
             # 保存の読みもどし（お気に入り・性別・図鑑が残る）と、古い形式の図鑑キーの破棄

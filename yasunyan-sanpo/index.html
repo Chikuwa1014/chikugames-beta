@@ -122,6 +122,17 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #talk .love{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;font-weight:900;color:#FF9DBD}
 #talk .love i{display:block;flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
 #talk .love i em{display:block;height:100%;width:0;background:linear-gradient(90deg,#FF7BA8,#FFB3CC);transition:width .5s}
+#talk .tch.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#talk .tch.g2 button{text-align:center;padding:7px 6px;line-height:1.3}
+#talk .tch small{font-size:11px;color:#E9C98A;font-weight:700}
+#talk .tch button.dis{opacity:.5}
+#talk .ttx{white-space:pre-line}
+.rname{text-align:center;margin:0 0 2px;font-size:14px;font-weight:800;color:#7A4A10}
+.rname b{font-size:17px;color:var(--ink)}
+.rname .pen{border:0;background:transparent;color:#B07A1E;font-size:11px;font-weight:800;text-decoration:underline;padding:2px 4px}
+#modal .nrow{display:flex;gap:8px;margin:6px 0 4px}
+#modal .nrow input{flex:1;min-width:0;font:inherit;font-size:16px;font-weight:800;padding:9px 10px;border-radius:10px;border:1.5px solid #C9B58A;background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
+#modal .nrow .sm{font-size:20px;padding:4px 14px}
 #talk .tback{position:absolute;right:8px;top:44px}
 #talk .tbox{position:absolute;left:10px;right:10px;bottom:12px;padding:14px 14px 12px;border-radius:16px;background:rgba(18,10,6,.88);border:1px solid rgba(255,214,150,.35);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 #talk .tnm{position:absolute;left:12px;top:-13px;padding:3px 12px;border-radius:999px;background:var(--cho);font-size:12px;font-weight:900}
@@ -164,6 +175,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
   <div id="rank" hidden><small>スコアランク：</small><b id="rankLetter">D</b></div>
   <section id="result" class="panel" hidden>
     <div id="card">
+      <p class="rname" id="rName"></p>
       <div class="pts"><b id="rPts">0</b><span>ポイント</span></div>
       <div class="best" id="rBest"></div>
       <p class="rcoin" id="rCoin"></p>
@@ -201,7 +213,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
   </section>
 
   <section id="talk" class="panel" hidden>
-    <div class="tinfo"><b id="tName"></b><span id="tSub"></span><div class="love">♥<i><em id="tLove"></em></i><span id="tLoveN" style="margin:0;color:#FF9DBD"></span></div></div>
+    <div class="tinfo"><b id="tName"></b><span id="tSub"></span><div class="love">♥<i><em id="tLove"></em></i><span id="tLoveN" style="margin:0;color:#FF9DBD"></span></div><span id="tCoin" style="margin-top:3px"></span></div>
     <button class="sm tback" id="btnTback" type="button">もどる</button>
     <div class="tbox"><div class="tnm" id="tNm"></div><p class="ttx" id="tText"></p><div class="tch" id="tChoices"></div></div>
   </section>
@@ -218,11 +230,11 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.4.0';
+const VERSION = 'β0.5.0';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 // デバッグ（共通部品 debug.js）：操作とエラーを端末に残し、一時停止メニューから送る。送り先は worker の DEBUG_GAMES（β はまだ未設定。未実装タスク）
 CG.debug.init({ snap: () => ({ st: state, pts, x: Math.round(P.x), y: Math.round(P.y), sec: secIdx, g: SAVE.gender }) });
-['startRun', 'startGoal', 'showResult', 'hitObs', 'showTitle', 'setGender', 'openZukan', 'openTalk', 'pauseGame', 'resumeGame', 'restartGame', 'quitToTitle'].forEach(n => CG.debug.wrap(n));
+['startRun', 'startGoal', 'showResult', 'hitObs', 'showTitle', 'setGender', 'openZukan', 'meetConfirm', 'startVisit', 'endVisit', 'pauseGame', 'resumeGame', 'restartGame', 'quitToTitle'].forEach(n => CG.debug.wrap(n));
 
 /* ---------- 調整用の数値（バランスはここだけを直す） ---------- */
 const CFG = {
@@ -322,7 +334,7 @@ function chk(s) { let h = 0x811c9dc5; const t = 'yasunyan-sanpo|' + s; for (let 
 // v:2（β0.2.0）：gender（'f'|'m'）、図鑑のキーに性別が入る（<ランク>:<性別>:<キャラ>:<衣装>）、fav（お気に入りのキー）、love（キーごとの好感度 0〜100）
 // v:1 の図鑑のキー（性別なし・3 つ組）は仮の絵のものなので、読むときに捨てる
 function loadSave() {
-  const d = { v: 2, best: 0, plays: 0, seen: {}, gender: 'f', fav: '', love: {}, coin: 0, abil: {} };
+  const d = { v: 2, best: 0, plays: 0, seen: {}, gender: 'f', fav: '', love: {}, coin: 0, abil: {}, names: {}, rel: {}, cheki: 0 };
   const raw = CG.ls.get(KEY);
   if (!raw) return d;
   try {
@@ -331,11 +343,13 @@ function loadSave() {
     const o = JSON.parse(decodeURIComponent(escape(atob(b))));
     const seen = {};
     if (o.seen && typeof o.seen === 'object') for (const k in o.seen) if (/^[SABCD]:[fm]:[a-z0-9]+:[a-z0-9]+$/.test(k)) seen[k] = Math.max(1, o.seen[k] | 0);
-    const love = {};
-    if (o.love && typeof o.love === 'object') for (const k in o.love) if (seen[k]) love[k] = clamp(o.love[k] | 0, 0, 100);
+    const rel = {}, names = {};   // rel：キャラごとの好感度・使った恋ン・ステージ・来店数（キーは <性別>:<キャラ>）
+    if (o.rel && typeof o.rel === 'object') for (const k in o.rel) if (/^[fm]:[a-z0-9]+$/.test(k) && o.rel[k] && typeof o.rel[k] === 'object') { const q = o.rel[k]; rel[k] = { love: clamp(q.love | 0, 0, 100), spent: clamp(q.spent | 0, 0, 99999999), stage: clamp(q.stage | 0 || 1, 1, 3), visits: clamp(q.visits | 0, 0, 99999) }; }
+    if (o.love && typeof o.love === 'object') for (const k in o.love) if (seen[k]) { const p = k.split(':'), rk = p[1] + ':' + p[2]; rel[rk] = rel[rk] || { love: 0, spent: 0, stage: 1, visits: 0 }; rel[rk].love = Math.max(rel[rk].love, clamp(o.love[k] | 0, 0, 100)); }   // β0.5.0 より前の好感度を引きつぐ
+    if (o.names && typeof o.names === 'object') for (const k in o.names) if (/^[fm]:[a-z0-9]+$/.test(k) && typeof o.names[k] === 'string') { const v = o.names[k].replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 8); if (v) names[k] = v; }
     const abil = {};
     if (o.abil && typeof o.abil === 'object') ABIL.forEach(a => { const l = o.abil[a.id] | 0; if (l > 0) abil[a.id] = Math.min(l, a.cost.length); });
-    return { v: 2, best: Math.max(0, o.best | 0), plays: Math.max(0, o.plays | 0), seen, gender: o.gender === 'm' ? 'm' : 'f', fav: seen[o.fav] ? o.fav : '', love, coin: clamp(o.coin | 0, 0, 99999999), abil };
+    return { v: 2, best: Math.max(0, o.best | 0), plays: Math.max(0, o.plays | 0), seen, gender: o.gender === 'm' ? 'm' : 'f', fav: seen[o.fav] ? o.fav : '', rel, names, cheki: clamp(o.cheki | 0, 0, 99999), coin: clamp(o.coin | 0, 0, 99999999), abil };
   } catch (e) { return d; }
 }
 function writeSave() {
@@ -750,7 +764,8 @@ function showResult() {
   $('#rBest').innerHTML = g.isBest ? `ベスト記録 ${SAVE.best}<em>ベスト更新！</em>` : `ベスト記録 ${SAVE.best}`;
   const cnt = { normal: 0, rare: 0, super: 0, bad: 0 }; for (const k in got) cnt[ITEMS[k].tier] += got[k];
   $('#rBrk').textContent = `ふつう ×${cnt.normal}　レア ×${cnt.rare}　超レア ×${cnt.super}　減点 ×${cnt.bad}`;
-  $('#result').hidden = false; refreshTitle();
+  $('#result').hidden = false; refreshTitle(); paintResultName();
+  if (!SAVE.names[SAVE.gender + ':' + g.ch]) setTimeout(() => { if (state === 'result' && G_ === g && $('#modal').hidden && $('#zukan').hidden) openNaming(SAVE.gender, g.ch, g.rank); }, 700);   // はじめて出た子には、名前をつけるダイアログを出す
 }
 
 /* ---------- 描く ---------- */
@@ -904,7 +919,7 @@ function buildZukan() {
     h += `<h3>${r}：${RARITY[r]}</h3><div class="grid">`;
     for (const ch of charsOf(r, zG)) for (const co of costumesOf(r)) {
       const key = keyOf(r, zG, ch, co), seen = SAVE.seen[key];
-      h += `<div class="slot${r === 'S' && seen ? ' s' : ''}${SAVE.fav === key ? ' fav' : ''}"${seen ? ` data-k="${key}"` : ''}>${seen ? `<img loading="lazy" src="img/concafe/${ch}-${co}.png" alt="${NAMES[ch]}">` : '？'}</div>`;
+      h += `<div class="slot${r === 'S' && seen ? ' s' : ''}${SAVE.fav === key ? ' fav' : ''}"${seen ? ` data-k="${key}"` : ''}>${seen ? `<img loading="lazy" src="img/concafe/${ch}-${co}.png" alt="">` : '？'}</div>`;
     }
     h += '</div>';
   }
@@ -915,9 +930,9 @@ function buildZukan() {
 function openZukan() { zG = SAVE.gender; buildZukan(); refreshTitle(); $('#zukan').hidden = false; $('#zbody').scrollTop = 0; }
 function openDetail(key) {
   const k = parseKey(key), fav = SAVE.fav === key;
-  openModal(`<h2>${RARITY[k.r]}　${NAMES[k.ch]}</h2><div class="dimg"><img src="img/concafe/${k.ch}-${k.co}.png" alt="${NAMES[k.ch]}"></div><p>${GENDERS[k.g]}／衣装：${COSTUME_NAMES[k.co]}／出会った回数：${SAVE.seen[key]}${SAVE.love[key] ? `／好感度：${SAVE.love[key]}` : ''}</p><div class="mm"><button class="sm" id="dFav" type="button">${fav ? '♥ 解除する' : '♡ お気に入り'}</button><button class="sm" id="dTalk" type="button">会話する</button></div>`);
+  openModal(`<h2>${RARITY[k.r]}　${CG.esc(nameOf(k.g, k.ch))}</h2><div class="dimg"><img src="img/concafe/${k.ch}-${k.co}.png" alt=""></div><p>${GENDERS[k.g]}／衣装：${COSTUME_NAMES[k.co]}／出会った回数：${SAVE.seen[key]}${(SAVE.rel[relKey(key)] || {}).love ? `／好感度：${SAVE.rel[relKey(key)].love}` : ''}</p><div class="mm"><button class="sm" id="dFav" type="button">${fav ? '♥ 解除する' : '♡ お気に入り'}</button><button class="sm" id="dTalk" type="button">会話する</button></div>`);
   $('#dFav').onclick = () => { SAVE.fav = fav ? '' : key; writeSave(); $('#modal').hidden = true; buildZukan(); refreshTitle(); CG.toast(fav ? 'お気に入りをはずしました' : 'お気に入りにしました'); };
-  $('#dTalk').onclick = () => { SAVE.fav = key; writeSave(); $('#modal').hidden = true; $('#zukan').hidden = true; openTalk(); };
+  $('#dTalk').onclick = () => { SAVE.fav = key; writeSave(); $('#modal').hidden = true; $('#zukan').hidden = true; refreshTitle(); meetConfirm(key); };
 }
 $('#zbody').addEventListener('click', e => { const s = e.target.closest('.slot[data-k]'); if (s) openDetail(s.dataset.k); });
 $('#zF').onclick = () => { zG = 'f'; buildZukan(); };
@@ -929,7 +944,6 @@ $('#zM').onclick = () => { zG = 'm'; buildZukan(); };
    ・会話の台本・名前・好感度のしくみは仮。本番は台本を別ファイルにする想定（未実装タスク）。 */
 const TALK_BG_SRC = '';                 // 例：'img/talk/bg.png'（360×640 の縦長を想定）
 const TALK_OBJ = [];                    // 例：{ src: 'img/talk/glass.png', x: 40, y: 452, w: 28 }
-let TK = null, tkBg = null;
 function drawTalkBg() {
   const w = 90, h = 160, o = document.createElement('canvas'); o.width = w; o.height = h; const c = o.getContext('2d');
   const fillR = (col, x, y, ww, hh) => { c.fillStyle = col; c.fillRect(x, y, ww, hh); };
@@ -949,46 +963,170 @@ function drawTalkBg() {
   fillR('#7A5236', 0, 112, w, 4); fillR('#A06C45', 0, 112, w, 1); fillR('#4B2F1E', 0, 116, w, 44); for (let x = 0; x < w; x += 10) fillR('rgba(0,0,0,.18)', x, 116, 1, 44);
   return o;
 }
-function openTalk() {
-  const key = SAVE.fav; if (!key || !SAVE.seen[key]) { CG.toast('図鑑でお気に入りを選んでね'); openZukan(); return; }
-  const k = parseKey(key), img = new Image(); const t = { key, k, img, ok: false, turn: 0, love: SAVE.love[key] || 0 };
+/* ---------- 会いに行く（β0.5.0）。1,500 恋ンで入店 → ターン制（話す・食事・チェキ・オリシャン）。台詞・名前の候補は仮 ----------
+   ステージは 3 つ（1 カフェ／2 特典デート／3 自宅）。いまはステージ 1 だけ遊べる（ステージ 2・3 とオリシャンは β0.6.0）。 */
+const MEET_FEE = 1500, ORISHAN_PRICE = 35000, ORISHAN_SPENT = 10000;
+const STAGES = ['', 'カフェ', '特典デート', '自宅'];
+const FOODS = [['めろんそーだ', 300], ['こーひー', 250], ['あったか紅茶', 250], ['おむらいす', 3500], ['ぺぺろんちーの', 3500], ['フライドポテト', 800], ['あっとほーむパフェ', 4500], ['てりてりテリーヌ', 500]];
+const CHEKI = [
+  { id: 'solo', name: 'ソロ白チェキ', price: 1000, two: false, com: false }, { id: 'solo_c', name: 'ソロコメント付き', price: 1500, two: false, com: true },
+  { id: 'two', name: 'ツーショ白チェキ', price: 2000, two: true, com: false }, { id: 'two_c', name: 'ツーショコメント付き', price: 3000, two: true, com: true }
+];
+const TALKS = [   // q：選択肢、d：好感度の増減、a：返事
+  { q: 'その衣装、似合ってるね', d: 10, a: 'ほんと？ うれしい。選んだかいがあったな。' },
+  { q: '笑った顔、いいね', d: 9, a: 'もう、急に言わないでよ。……ありがと。' },
+  { q: 'こんにゃんだったころ、おぼえてる？', d: 8, a: 'えへへ、ちょっと恥ずかしいな。でも、あの散歩はたのしかったよ。' },
+  { q: '今日はどんな一日だった？', d: 6, a: 'お昼からずっとバタバタ。でも、来てくれたから元気出たよ。' },
+  { q: 'おすすめは何？', d: 4, a: 'あったかいのをゆっくり。ちくわとこんにゃくが好き。' },
+  { q: 'いつもここにいるの？', d: 3, a: 'お店の日はね。ほかの日は、ひみつ。' },
+  { q: 'とくに話すことはないんだけど', d: 0, a: 'そっか。じゃあ、ゆっくりしていってね。' },
+  { q: 'ほかの子もかわいいよね', d: -5, a: '……ふうん。そうなんだ。' },
+  { q: 'まだ帰らなくていい？ ひま？', d: -3, a: 'ひまじゃないよ？ ……まあ、いいけど。' },
+  { q: 'おなかすいた、早くして', d: -4, a: 'はいはい。ちょっと待っててね。' }
+];
+const CHEKI_COMMENTS = [[0, '来てくれてありがとう！'], [0, '今日のわたし、どうかな？'], [30, 'また会えてうれしいな。'], [30, 'いっしょに撮れてよかった♪'], [60, 'またすぐ来てね。待ってるよ。'], [60, '大切な一枚になったよ。'], [85, 'ずっとここで待ってるからね。'], [85, 'あなたに会えて、ほんとによかった。']];
+const NAME_POOL = {
+  f: ['みお', 'こはる', 'るな', 'あかり', 'すず', 'ひなた', 'ゆい', 'さくら', 'めい', 'のあ', 'りん', 'ここな', 'みく', 'あおい', 'ももか', 'いちか', 'ひより', 'なぎさ', 'つばき', 'ほのか', 'れいな', 'ゆずき', 'まひる', 'せな', 'らん', 'きの', 'うみ', 'ことは', 'ちとせ', 'あんず'],
+  m: ['れん', 'そうま', 'ひいろ', 'かなた', 'しゅん', 'はると', 'あおと', 'ゆうま', 'いつき', 'りく', 'たいが', 'こうた', 'ひなた', 'そら', 'かい', 'みなと', 'ゆきと', 'しおん', 'るい', 'あきと', 'とわ', 'はじめ', 'なつき', 'れお', 'だいち', 'けいと', 'ゆう', 'らいと', 'さく', 'いぶき']
+};
+const relKey = k => { const p = parseKey(k); return p.g + ':' + p.ch; };
+const relOf = rk => (SAVE.rel[rk] = SAVE.rel[rk] || { love: 0, spent: 0, stage: 1, visits: 0 });
+const nameOf = (g, ch) => SAVE.names[g + ':' + ch] || NAMES[ch];
+const stampOf = () => { const d = new Date(); return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`; };
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+/* --- 名前をつける（成長したあとの結果画面） --- */
+function autoName(g) { const used = new Set(Object.values(SAVE.names)), pool = NAME_POOL[g].filter(n => !used.has(n)); return pick(pool.length ? pool : NAME_POOL[g]); }
+function openNaming(g, ch, rank) {
+  const rk = g + ':' + ch, cur = SAVE.names[rk] || '';
+  $('#mbox').innerHTML = `<h2>名前をつけよう</h2><p>${RARITY[rank]}のコンカフェ嬢が生まれました。名前をつけてあげてね（8文字まで）。🎲で自動でも決められます。</p><div class="nrow"><input id="nmIn" maxlength="8" autocomplete="off" value="${CG.esc(cur)}" placeholder="なまえ"><button class="sm" id="nmDice" type="button" aria-label="名前を自動で決める">🎲</button></div><div class="mm"><button class="sm" id="nmOk" type="button">決定</button><button class="sm" id="nmLater" type="button">あとで</button></div>`;
+  $('#modal').hidden = false;
+  $('#nmDice').onclick = () => { $('#nmIn').value = autoName(g); };
+  $('#nmLater').onclick = () => { $('#modal').hidden = true; };
+  $('#nmOk').onclick = () => {
+    const v = $('#nmIn').value.replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 8);
+    if (!v) { CG.toast('名前を入れてね（🎲でも決められるよ）'); return; }
+    SAVE.names[rk] = v; writeSave(); $('#modal').hidden = true; paintResultName(); CG.toast(`「${v}」と名づけました`);
+  };
+}
+function paintResultName() {
+  const g = G_; if (!g) return; const n = SAVE.names[SAVE.gender + ':' + g.ch];
+  $('#rName').innerHTML = `${CG.esc(RARITY[g.rank])}　<b>${CG.esc(nameOf(SAVE.gender, g.ch))}</b> <button type="button" class="pen" id="btnRename" aria-label="名前をかえる">${n ? '✎ なまえ' : '✎ 名前をつける'}</button>`;
+  $('#btnRename').onclick = () => openNaming(SAVE.gender, g.ch, g.rank);
+}
+
+/* --- 入店 --- */
+let TK = null, tkBg = null;
+function meetConfirm(key) {
+  key = key || SAVE.fav;
+  if (!key || !SAVE.seen[key]) { CG.toast('図鑑でお気に入りを選んでね'); openZukan(); return; }
+  const k = parseKey(key), r = relOf(relKey(key)), ok = SAVE.coin >= MEET_FEE;
+  openModal(`<h2>${CG.esc(nameOf(k.g, k.ch))}に会いに行く</h2><div class="dimg"><img src="img/concafe/${k.ch}-${k.co}.png" alt=""></div><p>${RARITY[k.r]}／${COSTUME_NAMES[k.co]}／ステージ${r.stage}：${STAGES[r.stage]}<br>入店 <span class="coin">恋</span> ${fmt(MEET_FEE)}（いま ${fmt(SAVE.coin)}）　好感度 ${r.love}</p><div class="mm"><button class="sm" id="mGo" type="button"${ok ? '' : ' disabled'}>${ok ? '会いに行く' : '恋ンが足りない'}</button><button class="sm" id="mPick" type="button">図鑑でえらぶ</button></div>`);
+  $('#mGo').onclick = () => { $('#modal').hidden = true; startVisit(key); };
+  $('#mPick').onclick = () => { $('#modal').hidden = true; openZukan(); };
+}
+function startVisit(key) {
+  if (SAVE.coin < MEET_FEE) { CG.toast('おでん恋ンが足りません'); return; }
+  const k = parseKey(key), rk = relKey(key), r = relOf(rk), img = new Image();
+  SAVE.fav = key; SAVE.coin -= MEET_FEE; r.spent += MEET_FEE; r.visits++; writeSave();
+  const t = { key, k, rk, img, ok: false, maxT: 8, used: 0, spent: MEET_FEE, love0: r.love };
   img.onload = () => { t.ok = true; }; img.src = `img/concafe/${k.ch}-${k.co}.png`;
   if (!tkBg) { if (TALK_BG_SRC) { tkBg = new Image(); tkBg.src = TALK_BG_SRC; } else tkBg = drawTalkBg(); }
   TK = t; state = 'talk'; Snd.stopBgm();
-  $('#title').hidden = true; $('#result').hidden = true; $('#rank').hidden = true; $('#zukan').hidden = true; $('#modal').hidden = true; $('#talk').hidden = false;
-  $('#tName').textContent = NAMES[k.ch]; $('#tSub').textContent = `${RARITY[k.r]}／${COSTUME_NAMES[k.co]}`; $('#tNm').textContent = NAMES[k.ch];
-  talkNode('hello');
+  $('#title').hidden = true; $('#result').hidden = true; $('#rank').hidden = true; $('#zukan').hidden = true; $('#modal').hidden = true; $('#abil').hidden = true; $('#talk').hidden = false;
+  talkHud();
+  const nm = nameOf(k.g, k.ch);
+  talkSay(r.love >= 60 ? `あっ、来てくれたんだ！ ……待ってたよ。今日は「${COSTUME_NAMES[k.co]}」なんだ。` : r.visits > 1 ? `いらっしゃい、また会えたね。今日は「${COSTUME_NAMES[k.co]}」だよ。` : `いらっしゃいませ。${nm}です。今日は「${COSTUME_NAMES[k.co]}」で来てみたよ。`);
+  mainMenu();
+}
+function talkHud() {
+  const t = TK, r = relOf(t.rk);
+  $('#tName').textContent = nameOf(t.k.g, t.k.ch); $('#tNm').textContent = nameOf(t.k.g, t.k.ch);
+  $('#tSub').textContent = `ステージ${r.stage}：${STAGES[r.stage]}　のこり ${Math.max(0, t.maxT - t.used)} ターン`;
+  $('#tLove').style.width = r.love + '%'; $('#tLoveN').textContent = r.love; $('#tCoin').innerHTML = `<span class="coin">恋</span> ${fmt(SAVE.coin)}`;
 }
 function talkSay(text) { $('#tText').textContent = text; }
-function talkLove(d) {
-  TK.love = clamp(TK.love + d, 0, 100); SAVE.love[TK.key] = TK.love; writeSave();
-  $('#tLove').style.width = TK.love + '%'; $('#tLoveN').textContent = TK.love;
-  if (d > 0) for (let i = 0; i < 5; i++) parts.push({ ty: 's', x: 180 + rnd(-60, 60), y: rnd(150, 300), vx: rnd(-20, 20), vy: rnd(-70, -30), life: rnd(0.6, 1.1), max: 1.1, col: '#FF9DBD', r: rnd(3, 5) });
+function choices(list, grid) {
+  const box = $('#tChoices'); box.innerHTML = ''; box.className = 'tch' + (grid ? ' g2' : '');
+  list.forEach(([label, fn, dis]) => { const b = document.createElement('button'); b.type = 'button'; b.innerHTML = label; if (dis) b.className = 'dis'; b.onclick = fn; box.appendChild(b); });
 }
-// 台本（仮）。choices：[表示, 好感度の増え方, 返事]
-function talkNode(id) {
-  const t = TK, nm = NAMES[t.k.ch], cos = COSTUME_NAMES[t.k.co], box = $('#tChoices');
-  const choices = c => { box.innerHTML = ''; c.forEach(([label, fn]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = fn; box.appendChild(b); }); };
-  talkLove(0);
-  if (id === 'hello') {
-    talkSay(t.love >= 60 ? `あっ、来てくれたんだ！ ……待ってたよ。今日は「${cos}」なんだ。` : t.love > 0 ? `いらっしゃい、また会えたね。今日は「${cos}」だよ。` : `いらっしゃいませ。${nm}です。今日は「${cos}」で来てみたよ。`);
-    choices([['その衣装、似合ってるね', () => reply(8, 'ほんと？ うれしい。選んだかいがあったな。')], ['おすすめは何？', () => reply(3, 'ちくわとこんにゃくかな。あったかいのをゆっくり食べるのが好き。')], ['こんにゃんだったころの話、おぼえてる？', () => reply(6, 'えへへ、ちょっと恥ずかしいな。でも、あの散歩はたのしかったよ。')]]);
-  } else if (id === 'second') {
-    talkSay('ねえ、ほかにも聞きたいことある？');
-    choices([['最近どう？', () => reply(4, 'ぼちぼちかな。お店がにぎやかだと、それだけでうれしいよ。')], ['また会いに来ていい？', () => reply(8, 'もちろん。来てくれたら、きっと顔に出ちゃうから。')], ['今日はもう帰るね', () => bye()]]);
-  } else if (id === 'bye') {
-    choices([['もどる', leaveTalk]]);
-  }
-  function reply(d, txt) {
-    talkLove(d); talkSay(txt); t.turn++;
-    choices([['つづける', () => t.turn >= 3 ? bye() : talkNode('second')]]);
-  }
-  function bye() {
-    talkSay(t.love >= 60 ? 'もう帰っちゃうの？ ……また、すぐ来てね。' : t.love >= 20 ? 'ありがとう、たのしかった。また来てね。' : 'ありがとうございました。またお待ちしています。');
-    choices([['もどる', leaveTalk]]);
-  }
+function addLove(d) {
+  const r = relOf(TK.rk); r.love = clamp(r.love + d, 0, 100); writeSave(); talkHud();
+  if (d > 0) for (let i = 0; i < 4 + Math.min(8, d); i++) parts.push({ ty: 's', x: 180 + rnd(-70, 70), y: rnd(140, 320), vx: rnd(-20, 20), vy: rnd(-70, -30), life: rnd(0.6, 1.1), max: 1.1, col: '#FF9DBD', r: rnd(3, 5) });
 }
-function leaveTalk() { TK = null; parts = []; $('#talk').hidden = true; showTitle(); }
+function spend(n) {
+  if (SAVE.coin < n) { CG.toast('おでん恋ンが足りません'); return false; }
+  SAVE.coin -= n; relOf(TK.rk).spent += n; TK.spent += n; writeSave(); talkHud(); return true;
+}
+function afterTurn(msg) {   // 行動・会話のあと：ターンを 1 つ使う
+  TK.used++; talkHud(); talkSay(msg);
+  if (TK.used >= TK.maxT) { choices([['つづける', endVisit]]); return; }
+  choices([['つづける', () => { talkSay('ほかには、どうする？'); mainMenu(); }]]);
+}
+function mainMenu() {
+  const r = relOf(TK.rk), ready = r.love >= 100 && r.spent >= ORISHAN_SPENT;
+  choices([['話す', talkMenu], ['食事を頼む', foodMenu], ['チェキを撮る', chekiMenu], [`オリシャン${ready ? '' : '（まだ）'}`, orishanInfo, !ready], ['帰る', endVisit]], true);
+}
+function talkMenu() {
+  const pos = TALKS.filter(x => x.d >= 6), rest = TALKS.filter(x => x.d < 6), three = [pick(pos), ...shuffle(rest.slice()).slice(0, 2)];
+  shuffle(three);
+  choices(three.map(x => [CG.esc(x.q), () => {
+    addLove(x.d);
+    if (x.d >= 8 && TK.maxT < 10) { TK.maxT++; x.up = 1; } else if (x.d <= -3 && TK.maxT > 7) { TK.maxT--; x.up = -1; }   // 好感度がよく上がるとターンがのびる／下がると縮む（7〜10）
+    const note = x.d >= 8 ? '　（ターン＋1）' : x.d <= -3 ? '　（ターン−1）' : '';
+    afterTurn(x.a + note);
+  }]).concat([['もどる', mainMenu]]));
+}
+function foodMenu() {
+  talkSay('なにを頼む？'); choices(FOODS.map(([n, p]) => [`${n}<br><small>${fmt(p)} 恋ン</small>`, () => {
+    if (!spend(p)) return; const d = Math.min(12, 2 + Math.floor(p / 400)); addLove(d);
+    spawnSparkTalk(); afterTurn(`「${n}」をいっしょにいただきます。……おいしい！（好感度 +${d}）`);
+  }]).concat([['もどる', mainMenu]]), true);
+}
+function spawnSparkTalk() { for (let i = 0; i < 10; i++) parts.push({ ty: 's', x: 180 + rnd(-40, 40), y: 430 + rnd(-10, 10), vx: rnd(-30, 30), vy: rnd(-80, -30), life: rnd(0.4, 0.8), max: 0.8, col: '#FFE9A8', r: rnd(2, 4) }); }
+function chekiMenu() {
+  talkSay('チェキを撮ろっか。どれにする？'); choices(CHEKI.map(c => [`${c.name}<br><small>${fmt(c.price)} 恋ン${c.two ? '（β0.6.0〜）' : ''}</small>`, () => {
+    if (c.two) { CG.toast('ツーショは β0.6.0 で遊べます'); return; }
+    if (!spend(c.price)) return; addLove(3);
+    const url = makeCheki(c); SAVE.cheki = (SAVE.cheki | 0) + 1; writeSave();
+    showCheki(url); afterTurn('はい、チーズ！ いい写真になったよ。（好感度 +3）');
+  }, c.two]).concat([['もどる', mainMenu]]), true);
+}
+function chekiComment() {
+  const l = relOf(TK.rk).love, tier = CHEKI_COMMENTS.filter(x => x[0] <= l), top = tier.filter(x => x[0] === Math.max(...tier.map(y => y[0])));
+  return pick(top)[1];
+}
+function makeCheki(c) {   // ポラロイド風のチェキ画像を作る（端末の中だけ。サーバーには送らない）
+  const w = 320, h = 410, cv = document.createElement('canvas'); cv.width = w * 2; cv.height = h * 2; const x = cv.getContext('2d'); x.scale(2, 2);
+  x.fillStyle = '#F8F5EC'; x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(0,0,0,.05)'; x.fillRect(0, h - 5, w, 5);
+  const px = 18, py = 18, pw = 284, ph = 284;
+  x.save(); x.beginPath(); x.rect(px, py, pw, ph); x.clip();
+  if (tkBg instanceof HTMLCanvasElement) { x.imageSmoothingEnabled = false; x.drawImage(tkBg, 0, 14, 90, 90, px, py, pw, ph); } else { x.imageSmoothingEnabled = true; x.drawImage(tkBg, px, py, pw, ph); }
+  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  if (TK.ok) { const hh = ph * 1.7, ww = hh * TK.img.naturalWidth / TK.img.naturalHeight; x.drawImage(TK.img, px + pw / 2 - ww / 2, py - 8, ww, hh); }
+  x.fillStyle = 'rgba(255,205,140,.10)'; x.fillRect(px, py, pw, ph);
+  const vg = x.createRadialGradient(px + pw / 2, py + ph / 2, ph * 0.35, px + pw / 2, py + ph / 2, ph * 0.8); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.32)'); x.fillStyle = vg; x.fillRect(px, py, pw, ph);
+  x.restore(); x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = 1; x.strokeRect(px + .5, py + .5, pw - 1, ph - 1);
+  const nm = nameOf(TK.k.g, TK.k.ch); x.fillStyle = '#4A3A2A'; x.textBaseline = 'alphabetic';
+  x.font = '800 16px "M PLUS Rounded 1c",sans-serif'; x.textAlign = 'left'; x.fillText(nm, px + 2, py + ph + 36); x.font = '700 12px "M PLUS Rounded 1c",sans-serif'; x.textAlign = 'right'; x.fillText(stampOf(), px + pw - 2, py + ph + 36);
+  if (c.com) { const cm = chekiComment(); x.textAlign = 'left'; x.font = '800 15px "M PLUS Rounded 1c",sans-serif'; x.save(); x.translate(px + 2, py + ph + 62); x.rotate(-0.02); for (let i = 0; i * 17 < cm.length; i++) x.fillText(cm.slice(i * 17, i * 17 + 17), 0, i * 20); x.restore(); }
+  return cv.toDataURL('image/png');
+}
+function showCheki(url) {
+  openModal(`<h2>チェキができたよ</h2><div class="dimg"><img src="${url}" alt="チェキ" style="height:auto;width:78%"></div><div class="mm"><a class="sm" style="text-align:center;text-decoration:none" id="chDl" href="${url}" download="cheki-${stampOf()}.png">画像を保存</a></div>`);
+}
+function orishanInfo() {
+  const r = relOf(TK.rk);
+  talkSay(`オリシャン（${fmt(ORISHAN_PRICE)} 恋ン）は、好感度 MAX（いま ${r.love}/100）と、この子に使った恋ンの累計 ${fmt(ORISHAN_SPENT)}（いま ${fmt(r.spent)}）がそろうと解放されます。※次のステージへ進むのは β0.6.0 で遊べます。`);
+  choices([['もどる', mainMenu]]);
+}
+function endVisit() {
+  const t = TK, r = relOf(t.rk), d = r.love - t.love0;
+  state = 'talk'; talkSay(`${r.love >= 60 ? 'もう帰っちゃうの？ ……また、すぐ来てね。' : r.love >= 20 ? 'ありがとう、たのしかった。また来てね。' : 'ありがとうございました。またお待ちしています。'}\n（好感度 ${d >= 0 ? '+' : ''}${d} ・ 使った恋ン ${fmt(t.spent)}）`);
+  choices([['もどる', leaveTalk]]);
+}
+function leaveTalk() { TK = null; parts = []; $('#talk').hidden = true; $('#modal').hidden = true; showTitle(); }
+
 function drawTalk(c) {
   c.imageSmoothingEnabled = false; c.drawImage(tkBg, 0, 0, W, H);
   TALK_OBJ.forEach(o => { if (!o.img) { o.img = new Image(); o.img.src = o.src; } if (o.img.complete && o.img.naturalWidth) c.drawImage(o.img, o.x, o.y, o.w, o.w * o.img.naturalHeight / o.img.naturalWidth); });
@@ -1023,7 +1161,7 @@ $('#abBody').addEventListener('click', e => {
 $('#btnAbil').onclick = () => { buildAbil(); $('#abil').hidden = false; $('#abBody').scrollTop = 0; };
 $('#btnAclose').onclick = () => { $('#abil').hidden = true; };
 $('#btnTback').onclick = leaveTalk;
-$('#btnTalkTop').onclick = () => { if (SAVE.fav) openTalk(); else { CG.toast('図鑑でお気に入りを選んでね'); openZukan(); } };
+$('#btnTalkTop').onclick = () => meetConfirm();
 function openShare() {
   const g = G_; const s = { msg: `やすにゃんとこんにゃんの散歩で ${pts} ポイント！ スコアランク${g ? g.rank : ''}でコンカフェ嬢が誕生！`, tags: ['やすにゃん散歩チュウ'], url: CG.pageUrl() };
   const L = CG.share.links(s);
@@ -1066,7 +1204,7 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
 <li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
 <li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>名前をつけられるように（成長後の結果画面。🎲で自動生成）。会いに行く（1,500恋ンで入店、ターン制の会話・食事・ソロのチェキ）</td></tr><tr><td>β0.4.0</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
