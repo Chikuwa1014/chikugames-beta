@@ -37,9 +37,9 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #bestline{margin:0;font-size:12px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)}
 #title .ver{position:absolute;right:10px;bottom:4px;margin:0;font-size:10px;color:rgba(255,255,255,.7);font-weight:700}
 /* 結果 */
-#rank{position:absolute;left:0;right:0;top:14px;text-align:center;z-index:5;pointer-events:none}
-#rank small{display:block;font-size:13px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);letter-spacing:3px}
-#rank b{display:block;font-size:84px;line-height:.95;font-weight:900;-webkit-text-stroke:3px #3A2412;paint-order:stroke fill;text-shadow:0 5px 0 rgba(0,0,0,.35);transform-origin:50% 60%}
+#rank{position:absolute;left:0;right:0;top:44px;display:flex;justify-content:center;align-items:baseline;gap:8px;z-index:5;pointer-events:none}
+#rank small{font-size:17px;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);letter-spacing:1px}
+#rank b{display:block;font-size:64px;line-height:.95;font-weight:900;-webkit-text-stroke:3px #3A2412;paint-order:stroke fill;text-shadow:0 5px 0 rgba(0,0,0,.35);transform-origin:50% 60%}
 #rank.pop b{animation:pop .6s cubic-bezier(.2,1.6,.4,1) both}
 @keyframes pop{0%{transform:scale(.2) rotate(-12deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
 #rank.rS b{color:#FFD34D}#rank.rA b{color:#FF6A5C}#rank.rB b{color:#5BA3F0}#rank.rC b{color:#4FD27A}#rank.rD b{color:#C9C9D2}
@@ -98,7 +98,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
     <p class="ver" id="ver"></p>
   </section>
 
-  <div id="rank" hidden><small>ランク</small><b id="rankLetter">D</b></div>
+  <div id="rank" hidden><small>スコアランク：</small><b id="rankLetter">D</b></div>
   <section id="result" class="panel" hidden>
     <div id="card">
       <div class="pts"><b id="rPts">0</b><span>ポイント</span></div>
@@ -131,7 +131,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.1.0';
+const VERSION = 'β0.1.1';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 
 /* ---------- 調整用の数値（バランスはここだけを直す） ---------- */
@@ -181,6 +181,7 @@ const TIER_LABEL = { normal: 'ふつう', rare: 'レア', super: '超レア', ba
 const RANKS = { A: ['a1', 'a2'], B: ['b1', 'b2'], C: ['c1'], D: ['d1', 'd2'] };   // S は A のキャラに演出を足す
 const COSTUMES = ['maid', 'gothic', 'police', 'marine', 'idol', 'pirate'];
 const RANK_ORDER = ['S', 'A', 'B', 'C', 'D'];
+const RARITY = { S: '芸能人', A: '有名人', B: 'アイドル', C: 'クラスのマドンナ', D: '一般人' };   // 嬢のレアリティ名（表示用）。ランク記号は内部の呼び名
 const charsOf = r => r === 'S' ? RANKS.A : RANKS[r];
 const ZUKAN_TOTAL = RANK_ORDER.reduce((n, r) => n + charsOf(r).length * COSTUMES.length, 0);
 
@@ -587,7 +588,7 @@ function goalUpdate(dt) {
   }
   if (g.revealed) {
     g.rt += dt; g.flashA = Math.max(0, g.flashA - dt * 1.6);
-    if (g.rank === 'S' && state !== 'zukan') { for (let i = 0; i < 2; i++) parts.push({ ty: 's', x: 180 + rnd(-90, 90), y: rnd(110, 400), vx: rnd(-10, 10), vy: rnd(-40, -10), life: rnd(0.5, 1.1), max: 1.1, col: pick(['#FFD34D', '#FFF2A0', '#fff']), r: rnd(2, 4.5) }); }
+    if (g.rank === 'S' && state !== 'zukan') { for (let i = 0; i < 2; i++) parts.push({ ty: 's', x: 180 + rnd(-90, 90), y: rnd(130, 400), vx: rnd(-10, 10), vy: rnd(-40, -10), life: rnd(0.5, 1.1), max: 1.1, col: pick(['#FFD34D', '#FFF2A0', '#fff']), r: rnd(2, 4.5) }); }
     if (g.rt > 1.8 && state === 'goal') showResult();
   }
 }
@@ -689,7 +690,7 @@ function drawGoalFx(c, cm) {
     const dim = clamp(g.rt * 2, 0, 0.62); c.fillStyle = `rgba(18,12,8,${dim})`; c.fillRect(0, 0, W, H);
     const sp = c.createRadialGradient(180, 330, 10, 180, 330, 190); sp.addColorStop(0, g.rank === 'S' ? 'rgba(255,230,120,.55)' : 'rgba(255,244,220,.4)'); sp.addColorStop(1, 'rgba(255,244,220,0)'); c.fillStyle = sp; c.fillRect(0, 100, W, 330);
     c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(180, 402, 80, 10, 0, 0, 6.3); c.fill();
-    const s = easeOutBack(clamp(g.rt / 0.55, 0, 1)), hh = 290 * s, ww = 166 * s;
+    const s = easeOutBack(clamp(g.rt / 0.55, 0, 1)), hh = 270 * s, ww = 154 * s;
     if (g.ok) { c.imageSmoothingEnabled = false; c.drawImage(g.img, 180 - ww / 2, 400 - hh, ww, hh); }
     else if (g.fail) { c.fillStyle = '#fff'; c.font = '800 14px "M PLUS Rounded 1c",sans-serif'; c.textAlign = 'center'; c.fillText('絵を読み込めませんでした', 180, 270); }
     if (g.rank === 'S') { c.save(); c.globalAlpha = 0.5 + 0.3 * Math.sin(T * 6); c.strokeStyle = '#FFD34D'; c.lineWidth = 4; c.beginPath(); c.ellipse(180, 402, 90 + Math.sin(T * 4) * 4, 13, 0, 0, 6.3); c.stroke(); c.restore(); }
@@ -740,7 +741,7 @@ function openModal(html) { $('#mbox').innerHTML = html + '<div class="row"><butt
 function buildZukan() {
   let h = '';
   for (const r of RANK_ORDER) {
-    h += `<h3>${r}ランク</h3><div class="grid">`;
+    h += `<h3>${r}：${RARITY[r]}</h3><div class="grid">`;
     for (const ch of charsOf(r)) for (const co of COSTUMES) {
       const seen = SAVE.seen[keyOf(r, ch, co)];
       h += `<div class="slot${r === 'S' && seen ? ' s' : ''}">${seen ? `<img src="img/concafe/${ch}-${co}.png" alt="">` : '？'}</div>`;
@@ -751,7 +752,7 @@ function buildZukan() {
 }
 function openZukan() { buildZukan(); refreshTitle(); $('#zukan').hidden = false; }
 function openShare() {
-  const g = G_; const s = { msg: `やすにゃんとこんにゃんの散歩で ${pts} ポイント！ ランク${g ? g.rank : ''}のコンカフェ嬢が誕生！`, tags: ['やすにゃん散歩チュウ'], url: CG.pageUrl() };
+  const g = G_; const s = { msg: `やすにゃんとこんにゃんの散歩で ${pts} ポイント！ スコアランク${g ? g.rank : ''}でコンカフェ嬢が誕生！`, tags: ['やすにゃん散歩チュウ'], url: CG.pageUrl() };
   const L = CG.share.links(s);
   openModal(`<h2>共有する</h2><div class="mm">${navigator.share ? '<button class="sm" id="shNative" type="button">端末で共有</button>' : ''}<a class="sm" style="text-align:center;text-decoration:none" href="${CG.esc(L.x)}" target="_blank" rel="noopener">X</a><a class="sm" style="text-align:center;text-decoration:none" href="${CG.esc(L.line)}" target="_blank" rel="noopener">LINE</a><a class="sm" style="text-align:center;text-decoration:none" href="${CG.esc(L.facebook)}" target="_blank" rel="noopener">Facebook</a><button class="sm" id="shCopy" type="button">文面をコピー</button></div>`);
   const nb = $('#shNative'); if (nb) nb.onclick = () => CG.share.open(s);
@@ -770,7 +771,7 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>七味・和からし・ばくだんは<b>減点</b>。ジャンプでよけましょう。</li>
 <li>水たまり・自転車・カラスにぶつかると、ポイントを少し落として足が遅くなります。</li>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
