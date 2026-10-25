@@ -5,7 +5,6 @@
    メッセージ：子→親 は G.toHost(m)、親→全員 は hostEmit(ev)（親の自分にも onEvent で届く） */
 (function () {
   const HM = window.HM, T = HM.T, M4 = HM.M4;
-  const N = T.field;
   const V = {
     add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
     sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
@@ -46,7 +45,8 @@
     G.mode = opt.mode;
     G.isHost = !!opt.isHost;
     const spawns = opt.roster.map(r => r.spawn).concat((opt.bots || []).map(b => b.spawn));
-    G.world = new HM.World(opt.seed, spawns);
+    G.world = new HM.World(opt.seed, spawns, opt.size);
+    G.size = opt.size;
     G.players = new Map();
     G.order = opt.roster.map(r => r.pid);
     for (const r of opt.roster) {
@@ -63,7 +63,10 @@
       laser: false, laserCarve: 0, swing: 0, energyKey: null, requested: new Set(), fellSent: false, spectate: null
     };
     // 最初は敵のいない方を向く必要はないので、まん中を向く
+    const N = G.world.N;
     G.me.yaw = Math.atan2(N / 2 - G.me.p[0], N / 2 - G.me.p[2]);
+    // レーダーの届く距離（小さいフィールドでは短く）
+    G.radarRange = Math.min(T.radar.range, N * 0.45);
     G.bots = (opt.bots || []).map((b, i) => ({
       id: 'b' + i, key: b.key, p: b.spawn.slice(), hp: T.bosses[b.key].hp, max: T.bosses[b.key].hp, alive: true,
       aware: false, cool: 1, digCool: 0, kv: [0, 0, 0], slipUntil: 0, yaw: 0, wob: Math.random() * 10, deadAt: 0, hurtAt: 0
@@ -187,7 +190,7 @@
   }
 
   /* ---------- カメラ ---------- */
-  G.camera = function () {
+  G.camera = function (smooth) {
     const me = G.me;
     let focus = me, yaw = me.yaw, pitch = me.pitch;
     const rec = G.players.get(me.pid);
@@ -197,22 +200,32 @@
     }
     const target = [focus.p[0], focus.p[1] + 1.3, focus.p[2]];
     const d = dirOf(yaw, pitch);
-    // 後方視点（far）：壁を通りぬけて後ろへ下がり、カメラと自分の間の豆腐は描かない（近くを切り取る）
-    if (G.camMode === 'far') {
-      const fd = T.cam.farDist, up = T.cam.farUp;
-      const eye = [target[0] - d[0] * fd, target[1] - d[1] * fd + up, target[2] - d[2] * fd];
-      const dir = V.norm(V.sub(V.add(target, V.mul(d, 4)), eye));
-      // 切り取る距離：自分の少し手前まで
-      const toT = V.dot(V.sub(target, eye), dir);
-      return { eye, target, dir, dist: toT, near: Math.max(0.05, toT - T.cam.farCut), ro: V.add(eye, V.mul(dir, toT)) };
+    // 後方視点（far）は近く（near）より後ろへ下がる。どちらも壁があれば、その手前で止まる
+    //（カメラが豆腐の中に入ると、まわりのトンネルが透けて見えるため）
+    const far = G.camMode === 'far';
+    const maxD = far ? T.cam.farDist : 3.0, lift = far ? T.cam.farUp : 0.15;
+    let dist = maxD;
+    for (let s = 0.2; s <= maxD; s += 0.1) {
+      const q = [target[0] - d[0] * s, target[1] - d[1] * s + lift * s / maxD, target[2] - d[2] * s];
+      if (G.world.solidAt(q[0], q[1], q[2]) || G.world.solidAt(q[0], q[1] + 0.15, q[2]) || G.world.solidAt(q[0], q[1] - 0.15, q[2]) ||
+        G.world.solidAt(q[0] + 0.15, q[1], q[2]) || G.world.solidAt(q[0] - 0.15, q[1], q[2]) || G.world.solidAt(q[0], q[1], q[2] + 0.15) || G.world.solidAt(q[0], q[1], q[2] - 0.15)) {
+        dist = Math.max(0.15, s - 0.3); break;
+      }
     }
-    let dist = 3.0;
-    for (let s = 0.2; s <= 3.0; s += 0.1) {
-      const q = [target[0] - d[0] * s, target[1] - d[1] * s + 0.15 * s / 3, target[2] - d[2] * s];
-      if (G.world.solidAt(q[0], q[1], q[2]) || G.world.solidAt(q[0], q[1] + 0.12, q[2]) || G.world.solidAt(q[0], q[1] - 0.12, q[2])) { dist = Math.max(0.15, s - 0.3); break; }
+    // 壁から離れたときは、ゆっくり下がる（寄るときはすぐ）
+    if (G.camDist == null || dist < G.camDist) G.camDist = dist;
+    else if (smooth) {
+      const t = performance.now() / 1000, dt = Math.min(0.1, t - (G.camT || t));
+      G.camT = t;
+      G.camDist = Math.min(dist, G.camDist + 6 * dt);   // 1 秒に 6 マスまで下がる
     }
-    const eye = [target[0] - d[0] * dist, target[1] - d[1] * dist + 0.15 * dist / 3, target[2] - d[2] * dist];
-    return { eye, target, dir: d, dist, near: 0.05, ro: V.add(eye, V.mul(d, dist)) };
+    dist = G.camDist;
+    const eye = [target[0] - d[0] * dist, target[1] - d[1] * dist + lift * dist / maxD, target[2] - d[2] * dist];
+    // 後方視点は、自分より少し上を見る（自分が画面の下寄りになり、前が見やすい）
+    const look = far ? V.add(V.add(target, V.mul(d, 5)), [0, T.cam.farLookUp * Math.min(1, dist / 2), 0]) : V.add(target, d);
+    const dir = far ? V.norm(V.sub(look, eye)) : d;
+    // ねらいのレイの出発点：見ている線の上で、自分の頭のあたり
+    return { eye, target, dir, dist, near: 0.05, ro: V.add(eye, V.mul(dir, dist)) };
   };
 
   /* ---------- ねらい・攻撃・アイテム ---------- */
@@ -621,6 +634,7 @@
     if (td < 1.15) sp = 0;
     b.p = V.add(b.p, V.add(V.mul(dir, sp * dt), V.mul(b.kv, dt)));
     b.kv = V.mul(b.kv, Math.pow(0.05, dt));
+    const N = G.world.N;
     b.p[0] = Math.max(1.5, Math.min(N - 1.5, b.p[0]));
     b.p[1] = Math.max(1.5, Math.min(N - 2, b.p[1]));
     b.p[2] = Math.max(1.5, Math.min(N - 1.5, b.p[2]));
@@ -828,8 +842,10 @@
   const FOG = [0.07, 0.05, 0.035];
   G.render = function (w, h) {
     const R = G.R, world = G.world, me = G.me;
-    const cam = G.camera();
-    const proj = M4.perspective(70 * Math.PI / 180, w / h, cam.near, 140 + cam.near);
+    const cam = G.camera(true);
+    // 縦長の画面では、横が狭くならないよう視野を広げる
+    const fov = (w < h ? T.cam.fovPortrait : T.cam.fov) * Math.PI / 180;
+    const proj = M4.perspective(fov, w / h, cam.near, 140 + cam.near);
     const view = M4.lookAt(cam.eye, V.add(cam.eye, cam.dir), [0, 1, 0]);
     const vp = M4.mul(proj, view);
     G.vp = vp; G.cam = cam;
@@ -888,7 +904,7 @@
       const isMe = pl.pid === me.pid;
       const p = isMe ? me.p : pl.vis, yaw = isMe ? me.yaw : pl.yw;
       // 近すぎるときは半透明に（カメラが体にめりこむので）
-      const near = isMe && G.camMode !== 'far' && cam.dist < 1.4;
+      const near = isMe && cam.dist < 1.4;
       const bob = pl.mv ? Math.abs(Math.sin(G.t * 12)) * 0.06 : 0;
       const hurt = isMe && G.hurtAt && G.t - G.hurtAt < 0.25;
       const swing = isMe && G.t - (me.swing || 0) < 0.15 ? 0.12 : 0;

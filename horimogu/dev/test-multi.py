@@ -40,6 +40,7 @@ with sync_playwright() as p:
     host.goto(BASE); host.click("#multiBtn")
     host.fill(".cg-room-name", "おや"); host.click("[data-cg=create]")
     host.wait_for_function("__HM.NET.room && __HM.NET.room.role==='host' && __HM.NET.room.code")
+    host.click("#lobby [data-size=medium]")
     code = host.evaluate("__HM.NET.room.code")
     for pg, nm, col in [(ga, "こA", "red"), (gb, "こB", "auto")]:
         pg.goto(BASE + "?room=" + code)
@@ -51,10 +52,12 @@ with sync_playwright() as p:
     ga.wait_for_function("__HM.NET.lobbyList.length===3")
     host.screenshot(path=f"{OUT}/multi-lobby-host.png", full_page=True)
     ga.screenshot(path=f"{OUT}/multi-lobby-guest.png", full_page=True)
+    check(ga.evaluate("__HM.NET.lobbySize") == "medium", "親のえらんだ大きさ（メディアム）が子にとどく")
     check(host.evaluate("!document.querySelector('#startBtn').disabled"), "3人でスタートできる")
     host.click("#startBtn")
     for pg in pages:
         pg.wait_for_function("__HM.G.running && document.querySelector('#loading').hidden", timeout=30000)
+    check(all(pg.evaluate("__HM.G.world.N") == 75 for pg in pages), "全員メディアム（75）で始まる")
     cols = host.evaluate("[...__HM.G.players.values()].map(p=>p.name+':'+p.color).join(',')")
     print("     色:", cols)
     check("こA:red" in cols and "おや:normal" in cols and "こB:blue" in cols, "色（自分で選んだ色・おまかせ）")

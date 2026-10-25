@@ -2,11 +2,15 @@
    マス：0=空気 1=豆腐 2=焼き豆腐（かたい。掘ると豆腐になる） 3=具（アイテム入り。2×2×2 で 1 つ） */
 (function () {
   const HM = window.HM, T = HM.T;
-  const N = T.field, CS = T.chunk, NC = Math.ceil(N / CS);
+  // フィールドの大きさは試合ごとに変わる（スモール・メディアム・ラージ）。同時に作る World は 1 つだけ
+  const CS = T.chunk;
+  let N = T.field, NC = Math.ceil(N / CS);
   const AIR = 0, TOFU = 1, YAKI = 2, ITEM = 3;
   HM.MAT = { AIR, TOFU, YAKI, ITEM };
 
-  function World(seed, spawns) {
+  function World(seed, spawns, size) {
+    N = size || T.field; NC = Math.ceil(N / CS);
+    World.NC = NC;
     this.seed = seed >>> 0;
     this.N = N;
     this.v = new Uint8Array(N * N * N);
@@ -25,7 +29,13 @@
 
   /* ---------- 地形の生成（シード値が同じなら、だれの端末でも同じ形） ---------- */
   P.generate = function (spawns) {
-    const r = HM.rng(this.seed), v = this.v, G = T.gen;
+    const r = HM.rng(this.seed), v = this.v, G0 = T.gen;
+    // 小さいフィールドでは、数を体積に合わせて減らし、空洞・ほら穴も小さくする
+    const f = Math.pow(N / 300, 3), sc = Math.min(1, N / 120);
+    const G = {
+      yaki: Math.max(6, Math.round(G0.yaki * f)), itemClusters: Math.max(40, Math.round(G0.itemClusters * f)),
+      caves: Math.max(3, Math.round(G0.caves * f)), worms: Math.max(4, Math.round(G0.worms * f))
+    };
     v.fill(TOFU);
     const ellip = (cx, cy, cz, rx, ry, rz, m, only) => {
       const x0 = Math.max(0, Math.floor(cx - rx)), x1 = Math.min(N - 1, Math.ceil(cx + rx));
@@ -46,7 +56,7 @@
     };
     // 焼き豆腐（かたい層）
     for (let n = 0; n < G.yaki; n++) {
-      ellip(r() * N, r() * N, r() * N, 4 + r() * 9, 2 + r() * 5, 4 + r() * 9, YAKI);
+      ellip(r() * N, r() * N, r() * N, (4 + r() * 9) * sc, (2 + r() * 5) * sc, (4 + r() * 9) * sc, YAKI);
     }
     // 具（アイテム入り）：2×2×2。座標は偶数にそろえる（どのマスからでも具の場所が分かるように）
     for (let n = 0; n < G.itemClusters; n++) {
@@ -55,14 +65,14 @@
     }
     // 空洞（丸い部屋）
     for (let n = 0; n < G.caves; n++) {
-      const rr = 4 + r() * 8;
+      const rr = (4 + r() * 8) * Math.max(0.5, sc);
       ellip(r() * N, r() * N, r() * N, rr * (0.8 + r() * 0.6), rr * (0.5 + r() * 0.4), rr * (0.8 + r() * 0.6), AIR);
     }
     // ほら穴（くねくねトンネル）
     for (let n = 0; n < G.worms; n++) {
       let x = r() * N, y = r() * N, z = r() * N;
       let yaw = r() * Math.PI * 2, pit = (r() - 0.5) * 0.6;
-      const len = 80 + r() * 160, rad = 1.4 + r() * 1.6;
+      const len = (80 + r() * 160) * Math.min(1, N / 200), rad = 1.4 + r() * 1.6;
       for (let s = 0; s < len; s += 1.5) {
         ellip(x, y, z, rad, rad * 0.85, rad, AIR);
         yaw += (r() - 0.5) * 0.5;
@@ -74,9 +84,10 @@
       }
     }
     // スタート地点の小部屋
-    for (const s of spawns) ellip(s[0], s[1] + 1.2, s[2], 2.6, 2.4, 2.6, AIR);
+    //（後方視点でカメラが下がれるよう、少し広め）
+    for (const s of spawns) ellip(s[0], s[1] + 1.6, s[2], 4.2, 2.8, 4.2, AIR);
     // スタート地点の床は、焼き豆腐でかためておく（いきなり落ちないように）
-    for (const s of spawns) ellip(s[0], s[1] - 0.5, s[2], 2.8, 0.9, 2.8, YAKI, TOFU);
+    for (const s of spawns) ellip(s[0], s[1] - 0.5, s[2], 4.4, 0.9, 4.4, YAKI, TOFU);
     this.dirty.clear();
   };
 
@@ -219,4 +230,6 @@
   };
   World.NC = NC;
   HM.World = World;
+  /** 大きさのキー（small・medium・large）からマスの数 */
+  HM.fieldSize = key => (T.sizes.find(s => s.key === key) || T.sizes[T.sizes.length - 1]).n;
 })();

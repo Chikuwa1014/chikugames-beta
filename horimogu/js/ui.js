@@ -2,7 +2,10 @@
 (function () {
   const HM = window.HM, T = HM.T, G = HM.G, NET = HM.NET, M4 = HM.M4;
   const $ = s => document.querySelector(s);
-  const KEY_COLOR = 'horimogu-color', KEY_SENS = 'horimogu-sens', KEY_BEST = 'horimogu-best-v1', KEY_CAM = 'horimogu-cam';
+  const KEY_COLOR = 'horimogu-color', KEY_SENS = 'horimogu-sens', KEY_BEST = 'horimogu-best-v2', KEY_CAM = 'horimogu-cam', KEY_SIZE = 'horimogu-size';
+  // フィールドの大きさ（small・medium・large）。はじめはラージ
+  let sizePick = CG.ls.get(KEY_SIZE, 'large');
+  if (!T.sizes.find(s => s.key === sizePick)) sizePick = 'large';
   // 視点：far＝後方（はじめはこちら）、near＝近く
   G.camMode = CG.ls.get(KEY_CAM, 'far') === 'near' ? 'near' : 'far';
   function setCam(m) {
@@ -16,6 +19,7 @@
   let colorPick = CG.ls.get(KEY_COLOR, 'auto') || 'auto';
   const UI = HM.UI = {
     colorChoice: () => colorPick,
+    sizeChoice: () => sizePick,
     soloColor: () => colorPick === 'auto' ? 'normal' : colorPick
   };
   function drawColorPicker(el, withAuto) {
@@ -36,6 +40,36 @@
     NET.updateColor();
     drawPreview();
   });
+
+  /* ---------- フィールドの大きさえらび ---------- */
+  function drawSizePickers() {
+    document.querySelectorAll('.sizes').forEach(el => {
+      const lobby = el.dataset.lobby === '1';
+      // ロビーでは親だけが選べる。子には親の選んだ大きさを出す
+      const guest = lobby && !NET.isHost();
+      const cur = guest ? (NET.lobbySize || 'large') : sizePick;
+      el.innerHTML = T.sizes.map(s => `<button type="button" class="sz${s.key === cur ? ' on' : ''}" data-size="${s.key}"${guest ? ' disabled' : ''}>
+        <b>${s.name}</b><small>${s.n}×${s.n}×${s.n}</small></button>`).join('');
+    });
+    const bt = document.querySelector('#bestTxt');
+    if (bt) {
+      const b = bestOf(sizePick), nm = T.sizes.find(s => s.key === sizePick).name;
+      bt.textContent = b ? `ひとりプレイの自己ベスト（${nm}）：のこり ${b.left} 秒で全滅` : '';
+    }
+  }
+  UI.drawSizePickers = drawSizePickers;
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-size]');
+    if (!b || b.disabled) return;
+    sizePick = b.dataset.size;
+    CG.ls.set(KEY_SIZE, sizePick);
+    drawSizePickers();
+    NET.updateSize && NET.updateSize();
+  });
+  function bestOf(key) {
+    const all = CG.ls.getJSON(KEY_BEST, null) || {};
+    return all[key] || null;
+  }
 
   /* ---------- 画面の切りかえ ---------- */
   function show(id) {
@@ -361,7 +395,7 @@
     }
     // レーダー（いちばん近い敵が近いほど激しく光る）
     const d = G.nearestEnemy();
-    const kk = Math.max(0, 1 - d / T.radar.range);
+    const kk = Math.max(0, 1 - d / (G.radarRange || T.radar.range));
     const rd = hud.radar;
     if (kk > 0) {
       const speed = 1.5 + kk * 9;
@@ -387,8 +421,8 @@
 
   /* ---------- 結果 ---------- */
   function soloBest(left) {
-    const b = CG.ls.getJSON(KEY_BEST, null);
-    if (!b || left > b.left) { CG.ls.setJSON(KEY_BEST, { left, at: Date.now() }); return true; }
+    const all = CG.ls.getJSON(KEY_BEST, null) || {}, key = G.sizeKey || 'large', b = all[key];
+    if (!b || left > b.left) { all[key] = { left, at: Date.now() }; CG.ls.setJSON(KEY_BEST, all); return true; }
     return false;
   }
   G.onEnd = function (ev) {
@@ -427,18 +461,23 @@
   /* ---------- ひとりで始める ---------- */
   function startSolo() {
     HM.sfx.unlock();
-    const seed = (Math.random() * 2 ** 31) >>> 0, r = HM.rng(seed ^ 0x1234567), N = T.field;
-    const sp = [Math.floor(N / 2 + (r() - 0.5) * 80) + 0.5, Math.floor(110 + r() * 80) + 0.01, Math.floor(N / 2 + (r() - 0.5) * 80) + 0.5];
+    const seed = (Math.random() * 2 ** 31) >>> 0, r = HM.rng(seed ^ 0x1234567), N = HM.fieldSize(sizePick);
+    // 大きさに合わせて、スタート地点と敵の出る距離を決める（ラージは今までと同じ）
+    const spread = Math.min(80, N * 0.27);
+    const sp = [Math.floor(N / 2 + (r() - 0.5) * spread) + 0.5, Math.floor(N * 0.37 + r() * N * 0.26) + 0.01, Math.floor(N / 2 + (r() - 0.5) * spread) + 0.5];
+    const dMin = Math.min(T.solo.spawnMin, N * 0.22), dMax = Math.min(T.solo.spawnMax, N * 0.36);
+    const cl = v => Math.max(3, Math.min(N - 3, v));
     const bots = T.solo.bosses.map((key, i) => {
       const a = i / T.solo.bosses.length * Math.PI * 2 + r() * 0.8;
-      const d = T.solo.spawnMin + r() * (T.solo.spawnMax - T.solo.spawnMin);
-      const y = Math.max(20, Math.min(N - 20, sp[1] + (r() - 0.5) * 40));
-      return { key, spawn: [sp[0] + Math.cos(a) * d, y, sp[2] + Math.sin(a) * d] };
+      const d = dMin + r() * (dMax - dMin);
+      const y = cl(sp[1] + (r() - 0.5) * Math.min(40, N * 0.3));
+      return { key, spawn: [cl(sp[0] + Math.cos(a) * d), y, cl(sp[2] + Math.sin(a) * d)] };
     });
+    G.sizeKey = sizePick;
     const me = { pid: 'me', name: NET.myName(), color: UI.soloColor() };
     G.toHost = m => G.hostOnMsg('me', m);
     G.broadcast = null; G.broadcastExcept = null;
-    beginPlay(() => G.start({ mode: 'solo', seed, me, roster: [{ pid: 'me', name: me.name, color: me.color, spawn: sp }], isHost: true, bots }));
+    beginPlay(() => G.start({ mode: 'solo', seed, size: N, me, roster: [{ pid: 'me', name: me.name, color: me.color, spawn: sp }], isHost: true, bots }));
   }
 
   function beginPlay(startFn) {
@@ -485,6 +524,8 @@
     $('#startBtn').disabled = !NET.canStart();
     $('#startBtn').textContent = NET.roster.size >= 2 ? '▶ スタート（' + NET.roster.size + '人）' : '2人以上でスタートできます';
     $('#waitMsg').hidden = !(inRoom && !host);
+    $('#lobbySize').hidden = !inRoom;
+    drawSizePickers();
   }
   NET.onLobby = () => { if (!$('#lobby').hidden) drawLobbyExtra(); };
   NET.onStatus = () => { if (!$('#lobby').hidden) setTimeout(drawLobbyExtra, 0); };
@@ -536,8 +577,12 @@
   document.querySelectorAll('.ver').forEach(e => { e.textContent = HM.VERSION; });
   document.querySelectorAll('.colors').forEach(el => drawColorPicker(el, el.dataset.auto === '1'));
   buildHud(); wireButtons(); setupTouch(); setupMouse(); setCam(G.camMode);
-  const best = CG.ls.getJSON(KEY_BEST, null);
-  if (best) $('#bestTxt').textContent = 'ひとりプレイの自己ベスト：のこり ' + best.left + ' 秒で全滅';
+  // 古い自己ベスト（v1：大きさの区別なし）は、ラージのベストへ引き継ぐ
+  (function () {
+    const old = CG.ls.getJSON('horimogu-best-v1', null);
+    if (old && !CG.ls.getJSON(KEY_BEST, null)) CG.ls.setJSON(KEY_BEST, { large: old });
+  })();
+  drawSizePickers();
   (function anim() { previewT += 1 / 30; if (!$('#home').hidden) drawPreview(); setTimeout(anim, 33); })();
   show('home');
   if (CG.room.codeFromUrl()) enterMulti();

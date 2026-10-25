@@ -2,7 +2,7 @@
    ちくわ君の大きさを 1 とする。地形の 1 マスも 1。 */
 const HM = window.HM = window.HM || {};
 
-HM.VERSION = 'β0.1.1';
+HM.VERSION = 'β0.2.0';
 HM.GAME = 'horimogu';
 
 HM.T = {
@@ -13,8 +13,15 @@ HM.T = {
   viewRange: 46,        // 見える距離（ヘッドライトの届く範囲）
   meshRadius: 4,        // まわりの何チャンクまで描くか
 
-  /* カメラ。far＝後方視点（壁の向こうへ下がり、手前の豆腐を切り取って見せる） */
-  cam: { farDist: 6.5, farUp: 1.6, farCut: 1.3 },
+  /* フィールドの大きさ（プレイを始めるときにえらぶ） */
+  sizes: [
+    { key: 'small',  name: 'スモール', n: 50 },
+    { key: 'medium', name: 'メディアム', n: 75 },
+    { key: 'large',  name: 'ラージ', n: 300 }
+  ],
+
+  /* カメラ。far＝後方視点（near より後ろへ下がる。壁があれば、その手前で止まる） */
+  cam: { farDist: 6.0, farUp: 0.35, farLookUp: 1.2, fov: 70, fovPortrait: 84 },
 
   /* 地形の生成（シード値から全員同じものを作る） */
   gen: {

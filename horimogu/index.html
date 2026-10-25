@@ -61,6 +61,13 @@ h1{margin:10px 0 0;font-size:clamp(32px,10vw,44px);font-weight:900;color:var(--a
 .sw.on{border-color:var(--accent);background:var(--panel)}
 .swc{width:26px;height:30px;border-radius:5px;background:linear-gradient(var(--b) 0 22%,var(--w) 22% 72%,var(--b) 72%);display:grid;place-items:center;font-weight:900;color:#555;font-size:13px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.12)}
 .sw small{font-size:11px;font-weight:800;color:var(--muted)}
+.sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sz{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border:2px solid transparent;border-radius:12px;background:var(--sunk);cursor:pointer;color:var(--ink)}
+.sz b{font-size:15px;font-weight:900}
+.sz small{font-size:11px;font-weight:800;color:var(--muted)}
+.sz.on{border-color:var(--accent);background:var(--panel)}
+.sz:disabled{cursor:default;opacity:.6}
+.sz.on:disabled{opacity:1}
 .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;cursor:pointer;color:var(--ink)}
 .how{font-size:14px}
@@ -168,6 +175,10 @@ body.touch .keys{display:none}
     <button type="button" class="big" id="soloBtn"><span class="ic">🧑‍🍳</span><span>ひとりで遊ぶ<small>おでん横丁のボス5体を、5分以内に全滅させる</small></span></button>
     <button type="button" class="big alt" id="multiBtn"><span class="ic">👥</span><span>みんなで遊ぶ<small>2〜4人。ほかのちくわ君を全滅させたら勝ち</small></span></button>
   </div>
+  <div class="card">
+    <h2>フィールドの大きさ</h2>
+    <div class="sizes" data-lobby="0"></div>
+  </div>
   <div class="best" id="bestTxt"></div>
   <div class="card">
     <h2>ちくわ君の色</h2>
@@ -180,7 +191,7 @@ body.touch .keys{display:none}
   <div class="card how" id="how" hidden>
     <h2>あそびかた</h2>
     <ul>
-      <li>フィールドは 300×300×300 の大きなお豆腐。宙に浮いていて、床を掘り抜くと<b>奈落のおでん鍋</b>に沈んでしまう。</li>
+      <li>フィールドはお豆腐。大きさはスモール（50×50×50）・メディアム（75×75×75）・ラージ（300×300×300）からえらぶ。宙に浮いていて、床を掘り抜くと<b>奈落のおでん鍋</b>に沈んでしまう。</li>
       <li>歩いて壁にぶつかると自動で掘る。「掘る」ボタンでは、ねらった方向（上・下も）を掘る。前に敵がいれば素手でなぐる。</li>
       <li>光る「具」を掘るとアイテムが出てくる。体力は 100。</li>
       <li>右上のレーダーは、敵が近づくと光る。近いほど激しく光る。</li>
@@ -207,6 +218,7 @@ body.touch .keys{display:none}
   <div class="card how" id="hist" hidden>
     <h2>更新履歴</h2>
     <ul>
+      <li><b>β0.2.0</b>（2026-10-25）フィールドの大きさをえらべるようにした（スモール 50・メディアム 75・ラージ 300）。後方視点で壁が透けて、ほかの場所が見えてしまうのを直した（壁の手前で止まる）。自己ベストは大きさごと。</li>
       <li><b>β0.1.1</b>（2026-10-25）後方視点を追加（はじめはこちら）。壁の向こうへ下がり、手前の豆腐を切り取って自分とまわりを見せる。左上の 👁（PC は V キー）で「近く」と切りかえ。</li>
       <li><b>β0.1.0</b>（2026-10-25）はじめての公開（開発中）。ひとりプレイ（ボス5体・5分）、みんなで（2〜4人、親が抜けても続く）、アイテム9種、レーダー、奈落のおでん鍋。</li>
     </ul>
@@ -220,6 +232,11 @@ body.touch .keys{display:none}
   <div class="card" id="lobbyMembersWrap" hidden>
     <h2>メンバーの色</h2>
     <ul id="lobbyMembers"></ul>
+  </div>
+  <div class="card" id="lobbySize" hidden>
+    <h2>フィールドの大きさ</h2>
+    <div class="sizes" data-lobby="1"></div>
+    <div class="note">親がえらびます</div>
   </div>
   <div class="card" id="lobbyColors">
     <h2>自分の色</h2>
