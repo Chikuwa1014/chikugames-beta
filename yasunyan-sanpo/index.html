@@ -35,7 +35,6 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 .seg{display:flex;gap:0;border-radius:999px;overflow:hidden;box-shadow:0 3px 0 #B99A63;background:var(--cream)}
 .seg button{border:0;background:transparent;padding:8px 22px;font-weight:900;font-size:14px;color:#8A6A44}
 .seg button.on{background:var(--cho);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.25)}
-.gh{font-size:11px;font-weight:800;color:#FFE9A8;text-shadow:0 1px 4px rgba(0,0,0,.85);min-height:15px}
 .big{border:0;width:248px;padding:13px 0 15px;border-radius:30px;background:linear-gradient(#F6B866,#C9772E);color:#fff;font-weight:900;font-size:23px;letter-spacing:2px;box-shadow:0 5px 0 #8A4E18,0 8px 14px rgba(0,0,0,.35);text-shadow:0 2px 0 rgba(0,0,0,.25)}
 .big:active{transform:translateY(3px);box-shadow:0 2px 0 #8A4E18}
 .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
@@ -118,7 +117,6 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
     <div class="mid">
       <span class="gl">こんにゃんの性別</span>
       <div class="seg" id="gseg"><button type="button" id="gF">♀ メス</button><button type="button" id="gM">♂ オス</button></div>
-      <span class="gh" id="gHint"></span>
       <button class="big" id="btnStart" type="button">さんぽにでる</button>
     </div>
     <div class="low">
@@ -175,7 +173,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.2.0';
+const VERSION = 'β0.2.1';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 
 /* ---------- 調整用の数値（バランスはここだけを直す） ---------- */
@@ -282,6 +280,7 @@ const SAVE = loadSave();
 const Snd = {
   ctx: null, master: null, bgmGain: null, mute: CG.ls.get('yasunyan-sanpo-mute') === '1', bgmOn: false, step: 0, next: 0, timer: 0,
   init() {
+    if (this.ctx && this.ctx.state === 'closed') { this.ctx = null; this.bgmOn = false; }
     if (this.ctx) return;
     try {
       const A = window.AudioContext || window.webkitAudioContext; this.ctx = new A();
@@ -289,7 +288,7 @@ const Snd = {
       this.bgmGain = this.ctx.createGain(); this.bgmGain.gain.value = 0.5; this.bgmGain.connect(this.master);
     } catch (e) { this.ctx = null; }
   },
-  resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); },
+  resume() { if (this.ctx && this.ctx.state !== 'running') { try { const p = this.ctx.resume(); if (p && p.catch) p.catch(() => { }); } catch (e) { } } },
   setMute(m) { this.mute = m; CG.ls.set('yasunyan-sanpo-mute', m ? '1' : '0'); if (this.master) this.master.gain.value = m ? 0 : 0.6; },
   tone(f, d, type = 'square', v = 0.15, slide = null, t0 = null, dest = null) {
     if (!this.ctx) return;
@@ -327,7 +326,9 @@ const Snd = {
     if (s) [1319, 1568, 2093].forEach((f, i) => this.tone(f, 0.5, 'triangle', 0.1, null, t + 0.6 + i * 0.12));
   },
   startBgm() {
-    if (!this.ctx || this.bgmOn) return;
+    if (!this.ctx) return;
+    // 画面を移ったあとでも必ず鳴らす：前のタイマーを捨てて、頭からやりなおす（端末が音を止めたままのときは再開も試す）
+    clearInterval(this.timer); this.resume();
     this.bgmOn = true; this.step = 0; this.next = this.ctx.currentTime + 0.1;
     this.timer = setInterval(() => this.sched(), 80);
   },
@@ -805,7 +806,6 @@ function refreshTitle() {
   $('#bestline').textContent = SAVE.best > 0 ? `ベスト記録 ${SAVE.best} ポイント　（${SAVE.plays} 回さんぽ）` : 'まだ さんぽしていません';
   $('#zcount').textContent = `${n}/${ZUKAN_TOTAL * 2}`; $('#zcount2').textContent = `${seenCount(zG)}/${ZUKAN_TOTAL}`;
   $('#gF').classList.toggle('on', SAVE.gender === 'f'); $('#gM').classList.toggle('on', SAVE.gender === 'm');
-  $('#gHint').textContent = SAVE.gender === 'f' ? '成長すると、女性のコンカフェ嬢に！' : '成長すると、男性のコンカフェ嬢に！';
   $('#btnTalkTop').textContent = SAVE.fav ? '♥ お気に入りと会話' : '♡ お気に入りと会話';
 }
 function setGender(g) { SAVE.gender = g; zG = g; writeSave(); refreshTitle(); }
@@ -948,11 +948,13 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
 <li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
 <li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
-document.addEventListener('visibilitychange', () => { if (!Snd.ctx) return; if (document.hidden) Snd.ctx.suspend(); else Snd.ctx.resume(); });
+document.addEventListener('visibilitychange', () => { if (!Snd.ctx) return; if (document.hidden) Snd.ctx.suspend(); else { Snd.resume(); if (state === 'play' || state === 'title') Snd.startBgm(); } });
+addEventListener('pageshow', e => { if (e.persisted && Snd.ctx) { Snd.resume(); if (state === 'play' || state === 'title') Snd.startBgm(); } });   // 別のページから「もどる」で戻ったとき
+document.addEventListener('pointerdown', () => { if (Snd.ctx && Snd.ctx.state !== 'running') { Snd.resume(); if (state === 'play' || state === 'title') Snd.startBgm(); } }, true);   // 端末に音を止められていたら、次のタップで復帰
 paintMute(); $('#ver').textContent = VERSION; refreshTitle();
 requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
 </script>
