@@ -389,15 +389,13 @@ BASE = dict(skin='#F8DCCB', skin2='#ECBFA8', iris='#5A3A4A', iris2='#9A6A8A', br
 
 # キャラ（顔・髪・体）。ランクとの対応は RANKS。ランクの中身はここには書かない
 PEOPLE = {
-    'a1': ('type1', dict(hair='#EBC660', hair2='#D2A944', hairhi='#FFF0B0', hairstyle='twin_high', bangs='side', eyes='big', mouth='open', wink=True, iris='#3A6A9A', iris2='#7AB0E0')),
-    'a2': ('type1', dict(hair='#E890B0', hair2='#C870A0', hairhi='#FFD0E0', hairstyle='boyish', bangs='messy', eyes='big', mouth='smile', iris='#8A3A6A', iris2='#E07AB0')),
     'b1': ('type2', dict(hair='#6A4636', hair2='#58392C', hairhi='#9A7060', hairstyle='long', bangs='side', eyes='normal', mouth='smile')),
     'b2': ('type2', dict(hair='#3A2A2A', hair2='#2A1E1E', hairstyle='dread', bangs='messy', eyes='normal', mouth='smile', skin='#C88A68', skin2='#B07458')),
     'c1': ('type3', dict(hair='#5A3A2A', hair2='#4A2E22', hairhi='#8A6050', hairstyle='short', bangs='side', eyes='normal', mouth='open', jaw=3)),
     'd1': ('type3', dict(hair='#7A6A4A', hair2='#5A4A34', hairhi='#9A8A6A', hairstyle='short', bangs='messy', eyes='small', mouth='grin_gap', bignose=True, unibrow=True, brow='#3A2A1A', freckles=True, jaw=5, blush=False, mole=(-8, 10))),
     'd2': ('type4', dict(hair='#3A3030', hair2='#2A2222', hairstyle='short', bangs='messy', eyes='small', mouth='grin_gap', bignose=True, unibrow=True, brow='#2A1A1A', stubble=True, jaw=6, blush=False)),
 }
-RANKS = {'A': ['a1', 'a2'], 'B': ['b1', 'b2'], 'C': ['c1'], 'D': ['d1', 'd2']}   # S は当面 A のキャラ＋キラキラ演出（ゲーム側）
+RANKS = {'B': ['b1', 'b2'], 'C': ['c1'], 'D': ['d1', 'd2']}   # B〜D の仮の絵。A・S は新キャラ（af1〜5・am1〜5。dev/slice_sheets.py で切り出す）に置きかわった（β0.2.0）
 COSTUMES = {'maid': c_maid, 'gothic': c_gothic, 'police': c_police, 'marine': c_marine, 'idol': c_idol, 'pirate': c_pirate}
 
 def render(person, costume):

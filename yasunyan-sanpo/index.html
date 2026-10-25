@@ -27,8 +27,15 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #title h1{position:absolute;left:0;right:0;top:52px;margin:0;text-align:center;font-weight:900;line-height:1.12;color:#fff;font-size:40px;text-shadow:0 3px 0 #8A4E18,0 0 14px rgba(0,0,0,.45);letter-spacing:1px}
 #title h1 small{display:block;font-size:20px;letter-spacing:2px;color:#FFE9A8;margin-bottom:2px}
 #title h1 span{display:block;font-size:46px;color:#FFD34D}
-#title .lead{position:absolute;left:24px;right:24px;top:222px;margin:0;text-align:center;font-weight:800;font-size:13px;line-height:1.6;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7)}
-#title .bottom{position:absolute;left:0;right:0;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:10px}
+#title .lead{position:absolute;left:24px;right:24px;top:140px;margin:0;text-align:center;font-weight:800;font-size:13px;line-height:1.6;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+/* 空のところ（建物より上）に性別とスタート、地面のところにそのほかのボタン。キャラの絵とかぶらない */
+#title .mid{position:absolute;left:0;right:0;top:196px;display:flex;flex-direction:column;align-items:center;gap:8px}
+#title .low{position:absolute;left:0;right:0;bottom:14px;display:flex;flex-direction:column;align-items:center;gap:7px}
+.gl{font-size:12px;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.seg{display:flex;gap:0;border-radius:999px;overflow:hidden;box-shadow:0 3px 0 #B99A63;background:var(--cream)}
+.seg button{border:0;background:transparent;padding:8px 22px;font-weight:900;font-size:14px;color:#8A6A44}
+.seg button.on{background:var(--cho);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.gh{font-size:11px;font-weight:800;color:#FFE9A8;text-shadow:0 1px 4px rgba(0,0,0,.85);min-height:15px}
 .big{border:0;width:248px;padding:13px 0 15px;border-radius:30px;background:linear-gradient(#F6B866,#C9772E);color:#fff;font-weight:900;font-size:23px;letter-spacing:2px;box-shadow:0 5px 0 #8A4E18,0 8px 14px rgba(0,0,0,.35);text-shadow:0 2px 0 rgba(0,0,0,.25)}
 .big:active{transform:translateY(3px);box-shadow:0 2px 0 #8A4E18}
 .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
@@ -58,11 +65,15 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #zukan{background:#1A100A;display:flex;flex-direction:column;z-index:7}
 #zukan header{display:flex;align-items:center;justify-content:space-between;padding:44px 14px 8px;color:#fff}
 #zukan h2{margin:0;font-size:20px;font-weight:900}
+#ztabs{display:flex;justify-content:center;padding:2px 0 6px}
+#zbody .slot[data-k]{cursor:pointer}
+#zukan .slot.fav{outline:2px solid #FF7BA8;outline-offset:-2px}
+#zukan .slot.fav::before{content:"♥";position:absolute;left:3px;top:0;color:#FF7BA8;font-size:13px;z-index:1;text-shadow:0 0 4px #000}
 #zukan .scroll{flex:1;overflow-y:auto;padding:4px 12px 20px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 #zukan h3{margin:12px 0 6px;color:#FFD34D;font-size:15px;font-weight:900}
 #zukan .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-#zukan .slot{aspect-ratio:240/420;border-radius:8px;background:#3A2A1E;color:#7A6350;display:flex;align-items:center;justify-content:center;font-weight:900;overflow:hidden;position:relative}
-#zukan .slot img{width:100%;height:100%;object-fit:cover;display:block;image-rendering:pixelated}
+#zukan .slot{aspect-ratio:3/5;border-radius:8px;background:#3A2A1E;color:#7A6350;display:flex;align-items:center;justify-content:center;font-weight:900;overflow:hidden;position:relative}
+#zukan .slot img{width:100%;height:100%;object-fit:contain;display:block}
 #zukan .slot.s::after{content:"★";position:absolute;right:2px;top:0;color:#FFD34D;font-size:12px;text-shadow:0 0 4px #FFD34D}
 /* ダイアログ */
 #modal{background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;z-index:8}
@@ -75,6 +86,24 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #modal td,#modal th{padding:2px 4px;border-bottom:1px solid var(--line);text-align:left}
 #modal .mm{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
 #modal .mm .sm{width:100%}
+#modal .dimg{text-align:center;background:#2A1A10;border-radius:12px;padding:6px;margin-bottom:8px}
+#modal .dimg img{height:300px;max-width:100%;object-fit:contain}
+/* お気に入りと会話（ホットモック） */
+#talk{pointer-events:none;z-index:5}
+#talk>*{pointer-events:auto}
+#talk .tinfo{position:absolute;left:8px;top:44px;width:226px;padding:8px 12px;border-radius:14px;background:rgba(20,12,8,.72);color:#fff}
+#talk .tinfo b{font-size:17px;font-weight:900}
+#talk .tinfo span{display:block;font-size:11px;font-weight:700;color:#E9D5B0;margin-top:1px}
+#talk .love{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;font-weight:900;color:#FF9DBD}
+#talk .love i{display:block;flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+#talk .love i em{display:block;height:100%;width:0;background:linear-gradient(90deg,#FF7BA8,#FFB3CC);transition:width .5s}
+#talk .tback{position:absolute;right:8px;top:44px}
+#talk .tbox{position:absolute;left:10px;right:10px;bottom:12px;padding:14px 14px 12px;border-radius:16px;background:rgba(18,10,6,.88);border:1px solid rgba(255,214,150,.35);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#talk .tnm{position:absolute;left:12px;top:-13px;padding:3px 12px;border-radius:999px;background:var(--cho);font-size:12px;font-weight:900}
+#talk .ttx{margin:4px 0 10px;min-height:48px;font-size:14px;line-height:1.65;font-weight:700}
+#talk .tch{display:flex;flex-direction:column;gap:6px}
+#talk .tch button{border:1px solid rgba(255,214,150,.5);background:rgba(255,244,220,.1);color:#FFF4DC;border-radius:10px;padding:9px 10px;font-size:13px;font-weight:800;text-align:left}
+#talk .tch button:active{background:rgba(255,244,220,.28)}
 </style>
 </head>
 <body>
@@ -86,10 +115,18 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
   <section id="title" class="panel">
     <h1><small>やすにゃんこんにゃん！</small><span>散歩チュウ</span></h1>
     <p class="lead">こんにゃんを連れて、おでん横丁をひとまわり。<br>激うまアイテムを集めて、こんにゃんを育てよう！</p>
-    <div class="bottom">
+    <div class="mid">
+      <span class="gl">こんにゃんの性別</span>
+      <div class="seg" id="gseg"><button type="button" id="gF">♀ メス</button><button type="button" id="gM">♂ オス</button></div>
+      <span class="gh" id="gHint"></span>
       <button class="big" id="btnStart" type="button">さんぽにでる</button>
+    </div>
+    <div class="low">
       <div class="row">
         <button class="sm" id="btnZukan" type="button">図鑑 <span id="zcount"></span></button>
+        <button class="sm" id="btnTalkTop" type="button">♥ お気に入りと会話</button>
+      </div>
+      <div class="row">
         <button class="sm" id="btnHow" type="button">あそびかた</button>
         <button class="sm" id="btnLog" type="button">更新履歴</button>
       </div>
@@ -117,7 +154,14 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 
   <section id="zukan" class="panel" hidden>
     <header><h2>図鑑 <span id="zcount2"></span></h2><button class="sm" id="btnZclose" type="button">もどる</button></header>
+    <div id="ztabs"><div class="seg"><button type="button" id="zF">♀ 女性</button><button type="button" id="zM">♂ 男性</button></div></div>
     <div class="scroll" id="zbody"></div>
+  </section>
+
+  <section id="talk" class="panel" hidden>
+    <div class="tinfo"><b id="tName"></b><span id="tSub"></span><div class="love">♥<i><em id="tLove"></em></i><span id="tLoveN" style="margin:0;color:#FF9DBD"></span></div></div>
+    <button class="sm tback" id="btnTback" type="button">もどる</button>
+    <div class="tbox"><div class="tnm" id="tNm"></div><p class="ttx" id="tText"></p><div class="tch" id="tChoices"></div></div>
   </section>
 
   <section id="modal" class="panel" hidden><div class="box" id="mbox"></div></section>
@@ -131,7 +175,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.1.1';
+const VERSION = 'β0.2.0';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 
 /* ---------- 調整用の数値（バランスはここだけを直す） ---------- */
@@ -178,12 +222,23 @@ const KINDS = { normal: ['chikuwa', 'daikon', 'konnyaku', 'hanpen'], rare: ['tam
 const TIER_LABEL = { normal: 'ふつう', rare: 'レア', super: '超レア', bad: '減点' };
 
 /* ---------- コンカフェ嬢（絵は img/concafe/<キャラ>-<衣装>.png を読み込む） ---------- */
-const RANKS = { A: ['a1', 'a2'], B: ['b1', 'b2'], C: ['c1'], D: ['d1', 'd2'] };   // S は A のキャラに演出を足す
-const COSTUMES = ['maid', 'gothic', 'police', 'marine', 'idol', 'pirate'];
+// 性別 g：'f'＝メス（女性のキャラに成長）、'm'＝オス（男性のキャラに成長）。S は A のキャラに演出を足す。
+// B〜D は、男性の絵ができるまで、女性・男性とも同じ仮の絵を使う（未実装タスク【要確認】）
+const RANKS = {
+  A: { f: ['af1', 'af2', 'af3', 'af4', 'af5'], m: ['am1', 'am2', 'am3', 'am4', 'am5'] },
+  B: { f: ['b1', 'b2'], m: ['b1', 'b2'] }, C: { f: ['c1'], m: ['c1'] }, D: { f: ['d1', 'd2'], m: ['d1', 'd2'] }
+};
+const COSTUMES_A = ['maid', 'police', 'pirate', 'formal', 'kyonshi', 'gothic', 'maid2', 'pastel', 'loli', 'dogear', 'neon'];   // A・S の衣装（11 種）
+const COSTUMES_OLD = ['maid', 'gothic', 'police', 'marine', 'idol', 'pirate'];                                                  // B〜D の仮の衣装（6 種）
 const RANK_ORDER = ['S', 'A', 'B', 'C', 'D'];
 const RARITY = { S: '芸能人', A: '有名人', B: 'アイドル', C: 'クラスのマドンナ', D: '一般人' };   // 嬢のレアリティ名（表示用）。ランク記号は内部の呼び名
-const charsOf = r => r === 'S' ? RANKS.A : RANKS[r];
-const ZUKAN_TOTAL = RANK_ORDER.reduce((n, r) => n + charsOf(r).length * COSTUMES.length, 0);
+const GENDERS = { f: '女性', m: '男性' };
+const charsOf = (r, g) => (r === 'S' ? RANKS.A : RANKS[r])[g];
+const costumesOf = r => (r === 'S' || r === 'A') ? COSTUMES_A : COSTUMES_OLD;
+const ZUKAN_TOTAL = RANK_ORDER.reduce((n, r) => n + charsOf(r, 'f').length * costumesOf(r).length, 0);   // 1 つの性別あたり
+// 名前・衣装の呼び名（仮。開発者の確認待ち）
+const NAMES = { af1: 'みお', af2: 'こはる', af3: 'るな', af4: 'あかり', af5: 'すず', am1: 'れん', am2: 'そうま', am3: 'ひいろ', am4: 'かなた', am5: 'しゅん', b1: 'ことね', b2: 'まりん', c1: 'ゆずは', d1: 'はな', d2: 'ちあき' };
+const COSTUME_NAMES = { maid: 'ブルーメイド', police: 'ポリス', pirate: '海賊', formal: 'モノトーン', kyonshi: 'キョンシー', gothic: 'ゴスメイド', maid2: 'フラワーメイド', pastel: 'ゆめかわ', loli: 'ロリメイド', dogear: 'いぬみみ', neon: 'ネオン', marine: 'マリン', idol: 'アイドル' };
 
 /* ---------- 共通の小道具 ---------- */
 const $ = s => document.querySelector(s);
@@ -201,15 +256,21 @@ const easeOutBack = t => { const s = 1.70158; t -= 1; return t * t * ((s + 1) * 
 /* ---------- 保存（base64 ＋チェック値。改ざんされたら初期化） ---------- */
 const KEY = 'yasunyan-sanpo-v1';
 function chk(s) { let h = 0x811c9dc5; const t = 'yasunyan-sanpo|' + s; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+// v:2（β0.2.0）：gender（'f'|'m'）、図鑑のキーに性別が入る（<ランク>:<性別>:<キャラ>:<衣装>）、fav（お気に入りのキー）、love（キーごとの好感度 0〜100）
+// v:1 の図鑑のキー（性別なし・3 つ組）は仮の絵のものなので、読むときに捨てる
 function loadSave() {
-  const d = { v: 1, best: 0, plays: 0, seen: {} };
+  const d = { v: 2, best: 0, plays: 0, seen: {}, gender: 'f', fav: '', love: {} };
   const raw = CG.ls.get(KEY);
   if (!raw) return d;
   try {
     const [b, c] = raw.split('.');
     if (!b || chk(b) !== c) return d;
     const o = JSON.parse(decodeURIComponent(escape(atob(b))));
-    return { v: 1, best: Math.max(0, o.best | 0), plays: Math.max(0, o.plays | 0), seen: (o.seen && typeof o.seen === 'object') ? o.seen : {} };
+    const seen = {};
+    if (o.seen && typeof o.seen === 'object') for (const k in o.seen) if (/^[SABCD]:[fm]:[a-z0-9]+:[a-z0-9]+$/.test(k)) seen[k] = Math.max(1, o.seen[k] | 0);
+    const love = {};
+    if (o.love && typeof o.love === 'object') for (const k in o.love) if (seen[k]) love[k] = clamp(o.love[k] | 0, 0, 100);
+    return { v: 2, best: Math.max(0, o.best | 0), plays: Math.max(0, o.plays | 0), seen, gender: o.gender === 'm' ? 'm' : 'f', fav: seen[o.fav] ? o.fav : '', love };
   } catch (e) { return d; }
 }
 function writeSave() {
@@ -308,7 +369,11 @@ const KON_ROWS = [
   '..gg........gg..', '.gggg......gggg.', '.gggggggggggggg.', 'gggggggggggggggg', 'ggggwwggggwwgggg', 'ggggewggggewgggg', 'gggggggeeggggggg', 'gdggggdgggggdggg',
   'gggggggggggggggg', 'gggdgggggggdgggg', 'gggggggggggggggg', '.gggggggggggggg.', '..gggggggggggg..', '..gg........gg..'
 ];
-const KON_SPR = makeSprite(KON_ROWS, { g: '#8D8E96', d: '#5E5F68', w: '#FFFFFF', e: '#1C1D24' });
+const KON_PAL = { g: '#8D8E96', d: '#5E5F68', w: '#FFFFFF', e: '#1C1D24', r: '#FF7BA8', R: '#E0568A', k: '#FFC0D6' };
+const KON_ROWS_F = KON_ROWS.slice(); KON_ROWS_F[0] = '..ggrr......gg..'; KON_ROWS_F[1] = '.ggrRRr....gggg.';   // メス：ねこ耳にリボン
+KON_ROWS_F[7] = 'gdggggdgggggdggg'; KON_ROWS_F[6] = 'gggggkgeeggkgggg';                                       // ほっぺをうすいピンクに
+const KON_SPR_M = makeSprite(KON_ROWS, KON_PAL), KON_SPR_F = makeSprite(KON_ROWS_F, KON_PAL);
+const konSpr = () => SAVE.gender === 'm' ? KON_SPR_M : KON_SPR_F;
 const PS = 3;   // ドット絵の拡大率
 
 /* ---------- アイテムの絵（原点が中心。半径 13 ほど） ---------- */
@@ -438,7 +503,8 @@ const WORLD = { items: [], obs: [], goalX: CFG.sectionLen * 4 + CFG.tail };
 const P = { x: 110, y: 0, vy: 0, held: false, holdT: 0, buf: 0, coy: 0, anim: 0, inv: 0, slow: 0, air: false };
 let pts = 0, got = {}, hist = [], parts = [], banner = { t: 9, txt: '' }, secIdx = 0, shake = 0, flashRed = 0, demoX = 0, runT0 = 0, konGrow = 0, konPulse = 0;
 let G_ = null;              // ゴール演出の情報
-const keyOf = (r, ch, co) => `${r}:${ch}:${co}`;
+const keyOf = (r, g, ch, co) => `${r}:${g}:${ch}:${co}`;
+const parseKey = k => { const [r, g, ch, co] = k.split(':'); return { r, g, ch, co }; };
 
 /* ---------- 世界を作る ---------- */
 function genWorld() {
@@ -563,7 +629,7 @@ function rankOf(p) { return p >= CFG.rank.A ? 'A' : p >= CFG.rank.B ? 'B' : p >=
 function startGoal() {
   state = 'goal'; P.x = WORLD.goalX - 100; P.y = 0; P.vy = 0; P.held = false; Snd.stopBgm();
   let rank = rankOf(pts); if (rank === 'A' && Math.random() < CFG.sChance) rank = 'S';
-  const ch = pick(charsOf(rank)), co = pick(COSTUMES), key = keyOf(rank, ch, co);
+  const gd = SAVE.gender, ch = pick(charsOf(rank, gd)), co = pick(costumesOf(rank)), key = keyOf(rank, gd, ch, co);
   const img = new Image(); const info = { rank, ch, co, key, img, ok: false, fail: false };
   img.onload = () => { info.ok = true; }; img.onerror = () => { info.fail = true; }; img.src = `img/concafe/${ch}-${co}.png`;
   const list = []; for (const k in got) if (ITEMS[k].pt > 0) for (let i = 0; i < got[k]; i++) list.push(k);
@@ -617,7 +683,7 @@ function drawKon(c, t) {
   const x = kx + 24 - w / 2 + ox, y = G - ky - bounce - h;
   c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(kx + 24, G + 3, w / 2.2, 5, 0, 0, 6.3); c.fill();
   if (G_ && state === 'goal' && G_.t >= G_.tShine && !G_.revealed) { const a = clamp((G_.t - G_.tShine) / 1.8, 0, 1), gl = c.createRadialGradient(kx + 24, G - 30, 5, kx + 24, G - 30, 40 + 90 * a); gl.addColorStop(0, `rgba(255,248,200,${0.5 + 0.4 * a})`); gl.addColorStop(1, 'rgba(255,248,200,0)'); c.fillStyle = gl; c.fillRect(kx - 100, G - 160, 250, 200); }
-  c.drawImage(KON_SPR, x, y, w, h);
+  c.drawImage(konSpr(), x, y, w, h);
   // リード
   if (state === 'play' || state === 'title' || state === 'goal') {
     const hx = P.x - cam() + 18, hy = G - P.y - 33 * 1, ex = kx + 24 + w / 2 - 8, ey = y + h * 0.6;
@@ -690,8 +756,8 @@ function drawGoalFx(c, cm) {
     const dim = clamp(g.rt * 2, 0, 0.62); c.fillStyle = `rgba(18,12,8,${dim})`; c.fillRect(0, 0, W, H);
     const sp = c.createRadialGradient(180, 330, 10, 180, 330, 190); sp.addColorStop(0, g.rank === 'S' ? 'rgba(255,230,120,.55)' : 'rgba(255,244,220,.4)'); sp.addColorStop(1, 'rgba(255,244,220,0)'); c.fillStyle = sp; c.fillRect(0, 100, W, 330);
     c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(180, 402, 80, 10, 0, 0, 6.3); c.fill();
-    const s = easeOutBack(clamp(g.rt / 0.55, 0, 1)), hh = 270 * s, ww = 154 * s;
-    if (g.ok) { c.imageSmoothingEnabled = false; c.drawImage(g.img, 180 - ww / 2, 400 - hh, ww, hh); }
+    const s = easeOutBack(clamp(g.rt / 0.55, 0, 1)), hh = 280 * s, ww = g.ok ? hh * g.img.naturalWidth / g.img.naturalHeight : 0;
+    if (g.ok) { c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.drawImage(g.img, 180 - ww / 2, 400 - hh, ww, hh); c.imageSmoothingEnabled = false; }
     else if (g.fail) { c.fillStyle = '#fff'; c.font = '800 14px "M PLUS Rounded 1c",sans-serif'; c.textAlign = 'center'; c.fillText('絵を読み込めませんでした', 180, 270); }
     if (g.rank === 'S') { c.save(); c.globalAlpha = 0.5 + 0.3 * Math.sin(T * 6); c.strokeStyle = '#FFD34D'; c.lineWidth = 4; c.beginPath(); c.ellipse(180, 402, 90 + Math.sin(T * 4) * 4, 13, 0, 0, 6.3); c.stroke(); c.restore(); }
   }
@@ -699,6 +765,7 @@ function drawGoalFx(c, cm) {
 }
 function draw() {
   const c = cx; c.setTransform(K, 0, 0, K, 0, 0); c.imageSmoothingEnabled = false;
+  if (state === 'talk') { drawTalk(c); return; }
   const cm = cam(); let sx = 0, sy = 0; if (shake > 0) { sx = rnd(-1, 1) * shake * 14; sy = rnd(-1, 1) * shake * 14; }
   c.save(); c.translate(sx, sy);
   drawScene(c, cm, T);
@@ -732,25 +799,130 @@ function resize() {
 }
 addEventListener('resize', resize); resize();
 
+const seenCount = g => Object.keys(SAVE.seen).filter(k => k.split(':')[1] === g).length;
 function refreshTitle() {
   const n = Object.keys(SAVE.seen).length;
   $('#bestline').textContent = SAVE.best > 0 ? `ベスト記録 ${SAVE.best} ポイント　（${SAVE.plays} 回さんぽ）` : 'まだ さんぽしていません';
-  $('#zcount').textContent = `${n}/${ZUKAN_TOTAL}`; $('#zcount2').textContent = `${n}/${ZUKAN_TOTAL}`;
+  $('#zcount').textContent = `${n}/${ZUKAN_TOTAL * 2}`; $('#zcount2').textContent = `${seenCount(zG)}/${ZUKAN_TOTAL}`;
+  $('#gF').classList.toggle('on', SAVE.gender === 'f'); $('#gM').classList.toggle('on', SAVE.gender === 'm');
+  $('#gHint').textContent = SAVE.gender === 'f' ? '成長すると、女性のコンカフェ嬢に！' : '成長すると、男性のコンカフェ嬢に！';
+  $('#btnTalkTop').textContent = SAVE.fav ? '♥ お気に入りと会話' : '♡ お気に入りと会話';
 }
+function setGender(g) { SAVE.gender = g; zG = g; writeSave(); refreshTitle(); }
 function openModal(html) { $('#mbox').innerHTML = html + '<div class="row"><button class="sm" id="mClose" type="button">とじる</button></div>'; $('#modal').hidden = false; $('#mClose').onclick = () => { $('#modal').hidden = true; }; }
+let zG = SAVE.gender;       // 図鑑で開いている性別
 function buildZukan() {
   let h = '';
   for (const r of RANK_ORDER) {
     h += `<h3>${r}：${RARITY[r]}</h3><div class="grid">`;
-    for (const ch of charsOf(r)) for (const co of COSTUMES) {
-      const seen = SAVE.seen[keyOf(r, ch, co)];
-      h += `<div class="slot${r === 'S' && seen ? ' s' : ''}">${seen ? `<img src="img/concafe/${ch}-${co}.png" alt="">` : '？'}</div>`;
+    for (const ch of charsOf(r, zG)) for (const co of costumesOf(r)) {
+      const key = keyOf(r, zG, ch, co), seen = SAVE.seen[key];
+      h += `<div class="slot${r === 'S' && seen ? ' s' : ''}${SAVE.fav === key ? ' fav' : ''}"${seen ? ` data-k="${key}"` : ''}>${seen ? `<img loading="lazy" src="img/concafe/${ch}-${co}.png" alt="${NAMES[ch]}">` : '？'}</div>`;
     }
     h += '</div>';
   }
   $('#zbody').innerHTML = h;
+  $('#zF').classList.toggle('on', zG === 'f'); $('#zM').classList.toggle('on', zG === 'm');
+  $('#zcount2').textContent = `${seenCount(zG)}/${ZUKAN_TOTAL}`;
 }
-function openZukan() { buildZukan(); refreshTitle(); $('#zukan').hidden = false; }
+function openZukan() { zG = SAVE.gender; buildZukan(); refreshTitle(); $('#zukan').hidden = false; $('#zbody').scrollTop = 0; }
+function openDetail(key) {
+  const k = parseKey(key), fav = SAVE.fav === key;
+  openModal(`<h2>${RARITY[k.r]}　${NAMES[k.ch]}</h2><div class="dimg"><img src="img/concafe/${k.ch}-${k.co}.png" alt="${NAMES[k.ch]}"></div><p>${GENDERS[k.g]}／衣装：${COSTUME_NAMES[k.co]}／出会った回数：${SAVE.seen[key]}${SAVE.love[key] ? `／好感度：${SAVE.love[key]}` : ''}</p><div class="mm"><button class="sm" id="dFav" type="button">${fav ? '♥ 解除する' : '♡ お気に入り'}</button><button class="sm" id="dTalk" type="button">会話する</button></div>`);
+  $('#dFav').onclick = () => { SAVE.fav = fav ? '' : key; writeSave(); $('#modal').hidden = true; buildZukan(); refreshTitle(); CG.toast(fav ? 'お気に入りをはずしました' : 'お気に入りにしました'); };
+  $('#dTalk').onclick = () => { SAVE.fav = key; writeSave(); $('#modal').hidden = true; $('#zukan').hidden = true; openTalk(); };
+}
+$('#zbody').addEventListener('click', e => { const s = e.target.closest('.slot[data-k]'); if (s) openDetail(s.dataset.k); });
+$('#zF').onclick = () => { zG = 'f'; buildZukan(); };
+$('#zM').onclick = () => { zG = 'm'; buildZukan(); };
+
+/* ---------- お気に入りと会話（ホットモック） ----------
+   ・背景とオブジェクトのドット絵は、あとで開発者が用意する。いまは仮の背景（drawTalkBg）を低解像度の canvas に描いて拡大している。
+     絵ができたら TALK_BG_SRC に画像のパスを書くと、仮の背景のかわりに読み込む（オブジェクトは TALK_OBJ に追加）。
+   ・会話の台本・名前・好感度のしくみは仮。本番は台本を別ファイルにする想定（未実装タスク）。 */
+const TALK_BG_SRC = '';                 // 例：'img/talk/bg.png'（360×640 の縦長を想定）
+const TALK_OBJ = [];                    // 例：{ src: 'img/talk/glass.png', x: 40, y: 452, w: 28 }
+let TK = null, tkBg = null;
+function drawTalkBg() {
+  const w = 90, h = 160, o = document.createElement('canvas'); o.width = w; o.height = h; const c = o.getContext('2d');
+  const fillR = (col, x, y, ww, hh) => { c.fillStyle = col; c.fillRect(x, y, ww, hh); };
+  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#2B1D1A'); g.addColorStop(1, '#4A3024'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 6) fillR(x % 12 ? 'rgba(0,0,0,.10)' : 'rgba(255,255,255,.03)', x, 0, 3, 108);    // 壁板
+  fillR('#1B120F', 0, 0, w, 5);
+  // 棚と瓶
+  [[22, '#5A3B28'], [42, '#5A3B28']].forEach(([y, col]) => { fillR(col, 6, y, 78, 2); fillR('rgba(0,0,0,.35)', 6, y + 2, 78, 1); });
+  const cols = ['#6FA8A0', '#C9873A', '#9A4A3A', '#3F6FA0', '#B9A15A', '#6A8A4A', '#A0607A', '#D9C7A0'];
+  for (let r = 0; r < 2; r++) for (let i = 0; i < 12; i++) { const bx = 8 + i * 6.4, by = r ? 42 : 22, hh = 8 + ((i * 7 + r * 3) % 4) * 2, col = cols[(i * 3 + r * 5) % cols.length]; fillR(col, bx, by - hh, 3, hh); fillR(col, bx + 1, by - hh - 3, 1, 3); fillR('rgba(255,255,255,.35)', bx, by - hh + 1, 1, hh - 2); }
+  // つるしの照明
+  [[18, 62], [45, 70], [72, 62]].forEach(([x, y]) => { fillR('#1B120F', x, 0, 1, y - 8); fillR('#E8B95A', x - 3, y - 8, 7, 4); fillR('#FFF2B0', x - 2, y - 4, 5, 2);
+    const gl = c.createRadialGradient(x + .5, y - 2, 1, x + .5, y - 2, 20); gl.addColorStop(0, 'rgba(255,214,120,.45)'); gl.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = gl; c.fillRect(x - 22, y - 22, 46, 46); });
+  // 床
+  fillR('#2A1A14', 0, 108, w, 52); for (let y = 108; y < 160; y += 5) fillR('rgba(255,255,255,.04)', 0, y, w, 1);
+  // カウンター
+  fillR('#7A5236', 0, 112, w, 4); fillR('#A06C45', 0, 112, w, 1); fillR('#4B2F1E', 0, 116, w, 44); for (let x = 0; x < w; x += 10) fillR('rgba(0,0,0,.18)', x, 116, 1, 44);
+  return o;
+}
+function openTalk() {
+  const key = SAVE.fav; if (!key || !SAVE.seen[key]) { CG.toast('図鑑でお気に入りを選んでね'); openZukan(); return; }
+  const k = parseKey(key), img = new Image(); const t = { key, k, img, ok: false, turn: 0, love: SAVE.love[key] || 0 };
+  img.onload = () => { t.ok = true; }; img.src = `img/concafe/${k.ch}-${k.co}.png`;
+  if (!tkBg) { if (TALK_BG_SRC) { tkBg = new Image(); tkBg.src = TALK_BG_SRC; } else tkBg = drawTalkBg(); }
+  TK = t; state = 'talk'; Snd.stopBgm();
+  $('#title').hidden = true; $('#result').hidden = true; $('#rank').hidden = true; $('#zukan').hidden = true; $('#modal').hidden = true; $('#talk').hidden = false;
+  $('#tName').textContent = NAMES[k.ch]; $('#tSub').textContent = `${RARITY[k.r]}／${COSTUME_NAMES[k.co]}`; $('#tNm').textContent = NAMES[k.ch];
+  talkNode('hello');
+}
+function talkSay(text) { $('#tText').textContent = text; }
+function talkLove(d) {
+  TK.love = clamp(TK.love + d, 0, 100); SAVE.love[TK.key] = TK.love; writeSave();
+  $('#tLove').style.width = TK.love + '%'; $('#tLoveN').textContent = TK.love;
+  if (d > 0) for (let i = 0; i < 5; i++) parts.push({ ty: 's', x: 180 + rnd(-60, 60), y: rnd(150, 300), vx: rnd(-20, 20), vy: rnd(-70, -30), life: rnd(0.6, 1.1), max: 1.1, col: '#FF9DBD', r: rnd(3, 5) });
+}
+// 台本（仮）。choices：[表示, 好感度の増え方, 返事]
+function talkNode(id) {
+  const t = TK, nm = NAMES[t.k.ch], cos = COSTUME_NAMES[t.k.co], box = $('#tChoices');
+  const choices = c => { box.innerHTML = ''; c.forEach(([label, fn]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = fn; box.appendChild(b); }); };
+  talkLove(0);
+  if (id === 'hello') {
+    talkSay(t.love >= 60 ? `あっ、来てくれたんだ！ ……待ってたよ。今日は「${cos}」なんだ。` : t.love > 0 ? `いらっしゃい、また会えたね。今日は「${cos}」だよ。` : `いらっしゃいませ。${nm}です。今日は「${cos}」で来てみたよ。`);
+    choices([['その衣装、似合ってるね', () => reply(8, 'ほんと？ うれしい。選んだかいがあったな。')], ['おすすめは何？', () => reply(3, 'ちくわとこんにゃくかな。あったかいのをゆっくり食べるのが好き。')], ['こんにゃんだったころの話、おぼえてる？', () => reply(6, 'えへへ、ちょっと恥ずかしいな。でも、あの散歩はたのしかったよ。')]]);
+  } else if (id === 'second') {
+    talkSay('ねえ、ほかにも聞きたいことある？');
+    choices([['最近どう？', () => reply(4, 'ぼちぼちかな。お店がにぎやかだと、それだけでうれしいよ。')], ['また会いに来ていい？', () => reply(8, 'もちろん。来てくれたら、きっと顔に出ちゃうから。')], ['今日はもう帰るね', () => bye()]]);
+  } else if (id === 'bye') {
+    choices([['もどる', leaveTalk]]);
+  }
+  function reply(d, txt) {
+    talkLove(d); talkSay(txt); t.turn++;
+    choices([['つづける', () => t.turn >= 3 ? bye() : talkNode('second')]]);
+  }
+  function bye() {
+    talkSay(t.love >= 60 ? 'もう帰っちゃうの？ ……また、すぐ来てね。' : t.love >= 20 ? 'ありがとう、たのしかった。また来てね。' : 'ありがとうございました。またお待ちしています。');
+    choices([['もどる', leaveTalk]]);
+  }
+}
+function leaveTalk() { TK = null; parts = []; $('#talk').hidden = true; showTitle(); }
+function drawTalk(c) {
+  c.imageSmoothingEnabled = false; c.drawImage(tkBg, 0, 0, W, H);
+  TALK_OBJ.forEach(o => { if (!o.img) { o.img = new Image(); o.img.src = o.src; } if (o.img.complete && o.img.naturalWidth) c.drawImage(o.img, o.x, o.y, o.w, o.w * o.img.naturalHeight / o.img.naturalWidth); });
+  const t = TK; if (!t) return;
+  if (t.ok) {   // 立ち絵：カウンターのうしろに立つ（足もとはカウンターにかくれる）
+    const hh = 340, ww = hh * t.img.naturalWidth / t.img.naturalHeight, by = Math.sin(T * 1.6) * 1.5;
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.globalAlpha = 1;
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(180, 458, ww * 0.42, 9, 0, 0, 6.3); c.fill();
+    c.drawImage(t.img, 180 - ww / 2, 468 - hh + by, ww, hh); c.imageSmoothingEnabled = false;
+  }
+  if (tkBg instanceof HTMLCanvasElement) {   // 仮の背景のときだけ：カウンターを手前に重ねて足もとをかくし、グラスとお皿を置く
+    const cy = 112 / 160 * H;
+    c.drawImage(tkBg, 0, 112, 90, 48, 0, cy, W, H - cy);
+    c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(268, cy - 22, 14, 22); c.fillStyle = 'rgba(255,200,120,.6)'; c.fillRect(270, cy - 12, 10, 12); c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(272, cy - 22, 2, 18);
+    c.fillStyle = '#E8DCC0'; c.beginPath(); c.ellipse(80, cy - 2, 20, 5, 0, 0, 6.3); c.fill(); c.fillStyle = '#B8692A'; rr(c, 68, cy - 12, 24, 9, 4); c.fill();
+  }
+  drawParts(c, 0);
+  const vg = c.createLinearGradient(0, 0, 0, H); vg.addColorStop(0, 'rgba(0,0,0,.35)'); vg.addColorStop(.25, 'rgba(0,0,0,0)'); vg.addColorStop(.7, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
+}
+$('#btnTback').onclick = leaveTalk;
+$('#btnTalkTop').onclick = () => { if (SAVE.fav) openTalk(); else { CG.toast('図鑑でお気に入りを選んでね'); openZukan(); } };
 function openShare() {
   const g = G_; const s = { msg: `やすにゃんとこんにゃんの散歩で ${pts} ポイント！ スコアランク${g ? g.rank : ''}でコンカフェ嬢が誕生！`, tags: ['やすにゃん散歩チュウ'], url: CG.pageUrl() };
   const L = CG.share.links(s);
@@ -764,14 +936,19 @@ $('#btnZukan').onclick = openZukan;
 $('#btnZukan2').onclick = openZukan;
 $('#btnZclose').onclick = () => { $('#zukan').hidden = true; };
 $('#btnShare').onclick = openShare;
-$('#btnTop').onclick = () => { state = 'title'; G_ = null; konGrow = 0; konPulse = 0; parts = []; $('#result').hidden = true; $('#rank').hidden = true; $('#title').hidden = false; demoX = 0; Snd.startBgm(); refreshTitle(); };
+function showTitle() { state = 'title'; G_ = null; konGrow = 0; konPulse = 0; parts = []; $('#result').hidden = true; $('#rank').hidden = true; $('#talk').hidden = true; $('#title').hidden = false; demoX = 0; if (Snd.ctx) Snd.startBgm(); refreshTitle(); }
+$('#btnTop').onclick = showTitle;
+$('#gF').onclick = () => setGender('f');
+$('#gM').onclick = () => setGender('m');
 $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>やすにゃんは自動で右へ歩きます。<b>タップでジャンプ</b>、<b>長押しで高く</b>跳びます（PC はスペースキー）。</li>
 <li>道に落ちている激うまアイテムに触れると拾えます。レアや超レアほど高い点です。</li>
 <li>七味・和からし・ばくだんは<b>減点</b>。ジャンプでよけましょう。</li>
 <li>水たまり・自転車・カラスにぶつかると、ポイントを少し落として足が遅くなります。</li>
-<li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+<li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
+<li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
+<li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };

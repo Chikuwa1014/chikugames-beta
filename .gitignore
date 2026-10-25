@@ -1,3 +1,4 @@
 .wrangler
 node_modules
 **/dev/shots/
+**/dev/slice-check/

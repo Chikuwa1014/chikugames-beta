@@ -61,6 +61,41 @@ with sync_playwright() as p:
                 print(label, st)
             pg.click('#btnZukan2'); pg.wait_for_timeout(500); pg.screenshot(path=f'{OUT}/{tag}-zukan.png')
             pg.click('#btnZclose'); pg.click('#btnShare'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-share.png')
+            # --- 性別・男性のキャラ・図鑑の男女別・お気に入り・会話 ---
+            pg.evaluate("document.querySelector('#modal').hidden = true; showTitle()"); pg.wait_for_timeout(300)
+            pg.click('#gM'); pg.wait_for_timeout(400); pg.screenshot(path=f'{OUT}/{tag}-title-m.png')
+            pg.click('#gF'); pg.wait_for_timeout(200)
+            # ボタンが絵（足もと y=505 から上へ約 66px）とかぶらない：スタートの下端 < 430、そのほかのボタンの上端 > 506
+            geo = pg.evaluate("""(() => { const st = document.querySelector('#stage').getBoundingClientRect(), s = st.width / 360;
+              const r = e => { const b = document.querySelector(e).getBoundingClientRect(); return [Math.round((b.top - st.top) / s), Math.round((b.bottom - st.top) / s)]; };
+              return { start: r('#btnStart'), seg: r('#gseg'), zukan: r('#btnZukan'), how: r('#btnHow'), best: r('#bestline') }; })()""")
+            print('title geo (stage px):', geo)
+            assert geo['start'][1] < 430 and geo['zukan'][0] > 506, 'title buttons overlap the characters'
+            for (gd, label) in [('m', 'A'), ('m', 'S'), ('f', 'A'), ('m', 'B')]:
+                pg.evaluate(f"""setGender('{gd}'); startRun(); clearInterval(window.__bot);
+                  CFG.sChance = {1 if label == 'S' else 0};
+                  got = {{chikuwa: 6, tamago: 2}}; pts = {800 if label in 'AS' else 600}; P.x = WORLD.goalX - 130""")
+                pg.wait_for_timeout(7800); pg.screenshot(path=f'{OUT}/{tag}-result-{gd}-{label}.png')
+                print(gd, label, pg.evaluate("[state, G_.rank, G_.key, G_.ok, G_.img.naturalWidth + 'x' + G_.img.naturalHeight]"))
+            pg.click('#btnZukan2'); pg.wait_for_timeout(600); pg.screenshot(path=f'{OUT}/{tag}-zukan-m.png')
+            pg.click('#zF'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-zukan-f.png')
+            pg.click('#zM'); pg.wait_for_timeout(200)
+            pg.click('#zbody .slot[data-k]'); pg.wait_for_timeout(400); pg.screenshot(path=f'{OUT}/{tag}-detail.png')
+            pg.click('#dFav'); pg.wait_for_timeout(300)
+            print('fav:', pg.evaluate("SAVE.fav"))
+            pg.click('#zbody .slot.fav'); pg.wait_for_timeout(300); pg.click('#dTalk'); pg.wait_for_timeout(900)
+            pg.screenshot(path=f'{OUT}/{tag}-talk0.png')
+            for i in range(3):   # 3 往復で会話がおわる
+                pg.click('#tChoices button:first-child'); pg.wait_for_timeout(500)
+                pg.click('#tChoices button:first-child'); pg.wait_for_timeout(400)
+                if i == 0: pg.screenshot(path=f'{OUT}/{tag}-talk1.png')
+            pg.screenshot(path=f'{OUT}/{tag}-talk2.png')
+            print('love:', pg.evaluate("[state, TK && TK.love, SAVE.love[SAVE.fav]]"))
+            pg.click('#btnTback'); pg.wait_for_timeout(300)
+            print('back:', pg.evaluate("[state, document.querySelector('#title').hidden]"))
+            # 保存の読みもどし（お気に入り・性別・図鑑が残る）と、古い形式の図鑑キーの破棄
+            pg.reload(); pg.wait_for_timeout(600)
+            print('reload:', pg.evaluate("[SAVE.gender, SAVE.fav, Object.keys(SAVE.seen).length]"))
         b.close()
     # 実際に遊んで最後までたどり着けるか（ボット。時間短縮のため速度を上げる）
     if not quick:
