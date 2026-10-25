@@ -41,6 +41,27 @@ with sync_playwright() as p:
         pg.click('#btnStart'); pg.wait_for_timeout(300)
         pg.evaluate(BOT)
         pg.wait_for_timeout(1500); pg.screenshot(path=f'{OUT}/{tag}-play0.png')
+        # --- 一時停止：止まる・再開・リスタート・スタート画面へ戻る・デバッグ欄 ---
+        pg.evaluate("clearInterval(window.__bot)")
+        pg.click('#btnPause'); pg.wait_for_timeout(300)
+        x0, t0 = pg.evaluate("[P.x, T]"); pg.wait_for_timeout(700)
+        x1, t1 = pg.evaluate("[P.x, T]")
+        assert x0 == x1 and t0 == t1, ('paused but moving', x0, x1, t0, t1)
+        pg.screenshot(path=f'{OUT}/{tag}-pause.png')
+        pg.fill('#pdbg textarea', 'ここでジャンプ w できない'); pg.keyboard.press('Space')   # メモに打った文字・スペースでジャンプしない
+        assert pg.evaluate("P.y") == 0 and pg.evaluate("paused")
+        pg.click('#pdbg button'); pg.wait_for_timeout(800)
+        print('debug send:', pg.evaluate("document.querySelector('#pdbg').innerText.replace(/\\n/g,' / ').slice(-90)"), '| log:', pg.evaluate("CG.debug.log.length"))
+        pg.screenshot(path=f'{OUT}/{tag}-pause-debug.png')
+        pg.click('#btnResume'); pg.wait_for_timeout(600)
+        assert pg.evaluate("!paused && P.x") > x1, 'resume failed'
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(200); assert pg.evaluate("paused"); pg.keyboard.press('Escape'); pg.wait_for_timeout(200); assert not pg.evaluate("paused")
+        pg.click('#btnPause'); pg.click('#btnRestart'); pg.wait_for_timeout(400)
+        assert pg.evaluate("state") == 'play' and pg.evaluate("P.x") < 300 and pg.evaluate("pts") == 0, 'restart failed'
+        pg.click('#btnPause'); pg.click('#btnQuit'); pg.wait_for_timeout(300)
+        assert pg.evaluate("state") == 'title' and not pg.evaluate("document.querySelector('#title').hidden") is True, 'quit failed'
+        print('pause ok', tag, pg.evaluate("Snd.bgmOn"))
+        pg.click('#btnStart'); pg.wait_for_timeout(300); pg.evaluate(BOT)
         for i, nm in enumerate(['stall', 'shop', 'park', 'shrine', 'back']):
             pg.evaluate(f"P.x = CFG.sectionLen*{i} + 400; banner.t = 0.5; banner.txt = STY[{i}%4].name; pg_ok = true")
             pg.wait_for_timeout(900); pg.screenshot(path=f'{OUT}/{tag}-sec{i}.png')
