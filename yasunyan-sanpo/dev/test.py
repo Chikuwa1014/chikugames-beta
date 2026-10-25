@@ -79,7 +79,8 @@ with sync_playwright() as p:
         assert pg.evaluate("document.querySelector('#tPanel').hidden && !document.querySelector('#tLock').hidden"), 'locked'
         pg.fill('#tPass', 'wrong'); pg.click('#tOk'); pg.wait_for_timeout(300)
         assert pg.evaluate("document.querySelector('#tPanel').hidden && !TEST.on"), 'wrong password'
-        pg.fill('#tPass', 'pw-for-test'); pg.click('#tOk'); pg.wait_for_timeout(400)
+        pg.click('#tPass'); pg.keyboard.type('pw-for-test'); assert pg.evaluate("document.activeElement.id === 'tPass' && document.querySelector('#tPass').value === 'pw-for-test'"), 'can type password'
+        pg.click('#tOk'); pg.wait_for_timeout(400)
         assert pg.evaluate("!document.querySelector('#tPanel').hidden && TEST.on"), 'unlock'
         pg.click('#tZukan'); pg.click('#tAbil'); pg.click('#tInf'); pg.wait_for_timeout(200)
         pg.screenshot(path=f'{OUT}/{tag}-settings-test.png')
