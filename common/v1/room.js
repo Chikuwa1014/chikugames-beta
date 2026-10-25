@@ -19,6 +19,8 @@
  *     onStatus(text, isErr) {}                 // 「つないでいます…」などの途中経過
  *   });
  *   room.createRoom();  room.join('1234');  room.leave();
+ *   room.takeOver('1234')  // 親がいなくなった部屋を、同じコードで親として作り直す（親の引き継ぎ。2026-10-25 追加）
+ *   room.rejoin('1234')    // 親が引き継がれた部屋へ、子としてつなぎ直す（新しい親がまだなら少し待ってくり返す）
  *   room.send(m)        // 子→親
  *   room.sendTo(id, m)  // 親→その子     room.broadcast(m)  // 親→全員の子
  *   room.role ('host'|'guest'|null)  room.code  room.myId  room.members  room.inviteUrl()
@@ -86,6 +88,16 @@
                 call('onStatus', '部屋をさがしています…');
                 openSignal(code, 'join', 0);
                 return true;
+            },
+            /** 親の引き継ぎ：同じ部屋コードで親になる（すでに親がいれば子として入る） */
+            takeOver(code) {
+                call('onStatus', '部屋を引き継いでいます…');
+                openSignal(String(code), 'takeover', 0);
+            },
+            /** 親の引き継ぎ：新しい親へ子としてつなぎ直す（新しい親がまだいなければ、0.7 秒ごとにくり返す） */
+            rejoin(code) {
+                call('onStatus', '部屋につなぎ直しています…');
+                openSignal(String(code), 'rejoin', 0);
             },
             leave() {
                 reset();
@@ -210,6 +222,20 @@
             };
         }
 
+        /** 引き継ぎ（takeover・rejoin）で、まだつながらないときにやり直す */
+        function retryLater(code, m, tries) {
+            leaving = true;
+            try {
+                ws && ws.close();
+            }
+            catch (e) { }
+            ws = null;
+            clearTimeout(timer);
+            if (tries >= 14)
+                return fail('部屋が見つかりませんでした');
+            timer = setTimeout(() => openSignal(code, m, tries + 1), 700);
+        }
+
         /** 親：いまの人数（自分＋つながった子＋つなぎ途中の子） */
         const headcount = () => 1 + peers.size;
 
@@ -237,6 +263,9 @@
                     }
                     if (mode === 'join' && msg.role === 'host')
                         return fail('その部屋は見つかりません');
+                    // 引き継ぎ：新しい親がまだいない（自分が親になってしまった）ので、出なおす
+                    if (mode === 'rejoin' && msg.role === 'host')
+                        return retryLater(R.code, mode, tries);
                     R.role = msg.role;
                     R.myId = msg.id;
                     if (R.role === 'host') {
@@ -253,6 +282,8 @@
                 case 'full':
                     return fail('その部屋は満員です');
                 case 'host-left':
+                    if (!connected && (mode === 'rejoin' || mode === 'takeover'))
+                        return retryLater(R.code, mode, tries);
                     if (!connected)
                         fail('部屋が閉じられました');
                     return;
