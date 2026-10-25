@@ -40,7 +40,7 @@ with sync_playwright() as p:
     host.goto(BASE); host.click("#multiBtn")
     host.fill(".cg-room-name", "おや"); host.click("[data-cg=create]")
     host.wait_for_function("__HM.NET.room && __HM.NET.room.role==='host' && __HM.NET.room.code")
-    host.click("#lobby [data-size=medium]")
+    host.click("#lobby [data-size=tall]")
     code = host.evaluate("__HM.NET.room.code")
     for pg, nm, col in [(ga, "こA", "red"), (gb, "こB", "auto")]:
         pg.goto(BASE + "?room=" + code)
@@ -48,16 +48,21 @@ with sync_playwright() as p:
         pg.fill(".cg-room-name", nm)
         if col != "auto": pg.click(f"#lobbyColors [data-col={col}]")
         pg.click("[data-cg=join]")
-    host.wait_for_function("__HM.NET.roster.size===3", timeout=30000)
+    try:
+        host.wait_for_function("__HM.NET.roster.size===3", timeout=30000)
+    except Exception:
+        print("dbg2:", [pg.evaluate("JSON.stringify({role:__HM.NET.room.role,open:__HM.NET.room.open,mem:__HM.NET.room.members,ll:__HM.NET.lobbyList.length})") for pg in pages], errors)
+        print("dbg roster:", host.evaluate("__HM.NET.roster.size"), [pg.inner_text("#lobbyBox")[:120].replace(chr(10),' ') for pg in pages])
+        raise
     ga.wait_for_function("__HM.NET.lobbyList.length===3")
     host.screenshot(path=f"{OUT}/multi-lobby-host.png", full_page=True)
     ga.screenshot(path=f"{OUT}/multi-lobby-guest.png", full_page=True)
-    check(ga.evaluate("__HM.NET.lobbySize") == "medium", "親のえらんだ大きさ（メディアム）が子にとどく")
+    check(ga.evaluate("__HM.NET.lobbySize") == "tall", "親のえらんだ大きさ（トール）が子にとどく")
     check(host.evaluate("!document.querySelector('#startBtn').disabled"), "3人でスタートできる")
     host.click("#startBtn")
     for pg in pages:
         pg.wait_for_function("__HM.G.running && document.querySelector('#loading').hidden", timeout=30000)
-    check(all(pg.evaluate("__HM.G.world.N") == 75 for pg in pages), "全員メディアム（75）で始まる")
+    check(all(pg.evaluate("__HM.G.world.N") == 80 for pg in pages), "全員トール（80）で始まる")
     cols = host.evaluate("[...__HM.G.players.values()].map(p=>p.name+':'+p.color).join(',')")
     print("     色:", cols)
     check("こA:red" in cols and "おや:normal" in cols and "こB:blue" in cols, "色（自分で選んだ色・おまかせ）")
@@ -77,6 +82,8 @@ with sync_playwright() as p:
     sums = [pg.evaluate("(()=>{let s=0;const v=__HM.G.world.v;for(let i=0;i<v.length;i+=7)s=(s*31+v[i])>>>0;return s})()") for pg in pages]
     check(len(set(sums)) == 1, f"地形が全員同じ（{sums}）")
     # 子Bの目の前に子Aを置き、子Bが出汁ピストルを撃つ → 親が当たりを決める
+    check(all(pg.evaluate("__HM.G.inDig()") for pg in pages), "全員ほりほりタイムから始まる")
+    for pg in pages: pg.evaluate("__HM.G.digEnd = 0")   # テストではすぐバトルへ
     pbid = gb.evaluate("__HM.NET.pid")
     gb.evaluate("__HM.G.addItem('dashi')")
     gb.evaluate(f"""(()=>{{const m=__HM.G.me; const a=__HM.G.players.get('{pa}');

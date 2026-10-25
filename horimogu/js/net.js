@@ -155,7 +155,7 @@
     }
     // 子
     switch (m.t) {
-      case 'roster': NET.lobbyList = m.list || []; NET.lobbySize = m.size || 'large'; NET.onLobby && NET.onLobby(); return;
+      case 'roster': NET.lobbyList = m.list || []; NET.lobbySize = m.size || 'grande'; NET.onLobby && NET.onLobby(); return;
       case 'busy': NET.onStatus && NET.onStatus('いまは試合中です。終わったら次の試合から参加できます', false); return;
       case 'start': startMatch(m); return;
       case 'lobby': NET.inMatch = false; NET.onLobby && NET.onLobby(); return;
@@ -192,7 +192,7 @@
     NET.hostPid = m.hostPid;
     NET.code = NET.room.code;
     wire();
-    G.sizeKey = m.sizeKey || 'large';
+    G.sizeKey = m.sizeKey || 'grande';
     G.start({ mode: 'multi', seed: m.seed, size: m.size || T.field, me: { pid: NET.pid, name: NET.myName() }, roster: m.roster, isHost: NET.isHost() });
     if (NET.isHost()) updateSucc();
     NET.onStart && NET.onStart();

@@ -10,7 +10,7 @@
 - `gatasu/index.html`：がたす、モテる。のベータ（`/gatasu/`。β0.1.0・限定公開）
 - `voxel-quiz/index.html`：ぬがせて！ボクセルクイズのベータ（`/voxel-quiz/`。β0.1.0・β公開（鍵なし））
 - `ikuiku-sumo/index.html`：いくいく！雲紅亭珍光〜すもう編〜のベータ（`/ikuiku-sumo/`。β0.3.3・限定公開（鍵付き））
-- `horimogu/index.html`：ほりほりもぐもぐのベータ（`/horimogu/`。β0.2.0・開発に公開）
+- `horimogu/index.html`：ほりほりもぐもぐのベータ（`/horimogu/`。β0.3.0・開発に公開）
 - `yasunyan-sanpo/`：やすにゃんこんにゃん！散歩チュウ（`β0.2.0`。開発に公開。仕様と引き継ぎは `CLAUDE.md`）
 - `hayaoshi-chikupon/`：早押し！ちくぽん！は 2026-10-24 に号口へ昇格。号口のページへ移動するだけのページを残している
 - `common/v1/`：共通部品（本番と同じ中身）

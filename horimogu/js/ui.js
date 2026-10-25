@@ -3,9 +3,9 @@
   const HM = window.HM, T = HM.T, G = HM.G, NET = HM.NET, M4 = HM.M4;
   const $ = s => document.querySelector(s);
   const KEY_COLOR = 'horimogu-color', KEY_SENS = 'horimogu-sens', KEY_BEST = 'horimogu-best-v2', KEY_CAM = 'horimogu-cam', KEY_SIZE = 'horimogu-size';
-  // フィールドの大きさ（small・medium・large）。はじめはラージ
-  let sizePick = CG.ls.get(KEY_SIZE, 'large');
-  if (!T.sizes.find(s => s.key === sizePick)) sizePick = 'large';
+  // フィールドの大きさ（short・tall・venti・grande）。はじめはグランデ
+  let sizePick = CG.ls.get(KEY_SIZE, 'grande');
+  if (!T.sizes.find(s => s.key === sizePick)) sizePick = 'grande';
   // 視点：far＝後方（はじめはこちら）、near＝近く
   G.camMode = CG.ls.get(KEY_CAM, 'far') === 'near' ? 'near' : 'far';
   function setCam(m) {
@@ -47,7 +47,7 @@
       const lobby = el.dataset.lobby === '1';
       // ロビーでは親だけが選べる。子には親の選んだ大きさを出す
       const guest = lobby && !NET.isHost();
-      const cur = guest ? (NET.lobbySize || 'large') : sizePick;
+      const cur = guest ? (NET.lobbySize || 'grande') : sizePick;
       el.innerHTML = T.sizes.map(s => `<button type="button" class="sz${s.key === cur ? ' on' : ''}" data-size="${s.key}"${guest ? ' disabled' : ''}>
         <b>${s.name}</b><small>${s.n}×${s.n}×${s.n}</small></button>`).join('');
     });
@@ -117,7 +117,7 @@
   const hud = {};
   function buildHud() {
     hud.hp = $('#hpFill'); hud.hpTxt = $('#hpTxt'); hud.timer = $('#timer'); hud.left = $('#leftCnt');
-    hud.radar = $('#radar'); hud.items = $('#itembar'); hud.armor = $('#armorTag'); hud.spec = $('#spec');
+    hud.radar = $('#radar'); hud.dig = $('#digBanner'); hud.digLeft = $('#digLeft'); hud.items = $('#itembar'); hud.armor = $('#armorTag'); hud.spec = $('#spec');
   }
   G.onHud = function () {
     if (!G.me) return;
@@ -316,6 +316,7 @@
     if (!G.running) return;
     const paused = !$('#pause').hidden && G.mode === 'solo';
     if (!paused) G.update(dt, readInput());
+    if (!paused) clockTick();
     resize();
     const cv = $('#gl');
     const vp = G.render(cv.width, cv.height);
@@ -324,9 +325,35 @@
     if (hudT <= 0) { hudT = 0.1; tickHud(); }
   }
 
+  /* BGM：秒針の音（試合の時間で 1 秒ごと）。ほりほりタイムの終わりで合図 */
+  let lastSec = -1, wasDig = false;
+  function clockTick() {
+    if (!G.running || G.over) { lastSec = -1; return; }
+    const sec = Math.floor(G.t);
+    if (sec !== lastSec) {
+      lastSec = sec;
+      const left = G.digEnd - G.t;
+      HM.sfx.tick(sec % 2 === 0, G.inDig() && left <= 10);
+    }
+    const dig = G.inDig();
+    if (wasDig && !dig) {
+      HM.sfx.gong();
+      G.toast(G.mode === 'solo' ? 'バトル開始！ 敵を全滅させろ！（5分）' : 'バトル開始！ ほかのちくわ君を全滅させろ！');
+    }
+    wasDig = dig;
+  }
+
   function tickHud() {
     if (!G.me) return;
-    if (G.mode === 'solo') {
+    const dig = G.inDig();
+    hud.dig.hidden = !dig;
+    if (dig) {
+      const s = Math.ceil(G.digEnd - G.t);
+      hud.digLeft.textContent = s;
+      hud.dig.classList.toggle('warn', s <= 10);
+      hud.timer.textContent = '0:' + String(s).padStart(2, '0');
+      hud.timer.classList.toggle('warn', false);
+    } else if (G.mode === 'solo') {
       const s = Math.ceil(G.timeLeft);
       hud.timer.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
       hud.timer.classList.toggle('warn', s <= 30);
@@ -421,7 +448,7 @@
 
   /* ---------- 結果 ---------- */
   function soloBest(left) {
-    const all = CG.ls.getJSON(KEY_BEST, null) || {}, key = G.sizeKey || 'large', b = all[key];
+    const all = CG.ls.getJSON(KEY_BEST, null) || {}, key = G.sizeKey || 'grande', b = all[key];
     if (!b || left > b.left) { all[key] = { left, at: Date.now() }; CG.ls.setJSON(KEY_BEST, all); return true; }
     return false;
   }
@@ -500,7 +527,8 @@
       $('#lockHint').hidden = touchMode;
       $('#leftCnt').hidden = false;
       G.onHud();
-      G.toast(G.mode === 'solo' ? '敵を全滅させろ！（5分）' : 'ほかのちくわ君を全滅させろ！');
+      G.toast('ほりほりタイム！ 掘ってアイテムを集めよう（' + T.digTime + '秒）');
+      wasDig = true; lastSec = -1;
       if (!raf) raf = requestAnimationFrame(loop);
     }, 30);
   }
@@ -580,7 +608,10 @@
   // 古い自己ベスト（v1：大きさの区別なし）は、ラージのベストへ引き継ぐ
   (function () {
     const old = CG.ls.getJSON('horimogu-best-v1', null);
-    if (old && !CG.ls.getJSON(KEY_BEST, null)) CG.ls.setJSON(KEY_BEST, { large: old });
+    if (old && !CG.ls.getJSON(KEY_BEST, null)) CG.ls.setJSON(KEY_BEST, { grande: old });
+    // β0.2.0 のラージ（300）はグランデと同じ大きさなので引き継ぐ（スモール・メディアムは大きさが変わったので引き継がない）
+    const v2 = CG.ls.getJSON(KEY_BEST, null);
+    if (v2 && v2.large && !v2.grande) { v2.grande = v2.large; delete v2.large; CG.ls.setJSON(KEY_BEST, v2); }
   })();
   drawSizePickers();
   (function anim() { previewT += 1 / 30; if (!$('#home').hidden) drawPreview(); setTimeout(anim, 33); })();

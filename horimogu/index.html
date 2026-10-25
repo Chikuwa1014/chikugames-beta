@@ -61,10 +61,11 @@ h1{margin:10px 0 0;font-size:clamp(32px,10vw,44px);font-weight:900;color:var(--a
 .sw.on{border-color:var(--accent);background:var(--panel)}
 .swc{width:26px;height:30px;border-radius:5px;background:linear-gradient(var(--b) 0 22%,var(--w) 22% 72%,var(--b) 72%);display:grid;place-items:center;font-weight:900;color:#555;font-size:13px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.12)}
 .sw small{font-size:11px;font-weight:800;color:var(--muted)}
-.sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sizes{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+@media (max-width:380px){.sizes{grid-template-columns:repeat(2,1fr)}}
 .sz{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border:2px solid transparent;border-radius:12px;background:var(--sunk);cursor:pointer;color:var(--ink)}
-.sz b{font-size:15px;font-weight:900}
-.sz small{font-size:11px;font-weight:800;color:var(--muted)}
+.sz b{font-size:14px;font-weight:900;white-space:nowrap}
+.sz small{font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:-.02em}
 .sz.on{border-color:var(--accent);background:var(--panel)}
 .sz:disabled{cursor:default;opacity:.6}
 .sz.on:disabled{opacity:1}
@@ -121,6 +122,13 @@ h1{margin:10px 0 0;font-size:clamp(32px,10vw,44px);font-weight:900;color:var(--a
 #toast.pop{animation:pop .25s ease-out}
 @keyframes pop{from{transform:translateX(-50%) scale(.85);opacity:0}}
 #spec,#armorTag{pointer-events:none}
+#digBanner{position:absolute;left:50%;top:calc(max(8px,env(safe-area-inset-top)) + 64px);transform:translateX(-50%);pointer-events:none;text-align:center;
+  background:linear-gradient(#FFE6B0,#F2B23A);color:#5A2E0A;border-radius:14px;padding:5px 14px;box-shadow:0 4px 0 rgba(0,0,0,.3);white-space:nowrap}
+#digBanner b{display:block;font-size:18px;font-weight:900;letter-spacing:.04em}
+#digBanner span{font-size:11px;font-weight:800}
+#digBanner i{font-style:normal;font-size:15px;font-weight:900}
+#digBanner.warn{animation:dig .5s ease-in-out infinite alternate}
+@keyframes dig{to{transform:translateX(-50%) scale(1.08)}}
 #spec{position:absolute;left:50%;bottom:30%;transform:translateX(-50%);font-weight:900;color:#fff;background:rgba(0,0,0,.55);padding:6px 14px;border-radius:999px;font-size:13px;white-space:nowrap}
 #lockHint{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);font-size:12px;font-weight:800;color:#FFE9C8;background:rgba(0,0,0,.55);padding:6px 12px;border-radius:999px;pointer-events:none;text-align:center}
 /* 持ち物 */
@@ -173,7 +181,7 @@ body.touch .keys{display:none}
   </div>
   <div class="menu">
     <button type="button" class="big" id="soloBtn"><span class="ic">🧑‍🍳</span><span>ひとりで遊ぶ<small>おでん横丁のボス5体を、5分以内に全滅させる</small></span></button>
-    <button type="button" class="big alt" id="multiBtn"><span class="ic">👥</span><span>みんなで遊ぶ<small>2〜4人。ほかのちくわ君を全滅させたら勝ち</small></span></button>
+    <button type="button" class="big alt" id="multiBtn"><span class="ic">👥</span><span>みんなで遊ぶ<small>2〜8人。ほかのちくわ君を全滅させたら勝ち</small></span></button>
   </div>
   <div class="card">
     <h2>フィールドの大きさ</h2>
@@ -191,10 +199,12 @@ body.touch .keys{display:none}
   <div class="card how" id="how" hidden>
     <h2>あそびかた</h2>
     <ul>
-      <li>フィールドはお豆腐。大きさはスモール（50×50×50）・メディアム（75×75×75）・ラージ（300×300×300）からえらぶ。宙に浮いていて、床を掘り抜くと<b>奈落のおでん鍋</b>に沈んでしまう。</li>
+      <li>フィールドはお豆腐。大きさはショート（60×60×60）・トール（80×80×80）・ベンティ（120×120×120）・グランデ（300×300×300）からえらぶ。宙に浮いていて、床を掘り抜くと<b>奈落のおでん鍋</b>に沈んでしまう。</li>
       <li>歩いて壁にぶつかると自動で掘る。「掘る」ボタンでは、ねらった方向（上・下も）を掘る。前に敵がいれば素手でなぐる。</li>
       <li>光る「具」を掘るとアイテムが出てくる。体力は 100。</li>
       <li>右上のレーダーは、敵が近づくと光る。近いほど激しく光る。</li>
+      <li>はじめの 60 秒は<b>ほりほりタイム！</b> 掘ってアイテムを集める時間。攻撃（なぐる・出汁ピストル・大根・おたまレーザー・ごぼうバット）と罠（からし地雷・しらたき）は使えない。敵も襲ってこない。奈落に落ちても豆腐の天井にもどれる（アイテムは最後に取ったものだけ残る）。</li>
+      <li>ひとりプレイの制限時間（5 分）は、ほりほりタイムのあとから数える。みんなでは 2〜8 人。</li>
       <li>焼き豆腐（茶色のしま）はかたくて、2 回掘らないと消えない。</li>
     </ul>
     <h2 style="margin-top:10px">アイテム</h2>
@@ -218,6 +228,7 @@ body.touch .keys{display:none}
   <div class="card how" id="hist" hidden>
     <h2>更新履歴</h2>
     <ul>
+      <li><b>β0.3.0</b>（2026-10-25）フィールドの大きさをショート 60・トール 80・ベンティ 120・グランデ 300 に。みんなでは 8 人まで。はじめの 60 秒は「ほりほりタイム！」（攻撃・罠なし、落ちたら天井へもどる）。BGM は秒針の音。</li>
       <li><b>β0.2.0</b>（2026-10-25）フィールドの大きさをえらべるようにした（スモール 50・メディアム 75・ラージ 300）。後方視点で壁が透けて、ほかの場所が見えてしまうのを直した（壁の手前で止まる）。自己ベストは大きさごと。</li>
       <li><b>β0.1.1</b>（2026-10-25）後方視点を追加（はじめはこちら）。壁の向こうへ下がり、手前の豆腐を切り取って自分とまわりを見せる。左上の 👁（PC は V キー）で「近く」と切りかえ。</li>
       <li><b>β0.1.0</b>（2026-10-25）はじめての公開（開発中）。ひとりプレイ（ボス5体・5分）、みんなで（2〜4人、親が抜けても続く）、アイテム9種、レーダー、奈落のおでん鍋。</li>
@@ -264,6 +275,7 @@ body.touch .keys{display:none}
     <div id="timer">5:00</div>
     <div id="radar" aria-label="レーダー"><span>レーダー</span></div>
   </div>
+  <div id="digBanner" hidden><b>ほりほりタイム！</b><span>のこり <i id="digLeft">60</i> 秒・攻撃と罠は使えない</span></div>
   <div id="toast" hidden></div>
   <div id="spec" hidden></div>
   <div id="lockHint" hidden>クリックでマウス操作（Esc で一時停止）</div>
