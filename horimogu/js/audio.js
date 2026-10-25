@@ -60,6 +60,21 @@
     bat() { noise(0.15, 300, 0.6, 1); tone('square', 120, 50, 0.2, 0.3); },
     win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone('triangle', f, f, 0.25, 0.25), i * 120)); },
     lose() { [392, 330, 262].forEach((f, i) => setTimeout(() => tone('triangle', f, f * 0.98, 0.35, 0.25), i * 200)); },
-    splash() { noise(0.6, 500, 0.5, 0.5); }
+    splash() { noise(0.6, 500, 0.5, 0.5); },
+    /** BGM：時計の秒針の音（チッ・タッ）。hi で音の高さを変える。strong はほりほりタイムの残り 10 秒 */
+    tick(hi, strong) {
+      const a = ctx(); if (!a) return;
+      const t = a.currentTime;
+      const o = a.createOscillator(), g = a.createGain(), f = a.createBiquadFilter();
+      o.type = 'square'; o.frequency.value = hi ? 3400 : 2600;
+      f.type = 'bandpass'; f.frequency.value = hi ? 3400 : 2600; f.Q.value = 6;
+      const v = strong ? 0.5 : 0.28;
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+      o.connect(f); f.connect(g); g.connect(master);
+      o.start(t); o.stop(t + 0.05);
+      noise(0.03, hi ? 5000 : 3800, strong ? 0.35 : 0.18, 3);
+    },
+    /** ほりほりタイムの終わり（バトル開始） */
+    gong() { tone('triangle', 660, 640, 0.6, 0.35); setTimeout(() => tone('triangle', 880, 860, 0.8, 0.35), 160); }
   };
 })();

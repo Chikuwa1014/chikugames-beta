@@ -80,7 +80,11 @@
     G.meshes = new Map();
     G.startedAt = now();
     G.digLog = null;
+    G.digEnd = T.digTime;      // ほりほりタイムが終わる時刻（試合の時間 G.t で数える）
   };
+
+  /** ほりほりタイム中か（攻撃・罠は使えない。落ちても天井へ戻る） */
+  G.inDig = () => G.running && G.t < (G.digEnd || 0);
 
   G.stop = function () {
     G.running = false;
@@ -245,7 +249,7 @@
       const d = V.sub(e.c, c), l = V.len(d);
       return l < T.punch.reach + e.r && V.dot(V.norm([d[0], 0, d[2]]), f) > 0.3;
     });
-    if (near) {
+    if (near && !G.inDig()) {
       if (me.cool.punch > 0) return;
       me.cool.punch = T.punch.cooldown;
       me.swing = G.t;
@@ -270,6 +274,7 @@
     const add = type === 'otama' ? I.energy : (I.count || 1);
     if (s) s.count += add;
     else { s = { type, count: add }; me.inv.push(s); if (me.sel < 0) me.sel = me.inv.length - 1; }
+    me.lastItem = type;
     G.onHud && G.onHud();
   };
   function useUp(slot, n) {
@@ -287,6 +292,10 @@
     const me = G.me, slot = me.inv[me.sel];
     if (!slot) return;
     const I = T.items[slot.type], c = center(me.p);
+    if (G.inDig() && T.digBlocked.includes(slot.type)) {
+      if (first) G.toast && G.toast('ほりほりタイム中は使えない！（あと ' + Math.ceil(G.digEnd - G.t) + ' 秒）');
+      return;
+    }
     const hand = [c[0] + Math.sin(me.yaw) * 0.45, c[1] + 0.15, c[2] + Math.cos(me.yaw) * 0.45];
     // ねらい：カメラのまん中の先
     const hit = G.world.raycast(cam.ro, cam.dir, 60);
@@ -421,10 +430,15 @@
         return;
       }
       case 'fell':
-        if (pl.alive) hostKill(pid, 'pot');
+        if (!pl.alive) return;
+        // ほりほりタイム中は、豆腐の天井（上の面）へ戻す
+        if (G.inDig()) hostEmit({ t: 'respawn', pid, p: topSpot() });
+        else hostKill(pid, 'pot');
         return;
     }
     if (!pl.alive || G.over) return;
+    // ほりほりタイム中は、攻撃・罠を受け付けない
+    if (G.inDig() && (m.t === 'melee' || m.t === 'shoot' || m.t === 'trap')) return;
     switch (m.t) {
       case 'melee': hostMelee(pid, m); return;
       case 'shoot': {
@@ -535,7 +549,7 @@
   function hostUpdate(dt) {
     if (G.over) return;
     // ひとり：制限時間
-    if (G.mode === 'solo') {
+    if (G.mode === 'solo' && !G.inDig()) {
       G.timeLeft -= dt;
       if (G.timeLeft <= 0) { G.timeLeft = 0; hostEmit({ t: 'end', win: false, why: 'time' }); return; }
     }
@@ -572,7 +586,7 @@
     // おたまレーザーの当たり（0.3 秒ごと）
     const L = T.items.otama;
     for (const pl of G.players.values()) {
-      if (!pl.alive || !pl.lz || !pl.ld) continue;
+      if (!pl.alive || !pl.lz || !pl.ld || G.inDig()) continue;
       const last = G.laserTick.get(pl.pid) || 0;
       if (G.t - last < L.tick) continue;
       G.laserTick.set(pl.pid, G.t);
@@ -608,6 +622,21 @@
     }
   }
 
+  /** 豆腐の天井（いちばん上の面）で、立てる場所 */
+  function topSpot() {
+    const w = G.world, N = w.N;
+    for (let i = 0; i < 40; i++) {
+      const x = 3 + Math.floor(Math.random() * (N - 6)), z = 3 + Math.floor(Math.random() * (N - 6));
+      for (let y = N - 1; y > N * 0.5; y--) {
+        if (w.get(x, y, z) !== 0) {
+          if (w.get(x, y + 1, z) === 0 && w.get(x, y + 2, z) === 0) return [x + 0.5, y + 1.01, z + 0.5];
+          break;
+        }
+      }
+    }
+    return [N / 2 + 0.5, N + 0.01, N / 2 + 0.5];
+  }
+
   /* ---------- 敵の動き（親だけ） ---------- */
   function updateBot(b, dt) {
     const B = T.bosses[b.key];
@@ -619,12 +648,18 @@
       if (d < td) { td = d; tgt = q; }
     }
     if (!tgt) return;
-    if (td < B.notice) b.aware = true;
+    const digging = G.inDig();
+    if (td < B.notice && !digging) b.aware = true;
     b.cool -= dt; b.digCool -= dt;
     const to = V.sub([tgt[0], tgt[1] - 0.2, tgt[2]], b.p);
     let dir = V.norm(to);
     let sp = b.aware ? B.speed : B.wander;
-    if (!b.aware) {
+    if (digging) {
+      // ほりほりタイム中は、ちくわ君に関係なく、ふらふら掘っているだけ
+      b.wob += dt * 0.5;
+      dir = V.norm([Math.cos(b.wob * 1.7 + b.id.length), Math.sin(b.wob * 0.9) * 0.3, Math.sin(b.wob * 1.3 + 1)]);
+      sp = B.wander * 0.7;
+    } else if (!b.aware) {
       // 気づく前は、ふらふら近づいてくる
       b.wob += dt * 0.7;
       const a = Math.sin(b.wob) * 0.9, c = Math.cos(a), s = Math.sin(a);
@@ -648,8 +683,8 @@
       if (G.broadcast) G.broadcast({ t: 'dig', c: [[+c[0].toFixed(2), +c[1].toFixed(2), +c[2].toFixed(2), T.bossDigRadius]] });
       if (near < 28) HM.sfx.dig(Math.max(0, 1 - near / 28) * 0.7);
     }
-    // 攻撃
-    if (td < T.bossReach + 0.3 && b.cool <= 0) {
+    // 攻撃（ほりほりタイム中はしない）
+    if (!digging && td < T.bossReach + 0.3 && b.cool <= 0) {
       b.cool = B.atk;
       const victim = [...G.players.values()].find(p => p.alive && V.dist(p.pid === G.me.pid ? G.me.p : p.p, tgt) < 0.01);
       if (victim) hostDamage(victim.pid, B.dmg, b.id, { knock: V.mul(V.norm([to[0], 0.3, to[2]]), 5) });
@@ -762,6 +797,20 @@
         } else HM.sfx.hit();
         if (!G.isHost && G.players.has(ev.id)) { const p = G.players.get(ev.id); p.hp = Math.max(0, p.hp - ev.dmg); }
         G.onHud && G.onHud();
+        return;
+      }
+      case 'respawn': {
+        const pl = G.players.get(ev.pid);
+        if (pl) { pl.p = ev.p.slice(); pl.vis = ev.p.slice(); }
+        if (ev.pid === me.pid) {
+          me.p = ev.p.slice(); me.v = [0, 0, 0]; me.fellSent = false;
+          // アイテムは、最後に取ったものだけ残る
+          const before = me.inv.length;
+          me.inv = me.inv.filter(s => s.type === me.lastItem);
+          me.sel = me.inv.length ? 0 : -1;
+          G.toast && G.toast('豆腐の天井にもどった！' + (before > me.inv.length ? '（最後に取ったアイテムだけ残った）' : ''));
+          G.onHud && G.onHud();
+        } else if (pl) popAt([ev.p[0], ev.p[1] + 1.3, ev.p[2]], pl.name + ' がもどってきた', '#FFE08A');
         return;
       }
       case 'bhp': { const b = G.bots.find(x => x.id === ev.id); if (b) { b.hp = ev.hp; b.hurtAt = G.t; } return; }

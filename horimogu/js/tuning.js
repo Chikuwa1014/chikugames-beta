@@ -2,7 +2,7 @@
    ちくわ君の大きさを 1 とする。地形の 1 マスも 1。 */
 const HM = window.HM = window.HM || {};
 
-HM.VERSION = 'β0.2.0';
+HM.VERSION = 'β0.3.0';
 HM.GAME = 'horimogu';
 
 HM.T = {
@@ -15,9 +15,10 @@ HM.T = {
 
   /* フィールドの大きさ（プレイを始めるときにえらぶ） */
   sizes: [
-    { key: 'small',  name: 'スモール', n: 50 },
-    { key: 'medium', name: 'メディアム', n: 75 },
-    { key: 'large',  name: 'ラージ', n: 300 }
+    { key: 'short',  name: 'ショート', n: 60 },
+    { key: 'tall',   name: 'トール',   n: 80 },
+    { key: 'venti',  name: 'ベンティ', n: 120 },
+    { key: 'grande', name: 'グランデ', n: 300 }
   ],
 
   /* カメラ。far＝後方視点（near より後ろへ下がる。壁があれば、その手前で止まる） */
@@ -90,11 +91,17 @@ HM.T = {
 
   /* みんなで */
   multi: {
-    max: 4,             // 1 部屋の人数（worker/index.js の WS_GAMES と同じ数）
+    max: 8,             // 1 部屋の人数（worker/index.js の WS_GAMES と同じ数）
     spawnRing: 45,      // スポーンの円の半径
     rate: 15,           // 位置を送る回数（毎秒）
     rejoinWait: 10      // 親が抜けたあと、ほかの人が戻ってくるのを待つ秒数（戻らなければ負け）
   },
+
+  /* ほりほりタイム：始まってからこの秒数は、掘ってアイテムを集める時間。
+     攻撃（素手でなぐる・攻撃アイテム）と罠（からし地雷・しらたき）は使えない。敵も襲ってこない。
+     奈落に落ちたら豆腐の天井へ戻る（アイテムは最後に取ったものだけ残る） */
+  digTime: 60,
+  digBlocked: ['dashi', 'daikon', 'otama', 'gobou', 'karashi', 'shirataki'],
 
   /* ちくわ君の色。最初はノーマル・青・赤・紫（入った順）。自分で変えられる */
   colors: [
