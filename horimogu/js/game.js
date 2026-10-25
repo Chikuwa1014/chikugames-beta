@@ -197,13 +197,22 @@
     }
     const target = [focus.p[0], focus.p[1] + 1.3, focus.p[2]];
     const d = dirOf(yaw, pitch);
+    // 後方視点（far）：壁を通りぬけて後ろへ下がり、カメラと自分の間の豆腐は描かない（近くを切り取る）
+    if (G.camMode === 'far') {
+      const fd = T.cam.farDist, up = T.cam.farUp;
+      const eye = [target[0] - d[0] * fd, target[1] - d[1] * fd + up, target[2] - d[2] * fd];
+      const dir = V.norm(V.sub(V.add(target, V.mul(d, 4)), eye));
+      // 切り取る距離：自分の少し手前まで
+      const toT = V.dot(V.sub(target, eye), dir);
+      return { eye, target, dir, dist: toT, near: Math.max(0.05, toT - T.cam.farCut), ro: V.add(eye, V.mul(dir, toT)) };
+    }
     let dist = 3.0;
     for (let s = 0.2; s <= 3.0; s += 0.1) {
       const q = [target[0] - d[0] * s, target[1] - d[1] * s + 0.15 * s / 3, target[2] - d[2] * s];
       if (G.world.solidAt(q[0], q[1], q[2]) || G.world.solidAt(q[0], q[1] + 0.12, q[2]) || G.world.solidAt(q[0], q[1] - 0.12, q[2])) { dist = Math.max(0.15, s - 0.3); break; }
     }
     const eye = [target[0] - d[0] * dist, target[1] - d[1] * dist + 0.15 * dist / 3, target[2] - d[2] * dist];
-    return { eye, target, dir: d, dist };
+    return { eye, target, dir: d, dist, near: 0.05, ro: V.add(eye, V.mul(d, dist)) };
   };
 
   /* ---------- ねらい・攻撃・アイテム ---------- */
@@ -233,7 +242,7 @@
     }
     if (me.cool.dig > 0) return;
     me.cool.dig = T.dig.aimCooldown;
-    const hit = G.world.raycast(cam.eye, cam.dir, cam.dist + T.dig.aimReach);
+    const hit = G.world.raycast(cam.ro, cam.dir, T.dig.aimReach);
     if (hit && V.dist(hit.p, c) < T.dig.aimReach + 0.6) {
       const q = V.add(hit.p, V.mul(cam.dir, 0.6));
       digAt(q[0], q[1], q[2], T.dig.aimRadius, true);
@@ -267,8 +276,8 @@
     const I = T.items[slot.type], c = center(me.p);
     const hand = [c[0] + Math.sin(me.yaw) * 0.45, c[1] + 0.15, c[2] + Math.cos(me.yaw) * 0.45];
     // ねらい：カメラのまん中の先
-    const hit = G.world.raycast(cam.eye, cam.dir, 60);
-    const aimPt = hit ? hit.p : V.add(cam.eye, V.mul(cam.dir, 60));
+    const hit = G.world.raycast(cam.ro, cam.dir, 60);
+    const aimPt = hit ? hit.p : V.add(cam.ro, V.mul(cam.dir, 60));
     const aimDir = V.norm(V.sub(aimPt, hand));
     switch (slot.type) {
       case 'dashi':
@@ -820,15 +829,16 @@
   G.render = function (w, h) {
     const R = G.R, world = G.world, me = G.me;
     const cam = G.camera();
-    const proj = M4.perspective(70 * Math.PI / 180, w / h, 0.05, 140);
+    const proj = M4.perspective(70 * Math.PI / 180, w / h, cam.near, 140 + cam.near);
     const view = M4.lookAt(cam.eye, V.add(cam.eye, cam.dir), [0, 1, 0]);
     const vp = M4.mul(proj, view);
     G.vp = vp; G.cam = cam;
-    R.begin(vp, cam.eye, FOG, T.viewRange);
+    // 明るさ（ヘッドライト）は自分の頭を中心にする（後方視点でもまわりが見えるように）
+    R.begin(vp, cam.target, FOG, T.viewRange);
 
     // チャンクを作る・描く
     const CS = T.chunk, NC = HM.World.NC, MR = T.meshRadius;
-    const pc = [Math.floor(cam.eye[0] / CS), Math.floor(cam.eye[1] / CS), Math.floor(cam.eye[2] / CS)];
+    const pc = [Math.floor(cam.target[0] / CS), Math.floor(cam.target[1] / CS), Math.floor(cam.target[2] / CS)];
     // 掘られたチャンク：近いものは描き直し、遠いものは捨てる
     const dirtyNear = [];
     for (const ci of world.dirty) {
@@ -878,7 +888,7 @@
       const isMe = pl.pid === me.pid;
       const p = isMe ? me.p : pl.vis, yaw = isMe ? me.yaw : pl.yw;
       // 近すぎるときは半透明に（カメラが体にめりこむので）
-      const near = isMe && cam.dist < 1.4;
+      const near = isMe && G.camMode !== 'far' && cam.dist < 1.4;
       const bob = pl.mv ? Math.abs(Math.sin(G.t * 12)) * 0.06 : 0;
       const hurt = isMe && G.hurtAt && G.t - G.hurtAt < 0.25;
       const swing = isMe && G.t - (me.swing || 0) < 0.15 ? 0.12 : 0;

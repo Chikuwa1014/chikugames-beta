@@ -2,7 +2,15 @@
 (function () {
   const HM = window.HM, T = HM.T, G = HM.G, NET = HM.NET, M4 = HM.M4;
   const $ = s => document.querySelector(s);
-  const KEY_COLOR = 'horimogu-color', KEY_SENS = 'horimogu-sens', KEY_BEST = 'horimogu-best-v1';
+  const KEY_COLOR = 'horimogu-color', KEY_SENS = 'horimogu-sens', KEY_BEST = 'horimogu-best-v1', KEY_CAM = 'horimogu-cam';
+  // 視点：far＝後方（はじめはこちら）、near＝近く
+  G.camMode = CG.ls.get(KEY_CAM, 'far') === 'near' ? 'near' : 'far';
+  function setCam(m) {
+    G.camMode = m;
+    CG.ls.set(KEY_CAM, m);
+    const t = document.querySelector('#camTxt');
+    if (t) t.textContent = m === 'far' ? '後方' : '近く';
+  }
 
   /* ---------- 色えらび ---------- */
   let colorPick = CG.ls.get(KEY_COLOR, 'auto') || 'auto';
@@ -131,8 +139,13 @@
     if (e.code === 'KeyQ') cycleItem(-1);
     if (e.code === 'KeyR') cycleItem(1);
     if (e.code === 'Escape') openPause();
+    if (e.code === 'KeyV') toggleCam();
   });
   window.addEventListener('keyup', e => keys.delete(e.code));
+  function toggleCam() {
+    setCam(G.camMode === 'far' ? 'near' : 'far');
+    G.toast(G.camMode === 'far' ? '視点：後方' : '視点：近く');
+  }
   function cycleItem(d) {
     const n = G.me.inv.length;
     if (!n) return;
@@ -493,6 +506,7 @@
     $('#lobbyBack').onclick = () => { NET.leave(); show('home'); };
     $('#startBtn').onclick = () => NET.startMatch();
     $('#pauseBtn').onclick = openPause;
+    $('#camBtn').onclick = toggleCam;
     $('#resume').onclick = closePause;
     $('#quit').onclick = () => {
       closePause();
@@ -521,7 +535,7 @@
   CG.init({ game: HM.GAME, title: 'ほりほりもぐもぐ', version: HM.VERSION });
   document.querySelectorAll('.ver').forEach(e => { e.textContent = HM.VERSION; });
   document.querySelectorAll('.colors').forEach(el => drawColorPicker(el, el.dataset.auto === '1'));
-  buildHud(); wireButtons(); setupTouch(); setupMouse();
+  buildHud(); wireButtons(); setupTouch(); setupMouse(); setCam(G.camMode);
   const best = CG.ls.getJSON(KEY_BEST, null);
   if (best) $('#bestTxt').textContent = 'ひとりプレイの自己ベスト：のこり ' + best.left + ' 秒で全滅';
   (function anim() { previewT += 1 / 30; if (!$('#home').hidden) drawPreview(); setTimeout(anim, 33); })();

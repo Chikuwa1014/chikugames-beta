@@ -2,7 +2,7 @@
    ちくわ君の大きさを 1 とする。地形の 1 マスも 1。 */
 const HM = window.HM = window.HM || {};
 
-HM.VERSION = 'β0.1.0';
+HM.VERSION = 'β0.1.1';
 HM.GAME = 'horimogu';
 
 HM.T = {
@@ -12,6 +12,9 @@ HM.T = {
   potY: -22,            // おでん鍋の汁の高さ。ここより下に落ちたら沈む
   viewRange: 46,        // 見える距離（ヘッドライトの届く範囲）
   meshRadius: 4,        // まわりの何チャンクまで描くか
+
+  /* カメラ。far＝後方視点（壁の向こうへ下がり、手前の豆腐を切り取って見せる） */
+  cam: { farDist: 6.5, farUp: 1.6, farCut: 1.3 },
 
   /* 地形の生成（シード値から全員同じものを作る） */
   gen: {

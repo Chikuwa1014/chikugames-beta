@@ -1,7 +1,7 @@
 # ひとりプレイの確認（Playwright）。dev/server.mjs を起動してから実行する
 #   node horimogu/dev/server.mjs &
 #   python3 horimogu/dev/test-solo.py [スクリーンショットの出力先]
-# 確かめること：ホーム表示 → ひとりで遊ぶ → 地形が描ける → 歩く・掘る → アイテムを拾って使う → 敵に当たる → コンソールにエラーなし
+# 確かめること：ホーム表示 → ひとりで遊ぶ → 地形が描ける → 視点（後方／近く）の切りかえ → 歩く・掘る → アイテムを拾って使う → 敵に当たる → コンソールにエラーなし
 import sys, os, time
 from playwright.sync_api import sync_playwright
 
@@ -29,7 +29,14 @@ with sync_playwright() as p:
         pg.wait_for_timeout(800)
         G = "__HM.G"
         check(pg.evaluate(f"{G}.meshes.size") > 50, f"[{name}] チャンクが作られた")
+        check(pg.evaluate(f"{G}.camMode") == "far", f"[{name}] はじめは後方視点")
         pg.screenshot(path=f"{OUT}/{name}-play.png")
+        pg.keyboard.press("KeyV") if not touch else pg.click("#camBtn")
+        pg.wait_for_timeout(400)
+        check(pg.evaluate(f"{G}.camMode") == "near", f"[{name}] 視点を「近く」に切りかえ")
+        pg.screenshot(path=f"{OUT}/{name}-play-near.png")
+        pg.keyboard.press("KeyV") if not touch else pg.click("#camBtn")
+        pg.wait_for_timeout(200)
         # 前へ歩く（壁にぶつかって掘る）
         y0 = pg.evaluate(f"{G}.me.p.slice()")
         pg.evaluate("__HM.held.main=false")

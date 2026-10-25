@@ -86,6 +86,8 @@ h1{margin:10px 0 0;font-size:clamp(32px,10vw,44px);font-weight:900;color:var(--a
   padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 0 max(10px,env(safe-area-inset-left));pointer-events:none}
 .hudtop > *{pointer-events:auto}
 .pbtn{width:40px;height:40px;border-radius:12px;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer;flex:none}
+.camb{font-size:11px;font-weight:900;line-height:1.1;width:46px}
+.camb::before{content:"👁";display:block;font-size:14px}
 .hpbox{flex:1;max-width:240px;min-width:0}
 .hpbar{position:relative;height:16px;border-radius:999px;background:rgba(0,0,0,.5);overflow:hidden;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
 #hpFill{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--green);transition:width .15s}
@@ -198,13 +200,14 @@ body.touch .keys{display:none}
     </table>
     <h2 style="margin-top:10px">操作</h2>
     <ul>
-      <li><b>スマホ</b>：左下をなぞって移動、ほかの所をなぞって見回す。右下のボタンで「掘る・なぐる」「アイテム」「ジャンプ」。下の欄でアイテムをえらぶ。</li>
-      <li><b>PC</b>：画面をクリックしてマウスで見回す。WASD で移動、左クリックで掘る・なぐる、右クリック（または E）でアイテム、スペースでジャンプ、ホイール・数字キーでアイテムをえらぶ。Esc で一時停止。</li>
+      <li><b>スマホ</b>：左下をなぞって移動、ほかの所をなぞって見回す。右下のボタンで「掘る・なぐる」「アイテム」「ジャンプ」。下の欄でアイテムをえらぶ。左上の 👁 で視点（後方／近く）を切りかえ。</li>
+      <li><b>PC</b>：画面をクリックしてマウスで見回す。WASD で移動、左クリックで掘る・なぐる、右クリック（または E）でアイテム、スペースでジャンプ、ホイール・数字キーでアイテムをえらぶ。Esc で一時停止。V で視点（後方／近く）の切りかえ。</li>
     </ul>
   </div>
   <div class="card how" id="hist" hidden>
     <h2>更新履歴</h2>
     <ul>
+      <li><b>β0.1.1</b>（2026-10-25）後方視点を追加（はじめはこちら）。壁の向こうへ下がり、手前の豆腐を切り取って自分とまわりを見せる。左上の 👁（PC は V キー）で「近く」と切りかえ。</li>
       <li><b>β0.1.0</b>（2026-10-25）はじめての公開（開発中）。ひとりプレイ（ボス5体・5分）、みんなで（2〜4人、親が抜けても続く）、アイテム9種、レーダー、奈落のおでん鍋。</li>
     </ul>
   </div>
@@ -236,6 +239,7 @@ body.touch .keys{display:none}
   <div id="stick" hidden><div id="knob"></div></div>
   <div class="hudtop">
     <button type="button" class="pbtn" id="pauseBtn" aria-label="一時停止">⏸</button>
+    <button type="button" class="pbtn camb" id="camBtn" aria-label="視点の切りかえ"><span id="camTxt">後方</span></button>
     <div class="hpbox">
       <div class="hpbar"><div id="hpFill"></div><div id="hpTxt">100</div></div>
       <div class="subline"><span class="tag" id="leftCnt"></span><span class="tag" id="armorTag" hidden></span></div>
@@ -246,7 +250,7 @@ body.touch .keys{display:none}
   <div id="toast" hidden></div>
   <div id="spec" hidden></div>
   <div id="lockHint" hidden>クリックでマウス操作（Esc で一時停止）</div>
-  <div class="keys">WASD 移動・マウス 見回す<br>左クリック 掘る/なぐる・右クリック アイテム<br>スペース ジャンプ・ホイール アイテム切替</div>
+  <div class="keys">WASD 移動・マウス 見回す<br>左クリック 掘る/なぐる・右クリック アイテム<br>スペース ジャンプ・ホイール アイテム切替・V 視点</div>
   <div class="pad">
     <button type="button" class="act" id="btnJump"><b>⤒</b><small>ジャンプ</small></button>
     <button type="button" class="act" id="btnItem" disabled><b>－</b><small>アイテム</small></button>
