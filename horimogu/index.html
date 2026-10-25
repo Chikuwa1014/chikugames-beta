@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>ほりほりもぐもぐ</title>
+<meta name="description" content="お豆腐の中を掘り進んで、鉢合わせた敵をたおす3Dバトル。ひとりではおでん横丁のボスを全滅、みんなではほかのちくわ君を全滅させよう！">
+<meta name="robots" content="noindex">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ほりほりもぐもぐ">
+<meta property="og:description" content="お豆腐の中を掘り進んで、鉢合わせた敵をたおす3Dバトル。">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#C9772E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='%23F7F0DB'/%3E%3Crect x='11' y='9' width='10' height='14' fill='%23B8692A'/%3E%3Crect x='13' y='13' width='6' height='6' fill='%23F3DDB2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../common/v1/common.css">
+<style>
+/* お豆腐（クリーム色）とちくわ色。プレイ中は地中の暗い色 */
+:root{
+  --bg:#FBF4E2; --panel:#FFFBF0; --sunk:#F1E6CC; --line:#E3D2A8; --ink:#3A2412; --muted:#8A6A48;
+  --accent:#C9772E; --accent2:#E9A55B; --accent-ink:#fff;
+  --red:#E0473C; --green:#3FBF62; --gold:#F2B23A; --indigo:#4B4FA3;
+  --display:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --cg-accent:var(--accent); --cg-sub:var(--muted); --cg-card:var(--panel); --cg-line:var(--line); --cg-ink:var(--ink);
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#211812; --panel:#2E2219; --sunk:#1A120C; --line:#4E3A29; --ink:#FFF1DC; --muted:#C9A987; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55}
+body.playing{background:#120c08;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;position:fixed;inset:0}
+button{font:inherit;color:inherit}
+
+/* ---------- ホーム・ロビー ---------- */
+.page{max-width:480px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0 10px}
+.top a,.top .back{color:var(--accent);font-weight:800;text-decoration:none;font-size:14px;background:none;border:0;padding:0;cursor:pointer}
+.ver{font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink)}
+.hero{text-align:center}
+#mascot{width:100%;max-width:300px;aspect-ratio:300/170;border-radius:18px;image-rendering:pixelated;box-shadow:0 6px 0 rgba(0,0,0,.12)}
+h1{margin:10px 0 0;font-size:clamp(32px,10vw,44px);font-weight:900;color:var(--accent);line-height:1.1;letter-spacing:.02em}
+.lead{margin:6px 0 0;color:var(--muted);font-size:14px}
+.menu{display:flex;flex-direction:column;gap:12px;margin:18px 0 8px}
+.big{display:flex;align-items:center;gap:12px;width:100%;padding:15px 18px;border:0;border-radius:20px;background:var(--accent);color:var(--accent-ink);
+  font-weight:900;font-size:19px;cursor:pointer;text-align:left;box-shadow:0 5px 0 rgba(0,0,0,.2);min-height:64px}
+.big small{display:block;font-size:12px;font-weight:700;opacity:.9}
+.big.alt{background:var(--indigo)}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.big:disabled{opacity:.5;cursor:default;transform:none}
+.big .ic{font-size:28px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-top:12px}
+.card h2{margin:0 0 6px;font-size:15px;font-weight:900;color:var(--accent)}
+.colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border:2px solid transparent;border-radius:12px;background:var(--sunk);cursor:pointer}
+.sw.on{border-color:var(--accent);background:var(--panel)}
+.swc{width:26px;height:30px;border-radius:5px;background:linear-gradient(var(--b) 0 22%,var(--w) 22% 72%,var(--b) 72%);display:grid;place-items:center;font-weight:900;color:#555;font-size:13px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.12)}
+.sw small{font-size:11px;font-weight:800;color:var(--muted)}
+.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;cursor:pointer;color:var(--ink)}
+.how{font-size:14px}
+.how ul{margin:4px 0;padding-left:1.2em}
+.how li{margin:2px 0}
+.how table{border-collapse:collapse;font-size:13px;width:100%}
+.how td{border-top:1px solid var(--line);padding:4px 2px;vertical-align:top}
+.how td:first-child{font-weight:800;white-space:nowrap;padding-right:8px}
+.best{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+#lobbyMembers{list-style:none;margin:0;padding:0}
+#lobbyMembers li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-weight:800}
+#lobbyMembers li:first-child{border-top:0}
+#lobbyMembers small{margin-left:auto;color:var(--muted);font-weight:700}
+.dot{width:14px;height:18px;border-radius:3px;background:var(--b)}
+.wait{text-align:center;color:var(--muted);font-weight:800;font-size:14px;margin:10px 0}
+
+/* ---------- プレイ ---------- */
+#play{position:fixed;inset:0;background:#120c08}
+#gl,#ov{position:absolute;inset:0;width:100%;height:100%;display:block}
+#ov{pointer-events:none}
+#touchArea{position:absolute;inset:0;touch-action:none}
+.hudtop{position:absolute;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 0 max(10px,env(safe-area-inset-left));pointer-events:none}
+.hudtop > *{pointer-events:auto}
+.pbtn{width:40px;height:40px;border-radius:12px;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer;flex:none}
+.hpbox{flex:1;max-width:240px;min-width:0}
+.hpbar{position:relative;height:16px;border-radius:999px;background:rgba(0,0,0,.5);overflow:hidden;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+#hpFill{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--green);transition:width .15s}
+#hpTxt{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 2px #000}
+.subline{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.tag{font-size:11px;font-weight:800;color:#FFE9C8;background:rgba(0,0,0,.45);border-radius:999px;padding:1px 8px}
+#timer{margin-left:auto;font-size:18px;font-weight:900;color:#fff;background:rgba(0,0,0,.45);border-radius:12px;padding:6px 10px;min-width:62px;text-align:center}
+#timer.warn{color:#FF8A7A}
+/* レーダー：画面のじゃまにならない右上。敵が近いほど強く光る */
+#radar{--g:0;position:relative;width:44px;height:44px;border-radius:50%;flex:none;
+  background:radial-gradient(circle,rgba(255,255,255,.08) 0 30%,rgba(0,0,0,.5) 31%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}
+#radar::before{content:"";position:absolute;inset:6px;border-radius:50%;border:1px dashed rgba(255,255,255,.2)}
+#radar::after{content:"";position:absolute;inset:14px;border-radius:50%;background:rgba(255,120,60,calc(.25 + var(--g) * .75));
+  box-shadow:0 0 calc(var(--g) * 22px) calc(var(--g) * 9px) rgba(255,110,40,var(--g));opacity:0;transition:opacity .2s}
+#radar.on::after{opacity:1}
+#radar.hot::after{background:rgba(255,60,40,calc(.4 + var(--g) * .6));box-shadow:0 0 calc(var(--g) * 30px) calc(var(--g) * 14px) rgba(255,50,30,var(--g))}
+#radar span{position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:9px;font-weight:800;color:rgba(255,255,255,.7);white-space:nowrap;margin-top:1px}
+.cross{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);pointer-events:none}
+.cross::before,.cross::after{content:"";position:absolute;background:rgba(255,255,255,.85);box-shadow:0 0 2px #000}
+.cross::before{left:8px;top:0;width:2px;height:18px}
+.cross::after{top:8px;left:0;height:2px;width:18px}
+#toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);max-width:88%;text-align:center;font-weight:900;font-size:16px;color:#fff;
+  background:rgba(0,0,0,.6);padding:8px 16px;border-radius:14px;pointer-events:none}
+#toast.pop{animation:pop .25s ease-out}
+@keyframes pop{from{transform:translateX(-50%) scale(.85);opacity:0}}
+#spec,#armorTag{pointer-events:none}
+#spec{position:absolute;left:50%;bottom:30%;transform:translateX(-50%);font-weight:900;color:#fff;background:rgba(0,0,0,.55);padding:6px 14px;border-radius:999px;font-size:13px;white-space:nowrap}
+#lockHint{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);font-size:12px;font-weight:800;color:#FFE9C8;background:rgba(0,0,0,.55);padding:6px 12px;border-radius:999px;pointer-events:none;text-align:center}
+/* 持ち物 */
+#itembar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(10px,env(safe-area-inset-bottom)) + 0px);display:flex;gap:5px;max-width:min(96%,560px);overflow-x:auto;padding:4px;scrollbar-width:none}
+#itembar::-webkit-scrollbar{display:none}
+.slot{--c:#ccc;flex:none;width:58px;height:46px;border-radius:10px;border:2px solid rgba(255,255,255,.18);background:rgba(0,0,0,.5);color:#fff;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;box-shadow:inset 0 -4px 0 var(--c)}
+.slot b{font-size:12px;font-weight:900;white-space:nowrap;letter-spacing:-.03em}
+.slot small{font-size:10px;opacity:.85}
+.slot.on{border-color:#FFD27A;background:rgba(60,35,10,.8)}
+.slot.fist{--c:#F3DDB2}
+/* さわる操作 */
+.pad{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:calc(max(10px,env(safe-area-inset-bottom)) + 58px);display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;gap:10px;align-items:end}
+.act{border:0;border-radius:50%;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;touch-action:none;
+  box-shadow:0 4px 0 rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,255,255,.22);-webkit-tap-highlight-color:transparent}
+.act b{font-size:15px;font-weight:900}
+.act small{font-size:10px;font-weight:800;opacity:.9}
+.act.down{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,255,255,.4)}
+#btnMain{width:84px;height:84px;background:rgba(201,119,46,.85);grid-column:2;grid-row:2}
+#btnItem{width:66px;height:66px;background:rgba(75,79,163,.85);grid-column:1;grid-row:2}
+#btnItem:disabled{opacity:.45}
+#btnJump{width:58px;height:58px;background:rgba(63,150,98,.85);grid-column:2;grid-row:1;justify-self:center}
+body:not(.touch) .pad{display:none}
+#stick{position:absolute;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);pointer-events:none}
+#knob{position:absolute;left:50%;top:50%;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%)}
+.keys{position:absolute;right:12px;bottom:70px;font-size:11px;color:rgba(255,233,200,.8);text-align:right;line-height:1.6;pointer-events:none;background:rgba(0,0,0,.35);padding:6px 10px;border-radius:10px}
+body.touch .keys{display:none}
+@media (max-width:700px){.keys{display:none}}
+/* ポーズ・結果・読みこみ */
+.modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,6,3,.62);padding:16px;z-index:5}
+.mbox{width:min(380px,100%);background:var(--panel);color:var(--ink);border-radius:20px;padding:18px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.mbox h2{margin:0 0 6px;font-size:28px;font-weight:900;color:var(--accent)}
+.mbox p{margin:0 0 12px;color:var(--muted);font-weight:700}
+.mbox .big{justify-content:center;text-align:center;margin-top:10px;font-size:17px;min-height:52px}
+.mbox label{display:block;font-weight:800;font-size:13px;text-align:left;margin:10px 0}
+.mbox input[type=range]{width:100%}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+#loading .mbox{font-weight:900}
+</style>
+</head>
+<body>
+
+<!-- ホーム -->
+<section id="home" class="screen page">
+  <div class="top"><a href="../">← ちくわゲームズ</a><span class="ver"></span></div>
+  <div class="hero">
+    <canvas id="mascot" width="300" height="170" aria-label="お豆腐を掘り進むちくわ君"></canvas>
+    <h1>ほりほりもぐもぐ</h1>
+    <p class="lead">お豆腐の中を掘り進んで、鉢合わせた敵をたおせ！</p>
+  </div>
+  <div class="menu">
+    <button type="button" class="big" id="soloBtn"><span class="ic">🧑‍🍳</span><span>ひとりで遊ぶ<small>おでん横丁のボス5体を、5分以内に全滅させる</small></span></button>
+    <button type="button" class="big alt" id="multiBtn"><span class="ic">👥</span><span>みんなで遊ぶ<small>2〜4人。ほかのちくわ君を全滅させたら勝ち</small></span></button>
+  </div>
+  <div class="best" id="bestTxt"></div>
+  <div class="card">
+    <h2>ちくわ君の色</h2>
+    <div class="colors" data-auto="0"></div>
+  </div>
+  <div class="links">
+    <button type="button" class="chip" id="howBtn">📖 あそびかた</button>
+    <button type="button" class="chip" id="histBtn">📝 更新履歴</button>
+  </div>
+  <div class="card how" id="how" hidden>
+    <h2>あそびかた</h2>
+    <ul>
+      <li>フィールドは 300×300×300 の大きなお豆腐。宙に浮いていて、床を掘り抜くと<b>奈落のおでん鍋</b>に沈んでしまう。</li>
+      <li>歩いて壁にぶつかると自動で掘る。「掘る」ボタンでは、ねらった方向（上・下も）を掘る。前に敵がいれば素手でなぐる。</li>
+      <li>光る「具」を掘るとアイテムが出てくる。体力は 100。</li>
+      <li>右上のレーダーは、敵が近づくと光る。近いほど激しく光る。</li>
+      <li>焼き豆腐（茶色のしま）はかたくて、2 回掘らないと消えない。</li>
+    </ul>
+    <h2 style="margin-top:10px">アイテム</h2>
+    <table>
+      <tr><td>出汁ピストル</td><td>出汁を飛ばしてやけど。ダメージ 5「あっつい！」</td></tr>
+      <tr><td>からし地雷</td><td>地面にセット。踏むと辛くてどこかへ吹き飛ぶ。ダメージ 10（自分も踏む）</td></tr>
+      <tr><td>大根</td><td>輪切りの大根が飛ぶ。直撃 10・まわりに 5</td></tr>
+      <tr><td>おたまレーザー</td><td>押している間、レーザーで豆腐を削る。当たっている間 0.3 秒ごとに 5</td></tr>
+      <tr><td>味玉</td><td>体力を 20 回復</td></tr>
+      <tr><td>しらたき</td><td>地面にセット。踏むとすべる（自分も踏む）</td></tr>
+      <tr><td>ごぼうバット</td><td>ゴボウでなぐる。ダメージ 25。使うと折れる</td></tr>
+      <tr><td>お味噌</td><td>体にまとわりつく防御アーマー「癒着！」。10 秒かダメージ 20 で「おみそOFF！」</td></tr>
+      <tr><td>ビッグ味玉</td><td>体力を 50 回復し、0.5 秒むてき「ｱｯﾂｩｲ」</td></tr>
+    </table>
+    <h2 style="margin-top:10px">操作</h2>
+    <ul>
+      <li><b>スマホ</b>：左下をなぞって移動、ほかの所をなぞって見回す。右下のボタンで「掘る・なぐる」「アイテム」「ジャンプ」。下の欄でアイテムをえらぶ。</li>
+      <li><b>PC</b>：画面をクリックしてマウスで見回す。WASD で移動、左クリックで掘る・なぐる、右クリック（または E）でアイテム、スペースでジャンプ、ホイール・数字キーでアイテムをえらぶ。Esc で一時停止。</li>
+    </ul>
+  </div>
+  <div class="card how" id="hist" hidden>
+    <h2>更新履歴</h2>
+    <ul>
+      <li><b>β0.1.0</b>（2026-10-25）はじめての公開（開発中）。ひとりプレイ（ボス5体・5分）、みんなで（2〜4人、親が抜けても続く）、アイテム9種、レーダー、奈落のおでん鍋。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ロビー -->
+<section id="lobby" class="screen page" hidden>
+  <div class="top"><button type="button" class="back" id="lobbyBack">← もどる</button><span class="ver"></span></div>
+  <div id="lobbyBox"></div>
+  <div class="card" id="lobbyMembersWrap" hidden>
+    <h2>メンバーの色</h2>
+    <ul id="lobbyMembers"></ul>
+  </div>
+  <div class="card" id="lobbyColors">
+    <h2>自分の色</h2>
+    <div class="colors" data-auto="1"></div>
+    <div class="note">おまかせ：入った順に ノーマル・青・赤・紫</div>
+  </div>
+  <button type="button" class="big" id="startBtn" hidden>▶ スタート</button>
+  <div class="wait" id="waitMsg" hidden>親がスタートするのを待っています…</div>
+</section>
+
+<!-- プレイ -->
+<section id="play" class="screen" hidden>
+  <canvas id="gl"></canvas>
+  <canvas id="ov"></canvas>
+  <div id="touchArea"></div>
+  <div class="cross"></div>
+  <div id="stick" hidden><div id="knob"></div></div>
+  <div class="hudtop">
+    <button type="button" class="pbtn" id="pauseBtn" aria-label="一時停止">⏸</button>
+    <div class="hpbox">
+      <div class="hpbar"><div id="hpFill"></div><div id="hpTxt">100</div></div>
+      <div class="subline"><span class="tag" id="leftCnt"></span><span class="tag" id="armorTag" hidden></span></div>
+    </div>
+    <div id="timer">5:00</div>
+    <div id="radar" aria-label="レーダー"><span>レーダー</span></div>
+  </div>
+  <div id="toast" hidden></div>
+  <div id="spec" hidden></div>
+  <div id="lockHint" hidden>クリックでマウス操作（Esc で一時停止）</div>
+  <div class="keys">WASD 移動・マウス 見回す<br>左クリック 掘る/なぐる・右クリック アイテム<br>スペース ジャンプ・ホイール アイテム切替</div>
+  <div class="pad">
+    <button type="button" class="act" id="btnJump"><b>⤒</b><small>ジャンプ</small></button>
+    <button type="button" class="act" id="btnItem" disabled><b>－</b><small>アイテム</small></button>
+    <button type="button" class="act" id="btnMain"><b>掘る</b><small>なぐる</small></button>
+  </div>
+  <div id="itembar"></div>
+
+  <div class="modal" id="loading" hidden><div class="mbox">お豆腐を用意しています…</div></div>
+  <div class="modal" id="pause" hidden>
+    <div class="mbox">
+      <h2>一時停止</h2>
+      <label>見回す速さ<input type="range" id="sens" min="0.4" max="2.2" step="0.1" value="1"></label>
+      <button type="button" class="chip" id="muteBtn">🔊 音：オン</button>
+      <button type="button" class="big" id="resume">つづける</button>
+      <button type="button" class="big alt" id="quit">やめる</button>
+      <div class="note" id="pauseNote"></div>
+    </div>
+  </div>
+  <div class="modal" id="result" hidden>
+    <div class="mbox">
+      <h2 id="resTitle"></h2>
+      <p id="resSub"></p>
+      <button type="button" class="big" id="resRetry">もう一回</button>
+      <button type="button" class="big" id="resLobby" hidden>ロビーへ</button>
+      <button type="button" class="big alt" id="resShare">シェアする</button>
+      <button type="button" class="chip" id="resHome" style="margin-top:12px">ホームへ</button>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="../common/v1/core.js"></script>
+<script src="../common/v1/share.js"></script>
+<script src="../common/v1/room.js"></script>
+<script src="js/tuning.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/world.js"></script>
+<script src="js/models.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
