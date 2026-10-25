@@ -96,6 +96,7 @@ with sync_playwright() as p:
             pg.evaluate("showTitle()"); pg.evaluate("setGender('f'); SAVE.names = {}; startRun(); clearInterval(window.__bot); CFG.sChance = 0; got = {chikuwa: 6}; pts = 400; P.x = WORLD.goalX - 130")
             pg.wait_for_timeout(8200); pg.screenshot(path=f'{OUT}/{tag}-naming.png')
             assert pg.evaluate("!document.querySelector('#modal').hidden && !!document.querySelector('#nmIn')"), 'naming dialog'
+            assert pg.evaluate("document.querySelector('#nmIn').value === NAMES[G_.ch] && !document.querySelector('#rName').textContent.includes(NAMES[G_.ch])"), 'default name only in input'
             pg.click('#nmDice'); nm = pg.evaluate("document.querySelector('#nmIn').value"); assert nm, 'dice'
             pg.click('#nmOk'); pg.wait_for_timeout(300)
             assert pg.evaluate("document.querySelector('#rName').textContent.includes(%r)" % nm), 'name shown'
