@@ -2,3 +2,4 @@
 node_modules
 **/dev/shots/
 **/dev/slice-check/
+__pycache__/
