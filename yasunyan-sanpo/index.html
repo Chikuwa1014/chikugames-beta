@@ -93,6 +93,19 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #modal .dimg{text-align:center;background:#2A1A10;border-radius:12px;padding:6px;margin-bottom:8px}
 #modal .dimg img{height:300px;max-width:100%;object-fit:contain}
 /* 能力 */
+#settings{background:#1A100A;display:flex;flex-direction:column;z-index:7}
+#settings header{display:flex;align-items:center;justify-content:space-between;padding:44px 14px 8px;color:#fff}
+#settings h2{margin:0;font-size:20px;font-weight:900}
+#settings .scroll{flex:1;overflow-y:auto;padding:4px 12px 20px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#settings .scard{background:#FFF3DC;color:var(--ink);border-radius:14px;padding:12px;margin-bottom:10px}
+#settings .scard h3{margin:0 0 8px;font-size:15px;font-weight:900}
+#settings .scard h3 span{font-size:12px;color:#2E7A3A;margin-left:6px}
+#settings .scard p{font-size:12px;margin:6px 0}
+#settings .scard .sm{display:block;width:100%;margin:6px 0}
+#settings .swipe{background:#F3DAD2;color:#8A2A1A}
+#settings .nrow{display:flex;gap:8px}
+#settings .nrow input{flex:1;min-width:0;font:inherit;font-size:16px;font-weight:800;padding:9px 10px;border-radius:10px;border:1.5px solid #C9B58A;background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
+#settings .nrow .sm{width:auto;margin:0;white-space:nowrap}
 #abil{background:#1A100A;display:flex;flex-direction:column;z-index:7}
 #abil header{display:flex;align-items:center;justify-content:space-between;padding:44px 14px 8px;color:#fff}
 #abil h2{margin:0;font-size:20px;font-weight:900}
@@ -183,11 +196,10 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
       </div>
       <div class="row">
         <button class="sm" id="btnHow" type="button">あそびかた</button>
-        <button class="sm" id="btnLog" type="button">更新履歴</button>
+        <button class="sm" id="btnSet" type="button">⚙ 設定</button>
       </div>
       <p id="bestline"></p>
     </div>
-    <button class="wipe-t" id="btnWipeT" type="button">データ初期化</button>
     <p class="ver" id="ver"></p>
   </section>
 
@@ -205,6 +217,24 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
           <button class="sm" id="btnShare" type="button">共有</button>
           <button class="sm" id="btnZukan2" type="button">図鑑</button>
           <button class="sm" id="btnTop" type="button">タイトル</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="settings" class="panel" hidden>
+    <header><h2>設定</h2><button class="sm" id="btnSclose" type="button">もどる</button></header>
+    <div class="scroll" id="sBody">
+      <div class="scard"><button class="sm" id="sLog" type="button">更新履歴</button></div>
+      <div class="scard"><h3>不具合を報告する</h3><div id="sdbg"></div></div>
+      <div class="scard"><h3>データ</h3><button class="sm swipe" id="sWipe" type="button">🗑 データを初期化</button></div>
+      <div class="scard"><h3>テスト用 <span id="tUnlocked" hidden>🔓 有効</span></h3>
+        <div id="tLock"><p>テストプレイ用の機能です。パスワードで有効になります。</p><div class="nrow"><input id="tPass" type="password" autocomplete="off" placeholder="パスワード"><button class="sm" id="tOk" type="button">有効にする</button></div></div>
+        <div id="tPanel" hidden>
+          <button class="sm" id="tInf" type="button"></button>
+          <button class="sm" id="tZukan" type="button">コンカフェ嬢を全解放（図鑑をぜんぶ埋める）</button>
+          <button class="sm" id="tAbil" type="button">能力を全解放</button>
+          <p>保存データに入ります。元にもどすときは「データを初期化」。</p>
         </div>
       </div>
     </div>
@@ -228,7 +258,6 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
       <button class="big alt" id="btnRestart" type="button">リスタート</button>
       <button class="ghost" id="btnQuit" type="button">スタート画面へ戻る</button>
       <div id="pdbg"></div>
-      <button class="sm pwipe" id="btnWipe" type="button">🗑 データを初期化（デバッグ）</button>
     </div>
   </section>
 
@@ -250,7 +279,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.7.0';
+const VERSION = 'β0.7.1';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 // デバッグ（共通部品 debug.js）：操作とエラーを端末に残し、一時停止メニューから送る。送り先は worker の DEBUG_GAMES（β はまだ未設定。未実装タスク）
 CG.debug.init({ snap: () => ({ st: state, pts, x: Math.round(P.x), y: Math.round(P.y), sec: secIdx, g: SAVE.gender }) });
@@ -373,6 +402,7 @@ function loadSave() {
   } catch (e) { return d; }
 }
 function writeSave() {
+  if (typeof TEST !== 'undefined' && TEST.inf) SAVE.coin = 99999999;   // テスト用：恋ン無限
   try { const b = btoa(unescape(encodeURIComponent(JSON.stringify(SAVE)))); CG.ls.set(KEY, b + '.' + chk(b)); } catch (e) { }
 }
 const SAVE = loadSave();
@@ -1011,7 +1041,7 @@ function drawTalkBg() {
 }
 /* ---------- 会いに行く（β0.5.0）。1,500 恋ンで入店 → ターン制（話す・食事・チェキ・オリシャン）。台詞・名前の候補は仮 ----------
    ステージは 3 つ（1 カフェ／2 特典デート／3 自宅）。いまはステージ 1 だけ遊べる（ステージ 2・3 とオリシャンは β0.6.0）。 */
-const MEET_FEE = 1500, ORISHAN_PRICE = 35000, ORISHAN_SPENT = 10000;
+const MEET_FEE = 1500, ORISHAN_PRICE = 35000, ORISHAN_SPENT = [0, 10000, 80000, 150000];   // いまのステージ（1〜3）でオリシャンをおろすのに要る、その子に使った恋ンの累計
 const STAGES = ['', 'カフェ', '特典デート', '自宅'];
 const FOODS = [['めろんそーだ', 300], ['こーひー', 250], ['あったか紅茶', 250], ['おむらいす', 3500], ['ぺぺろんちーの', 3500], ['フライドポテト', 800], ['あっとほーむパフェ', 4500], ['てりてりテリーヌ', 500]];
 const CHEKI = [
@@ -1112,7 +1142,7 @@ function afterTurn(msg) {   // 行動・会話のあと：ターンを 1 つ使�
   choices([['つづける', () => { talkSay('ほかには、どうする？'); mainMenu(); }]]);
 }
 function mainMenu() {
-  const r = relOf(TK.rk), ready = r.love >= 100 && r.spent >= ORISHAN_SPENT && !r.married;
+  const r = relOf(TK.rk), ready = r.love >= 100 && r.spent >= ORISHAN_SPENT[r.stage] && !r.married;
   choices([['話す', talkMenu], ['食事を頼む', foodMenu], ['チェキを撮る', chekiMenu], [r.married ? 'けっこん済み ♥' : `オリシャン${ready ? '' : '（まだ）'}`, orishanInfo, !ready], ['帰る', endVisit]], true);
 }
 function talkMenu() {
@@ -1216,7 +1246,7 @@ function showCheki(url, c) {
 const MEET = { orishanRate: 0.98 };   // オリシャンの成功率（テストで変える）
 function orishanInfo() {
   const r = relOf(TK.rk), nxt = r.stage >= 3 ? 'けっこん' : `ステージ${r.stage + 1}「${STAGES[r.stage + 1]}」`;
-  talkSay(`オリシャン（${fmt(ORISHAN_PRICE)} 恋ン）をおろすと、${nxt}へ進みます。成功率は ${Math.round(MEET.orishanRate * 100)}%。失敗すると恋ンは返らず、好感度が 20 下がります（もう一度できます）。`);
+  talkSay(`オリシャン（${fmt(ORISHAN_PRICE)} 恋ン）をおろすと、${nxt}へ進みます。成功率は ${Math.round(MEET.orishanRate * 100)}%。（この子に使った恋ンの累計 ${fmt(r.spent)}／${fmt(ORISHAN_SPENT[r.stage])}）失敗すると恋ンは返らず、好感度が 20 下がります（もう一度できます）。`);
   choices([[`おろす（${fmt(ORISHAN_PRICE)} 恋ン）`, doOrishan], ['もどる', mainMenu]]);
 }
 function doOrishan() {
@@ -1279,11 +1309,15 @@ $('#abBody').addEventListener('click', e => {
   const a = abOf(b.dataset.a), l = abLv(a.id), cost = a.cost[l]; if (l >= a.cost.length || SAVE.coin < cost) return;
   SAVE.coin -= cost; SAVE.abil[a.id] = l + 1; writeSave(); Snd.init(); Snd.resume(); Snd.pick('rare'); buildAbil(); refreshTitle(); CG.toast(`${a.name} を${l ? '強化' : '解放'}しました`);
 });
+$('#btnSet').onclick = () => openSettings();
+$('#btnSclose').onclick = () => { $('#settings').hidden = true; };
+$('#sLog').onclick = () => openLog();
+$('#sWipe').onclick = () => openWipe();
+$('#tOk').onclick = () => unlockTest(); $('#tPass').onkeydown = e => { if (e.key === 'Enter') unlockTest(); };
+$('#tInf').onclick = () => testInf(); $('#tZukan').onclick = () => testZukan(); $('#tAbil').onclick = () => testAbil();
 $('#btnAbil').onclick = () => { buildAbil(); $('#abil').hidden = false; $('#abBody').scrollTop = 0; };
 $('#btnAclose').onclick = () => { $('#abil').hidden = true; };
 $('#btnTback').onclick = leaveTalk;
-$('#btnWipe').onclick = () => openWipe();
-$('#btnWipeT').onclick = () => openWipe();
 $('#btnTalkTop').onclick = () => meetConfirm();
 function openShare() {
   const g = G_; const s = { msg: `やすにゃんとこんにゃんの散歩で ${pts} ポイント！ スコアランク${g ? g.rank : ''}でコンカフェ嬢が誕生！`, tags: ['やすにゃん散歩チュウ'], url: CG.pageUrl() };
@@ -1303,6 +1337,30 @@ function wipeData() {
   try { localStorage.removeItem(KEY); } catch (e) { }
   location.reload();
 }
+/* --- 設定 --- */
+const COIN_MAX = 99999999, TEST = { on: false, inf: false };
+let TEST_PASS_SHA = '211f5d60d162997f1045ffe61f8d32decd1bab0e2415d27a6006c443158e1ea3';   // テスト用のパスワードの SHA-256（16進。パスワードそのものは書かない）
+async function sha256hex(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+function paintTest() {
+  $('#tLock').hidden = TEST.on; $('#tPanel').hidden = !TEST.on; $('#tUnlocked').hidden = !TEST.on;
+  $('#tInf').textContent = TEST.inf ? '♾ 恋ン無限：オン（タップでオフ）' : '♾ 恋ン無限：オフ（タップでオン）';
+}
+function openSettings() {
+  CG.debug.mount($('#sdbg'), { title: '🐞 不具合を報告する', placeholder: 'どんなことが起きた？', extra: dbgExtra });
+  paintTest(); $('#settings').hidden = false; $('#sBody').scrollTop = 0;
+}
+async function unlockTest() {
+  const v = $('#tPass').value; $('#tPass').value = '';
+  let h = ''; try { h = await sha256hex(v); } catch (e) { CG.toast('この環境では確認できません（https で開いてね）'); return; }
+  if (h !== TEST_PASS_SHA) { CG.toast('パスワードがちがいます'); return; }
+  TEST.on = true; paintTest(); CG.toast('テスト用を有効にしました');
+}
+function testInf() { TEST.inf = !TEST.inf; if (TEST.inf) { SAVE.coin = COIN_MAX; writeSave(); refreshTitle(); } paintTest(); CG.toast(TEST.inf ? '恋ン無限：オン' : '恋ン無限：オフ'); }
+function testZukan() {
+  let n = 0; for (const r of RANK_ORDER) for (const g of ['f', 'm']) for (const ch of charsOf(r, g)) for (const co of costumesOf(r)) { const k = `${r}:${g}:${ch}:${co}`; if (!SAVE.seen[k]) { SAVE.seen[k] = 1; n++; } }
+  writeSave(); refreshTitle(); CG.toast(`コンカフェ嬢を全解放しました（+${n}）`);
+}
+function testAbil() { ABIL.forEach(a => { SAVE.abil[a.id] = a.cost.length; }); writeSave(); CG.toast('能力を全解放しました'); }
 function openWipe() {
   openModal(`<h2>データを初期化</h2><p>図鑑・おでん恋ン・能力・名前・好感度・ベスト記録など、保存したデータをすべて消します。<b>元にもどせません。</b>（デバッグ用）</p><button class="wipe-hold" id="wHold" type="button"><i id="wBar"></i><span>ここを 2 秒ながおし</span></button>`);
   const hold = $('#wHold'), bar = $('#wBar'); let t0 = 0, raf = 0;
@@ -1341,7 +1399,7 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
 <li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
 <li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-26</td><td>ツーショのチェキ（フロントカメラ）、チェキのSNS共有、オリシャン、ステージ2（特典デート）・3（自宅）、けっこん（キス顔のカットイン）</td></tr><tr><td>β0.6.0</td><td>2026-10-26</td><td>チェキのコメントを手書き（サインペン）風に。成長の光で元のこんにゃんが消える。名前を決めるまで結果画面に名前を出さない（入力欄にデフォルトの名前）</td></tr><tr><td>β0.5.1</td><td>2026-10-25</td><td>デバッグ：データ初期化（タイトル左下・一時停止メニュー。2秒長押しで消える）</td></tr><tr><td>β0.5.0</td><td>2026-10-25</td><td>名前をつけられるように（成長後の結果画面。🎲で自動生成）。会いに行く（1,500恋ンで入店、ターン制の会話・食事・ソロのチェキ）</td></tr><tr><td>β0.4.0</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+const openLog = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-26</td><td>設定ボタン（更新履歴・データ初期化・不具合報告・パスワードつきのテスト用）。オリシャンの解放に要る累計を、ステージ1は10,000・ステージ2は80,000・ステージ3は150,000恋ンに</td></tr><tr><td>β0.7.0</td><td>2026-10-26</td><td>ツーショのチェキ（フロントカメラ）、チェキのSNS共有、オリシャン、ステージ2（特典デート）・3（自宅）、けっこん（キス顔のカットイン）</td></tr><tr><td>β0.6.0</td><td>2026-10-26</td><td>チェキのコメントを手書き（サインペン）風に。成長の光で元のこんにゃんが消える。名前を決めるまで結果画面に名前を出さない（入力欄にデフォルトの名前）</td></tr><tr><td>β0.5.1</td><td>2026-10-25</td><td>デバッグ：データ初期化（タイトル左下・一時停止メニュー。2秒長押しで消える）</td></tr><tr><td>β0.5.0</td><td>2026-10-25</td><td>名前をつけられるように（成長後の結果画面。🎲で自動生成）。会いに行く（1,500恋ンで入店、ターン制の会話・食事・ソロのチェキ）</td></tr><tr><td>β0.4.0</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
