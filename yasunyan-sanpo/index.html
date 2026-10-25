@@ -10,7 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='%23F7F0DB'/%3E%3Crect x='7' y='12' width='18' height='10' rx='5' fill='%23B8692A'/%3E%3Crect x='9' y='14' width='14' height='4' rx='2' fill='%23E9A55B'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&family=Yomogi&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../common/v1/common.css">
 <style>
 :root{ --ink:#3A2412; --cho:#C9772E; --cho2:#E9A55B; --cream:#FFF4DC; --line:#E3D2A8; --red:#E0473C; }
@@ -237,7 +237,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.5.1';
+const VERSION = 'β0.6.0';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 // デバッグ（共通部品 debug.js）：操作とエラーを端末に残し、一時停止メニューから送る。送り先は worker の DEBUG_GAMES（β はまだ未設定。未実装タスク）
 CG.debug.init({ snap: () => ({ st: state, pts, x: Math.round(P.x), y: Math.round(P.y), sec: secIdx, g: SAVE.gender }) });
@@ -878,7 +878,8 @@ function draw() {
   c.save(); c.translate(sx, sy);
   drawScene(c, cm, T);
   if (state !== 'title') { drawItems(c, cm, T); drawObs(c, cm, T); }
-  drawKon(c, T); drawPlayer(c, T); drawParts(c, cm);
+  if (!(G_ && G_.revealed)) drawKon(c, T);   // 成長の光が最大になったら、元のこんにゃんは消える
+  drawPlayer(c, T); drawParts(c, cm);
   c.restore();
   if (flashRed > 0) { c.fillStyle = `rgba(255,70,40,${flashRed * 0.7})`; c.fillRect(0, 0, W, H); }
   if (state === 'play') drawHud(c);
@@ -1006,7 +1007,7 @@ const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 function autoName(g) { const used = new Set(Object.values(SAVE.names)), pool = NAME_POOL[g].filter(n => !used.has(n)); return pick(pool.length ? pool : NAME_POOL[g]); }
 function openNaming(g, ch, rank) {
   const rk = g + ':' + ch, cur = SAVE.names[rk] || '';
-  $('#mbox').innerHTML = `<h2>名前をつけよう</h2><p>${RARITY[rank]}のコンカフェ嬢が生まれました。名前をつけてあげてね（8文字まで）。🎲で自動でも決められます。</p><div class="nrow"><input id="nmIn" maxlength="8" autocomplete="off" value="${CG.esc(cur)}" placeholder="なまえ"><button class="sm" id="nmDice" type="button" aria-label="名前を自動で決める">🎲</button></div><div class="mm"><button class="sm" id="nmOk" type="button">決定</button><button class="sm" id="nmLater" type="button">あとで</button></div>`;
+  $('#mbox').innerHTML = `<h2>名前をつけよう</h2><p>${RARITY[rank]}のコンカフェ嬢が生まれました。名前をつけてあげてね（8文字まで）。🎲で自動でも決められます。</p><div class="nrow"><input id="nmIn" maxlength="8" autocomplete="off" value="${CG.esc(cur || NAMES[ch])}" placeholder="なまえ"><button class="sm" id="nmDice" type="button" aria-label="名前を自動で決める">🎲</button></div><div class="mm"><button class="sm" id="nmOk" type="button">決定</button><button class="sm" id="nmLater" type="button">あとで</button></div>`;
   $('#modal').hidden = false;
   $('#nmDice').onclick = () => { $('#nmIn').value = autoName(g); };
   $('#nmLater').onclick = () => { $('#modal').hidden = true; };
@@ -1017,8 +1018,8 @@ function openNaming(g, ch, rank) {
   };
 }
 function paintResultName() {
-  const g = G_; if (!g) return; const n = SAVE.names[SAVE.gender + ':' + g.ch];
-  $('#rName').innerHTML = `${CG.esc(RARITY[g.rank])}　<b>${CG.esc(nameOf(SAVE.gender, g.ch))}</b> <button type="button" class="pen" id="btnRename" aria-label="名前をかえる">${n ? '✎ なまえ' : '✎ 名前をつける'}</button>`;
+  const g = G_; if (!g) return; const n = SAVE.names[SAVE.gender + ':' + g.ch];   // 名前を決めるまでは、名前を出さない
+  $('#rName').innerHTML = `${CG.esc(RARITY[g.rank])}${n ? `　<b>${CG.esc(n)}</b>` : ''} <button type="button" class="pen" id="btnRename" aria-label="名前をかえる">${n ? '✎ なまえ' : '✎ 名前をつける'}</button>`;
   $('#btnRename').onclick = () => openNaming(SAVE.gender, g.ch, g.rank);
 }
 
@@ -1035,6 +1036,7 @@ function meetConfirm(key) {
 function startVisit(key) {
   if (SAVE.coin < MEET_FEE) { CG.toast('おでん恋ンが足りません'); return; }
   const k = parseKey(key), rk = relKey(key), r = relOf(rk), img = new Image();
+  try { document.fonts.load('24px Yomogi'); } catch (e) { }
   SAVE.fav = key; SAVE.coin -= MEET_FEE; r.spent += MEET_FEE; r.visits++; writeSave();
   const t = { key, k, rk, img, ok: false, maxT: 8, used: 0, spent: MEET_FEE, love0: r.love };
   img.onload = () => { t.ok = true; }; img.src = `img/concafe/${k.ch}-${k.co}.png`;
@@ -1116,8 +1118,25 @@ function makeCheki(c) {   // ポラロイド風のチェキ画像を作る（端
   x.restore(); x.strokeStyle = 'rgba(0,0,0,.12)'; x.lineWidth = 1; x.strokeRect(px + .5, py + .5, pw - 1, ph - 1);
   const nm = nameOf(TK.k.g, TK.k.ch); x.fillStyle = '#4A3A2A'; x.textBaseline = 'alphabetic';
   x.font = '800 16px "M PLUS Rounded 1c",sans-serif'; x.textAlign = 'left'; x.fillText(nm, px + 2, py + ph + 36); x.font = '700 12px "M PLUS Rounded 1c",sans-serif'; x.textAlign = 'right'; x.fillText(stampOf(), px + pw - 2, py + ph + 36);
-  if (c.com) { const cm = chekiComment(); x.textAlign = 'left'; x.font = '800 15px "M PLUS Rounded 1c",sans-serif'; x.save(); x.translate(px + 2, py + ph + 62); x.rotate(-0.02); for (let i = 0; i * 17 < cm.length; i++) x.fillText(cm.slice(i * 17, i * 17 + 17), 0, i * 20); x.restore(); }
+  if (c.com) handwrite(x, chekiComment(), px, py, pw, ph);
   return cv.toDataURL('image/png');
+}
+function handwrite(x, text, px, py, pw, ph) {   // サインペンの手書き風。写真に重ねてよいが、顔（キャラの上のほう）にはかけない
+  const per = 10, lines = []; for (let i = 0; i < text.length; i += per) lines.push(text.slice(i, i + per));
+  const fs = 24, lh = 30, baseY = py + ph - 14 - (lines.length - 1) * lh, seed = text.length * 7;
+  x.save(); x.textBaseline = 'alphabetic'; x.textAlign = 'left'; x.lineJoin = 'round'; x.lineCap = 'round';
+  lines.forEach((ln, li) => {
+    x.font = `${fs}px Yomogi,"Klee One","Hiragino Maru Gothic ProN","M PLUS Rounded 1c",cursive`;
+    const w = [...ln].reduce((a, ch) => a + x.measureText(ch).width + 1, 0); let cx = px + (pw - w) / 2 + ((li * 13 + seed) % 11) - 5, ang = -0.05 + ((seed + li) % 3) * 0.015;
+    [...ln].forEach((ch, i) => {
+      const cw = x.measureText(ch).width + 1, jy = Math.sin((i + seed) * 1.7) * 2.2, jr = Math.sin((i + li) * 2.3) * 0.07;
+      x.save(); x.translate(cx + cw / 2, baseY + li * lh + jy + (cx - px) * ang * 0.25); x.rotate(ang + jr);
+      x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = 6; x.strokeText(ch, -cw / 2, 0);    // 白ぶちで、どの背景でも読める
+      x.strokeStyle = '#1D1B3A'; x.lineWidth = 1.6; x.strokeText(ch, -cw / 2, 0); x.fillStyle = '#1D1B3A'; x.fillText(ch, -cw / 2, 0);   // ペンの太さ
+      x.restore(); cx += cw;
+    });
+  });
+  x.restore();
 }
 function showCheki(url) {
   openModal(`<h2>チェキができたよ</h2><div class="dimg"><img src="${url}" alt="チェキ" style="height:auto;width:78%"></div><div class="mm"><a class="sm" style="text-align:center;text-decoration:none" id="chDl" href="${url}" download="cheki-${stampOf()}.png">画像を保存</a></div>`);
@@ -1227,7 +1246,7 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
 <li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
 <li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>デバッグ：データ初期化（タイトル左下・一時停止メニュー。2秒長押しで消える）</td></tr><tr><td>β0.5.0</td><td>2026-10-25</td><td>名前をつけられるように（成長後の結果画面。🎲で自動生成）。会いに行く（1,500恋ンで入店、ターン制の会話・食事・ソロのチェキ）</td></tr><tr><td>β0.4.0</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-26</td><td>チェキのコメントを手書き（サインペン）風に。成長の光で元のこんにゃんが消える。名前を決めるまで結果画面に名前を出さない（入力欄にデフォルトの名前）</td></tr><tr><td>β0.5.1</td><td>2026-10-25</td><td>デバッグ：データ初期化（タイトル左下・一時停止メニュー。2秒長押しで消える）</td></tr><tr><td>β0.5.0</td><td>2026-10-25</td><td>名前をつけられるように（成長後の結果画面。🎲で自動生成）。会いに行く（1,500恋ンで入店、ターン制の会話・食事・ソロのチェキ）</td></tr><tr><td>β0.4.0</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
