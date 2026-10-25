@@ -58,6 +58,9 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #card .pts span{font-size:15px}
 #card .best{text-align:center;font-size:13px;font-weight:800;margin:2px 0 4px}
 #card .best em{font-style:normal;color:#fff;background:var(--red);padding:2px 8px;border-radius:999px;margin-left:6px;font-size:12px}
+#card .rcoin{text-align:center;font-size:14px;font-weight:800;margin:0 0 4px;color:#7A4A10}
+#card .rcoin b{font-size:18px;color:#C9772E}
+.coin{display:inline-block;width:1.25em;height:1.25em;line-height:1.2em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF2A0,#E0A83A);color:#7A4A10;font-weight:900;font-size:.82em;text-align:center;border:1px solid #B07A1E;vertical-align:baseline}
 #card .brk{text-align:center;font-size:12px;font-weight:700;color:#7A5A38;margin:0 0 10px}
 #card .btns{display:flex;flex-direction:column;align-items:center;gap:8px}
 #card .big{width:100%;font-size:20px}
@@ -88,6 +91,17 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #modal .mm .sm{width:100%}
 #modal .dimg{text-align:center;background:#2A1A10;border-radius:12px;padding:6px;margin-bottom:8px}
 #modal .dimg img{height:300px;max-width:100%;object-fit:contain}
+/* 能力 */
+#abil{background:#1A100A;display:flex;flex-direction:column;z-index:7}
+#abil header{display:flex;align-items:center;justify-content:space-between;padding:44px 14px 8px;color:#fff}
+#abil h2{margin:0;font-size:20px;font-weight:900}
+#abil h2 span{font-size:14px;color:#FFD34D;margin-left:8px}
+#abil .scroll{flex:1;overflow-y:auto;padding:4px 12px 20px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.acard{background:#2A1C12;border:1px solid rgba(255,214,150,.25);border-radius:14px;padding:10px 12px;margin-bottom:10px;color:#FFF4DC}
+.acard b{font-size:15px;font-weight:900}.acard .pips{margin-left:8px;color:#FFD34D;letter-spacing:2px;font-size:12px}
+.acard p{margin:4px 0 8px;font-size:12px;line-height:1.55;color:#E9D5B0;font-weight:700}
+.acard button{border:0;width:100%;padding:9px 0;border-radius:10px;background:var(--cho);color:#fff;font-weight:900;font-size:14px;box-shadow:0 3px 0 #8A4E18}
+.acard button:disabled{background:#4A3A2C;color:#8A7660;box-shadow:none;cursor:default}
 /* 一時停止 */
 #btnPause{position:absolute;right:8px;top:40px;z-index:6;width:34px;height:34px;padding:0;border-radius:50%;border:0;background:rgba(255,244,220,.78);font-size:14px;font-weight:900;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.25)}
 #btnPause i{display:inline-block;width:4px;height:14px;margin:0 2px;border-radius:1px;background:var(--ink);vertical-align:middle}
@@ -135,7 +149,8 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
     <div class="low">
       <div class="row">
         <button class="sm" id="btnZukan" type="button">図鑑 <span id="zcount"></span></button>
-        <button class="sm" id="btnTalkTop" type="button">♥ お気に入りと会話</button>
+        <button class="sm" id="btnAbil" type="button">能力</button>
+        <button class="sm" id="btnTalkTop" type="button">♥ 会いに行く</button>
       </div>
       <div class="row">
         <button class="sm" id="btnHow" type="button">あそびかた</button>
@@ -151,6 +166,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
     <div id="card">
       <div class="pts"><b id="rPts">0</b><span>ポイント</span></div>
       <div class="best" id="rBest"></div>
+      <p class="rcoin" id="rCoin"></p>
       <p class="brk" id="rBrk"></p>
       <div class="btns">
         <button class="big" id="btnAgain" type="button">もういちど</button>
@@ -161,6 +177,11 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
         </div>
       </div>
     </div>
+  </section>
+
+  <section id="abil" class="panel" hidden>
+    <header><h2>能力 <span id="abCoin"></span></h2><button class="sm" id="btnAclose" type="button">もどる</button></header>
+    <div class="scroll" id="abBody"></div>
   </section>
 
   <section id="zukan" class="panel" hidden>
@@ -197,7 +218,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.3.0';
+const VERSION = 'β0.4.0';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 // デバッグ（共通部品 debug.js）：操作とエラーを端末に残し、一時停止メニューから送る。送り先は worker の DEBUG_GAMES（β はまだ未設定。未実装タスク）
 CG.debug.init({ snap: () => ({ st: state, pts, x: Math.round(P.x), y: Math.round(P.y), sec: secIdx, g: SAVE.gender }) });
@@ -217,6 +238,10 @@ const CFG = {
   sectionLen: 4500,      // 1 区間の長さ（px）
   tail: 1000,            // 最後の区間のあと、ゴールまでの長さ（px）
   crowSpeed: 30,         // カラスが近づく速さ（px/秒）
+  speedBonus: 0.3,       // ポイントが増えると歩く速さが上がる（speedPtsMax 点で +30%）
+  speedPtsMax: 1060,
+  eatPer: 50, eatMin: 3, eatMax: 24, eatTime: 3.4,   // ゴールで食べさせる数＝ポイント÷50（切り上げ）。多いときは間隔を縮めて eatTime 秒以内に
+  coinBonus: { D: 0, C: 100, B: 250, A: 500, S: 1500 },   // おでん恋ン＝ポイント＋スコアランクのボーナス
   rank: { C: 300, B: 500, A: 700 },   // ランクの境目（以上）。D は C 未満
   sChance: 0.10,         // A のうち S になる確率
   // 1 周ぶんの出現数
@@ -245,6 +270,19 @@ const ITEMS = {
 };
 const KINDS = { normal: ['chikuwa', 'daikon', 'konnyaku', 'hanpen'], rare: ['tamago', 'gyusuji', 'kinchaku'], super: ['kinchikuwa', 'misokushi'] };
 const TIER_LABEL = { normal: 'ふつう', rare: 'レア', super: '超レア', bad: '減点' };
+
+/* ---------- やすにゃんの能力（おでん恋ンで解放。買い切り・段階つき） ---------- */
+const ABIL = [
+  { id: 'dj', name: '2段ジャンプ', cost: [2000], desc: () => '空中でもう一度タップすると、もう一段ジャンプ。1 回目も 2 回目も、押している長さで高さが変わる。' },
+  { id: 'mag', name: 'アイテム吸い寄せ', cost: [1000, 2000, 3500], R: [60, 90, 120], desc: l => `近くのおいしいアイテムが、やすにゃんに寄ってくる（はんいは ${[0, 60, 90, 120][l]}px → ${[60, 90, 120, 120][l]}px。減点アイテムは寄ってこない）。` },
+  { id: 'inv', name: 'むてき時間のび', cost: [800, 1500, 2500], add: [0.4, 0.8, 1.2], desc: l => `ぶつかったあとのむてき時間が +${[0, 0.4, 0.8, 1.2][l]} 秒 → +${[0.4, 0.8, 1.2, 1.2][l]} 秒。` },
+  { id: 'grd', name: 'おとすポイントへらし', cost: [1000, 2000, 3500], mul: [0.7, 0.4, 0.1], desc: l => `障害物にぶつかって落とすポイントが ${[100, 70, 40, 10][l]}% → ${[70, 40, 10, 10][l]}%。` },
+  { id: 'lucky', name: 'レア出現ふえる', cost: [1500, 3000, 5000], add: [2, 4, 6], desc: l => `1 周に出るレアが +${[0, 2, 4, 6][l]} 個 → +${[2, 4, 6, 6][l]} 個。` }
+];
+const abLv = id => (SAVE.abil && SAVE.abil[id]) | 0;
+const abOf = id => ABIL.find(a => a.id === id);
+const abVal = (id, key, d = 0) => { const l = abLv(id); return l > 0 ? abOf(id)[key][l - 1] : d; };
+const fmt = n => Number(n).toLocaleString('ja-JP');
 
 /* ---------- コンカフェ嬢（絵は img/concafe/<キャラ>-<衣装>.png を読み込む） ---------- */
 // 性別 g：'f'＝メス（女性のキャラに成長）、'm'＝オス（男性のキャラに成長）。S は A のキャラに演出を足す。
@@ -284,7 +322,7 @@ function chk(s) { let h = 0x811c9dc5; const t = 'yasunyan-sanpo|' + s; for (let 
 // v:2（β0.2.0）：gender（'f'|'m'）、図鑑のキーに性別が入る（<ランク>:<性別>:<キャラ>:<衣装>）、fav（お気に入りのキー）、love（キーごとの好感度 0〜100）
 // v:1 の図鑑のキー（性別なし・3 つ組）は仮の絵のものなので、読むときに捨てる
 function loadSave() {
-  const d = { v: 2, best: 0, plays: 0, seen: {}, gender: 'f', fav: '', love: {} };
+  const d = { v: 2, best: 0, plays: 0, seen: {}, gender: 'f', fav: '', love: {}, coin: 0, abil: {} };
   const raw = CG.ls.get(KEY);
   if (!raw) return d;
   try {
@@ -295,7 +333,9 @@ function loadSave() {
     if (o.seen && typeof o.seen === 'object') for (const k in o.seen) if (/^[SABCD]:[fm]:[a-z0-9]+:[a-z0-9]+$/.test(k)) seen[k] = Math.max(1, o.seen[k] | 0);
     const love = {};
     if (o.love && typeof o.love === 'object') for (const k in o.love) if (seen[k]) love[k] = clamp(o.love[k] | 0, 0, 100);
-    return { v: 2, best: Math.max(0, o.best | 0), plays: Math.max(0, o.plays | 0), seen, gender: o.gender === 'm' ? 'm' : 'f', fav: seen[o.fav] ? o.fav : '', love };
+    const abil = {};
+    if (o.abil && typeof o.abil === 'object') ABIL.forEach(a => { const l = o.abil[a.id] | 0; if (l > 0) abil[a.id] = Math.min(l, a.cost.length); });
+    return { v: 2, best: Math.max(0, o.best | 0), plays: Math.max(0, o.plays | 0), seen, gender: o.gender === 'm' ? 'm' : 'f', fav: seen[o.fav] ? o.fav : '', love, coin: clamp(o.coin | 0, 0, 99999999), abil };
   } catch (e) { return d; }
 }
 function writeSave() {
@@ -529,7 +569,7 @@ let K = 1, T = 0;
 let state = 'title';        // title / play / goal / result / talk
 let paused = false, pauseShown = false;   // 一時停止（play のときだけ）
 const WORLD = { items: [], obs: [], goalX: CFG.sectionLen * 4 + CFG.tail };
-const P = { x: 110, y: 0, vy: 0, held: false, holdT: 0, buf: 0, coy: 0, anim: 0, inv: 0, slow: 0, air: false };
+const P = { x: 110, y: 0, vy: 0, held: false, holdT: 0, buf: 0, coy: 0, anim: 0, inv: 0, slow: 0, air: false, dj: false };
 let pts = 0, got = {}, hist = [], parts = [], banner = { t: 9, txt: '' }, secIdx = 0, shake = 0, flashRed = 0, demoX = 0, runT0 = 0, konGrow = 0, konPulse = 0;
 let G_ = null;              // ゴール演出の情報
 const keyOf = (r, g, ch, co) => `${r}:${g}:${ch}:${co}`;
@@ -539,10 +579,11 @@ const parseKey = k => { const [r, g, ch, co] = k.split(':'); return { r, g, ch, 
 function genWorld() {
   const L = CFG.sectionLen, items = [], obs = [];
   const bombN = pick(CFG.nBomb), bombSecs = shuffle([0, 1, 2, 3]).slice(0, bombN), superSecs = shuffle([0, 1, 2, 3]).slice(0, 3);
+  const luckyExtra = [0, 0, 0, 0]; for (let i = 0; i < abVal('lucky', 'add'); i++) luckyExtra[i % 4]++;
   for (let s = 0; s < 4; s++) {
     const tokens = [];
     for (let i = 0; i < CFG.nNormalCluster[s]; i++) tokens.push('N');
-    for (let i = 0; i < CFG.nRare[s]; i++) tokens.push('R');
+    for (let i = 0; i < CFG.nRare[s] + (luckyExtra[s] || 0); i++) tokens.push('R');
     if (superSecs.includes(s)) tokens.push('S');
     for (let i = 0; i < CFG.nNanami[s]; i++) tokens.push('n');
     for (let i = 0; i < CFG.nKarashi[s]; i++) tokens.push('k');
@@ -574,18 +615,22 @@ genWorld();
 function startRun() {
   genWorld();
   pts = 0; got = {}; parts = []; hist = []; shake = 0; flashRed = 0; konGrow = 0; konPulse = 0; G_ = null;
-  Object.assign(P, { x: 110, y: 0, vy: 0, held: false, holdT: 0, buf: 0, coy: 0, anim: 0, inv: 0, slow: 0, air: false });
+  Object.assign(P, { x: 110, y: 0, vy: 0, held: false, holdT: 0, buf: 0, coy: 0, anim: 0, inv: 0, slow: 0, air: false, dj: false });
   secIdx = 0; banner = { t: 0, txt: STY[0].name };
   state = 'play'; runT0 = T; paused = false; $('#pausep').hidden = true;
-  $('#title').hidden = true; $('#result').hidden = true; $('#rank').hidden = true; $('#zukan').hidden = true; $('#modal').hidden = true;
+  $('#title').hidden = true; $('#result').hidden = true; $('#rank').hidden = true; $('#zukan').hidden = true; $('#modal').hidden = true; $('#abil').hidden = true;
   Snd.init(); Snd.resume(); Snd.startBgm();
 }
 
 /* ---------- 入力 ---------- */
-function doJump() { P.vy = CFG.jumpV; P.y = Math.max(P.y, 0.01); P.holdT = 0; P.air = true; P.buf = 0; P.coy = 0; Snd.jump(); spawnDust(P.x, 6); }
+function doJump() { P.vy = CFG.jumpV; P.y = Math.max(P.y, 0.01); P.holdT = 0; P.air = true; P.dj = false; P.buf = 0; P.coy = 0; Snd.jump(); spawnDust(P.x, 6); }
+function doJump2() {   // 2段ジャンプ（能力）：1 回目と同じく、押している長さで高さが変わる
+  P.vy = CFG.jumpV * 0.92; P.holdT = 0; P.dj = true; P.buf = 0; Snd.tone(520, 0.16, 'square', 0.09, 1040);
+  for (let i = 0; i < 8; i++) parts.push({ ty: 's', x: P.x + rnd(-10, 10), y: G - P.y - 10 + rnd(-4, 4), vx: rnd(-60, 60), vy: rnd(10, 60), life: rnd(0.2, 0.4), max: 0.4, col: '#FFF2A0', r: rnd(2, 3.5) });
+}
 function press() {
   if (paused) return;
-  if (state === 'play') { P.held = true; P.buf = 0.12; if (P.y <= 0) doJump(); }
+  if (state === 'play') { P.held = true; P.buf = 0.12; if (P.y <= 0) doJump(); else if (abLv('dj') > 0 && !P.dj && P.air) doJump2(); }
   else if (state === 'goal' && G_) {
     if (!G_.revealed && G_.t > 1.2) G_.t = Math.max(G_.t, G_.tFlash);
     else if (G_.revealed && G_.rt > 0.7) showResult();
@@ -628,7 +673,7 @@ function pickItem(it) {
   }
 }
 function hitObs(o) {
-  P.inv = CFG.invuln; P.slow = CFG.slowTime; const loss = Math.min(pts, CFG.hitLoss); pts -= loss; shake = Math.max(shake, 0.25); Snd.hit();
+  P.inv = CFG.invuln + abVal('inv', 'add'); P.slow = CFG.slowTime; const loss = Math.min(pts, Math.round(CFG.hitLoss * abVal('grd', 'mul', 1))); pts -= loss; shake = Math.max(shake, 0.25); Snd.hit();
   spawnSpark(P.x, G - P.y - 30, '#fff', 8, 120);
   popText(P.x, G - P.y - 80, loss > 0 ? '-' + loss : 'いてっ！', '#FF8A7A');
   const have = Object.keys(got).filter(k => ITEMS[k].pt > 0);
@@ -636,16 +681,21 @@ function hitObs(o) {
 }
 function playUpdate(dt) {
   const mult = P.slow > 0 ? CFG.slowRate : 1; P.slow = Math.max(0, P.slow - dt); P.inv = Math.max(0, P.inv - dt);
-  P.x += CFG.speed * mult * dt; P.anim += dt * mult;
+  const sm = 1 + CFG.speedBonus * Math.min(pts, CFG.speedPtsMax) / CFG.speedPtsMax;   // ポイントが多いほど速い
+  P.x += CFG.speed * mult * sm * dt; P.anim += dt * mult * sm;
   P.buf = Math.max(0, P.buf - dt); P.coy = P.y <= 0 ? 0.08 : Math.max(0, P.coy - dt);
   if (P.buf > 0 && P.coy > 0 && P.y <= 0) doJump();
   if (P.y > 0 || P.vy > 0) {
     let g = CFG.gravity; if (P.held && P.vy > 0 && P.holdT < CFG.holdMax) { g *= CFG.holdGravity; P.holdT += dt; }
     P.y += P.vy * dt; P.vy -= g * dt;
-    if (P.y <= 0) { P.y = 0; P.vy = 0; if (P.air) { P.air = false; spawnDust(P.x, 5); } }
+    if (P.y <= 0) { P.y = 0; P.vy = 0; P.dj = false; if (P.air) { P.air = false; spawnDust(P.x, 5); } }
   }
   pushHist();
-  const cy = P.y + 33;
+  const cy = P.y + 33, mR = abVal('mag', 'R');
+  if (mR) for (const it of WORLD.items) {   // 吸い寄せ（おいしいアイテムだけ）
+    if (it.got || ITEMS[it.k].tier === 'bad') continue; const dx = P.x - it.x, dy = cy - it.y, d = Math.hypot(dx, dy);
+    if (d < mR && d > 1) { const v = Math.min(d, 280 * dt); it.x += dx / d * v; it.y += dy / d * v; }
+  }
   for (const it of WORLD.items) { if (it.got || Math.abs(it.x - P.x) > 40) continue; if (Math.abs(it.x - P.x) < 22 && Math.abs(it.y - cy) < 47) pickItem(it); }
   for (const o of WORLD.obs) {
     if (o.t === 'crow') { if (!o.act && o.x0 - P.x < 360) { o.act = true; o.ta = T; } if (o.act) o.x = o.x0 - CFG.crowSpeed * (T - o.ta); }
@@ -666,10 +716,12 @@ function startGoal() {
   const img = new Image(); const info = { rank, ch, co, key, img, ok: false, fail: false };
   img.onload = () => { info.ok = true; }; img.onerror = () => { info.fail = true; }; img.src = `img/concafe/${ch}-${co}.png`;
   const list = []; for (const k in got) if (ITEMS[k].pt > 0) for (let i = 0; i < got[k]; i++) list.push(k);
-  shuffle(list); const eat = list.slice(0, 14);
-  const tE0 = 0.9, tShine = tE0 + 0.17 * eat.length + 0.9, tFlash = tShine + 1.8;
-  G_ = Object.assign(info, { t: 0, eat, tE0, tShine, tFlash, arrived: 0, revealed: false, rt: 0, flashA: 0, chargeDone: false, isBest: pts > SAVE.best, prevBest: SAVE.best });
-  SAVE.best = Math.max(SAVE.best, pts); SAVE.plays++; SAVE.seen[key] = (SAVE.seen[key] || 0) + 1; writeSave();
+  shuffle(list);
+  const nEat = pts > 0 && list.length ? clamp(Math.ceil(pts / CFG.eatPer), CFG.eatMin, CFG.eatMax) : 0;   // ポイントに応じて食べる数が変わる
+  const eat = Array.from({ length: nEat }, (_, i) => list[i % list.length]), iv = Math.min(0.17, CFG.eatTime / Math.max(1, nEat));
+  const tE0 = 0.9, tShine = tE0 + iv * eat.length + 0.9, tFlash = tShine + 1.8, coinGain = pts + CFG.coinBonus[rank];
+  G_ = Object.assign(info, { t: 0, eat, iv, coinGain, tE0, tShine, tFlash, arrived: 0, revealed: false, rt: 0, flashA: 0, chargeDone: false, isBest: pts > SAVE.best, prevBest: SAVE.best });
+  SAVE.coin = Math.min(99999999, SAVE.coin + coinGain); SAVE.best = Math.max(SAVE.best, pts); SAVE.plays++; SAVE.seen[key] = (SAVE.seen[key] || 0) + 1; writeSave();
   popText(WORLD.goalX - 100, G - 90, 'ゴール！', '#FFD34D');
 }
 function konPos() { return { x: P.x - 80 }; }
@@ -677,7 +729,7 @@ function goalUpdate(dt) {
   const g = G_; if (!g) return; g.t += dt;
   P.anim += dt * (g.t < 0.8 ? 1 : 0);
   // 食べる
-  g.eat.forEach((k, i) => { if (!g['a' + i] && g.t >= g.tE0 + 0.17 * i + 0.5) { g['a' + i] = true; g.arrived++; konPulse = 1; konGrow = Math.min(1.5, pts / 600 * 1.5) * g.arrived / g.eat.length; Snd.chomp(); spawnSpark(konPos().x + 24, G - 20, '#FFE9A8', 4, 70); } });
+  g.eat.forEach((k, i) => { if (!g['a' + i] && g.t >= g.tE0 + g.iv * i + 0.5) { g['a' + i] = true; g.arrived++; konPulse = 1; konGrow = Math.min(1.5, pts / 600 * 1.5) * g.arrived / g.eat.length; Snd.chomp(); spawnSpark(konPos().x + 24, G - 20, '#FFE9A8', 4, 70); } });
   konPulse = Math.max(0, konPulse - dt * 4);
   if (g.t >= g.tShine && !g.chargeDone) { g.chargeDone = true; Snd.charge(); }
   if (g.t >= g.tShine && !g.revealed) { const kx = konPos().x + 24; if (Math.random() < 0.7) spawnSpark(kx + rnd(-30, 30), G - 30 + rnd(-20, 20), '#FFF2A0', 1, 60); }
@@ -694,6 +746,7 @@ function goalUpdate(dt) {
 function showResult() {
   state = 'result'; const g = G_;
   $('#rPts').textContent = pts;
+  $('#rCoin').innerHTML = `<span class="coin">恋</span> おでん恋ン <b>+${fmt(g.coinGain)}</b>　（合計 ${fmt(SAVE.coin)}）`;
   $('#rBest').innerHTML = g.isBest ? `ベスト記録 ${SAVE.best}<em>ベスト更新！</em>` : `ベスト記録 ${SAVE.best}`;
   const cnt = { normal: 0, rare: 0, super: 0, bad: 0 }; for (const k in got) cnt[ITEMS[k].tier] += got[k];
   $('#rBrk').textContent = `ふつう ×${cnt.normal}　レア ×${cnt.rare}　超レア ×${cnt.super}　減点 ×${cnt.bad}`;
@@ -781,7 +834,7 @@ function drawHud(c) {
 function drawGoalFx(c, cm) {
   const g = G_; if (!g) return;
   g.eat.forEach((k, i) => {
-    const s = g.t - (g.tE0 + 0.17 * i); if (s < 0 || s > 0.5) return; const u = s / 0.5;
+    const s = g.t - (g.tE0 + g.iv * i); if (s < 0 || s > 0.5) return; const u = s / 0.5;
     const sx = P.x - cm + 6, sy = G - 40, ex = P.x - 80 - cm + 28, ey = G - 26;
     drawIcon(c, k, lerp(sx, ex, u), lerp(sy, ey, u) - Math.sin(u * Math.PI) * 50, 0.9 * (1 - u * 0.4), u * 8);
   });
@@ -837,10 +890,10 @@ addEventListener('resize', resize); resize();
 const seenCount = g => Object.keys(SAVE.seen).filter(k => k.split(':')[1] === g).length;
 function refreshTitle() {
   const n = Object.keys(SAVE.seen).length;
-  $('#bestline').textContent = SAVE.best > 0 ? `ベスト記録 ${SAVE.best} ポイント　（${SAVE.plays} 回さんぽ）` : 'まだ さんぽしていません';
+  $('#bestline').textContent = (SAVE.best > 0 ? `ベスト ${SAVE.best}pt ・ ${SAVE.plays}回さんぽ` : 'まだ さんぽしていません') + ` ・ おでん恋ン ${fmt(SAVE.coin)}`;
   $('#zcount').textContent = `${n}/${ZUKAN_TOTAL * 2}`; $('#zcount2').textContent = `${seenCount(zG)}/${ZUKAN_TOTAL}`;
   $('#gF').classList.toggle('on', SAVE.gender === 'f'); $('#gM').classList.toggle('on', SAVE.gender === 'm');
-  $('#btnTalkTop').textContent = SAVE.fav ? '♥ お気に入りと会話' : '♡ お気に入りと会話';
+  $('#btnTalkTop').textContent = SAVE.fav ? '♥ 会いに行く' : '♡ 会いに行く';
 }
 function setGender(g) { SAVE.gender = g; zG = g; writeSave(); refreshTitle(); }
 function openModal(html) { $('#mbox').innerHTML = html + '<div class="row"><button class="sm" id="mClose" type="button">とじる</button></div>'; $('#modal').hidden = false; $('#mClose').onclick = () => { $('#modal').hidden = true; }; }
@@ -955,6 +1008,20 @@ function drawTalk(c) {
   drawParts(c, 0);
   const vg = c.createLinearGradient(0, 0, 0, H); vg.addColorStop(0, 'rgba(0,0,0,.35)'); vg.addColorStop(.25, 'rgba(0,0,0,0)'); vg.addColorStop(.7, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
 }
+function buildAbil() {
+  $('#abCoin').innerHTML = `<span class="coin">恋</span> ${fmt(SAVE.coin)}`;
+  $('#abBody').innerHTML = ABIL.map(a => {
+    const l = abLv(a.id), max = a.cost.length, next = a.cost[l];
+    return `<div class="acard"><b>${a.name}</b><span class="pips">${'●'.repeat(l)}${'○'.repeat(max - l)}</span><p>${a.desc(l).replace(/(\S+?) → \1(?=[^\d%])/, '$1')}</p><button type="button" data-a="${a.id}"${l >= max || SAVE.coin < next ? ' disabled' : ''}>${l >= max ? '最大まで解放ずみ' : `${l ? '強化' : '解放'}　${fmt(next)} 恋ン`}</button></div>`;
+  }).join('') + '<p style="color:#8A7660;font-size:11px;font-weight:700;text-align:center">おでん恋ンは、散歩のクリアでもらえます。</p>';
+}
+$('#abBody').addEventListener('click', e => {
+  const b = e.target.closest('button[data-a]'); if (!b || b.disabled) return;
+  const a = abOf(b.dataset.a), l = abLv(a.id), cost = a.cost[l]; if (l >= a.cost.length || SAVE.coin < cost) return;
+  SAVE.coin -= cost; SAVE.abil[a.id] = l + 1; writeSave(); Snd.init(); Snd.resume(); Snd.pick('rare'); buildAbil(); refreshTitle(); CG.toast(`${a.name} を${l ? '強化' : '解放'}しました`);
+});
+$('#btnAbil').onclick = () => { buildAbil(); $('#abil').hidden = false; $('#abBody').scrollTop = 0; };
+$('#btnAclose').onclick = () => { $('#abil').hidden = true; };
 $('#btnTback').onclick = leaveTalk;
 $('#btnTalkTop').onclick = () => { if (SAVE.fav) openTalk(); else { CG.toast('図鑑でお気に入りを選んでね'); openZukan(); } };
 function openShare() {
@@ -993,11 +1060,13 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>やすにゃんは自動で右へ歩きます。<b>タップでジャンプ</b>、<b>長押しで高く</b>跳びます（PC はスペースキー）。</li>
 <li>道に落ちている激うまアイテムに触れると拾えます。レアや超レアほど高い点です。</li>
 <li>七味・和からし・ばくだんは<b>減点</b>。ジャンプでよけましょう。</li>
+<li>集めたポイントが多いほど、歩くスピードが上がります。ゴールではポイントに応じた数のアイテムをこんにゃんが食べます。</li>
+<li>クリアすると<b>おでん恋ン</b>をもらえます。恋ンで、スタート画面の「能力」（2段ジャンプなど）を解放できます。</li>
 <li>水たまり・自転車・カラスにぶつかると、ポイントを少し落として足が遅くなります。</li>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
 <li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
 <li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
