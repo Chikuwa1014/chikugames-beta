@@ -61,6 +61,13 @@ with sync_playwright() as p:
         pg.click('#btnPause'); pg.click('#btnQuit'); pg.wait_for_timeout(300)
         assert pg.evaluate("state") == 'title' and not pg.evaluate("document.querySelector('#title').hidden") is True, 'quit failed'
         print('pause ok', tag, pg.evaluate("Snd.bgmOn"))
+        # データ初期化（デバッグ）：1 回目は確認表示だけ、2 回目で消えて読みこみなおす
+        pg.evaluate("SAVE.coin = 777; SAVE.names = {'f:af1': 'てすと'}; writeSave()")
+        pg.click('#btnStart'); pg.wait_for_timeout(300); pg.click('#btnPause'); pg.wait_for_timeout(200)
+        pg.click('#btnWipe'); assert pg.evaluate("SAVE.coin") == 777 and 'もういちど' in pg.evaluate("document.querySelector('#btnWipe').textContent"), 'wipe arm'
+        pg.click('#btnWipe'); pg.wait_for_timeout(1200)
+        assert pg.evaluate("[SAVE.coin, Object.keys(SAVE.names).length, SAVE.plays]") == [0, 0, 0], 'wipe'
+        print('wipe ok')
         pg.click('#btnStart'); pg.wait_for_timeout(300); pg.evaluate(BOT)
         for i, nm in enumerate(['stall', 'shop', 'park', 'shrine', 'back']):
             pg.evaluate(f"P.x = CFG.sectionLen*{i} + 400; banner.t = 0.5; banner.txt = STY[{i}%4].name; pg_ok = true")
@@ -146,7 +153,7 @@ with sync_playwright() as p:
                   got = {{chikuwa: 6, tamago: 2}}; pts = {800 if label in 'AS' else 600}; P.x = WORLD.goalX - 130""")
                 pg.wait_for_timeout(7800); pg.screenshot(path=f'{OUT}/{tag}-result-{gd}-{label}.png')
                 print(gd, label, pg.evaluate("[state, G_.rank, G_.key, G_.ok, G_.img.naturalWidth + 'x' + G_.img.naturalHeight]"))
-            pg.evaluate("document.querySelector('#modal').hidden = true"); pg.click('#btnZukan2'); pg.wait_for_timeout(600); pg.screenshot(path=f'{OUT}/{tag}-zukan-m.png')
+            pg.wait_for_timeout(1200); pg.evaluate("document.querySelector('#modal').hidden = true"); pg.click('#btnZukan2'); pg.wait_for_timeout(600); pg.screenshot(path=f'{OUT}/{tag}-zukan-m.png')
             pg.click('#zF'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-zukan-f.png')
             pg.click('#zM'); pg.wait_for_timeout(200)
             pg.click('#zbody .slot[data-k]'); pg.wait_for_timeout(400); pg.screenshot(path=f'{OUT}/{tag}-detail.png')
