@@ -63,10 +63,15 @@ with sync_playwright() as p:
         print('pause ok', tag, pg.evaluate("Snd.bgmOn"))
         # データ初期化（デバッグ）：1 回目は確認表示だけ、2 回目で消えて読みこみなおす
         pg.evaluate("SAVE.coin = 777; SAVE.names = {'f:af1': 'てすと'}; writeSave()")
-        pg.click('#btnStart'); pg.wait_for_timeout(300); pg.click('#btnPause'); pg.wait_for_timeout(200)
-        pg.click('#btnWipe'); assert pg.evaluate("SAVE.coin") == 777 and 'もういちど' in pg.evaluate("document.querySelector('#btnWipe').textContent"), 'wipe arm'
-        pg.click('#btnWipe'); pg.wait_for_timeout(1200)
+        # タイトルから：タップだけでは消えない／短い長押しでも消えない／2 秒長押しで消える
+        pg.click('#btnWipeT'); pg.wait_for_timeout(200)
+        box = pg.locator('#wHold').bounding_box(); cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        pg.mouse.move(cx, cy); pg.mouse.down(); pg.wait_for_timeout(900); pg.mouse.up(); pg.wait_for_timeout(300)
+        assert pg.evaluate("SAVE.coin") == 777, 'short hold must not wipe'
+        pg.mouse.move(cx, cy); pg.mouse.down(); pg.wait_for_timeout(2600)
+        pg.wait_for_timeout(1200)
         assert pg.evaluate("[SAVE.coin, Object.keys(SAVE.names).length, SAVE.plays]") == [0, 0, 0], 'wipe'
+        pg.mouse.up()
         print('wipe ok')
         pg.click('#btnStart'); pg.wait_for_timeout(300); pg.evaluate(BOT)
         for i, nm in enumerate(['stall', 'shop', 'park', 'shrine', 'back']):
