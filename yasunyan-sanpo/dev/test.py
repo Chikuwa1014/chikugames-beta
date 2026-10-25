@@ -64,7 +64,7 @@ with sync_playwright() as p:
         # データ初期化（デバッグ）：1 回目は確認表示だけ、2 回目で消えて読みこみなおす
         pg.evaluate("SAVE.coin = 777; SAVE.names = {'f:af1': 'てすと'}; writeSave()")
         # タイトルから：タップだけでは消えない／短い長押しでも消えない／2 秒長押しで消える
-        pg.click('#btnWipeT'); pg.wait_for_timeout(200)
+        pg.click('#btnSet'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-settings.png'); pg.click('#sWipe'); pg.wait_for_timeout(200)
         box = pg.locator('#wHold').bounding_box(); cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
         pg.mouse.move(cx, cy); pg.mouse.down(); pg.wait_for_timeout(900); pg.mouse.up(); pg.wait_for_timeout(300)
         assert pg.evaluate("SAVE.coin") == 777, 'short hold must not wipe'
@@ -73,6 +73,20 @@ with sync_playwright() as p:
         assert pg.evaluate("[SAVE.coin, Object.keys(SAVE.names).length, SAVE.plays]") == [0, 0, 0], 'wipe'
         pg.mouse.up()
         print('wipe ok')
+        # 設定：テスト用はパスワードが合うまで使えない（テストでは、テスト用のパスワードの SHA に差しかえる）
+        pg.evaluate("(async () => { TEST_PASS_SHA = await sha256hex('pw-for-test'); })()"); pg.wait_for_timeout(200)
+        pg.click('#btnSet'); pg.wait_for_timeout(200)
+        assert pg.evaluate("document.querySelector('#tPanel').hidden && !document.querySelector('#tLock').hidden"), 'locked'
+        pg.fill('#tPass', 'wrong'); pg.click('#tOk'); pg.wait_for_timeout(300)
+        assert pg.evaluate("document.querySelector('#tPanel').hidden && !TEST.on"), 'wrong password'
+        pg.fill('#tPass', 'pw-for-test'); pg.click('#tOk'); pg.wait_for_timeout(400)
+        assert pg.evaluate("!document.querySelector('#tPanel').hidden && TEST.on"), 'unlock'
+        pg.click('#tZukan'); pg.click('#tAbil'); pg.click('#tInf'); pg.wait_for_timeout(200)
+        pg.screenshot(path=f'{OUT}/{tag}-settings-test.png')
+        r = pg.evaluate("[Object.keys(SAVE.seen).length, ABIL.every(a => abLv(a.id) === a.cost.length), SAVE.coin]")
+        print('test tools:', r); assert r[0] == 2 * (5 * 11 * 2 + 3 * 6 * 1 + 3 * 6 * 0) or r[0] > 100, 'zukan all'; assert r[1] and r[2] == 99999999, 'abil/inf'
+        pg.click('#sLog'); pg.wait_for_timeout(200); assert pg.evaluate("document.querySelector('#modal').innerText.includes('更新履歴')"); pg.click('#mClose')
+        pg.click('#btnSclose'); pg.evaluate("TEST.inf = false; TEST.on = false; SAVE.coin = 0; SAVE.abil = {}; writeSave(); refreshTitle()")
         pg.click('#btnStart'); pg.wait_for_timeout(300); pg.evaluate(BOT)
         for i, nm in enumerate(['stall', 'shop', 'park', 'shrine', 'back']):
             pg.evaluate(f"P.x = CFG.sectionLen*{i} + 400; banner.t = 0.5; banner.txt = STY[{i}%4].name; pg_ok = true")
@@ -202,7 +216,11 @@ with sync_playwright() as p:
                 pg.evaluate(f"SAVE.rel[{rk!r}].stage = {st}; SAVE.coin = 300000; startVisit(SAVE.fav)"); pg.wait_for_timeout(900)
                 pg.screenshot(path=f'{OUT}/{tag}-talk-stage{st}.png')
                 if st == 2: pg.evaluate("leaveTalk()"); pg.wait_for_timeout(200)
-            pg.evaluate("{ const r = SAVE.rel[TK.rk]; r.love = 100; r.spent = 40000; TK.used = 0; TK.maxT = 10; MEET.orishanRate = 1; doOrishan(); }"); pg.wait_for_timeout(1700)
+            pg.evaluate("{ const r = SAVE.rel[TK.rk]; r.love = 100; r.spent = 149999; mainMenu(); }")
+            assert pg.evaluate("document.querySelector('#tChoices button:nth-child(4)').className === 'dis'"), 'stage3 needs 150000'
+            pg.evaluate("{ const r = SAVE.rel[TK.rk]; r.spent = 150000; mainMenu(); }")
+            assert pg.evaluate("document.querySelector('#tChoices button:nth-child(4)').className !== 'dis'"), 'stage3 ready at 150000'
+            pg.evaluate("{ const r = SAVE.rel[TK.rk]; r.love = 100; r.spent = 150000; TK.used = 0; TK.maxT = 10; MEET.orishanRate = 1; doOrishan(); }"); pg.wait_for_timeout(1700)
             assert pg.evaluate("!!document.querySelector('#wed') && SAVE.rel[TK.rk].married === true"), 'marriage cut-in'
             pg.screenshot(path=f'{OUT}/{tag}-wedding.png'); pg.click('#wedOk'); pg.evaluate("MEET.orishanRate = 0.98"); pg.wait_for_timeout(200)
             pg.click('#btnTback'); pg.wait_for_timeout(300)
