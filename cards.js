@@ -169,4 +169,48 @@ add({
   }
 });
 
+
+add({
+  order: 105,
+  kicker: '横スクロール散歩', title: 'やすにゃんこんにゃん！', sub: '散歩チュウ',
+  desc: 'こんにゃんを連れて、おでん横丁をひとまわり。激うまアイテムを拾って、七味やばくだんはジャンプでよけよう。ゴールでこんにゃんが……！？',
+  tags: ['アクション', 'ひとりで遊ぶ'], version: 'β0.1.0', updated: '2026-10-25',
+  /* 開発に公開：ぼかして「開発中」。リンクは貼らない（URL は会話の中でだけ共有する） */
+  dev: true,
+  /* 160×90 のサムネイル（ドット絵）。t は秒 */
+  draw(c, t) {
+    /* 夕方の屋台通りを歩くやすにゃんとこんにゃん。道にアイテムが流れてくる */
+    const r = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+    const g = c.createLinearGradient(0, 0, 0, 62); g.addColorStop(0, '#2A1B3F'); g.addColorStop(1, '#F0935C');
+    c.fillStyle = g; c.fillRect(0, 0, 160, 62);
+    const o = (t * 30) % 80;
+    // 屋台（赤白のひさしとちょうちん）
+    for (let k = -1; k < 3; k++) {
+      const x = k * 80 - o + 10;
+      r(x, 40, 44, 22, '#6B3F25'); r(x - 2, 28, 48, 4, '#4A2A16');
+      for (let j = 0; j < 6; j++) r(x - 2 + j * 8, 24, 8, 8, j % 2 ? '#F6EBD0' : '#C93A33');
+      r(x + 34, 34, 5, 6, '#D93A2B'); r(x + 35, 33, 3, 1, '#FFE9A8');
+    }
+    r(0, 62, 160, 28, '#4B3427'); r(0, 62, 160, 2, '#6D4C38');
+    // アイテム（ちくわ・金のちくわ）と減点のばくだん
+    const ix = 150 - ((t * 38) % 190), bob = Math.sin(t * 4) * 2;
+    r(ix, 52 + bob, 10, 5, '#B8692A'); r(ix + 1, 53 + bob, 8, 2, '#E9A55B');
+    const kx = 150 - ((t * 38 + 70) % 190);
+    r(kx, 36 + bob, 12, 6, '#F6C945'); r(kx + 1, 37 + bob, 10, 2, '#FFE98A');
+    const bx = 150 - ((t * 38 + 120) % 190);
+    r(bx, 54, 9, 9, '#1C1D24'); r(bx + 6, 51, 2, 3, '#8A6A48'); r(bx + 7, 49 + (Math.floor(t * 8) % 2), 2, 2, '#FFB23A');
+    // こんにゃん（ねこ耳のこんにゃく）
+    const st = Math.floor(t * 6) % 2, kn = 38, ky = 63 - st;
+    r(kn, ky - 14, 3, 4, '#8D8E96'); r(kn + 13, ky - 14, 3, 4, '#8D8E96'); r(kn, ky - 11, 16, 11, '#8D8E96');
+    r(kn + 3, ky - 8, 3, 3, '#fff'); r(kn + 10, ky - 8, 3, 3, '#fff'); r(kn + 3, ky - 7, 1, 2, '#1C1D24'); r(kn + 10, ky - 7, 1, 2, '#1C1D24');
+    r(kn + 4, ky - 3, 2, 1, '#5E5F68'); r(kn + 10, ky - 4, 2, 1, '#5E5F68');
+    // やすにゃん
+    const px = 68, py = 63 - (Math.floor(t * 6 + 1) % 2), jmp = Math.max(0, Math.sin(t * 2.2)) * 12;
+    const y0 = py - jmp;
+    r(px + 3, y0 - 26, 10, 4, '#3A2412'); r(px + 3, y0 - 23, 10, 8, '#F6D7C3'); r(px + 5, y0 - 20, 2, 2, '#2A1A10'); r(px + 9, y0 - 20, 2, 2, '#2A1A10');
+    r(px + 2, y0 - 15, 12, 9, '#E9A55B'); r(px + 3, y0 - 6, 10, 6, '#4A4E7A'); r(px + 3, y0, 4, 2, '#2A1A10'); r(px + 9, y0, 4, 2, '#2A1A10');
+    c.strokeStyle = '#D93A2B'; c.lineWidth = 1; c.beginPath(); c.moveTo(px + 14, y0 - 11); c.quadraticCurveTo(px - 2, y0 - 2, kn + 14, ky - 5); c.stroke();
+  }
+});
+
 })();
