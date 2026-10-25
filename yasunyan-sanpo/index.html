@@ -122,6 +122,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #talk .love{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;font-weight:900;color:#FF9DBD}
 #talk .love i{display:block;flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
 #talk .love i em{display:block;height:100%;width:0;background:linear-gradient(90deg,#FF7BA8,#FFB3CC);transition:width .5s}
+#pausep .pwipe{display:block;margin:14px auto 4px;font-size:12px;padding:6px 12px;background:#F3DAD2;color:#8A2A1A}
 #talk .tch.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 #talk .tch.g2 button{text-align:center;padding:7px 6px;line-height:1.3}
 #talk .tch small{font-size:11px;color:#E9C98A;font-weight:700}
@@ -209,6 +210,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
       <button class="big alt" id="btnRestart" type="button">リスタート</button>
       <button class="ghost" id="btnQuit" type="button">スタート画面へ戻る</button>
       <div id="pdbg"></div>
+      <button class="sm pwipe" id="btnWipe" type="button">🗑 データを初期化（デバッグ）</button>
     </div>
   </section>
 
@@ -230,7 +232,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.5.0';
+const VERSION = 'β0.5.1';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
 // デバッグ（共通部品 debug.js）：操作とエラーを端末に残し、一時停止メニューから送る。送り先は worker の DEBUG_GAMES（β はまだ未設定。未実装タスク）
 CG.debug.init({ snap: () => ({ st: state, pts, x: Math.round(P.x), y: Math.round(P.y), sec: secIdx, g: SAVE.gender }) });
@@ -1161,6 +1163,7 @@ $('#abBody').addEventListener('click', e => {
 $('#btnAbil').onclick = () => { buildAbil(); $('#abil').hidden = false; $('#abBody').scrollTop = 0; };
 $('#btnAclose').onclick = () => { $('#abil').hidden = true; };
 $('#btnTback').onclick = leaveTalk;
+$('#btnWipe').onclick = () => wipeData();
 $('#btnTalkTop').onclick = () => meetConfirm();
 function openShare() {
   const g = G_; const s = { msg: `やすにゃんとこんにゃんの散歩で ${pts} ポイント！ スコアランク${g ? g.rank : ''}でコンカフェ嬢が誕生！`, tags: ['やすにゃん散歩チュウ'], url: CG.pageUrl() };
@@ -1175,6 +1178,13 @@ $('#btnZukan').onclick = () => openZukan();
 $('#btnZukan2').onclick = () => openZukan();
 /* ---------- 一時停止 ---------- */
 const dbgExtra = () => ({ state: { st: state, pts, got, x: Math.round(P.x), y: Math.round(P.y), vy: Math.round(P.vy), sec: secIdx, slow: +P.slow.toFixed(2), inv: +P.inv.toFixed(2), goalX: WORLD.goalX, T: +T.toFixed(1), rank: G_ ? G_.rank : null, key: G_ ? G_.key : null, save: { best: SAVE.best, plays: SAVE.plays, gender: SAVE.gender, fav: SAVE.fav } } });
+let wipeArm = 0;
+function wipeData() {   // デバッグ用：保存データ（図鑑・恋ン・能力・名前・好感度）を消して読みこみなおす。2 回押さないと消えない
+  const b = $('#btnWipe');
+  if (!wipeArm) { wipeArm = 1; b.textContent = '⚠ もういちど押すと、すべて消えます'; setTimeout(() => { wipeArm = 0; b.textContent = '🗑 データを初期化（デバッグ）'; }, 4000); return; }
+  try { localStorage.removeItem(KEY); } catch (e) { }
+  location.reload();
+}
 function pauseGame() {
   if (state !== 'play' || paused) return;
   paused = true; P.held = false; Snd.stopBgm();
@@ -1204,7 +1214,7 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
 <li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
 <li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>名前をつけられるように（成長後の結果画面。🎲で自動生成）。会いに行く（1,500恋ンで入店、ターン制の会話・食事・ソロのチェキ）</td></tr><tr><td>β0.4.0</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>デバッグ：一時停止メニューに「データを初期化」ボタン</td></tr><tr><td>β0.5.0</td><td>2026-10-25</td><td>名前をつけられるように（成長後の結果画面。🎲で自動生成）。会いに行く（1,500恋ンで入店、ターン制の会話・食事・ソロのチェキ）</td></tr><tr><td>β0.4.0</td><td>2026-10-25</td><td>おでん恋ン（クリア報酬）、能力の解放（2段ジャンプ・吸い寄せ・むてき時間・おとすポイントへらし・レア出現）、ポイントに応じて歩く速さと食べる数が変わる</td></tr><tr><td>β0.3.0</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
