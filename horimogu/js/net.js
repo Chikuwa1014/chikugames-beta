@@ -66,6 +66,10 @@
   function sendHello() {
     NET.room.send({ t: 'hi', pid: NET.pid, name: NET.myName(), color: NET.myColor() });
   }
+  /** 親がフィールドの大きさを変えたら、みんなに知らせる */
+  NET.updateSize = function () {
+    if (NET.isHost() && !NET.inMatch) pushLobby();
+  };
   NET.updateColor = function () {
     if (!NET.room || !NET.room.role) return;
     if (NET.isHost()) { const r = NET.roster.get('0'); if (r) r.color = NET.myColor(); pushLobby(); }
@@ -74,7 +78,8 @@
   function pushLobby() {
     const list = [...NET.roster.entries()].map(([rid, r]) => ({ rid, pid: r.pid, name: r.name, color: r.color }));
     NET.lobbyList = list;
-    NET.room.broadcast({ t: 'roster', list, inMatch: NET.inMatch });
+    NET.lobbySize = HM.UI.sizeChoice();
+    NET.room.broadcast({ t: 'roster', list, inMatch: NET.inMatch, size: NET.lobbySize });
     NET.onLobby && NET.onLobby();
   }
 
@@ -150,7 +155,7 @@
     }
     // 子
     switch (m.t) {
-      case 'roster': NET.lobbyList = m.list || []; NET.onLobby && NET.onLobby(); return;
+      case 'roster': NET.lobbyList = m.list || []; NET.lobbySize = m.size || 'large'; NET.onLobby && NET.onLobby(); return;
       case 'busy': NET.onStatus && NET.onStatus('いまは試合中です。終わったら次の試合から参加できます', false); return;
       case 'start': startMatch(m); return;
       case 'lobby': NET.inMatch = false; NET.onLobby && NET.onLobby(); return;
@@ -169,14 +174,15 @@
     // 色：自分で選んだ色はそのまま。おまかせはノーマル→青→赤→紫の順で、空いている色
     const used = new Set(list.filter(p => p.color !== 'auto').map(p => p.color));
     const auto = T.colors.map(c => c.key).filter(k => !used.has(k));
-    const N = T.field, a0 = r() * Math.PI * 2;
+    const sizeKey = HM.UI.sizeChoice(), N = HM.fieldSize(sizeKey), a0 = r() * Math.PI * 2;
+    const ring = Math.min(T.multi.spawnRing, N * 0.3), cl = v => Math.max(3, Math.min(N - 3, v));
     const roster = list.map((p, i) => {
       const a = a0 + i / list.length * Math.PI * 2;
-      const rad = T.multi.spawnRing * (0.85 + r() * 0.3);
-      const spawn = [Math.floor(N / 2 + Math.cos(a) * rad) + 0.5, Math.floor(100 + r() * 100) + 0.01, Math.floor(N / 2 + Math.sin(a) * rad) + 0.5];
+      const rad = ring * (0.85 + r() * 0.3);
+      const spawn = [Math.floor(cl(N / 2 + Math.cos(a) * rad)) + 0.5, Math.floor(N * 0.33 + r() * N * 0.33) + 0.01, Math.floor(cl(N / 2 + Math.sin(a) * rad)) + 0.5];
       return { pid: p.pid, name: p.name, color: p.color !== 'auto' ? p.color : (auto.shift() || 'normal'), spawn };
     });
-    const msg = { t: 'start', seed, roster, hostPid: NET.pid };
+    const msg = { t: 'start', seed, roster, hostPid: NET.pid, size: N, sizeKey };
     NET.room.broadcast(msg);
     startMatch(msg);
   };
@@ -186,7 +192,8 @@
     NET.hostPid = m.hostPid;
     NET.code = NET.room.code;
     wire();
-    G.start({ mode: 'multi', seed: m.seed, me: { pid: NET.pid, name: NET.myName() }, roster: m.roster, isHost: NET.isHost() });
+    G.sizeKey = m.sizeKey || 'large';
+    G.start({ mode: 'multi', seed: m.seed, size: m.size || T.field, me: { pid: NET.pid, name: NET.myName() }, roster: m.roster, isHost: NET.isHost() });
     if (NET.isHost()) updateSucc();
     NET.onStart && NET.onStart();
   }

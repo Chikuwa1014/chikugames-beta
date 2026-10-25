@@ -24,12 +24,27 @@ with sync_playwright() as p:
         pg.goto(BASE)
         pg.wait_for_timeout(600)
         pg.screenshot(path=f"{OUT}/{name}-home.png", full_page=True)
+        pg.click("#home [data-size=small]")
+        pg.click("#soloBtn")
+        pg.wait_for_function("window.__HM && __HM.G.running && document.querySelector('#loading').hidden", timeout=20000)
+        check(pg.evaluate("__HM.G.world.N") == 50, f"[{name}] スモール（50）で始まる")
+        pg.wait_for_timeout(600)
+        pg.screenshot(path=f"{OUT}/{name}-small.png")
+        pg.evaluate("__HM.G.stop(); __HM.UI.show('home')")
+        pg.click("#home [data-size=medium]")
+        pg.click("#soloBtn")
+        pg.wait_for_function("__HM.G.running && document.querySelector('#loading').hidden", timeout=20000)
+        check(pg.evaluate("__HM.G.world.N") == 75, f"[{name}] メディアム（75）で始まる")
+        pg.evaluate("__HM.G.stop(); __HM.UI.show('home')")
+        pg.click("#home [data-size=large]")
         pg.click("#soloBtn")
         pg.wait_for_function("window.__HM && __HM.G.running && document.querySelector('#loading').hidden", timeout=20000)
         pg.wait_for_timeout(800)
         G = "__HM.G"
         check(pg.evaluate(f"{G}.meshes.size") > 50, f"[{name}] チャンクが作られた")
         check(pg.evaluate(f"{G}.camMode") == "far", f"[{name}] はじめは後方視点")
+        inside = pg.evaluate(f"(()=>{{let n=0; const m={G}.me; for(let i=0;i<24;i++){{ m.yaw=i/24*Math.PI*2; m.pitch=-0.6+(i%5)*0.3; const c={G}.camera(); if({G}.world.solidAt(c.eye[0],c.eye[1],c.eye[2])) n++; }} return n; }})()")
+        check(inside == 0, f"[{name}] 後方視点のカメラが壁の中に入らない（{inside}/24）")
         pg.screenshot(path=f"{OUT}/{name}-play.png")
         pg.keyboard.press("KeyV") if not touch else pg.click("#camBtn")
         pg.wait_for_timeout(400)
@@ -67,16 +82,25 @@ with sync_playwright() as p:
         pg.evaluate("__HM.held.main=true"); pg.wait_for_timeout(600); pg.evaluate("__HM.held.main=false")
         # 敵を遠くへ（体力・罠の確認のじゃまにならないように）
         pg.evaluate(f"(() => {{ for (const b of {G}.bots) {{ b.p=[5,5,5]; b.aware=false; }} }})()")
-        # 回復・お味噌
-        for t in ["ajitama", "miso", "bigtama"]:
+        # 回復・お味噌（遅い描画でも確実に使うため、地面に立ち・使える状態になるまで待ってから、使い終わるまで押す）
+        def use(t):
+            pg.wait_for_function(f"{G}.me.onGround && {G}.me.cool.item <= 0", timeout=8000)
+            n0 = pg.evaluate(f"({G}.me.inv.find(s=>s.type==='{t}')||{{count:0}}).count")
             pg.evaluate(f"""(() => {{ const i={G}.me.inv.findIndex(s=>s.type==='{t}'); {G}.me.sel=i; }})()""")
-            pg.evaluate("__HM.held.item=true"); pg.wait_for_timeout(350); pg.evaluate("__HM.held.item=false"); pg.wait_for_timeout(450)
+            pg.evaluate("__HM.held.item=true")
+            try:
+                pg.wait_for_function(f"({G}.me.inv.find(s=>s.type==='{t}')||{{count:0}}).count < {n0}", timeout=4000)
+            finally:
+                pg.evaluate("__HM.held.item=false")
+            pg.wait_for_timeout(200)
+        for t in ["ajitama", "miso", "bigtama"]:
+            use(t)
         check(pg.evaluate(f"{G}.players.get('me').armorUntil > {G}.t"), f"[{name}] お味噌のアーマー")
         # 罠（自分で踏む）
-        pg.evaluate(f"""(() => {{ const i={G}.me.inv.findIndex(s=>s.type==='karashi'); {G}.me.sel=i; }})()""")
-        pg.evaluate("__HM.held.item=true"); pg.wait_for_timeout(350); pg.evaluate("__HM.held.item=false")
+        use("karashi")
         check(pg.evaluate(f"{G}.traps.size") >= 1, f"[{name}] からし地雷を置けた")
-        pg.wait_for_timeout(1700)
+        try: pg.wait_for_function(f"{G}.traps.size == 0", timeout=6000)
+        except Exception: pass
         check(pg.evaluate(f"{G}.traps.size") == 0, f"[{name}] からし地雷を自分で踏んだ")
         pg.screenshot(path=f"{OUT}/{name}-after.png")
         fps = pg.evaluate("""new Promise(r=>{let n=0,t0=performance.now();function f(){n++; if(performance.now()-t0<1000) requestAnimationFrame(f); else r(n);} requestAnimationFrame(f);})""")
