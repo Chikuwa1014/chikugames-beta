@@ -82,6 +82,46 @@ with sync_playwright() as p:
                 print(label, st)
             pg.click('#btnZukan2'); pg.wait_for_timeout(500); pg.screenshot(path=f'{OUT}/{tag}-zukan.png')
             pg.click('#btnZclose'); pg.click('#btnShare'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-share.png')
+            # --- おでん恋ン・食べる数・歩く速さ・能力 ---
+            pg.evaluate("document.querySelector('#modal').hidden = true; showTitle()"); pg.wait_for_timeout(200)
+            def speed(pt):
+                return pg.evaluate(f"""(() => {{ startRun(); clearInterval(window.__bot); pts = {pt}; WORLD.obs = []; WORLD.items = [];
+                  const x0 = P.x; return new Promise(r => setTimeout(() => r((P.x - x0) / 1.0), 1000)); }})()""")
+            v0, v1 = speed(0), speed(1060)
+            print('speed px/s: 0pt', round(v0), '1060pt', round(v1)); assert 125 < v0 < 135 and 165 < v1 < 175, 'speed bonus'
+            for (pt, want) in [(120, 3), (400, 8), (800, 16), (1060, 22), (1500, 24)]:
+                pg.evaluate(f"startRun(); clearInterval(window.__bot); got = {{chikuwa: 3, tamago: 1}}; pts = {pt}; P.x = WORLD.goalX - 130"); pg.wait_for_timeout(300)
+                n = pg.evaluate("G_ ? G_.eat.length : -1"); print('eat', pt, n, 'iv', pg.evaluate("G_ ? +G_.iv.toFixed(3) : 0")); assert n == want, ('eat count', pt, n, want)
+            coin0 = pg.evaluate("SAVE.coin")
+            pg.evaluate("startRun(); clearInterval(window.__bot); CFG.sChance = 0; got = {chikuwa: 6}; pts = 800; P.x = WORLD.goalX - 130"); pg.wait_for_timeout(9500)
+            c1 = pg.evaluate("SAVE.coin"); print('coin', coin0, '->', c1, pg.evaluate("document.querySelector('#rCoin').innerText"))
+            assert c1 - coin0 == 1300, 'coin gain A = 800 + 500'
+            pg.screenshot(path=f'{OUT}/{tag}-result-coin.png')
+            pg.click('#btnTop'); pg.wait_for_timeout(300)
+            pg.evaluate("SAVE.coin = 100000; SAVE.abil = {}; writeSave(); refreshTitle()")
+            pg.click('#btnAbil'); pg.wait_for_timeout(300); pg.screenshot(path=f'{OUT}/{tag}-abil.png')
+            pg.click('#abBody button[data-a=dj]'); pg.wait_for_timeout(200)
+            assert pg.evaluate("abLv('dj')") == 1 and pg.evaluate("SAVE.coin") == 98000, 'buy dj'
+            pg.click('#abBody button[data-a=mag]'); pg.click('#abBody button[data-a=mag]'); pg.click('#abBody button[data-a=mag]')
+            pg.click('#abBody button[data-a=inv]'); pg.click('#abBody button[data-a=grd]'); pg.click('#abBody button[data-a=lucky]')
+            print('abil:', pg.evaluate("JSON.stringify(SAVE.abil)"), 'coin', pg.evaluate("SAVE.coin")); pg.screenshot(path=f'{OUT}/{tag}-abil2.png')
+            pg.click('#btnAclose')
+            def apex(hold1, second, hold2, dj):
+                return pg.evaluate(f"""new Promise(res => {{ startRun(); clearInterval(window.__bot); WORLD.obs = []; WORLD.items = []; SAVE.abil.dj = {1 if dj else 0};
+                  let m = 0; const iv = setInterval(() => {{ m = Math.max(m, P.y); }}, 4);
+                  press(); setTimeout(release, {hold1});
+                  {"setTimeout(() => {press(); setTimeout(release, %d)}, 330);" % hold2 if second else ""}
+                  setTimeout(() => {{ clearInterval(iv); res(Math.round(m)); }}, 1500); }})""")
+            a1, a2, a3, a4 = apex(40, False, 0, True), apex(300, False, 0, True), apex(40, True, 40, True), apex(40, True, 300, True)
+            a5 = apex(40, True, 40, False)
+            print('apex single tap', a1, 'single hold', a2, 'tap+tap', a3, 'tap+hold', a4, 'tap+tap w/o ability', a5)
+            assert a2 > a1 + 30 and a3 > a1 + 60 and a4 > a3 + 20 and abs(a5 - a1) <= 8, 'double jump / hold height'
+            # 吸い寄せ（おいしいものは寄る・減点は寄らない）
+            r = pg.evaluate("""new Promise(res => { startRun(); clearInterval(window.__bot); WORLD.obs = [];
+              WORLD.items = [{k:'chikuwa', x:P.x+100, y:60, got:false, ph:0}, {k:'nanami', x:P.x+100, y:60, got:false, ph:0}];
+              const a = WORLD.items[0], b = WORLD.items[1], ax = a.x, bx = b.x; setTimeout(() => res([a.x < ax - 20 || a.got, b.x === bx]), 400); })""")
+            print('magnet:', r); assert r[0] and r[1], 'magnet'
+            pg.evaluate("showTitle()")
             # --- 性別・男性のキャラ・図鑑の男女別・お気に入り・会話 ---
             pg.evaluate("document.querySelector('#modal').hidden = true; showTitle()"); pg.wait_for_timeout(300)
             pg.click('#gM'); pg.wait_for_timeout(400); pg.screenshot(path=f'{OUT}/{tag}-title-m.png')
