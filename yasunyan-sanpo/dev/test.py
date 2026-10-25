@@ -27,7 +27,7 @@ window.__bot = setInterval(() => {
 """
 errors = []
 def mk(p, w, h, name):
-    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
+    b = p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'])
     pg = b.new_page(viewport={'width': w, 'height': h}, device_scale_factor=2 if w < 600 else 1)
     pg.on('console', lambda m: errors.append(f'[{name}] {m.type}: {m.text}') if m.type in ('error', 'warning') and 'ERR_TUNNEL' not in m.text and 'Failed to load resource' not in m.text else None)
     pg.on('pageerror', lambda e: errors.append(f'[{name}] pageerror: {e}'))
@@ -184,6 +184,27 @@ with sync_playwright() as p:
             assert pg.evaluate("!!document.querySelector('#chDl') && document.querySelector('#chDl').href.startsWith('data:image/png')"), 'cheki'
             pg.click('#mClose'); pg.wait_for_timeout(200)
             print('meet:', pg.evaluate("[state, TK.used, TK.maxT, SAVE.rel[TK.rk].love, SAVE.rel[TK.rk].spent, SAVE.cheki]"))
+            # --- ツーショ（フェイクカメラ）・SNS 共有ボタン・オリシャン・ステージ 2/3・けっこん ---
+            pg.evaluate("{ const r = SAVE.rel[TK.rk]; r.love = 100; r.spent = 10000; SAVE.coin = 300000; TK.used = 0; TK.maxT = 10; writeSave(); talkHud(); mainMenu(); }")
+            pg.evaluate("chekiMenu()"); pg.click('#tChoices button:nth-child(3)'); pg.wait_for_timeout(1800)
+            pg.screenshot(path=f'{OUT}/{tag}-twoshot-cam.png')
+            c2 = pg.evaluate("SAVE.coin"); pg.click('#arShot'); pg.wait_for_timeout(700)
+            assert pg.evaluate("camStream === null") and pg.evaluate("SAVE.coin") == c2 - 2000, 'two-shot capture/charge'
+            assert pg.evaluate("!!document.querySelector('#chShare') && document.querySelector('#chDl').href.startsWith('data:image/png')"), 'two-shot cheki + share'
+            pg.screenshot(path=f'{OUT}/{tag}-twoshot.png'); pg.click('#mClose'); pg.wait_for_timeout(200)
+            pg.evaluate("TK.used = 0; MEET.orishanRate = 0; { const r = SAVE.rel[TK.rk]; r.love = 100; } SAVE.coin = 300000; writeSave(); mainMenu()")
+            c3 = pg.evaluate("SAVE.coin"); pg.evaluate("doOrishan()"); pg.wait_for_timeout(200)
+            assert pg.evaluate("[SAVE.coin, SAVE.rel[TK.rk].love, SAVE.rel[TK.rk].stage]") == [c3 - 35000, 80, 1], 'orishan failure rules'
+            pg.evaluate("TK.used = 0; MEET.orishanRate = 1; SAVE.rel[TK.rk].love = 100; doOrishan()"); pg.wait_for_timeout(300)
+            assert pg.evaluate("[SAVE.rel[TK.rk].stage, SAVE.rel[TK.rk].love]") == [2, 0], 'orishan to stage 2'
+            rk = pg.evaluate("TK.rk"); pg.evaluate("leaveTalk()"); pg.wait_for_timeout(200)
+            for st in (2, 3):
+                pg.evaluate(f"SAVE.rel[{rk!r}].stage = {st}; SAVE.coin = 300000; startVisit(SAVE.fav)"); pg.wait_for_timeout(900)
+                pg.screenshot(path=f'{OUT}/{tag}-talk-stage{st}.png')
+                if st == 2: pg.evaluate("leaveTalk()"); pg.wait_for_timeout(200)
+            pg.evaluate("{ const r = SAVE.rel[TK.rk]; r.love = 100; r.spent = 40000; TK.used = 0; TK.maxT = 10; MEET.orishanRate = 1; doOrishan(); }"); pg.wait_for_timeout(1700)
+            assert pg.evaluate("!!document.querySelector('#wed') && SAVE.rel[TK.rk].married === true"), 'marriage cut-in'
+            pg.screenshot(path=f'{OUT}/{tag}-wedding.png'); pg.click('#wedOk'); pg.evaluate("MEET.orishanRate = 0.98"); pg.wait_for_timeout(200)
             pg.click('#btnTback'); pg.wait_for_timeout(300)
             print('back:', pg.evaluate("[state, document.querySelector('#title').hidden]"))
             # 保存の読みもどし（お気に入り・性別・図鑑が残る）と、古い形式の図鑑キーの破棄
