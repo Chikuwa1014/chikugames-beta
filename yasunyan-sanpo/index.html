@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../common/v1/common.css">
 <style>
 :root{ --ink:#3A2412; --cho:#C9772E; --cho2:#E9A55B; --cream:#FFF4DC; --line:#E3D2A8; --red:#E0473C; }
 *{box-sizing:border-box}
@@ -87,6 +88,17 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 #modal .mm .sm{width:100%}
 #modal .dimg{text-align:center;background:#2A1A10;border-radius:12px;padding:6px;margin-bottom:8px}
 #modal .dimg img{height:300px;max-width:100%;object-fit:contain}
+/* 一時停止 */
+#btnPause{position:absolute;right:8px;top:40px;z-index:6;width:34px;height:34px;padding:0;border-radius:50%;border:0;background:rgba(255,244,220,.78);font-size:14px;font-weight:900;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+#btnPause i{display:inline-block;width:4px;height:14px;margin:0 2px;border-radius:1px;background:var(--ink);vertical-align:middle}
+#pausep{background:rgba(18,12,8,.86);z-index:6;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#pausep .in{display:flex;flex-direction:column;align-items:center;gap:12px;padding:84px 24px 28px}
+#pausep h2{margin:0 0 4px;color:#fff;font-size:24px;font-weight:900;letter-spacing:2px}
+#pausep .big{width:100%}
+#pausep .big.alt{background:linear-gradient(#FFF4DC,#E9D5A8);color:var(--ink);text-shadow:none;box-shadow:0 5px 0 #B99A63,0 8px 14px rgba(0,0,0,.35)}
+#pausep .ghost{border:0;background:transparent;color:rgba(255,255,255,.55);font-size:12px;font-weight:700;text-decoration:underline;padding:6px 10px;margin-top:2px}
+#pdbg{width:100%;margin-top:14px;padding:12px;border-radius:14px;background:#FFF4DC;--cg-ink:#3A2412;--cg-sub:#7A5A38;--cg-card:#fff;--cg-line:#C9B58A;--cg-ok:#2e8b57;--cg-ng:#c23a3a;font-size:13px;font-weight:700;-webkit-user-select:text;user-select:text}
+#pdbg .cg-dbg-meta{font-size:11px;color:var(--cg-sub)}
 /* お気に入りと会話（ホットモック） */
 #talk{pointer-events:none;z-index:5}
 #talk>*{pointer-events:auto}
@@ -110,6 +122,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
   <canvas id="cv"></canvas>
   <a id="back" href="../">← ちくわゲームズ</a>
   <button id="mute" type="button">おと：ON</button>
+  <button id="btnPause" type="button" aria-label="一時停止" hidden><i></i><i></i></button>
 
   <section id="title" class="panel">
     <h1><small>やすにゃんこんにゃん！</small><span>散歩チュウ</span></h1>
@@ -156,6 +169,16 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
     <div class="scroll" id="zbody"></div>
   </section>
 
+  <section id="pausep" class="panel" hidden>
+    <div class="in">
+      <h2>一時停止</h2>
+      <button class="big" id="btnResume" type="button">再開</button>
+      <button class="big alt" id="btnRestart" type="button">リスタート</button>
+      <button class="ghost" id="btnQuit" type="button">スタート画面へ戻る</button>
+      <div id="pdbg"></div>
+    </div>
+  </section>
+
   <section id="talk" class="panel" hidden>
     <div class="tinfo"><b id="tName"></b><span id="tSub"></span><div class="love">♥<i><em id="tLove"></em></i><span id="tLoveN" style="margin:0;color:#FF9DBD"></span></div></div>
     <button class="sm tback" id="btnTback" type="button">もどる</button>
@@ -167,14 +190,18 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appeara
 
 <script src="../common/v1/core.js"></script>
 <script src="../common/v1/share.js"></script>
+<script src="../common/v1/debug.js"></script>
 <script>
 'use strict';
 /* =====================================================================
    やすにゃんこんにゃん！散歩チュウ（yasunyan-sanpo）
    共通ルールは号口リポジトリの CLAUDE.md。ここは 1 ファイルにまとめている。
    ===================================================================== */
-const VERSION = 'β0.2.1';
+const VERSION = 'β0.3.0';
 CG.init({ game: 'yasunyan-sanpo', title: 'やすにゃんこんにゃん！散歩チュウ', version: VERSION });
+// デバッグ（共通部品 debug.js）：操作とエラーを端末に残し、一時停止メニューから送る。送り先は worker の DEBUG_GAMES（β はまだ未設定。未実装タスク）
+CG.debug.init({ snap: () => ({ st: state, pts, x: Math.round(P.x), y: Math.round(P.y), sec: secIdx, g: SAVE.gender }) });
+['startRun', 'startGoal', 'showResult', 'hitObs', 'showTitle', 'setGender', 'openZukan', 'openTalk', 'pauseGame', 'resumeGame', 'restartGame', 'quitToTitle'].forEach(n => CG.debug.wrap(n));
 
 /* ---------- 調整用の数値（バランスはここだけを直す） ---------- */
 const CFG = {
@@ -499,7 +526,8 @@ function drawScene(c, cam, t) {
 /* ---------- ゲームの状態 ---------- */
 const cv = $('#cv'), cx = cv.getContext('2d');
 let K = 1, T = 0;
-let state = 'title';        // title / play / goal / result
+let state = 'title';        // title / play / goal / result / talk
+let paused = false, pauseShown = false;   // 一時停止（play のときだけ）
 const WORLD = { items: [], obs: [], goalX: CFG.sectionLen * 4 + CFG.tail };
 const P = { x: 110, y: 0, vy: 0, held: false, holdT: 0, buf: 0, coy: 0, anim: 0, inv: 0, slow: 0, air: false };
 let pts = 0, got = {}, hist = [], parts = [], banner = { t: 9, txt: '' }, secIdx = 0, shake = 0, flashRed = 0, demoX = 0, runT0 = 0, konGrow = 0, konPulse = 0;
@@ -548,7 +576,7 @@ function startRun() {
   pts = 0; got = {}; parts = []; hist = []; shake = 0; flashRed = 0; konGrow = 0; konPulse = 0; G_ = null;
   Object.assign(P, { x: 110, y: 0, vy: 0, held: false, holdT: 0, buf: 0, coy: 0, anim: 0, inv: 0, slow: 0, air: false });
   secIdx = 0; banner = { t: 0, txt: STY[0].name };
-  state = 'play'; runT0 = T;
+  state = 'play'; runT0 = T; paused = false; $('#pausep').hidden = true;
   $('#title').hidden = true; $('#result').hidden = true; $('#rank').hidden = true; $('#zukan').hidden = true; $('#modal').hidden = true;
   Snd.init(); Snd.resume(); Snd.startBgm();
 }
@@ -556,6 +584,7 @@ function startRun() {
 /* ---------- 入力 ---------- */
 function doJump() { P.vy = CFG.jumpV; P.y = Math.max(P.y, 0.01); P.holdT = 0; P.air = true; P.buf = 0; P.coy = 0; Snd.jump(); spawnDust(P.x, 6); }
 function press() {
+  if (paused) return;
   if (state === 'play') { P.held = true; P.buf = 0.12; if (P.y <= 0) doJump(); }
   else if (state === 'goal' && G_) {
     if (!G_.revealed && G_.t > 1.2) G_.t = Math.max(G_.t, G_.tFlash);
@@ -563,12 +592,15 @@ function press() {
   }
 }
 function release() { P.held = false; }
-$('#stage').addEventListener('pointerdown', e => { if (e.target.closest('button,a,#card,#modal,#zukan')) return; e.preventDefault(); Snd.init(); Snd.resume(); press(); });
+$('#stage').addEventListener('pointerdown', e => { if (e.target.closest('button,a,#card,#modal,#zukan,#pausep,#talk')) return; e.preventDefault(); Snd.init(); Snd.resume(); press(); });
 addEventListener('pointerup', release); addEventListener('pointercancel', release); addEventListener('blur', release);
 addEventListener('keydown', e => {
+  if (e.target && /^(TEXTAREA|INPUT)$/.test(e.target.tagName)) return;   // 不具合メモを書いているとき
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { if (paused) resumeGame(); else pauseGame(); return; }
   if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) { if (e.target.closest && e.target.closest('button') && e.key === ' ') return; e.preventDefault(); if (!e.repeat) press(); }
 });
-addEventListener('keyup', e => { if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) release(); });
+addEventListener('keyup', e => {
+  if (e.target && /^(TEXTAREA|INPUT)$/.test(e.target.tagName)) return; if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) release(); });
 
 /* ---------- 演出の粒 ---------- */
 function spawnSpark(x, y, col, n, sp = 90) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = rnd(sp * 0.4, sp); parts.push({ ty: 's', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: rnd(0.35, 0.7), max: 0.7, col, r: rnd(1.5, 3.2) }); } }
@@ -788,8 +820,10 @@ function update(dt) {
   updParts(dt);
 }
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now; T += dt;
-  update(dt); draw(); requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!paused) { T += dt; update(dt); }   // 一時停止中は時間（T）も止める（カラスの動きがずれないように）
+  const sp = state === 'play'; if (sp !== pauseShown) { pauseShown = sp; $('#btnPause').hidden = !sp; }
+  draw(); requestAnimationFrame(frame);
 }
 
 /* ---------- 画面まわり ---------- */
@@ -930,14 +964,29 @@ function openShare() {
   const nb = $('#shNative'); if (nb) nb.onclick = () => CG.share.open(s);
   $('#shCopy').onclick = async () => { CG.toast(await CG.copy(CG.share.text(s)) ? 'コピーしました' : 'コピーできませんでした'); };
 }
-$('#btnStart').onclick = startRun;
-$('#btnAgain').onclick = startRun;
-$('#btnZukan').onclick = openZukan;
-$('#btnZukan2').onclick = openZukan;
+$('#btnStart').onclick = () => startRun();
+$('#btnAgain').onclick = () => startRun();
+$('#btnZukan').onclick = () => openZukan();
+$('#btnZukan2').onclick = () => openZukan();
+/* ---------- 一時停止 ---------- */
+const dbgExtra = () => ({ state: { st: state, pts, got, x: Math.round(P.x), y: Math.round(P.y), vy: Math.round(P.vy), sec: secIdx, slow: +P.slow.toFixed(2), inv: +P.inv.toFixed(2), goalX: WORLD.goalX, T: +T.toFixed(1), rank: G_ ? G_.rank : null, key: G_ ? G_.key : null, save: { best: SAVE.best, plays: SAVE.plays, gender: SAVE.gender, fav: SAVE.fav } } });
+function pauseGame() {
+  if (state !== 'play' || paused) return;
+  paused = true; P.held = false; Snd.stopBgm();
+  CG.debug.mount($('#pdbg'), { title: '🐞 不具合を報告する', placeholder: 'どんなことが起きた？（例：ジャンプできなかった）', extra: dbgExtra });
+  $('#pausep').hidden = false; $('#pausep').scrollTop = 0;
+}
+function resumeGame() { if (!paused) return; paused = false; $('#pausep').hidden = true; Snd.resume(); Snd.startBgm(); }
+function restartGame() { paused = false; $('#pausep').hidden = true; startRun(); }
+function quitToTitle() { paused = false; $('#pausep').hidden = true; showTitle(); }
+$('#btnPause').onclick = () => pauseGame();
+$('#btnResume').onclick = () => resumeGame();
+$('#btnRestart').onclick = () => restartGame();
+$('#btnQuit').onclick = () => quitToTitle();
 $('#btnZclose').onclick = () => { $('#zukan').hidden = true; };
 $('#btnShare').onclick = openShare;
-function showTitle() { state = 'title'; G_ = null; konGrow = 0; konPulse = 0; parts = []; $('#result').hidden = true; $('#rank').hidden = true; $('#talk').hidden = true; $('#title').hidden = false; demoX = 0; if (Snd.ctx) Snd.startBgm(); refreshTitle(); }
-$('#btnTop').onclick = showTitle;
+function showTitle() { paused = false; $('#pausep').hidden = true; state = 'title'; G_ = null; konGrow = 0; konPulse = 0; parts = []; $('#result').hidden = true; $('#rank').hidden = true; $('#talk').hidden = true; $('#title').hidden = false; demoX = 0; if (Snd.ctx) Snd.startBgm(); refreshTitle(); }
+$('#btnTop').onclick = () => showTitle();
 $('#gF').onclick = () => setGender('f');
 $('#gM').onclick = () => setGender('m');
 $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
@@ -948,7 +997,7 @@ $('#btnHow').onclick = () => openModal(`<h2>あそびかた</h2><ul>
 <li>屋台通り → 商店街 → 公園 → 神社 → 帰り道を歩いてゴール。集めたポイントで、こんにゃんが変身します。</li>
 <li>スタート画面で<b>こんにゃんの性別</b>を選べます。メスは女性、オスは男性のコンカフェ嬢に成長します。</li>
 <li>図鑑（女性・男性）で出会った子をタップすると、<b>お気に入り</b>にして<b>会話</b>を楽しめます。</li></ul>`);
-$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
+$('#btnLog').onclick = () => openModal(`<h2>更新履歴</h2><table><tr><th>版</th><th>日付</th><th>内容</th></tr><tr><td>${VERSION}</td><td>2026-10-25</td><td>プレイ中の一時停止（再開・リスタート・スタート画面へ戻る）と、その下にデバッグ（不具合の報告）を追加</td></tr><tr><td>β0.2.1</td><td>2026-10-25</td><td>スタート画面の説明文を削除。クリア後に画面を移って再プレイするとBGMが鳴らないことがあるのを直した</td></tr><tr><td>β0.2.0</td><td>2026-10-25</td><td>こんにゃんの性別を選べるように（女性・男性のコンカフェ嬢に成長）。Aの新キャラ（女性5人・男性5人×衣装11種）。図鑑を男女別に。お気に入りと会話（ホットモック）。スタート画面のボタンの位置を直した</td></tr><tr><td>β0.1.1</td><td>2026-10-25</td><td>結果の表記を「スコアランク」に。図鑑の見出しを嬢のレアリティ名に</td></tr><tr><td>β0.1.0</td><td>2026-10-25</td><td>最初の版。4 つの区間・アイテム・減点アイテム・障害物・ランク・図鑑・共有</td></tr></table>`);
 const muteBtn = $('#mute');
 function paintMute() { muteBtn.textContent = Snd.mute ? 'おと：OFF' : 'おと：ON'; }
 muteBtn.onclick = () => { Snd.init(); Snd.resume(); Snd.setMute(!Snd.mute); paintMute(); };
