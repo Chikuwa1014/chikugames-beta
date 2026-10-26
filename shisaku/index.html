@@ -125,6 +125,7 @@ a{color:inherit}
 footer{border-top:1px solid var(--line);padding-block:26px 34px;color:var(--muted);font-size:13px}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
 footer a{text-decoration:none}
+.footnav{display:flex;flex-wrap:wrap;gap:6px 18px}
 footer a:hover{color:var(--ink)}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.card:hover{transform:none}}
@@ -176,7 +177,11 @@ footer a:hover{color:var(--ink)}
 <footer>
   <div class="wrap">
     <span>© 2026 ちくわゲームズ</span>
-    <a href="https://github.com/Chikuwa1014/chikugames" target="_blank" rel="noopener">ソースコード（GitHub）</a>
+    <nav class="footnav" aria-label="サイトの情報">
+      <a href="./about/">運営者情報・お問い合わせ</a>
+      <a href="./privacy/">プライバシーポリシー</a>
+      <a href="https://github.com/Chikuwa1014/chikugames" target="_blank" rel="noopener">ソースコード（GitHub）</a>
+    </nav>
   </div>
 </footer>
 
@@ -185,6 +190,7 @@ footer a:hover{color:var(--ink)}
 <script src="https://chikuwa-games.chikuwa-hookah.workers.dev/stage-kobo/card.js"></script>
 <script src="https://chikuwa-games.chikuwa-hookah.workers.dev/roulette/card.js"></script>
 <script src="https://chikuwa-games.chikuwa-hookah.workers.dev/battle-othello/card.js"></script>
+<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/hayaoshi-chikupon/card.js"></script>
 <!-- βのゲーム（別リポジトリ chikugames-beta の cards.js。βを増やすときは本番を触らず、あちらに足す） -->
 <script src="https://chikuwagames-beta.chikuwa-hookah.workers.dev/cards.js"></script>
 <script>
@@ -192,7 +198,8 @@ footer a:hover{color:var(--ink)}
 /* ゲームの一覧は各ゲームのフォルダの card.js（このファイルの下の <script src> で読み込む）。
    ゲームを追加するときは、そのフォルダに card.js を作り、下の一覧に <script src> を1行足すだけ。
    card.js に beta: true があるゲームは「Beta」欄に並ぶ（正式版にするときは beta を消す） */
-const ALL = (window.CHIKUWA_GAMES || []).slice().sort((a, b) => a.order - b.order);
+/* 成人向け（adult: true）のゲームはトップに出さない（広告の規約に合わせる。2026-10-26） */
+const ALL = (window.CHIKUWA_GAMES || []).filter(g => !g.adult).slice().sort((a, b) => a.order - b.order);
 const GAMES = ALL.filter(g => !g.beta);
 const BETAS = ALL.filter(g => g.beta);
 

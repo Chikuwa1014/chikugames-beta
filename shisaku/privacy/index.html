@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 試作環境（号口へ移すときは noindex の行を消す） -->
+<meta name="robots" content="noindex">
+<title>プライバシーポリシー｜ちくわゲームズ</title>
+<meta name="description" content="ちくわゲームズのプライバシーポリシー。保存するデータ、広告と Cookie、外部サービスについて。">
+<meta name="theme-color" content="#F4F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1014" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C9772E'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23E9A55B'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23FFF6EA'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* トップページと同じ色。読みものの 1 カラム */
+:root{
+  --bg:#F4F5F7; --surface:#FFFFFF; --sunk:#E9EBEF; --ink:#111318; --muted:#5C6270; --line:#DFE2E8; --accent:#C9772E;
+  --f-body:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1014; --surface:#171A20; --sunk:#1F232B; --ink:#ECEEF2; --muted:#9BA2AF; --line:#2A2F39; --accent:#F0A35A; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1014; --surface:#171A20; --sunk:#1F232B; --ink:#ECEEF2; --muted:#9BA2AF; --line:#2A2F39; --accent:#F0A35A; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.85;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.back{display:inline-block;margin:22px 0 0;font-size:14px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--ink)}
+h1{font-size:clamp(26px,5vw,34px);font-weight:800;line-height:1.3;margin:20px 0 8px}
+.lead{color:var(--muted);margin:0 0 28px}
+article{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:8px 24px 24px;margin-bottom:40px}
+h2{font-size:19px;font-weight:800;margin:28px 0 8px;padding-top:4px}
+p{margin:0 0 12px}
+ul{margin:0 0 12px;padding-left:1.3em}
+li{margin:4px 0}
+.date{color:var(--muted);font-size:14px;margin-top:24px}
+footer{border-top:1px solid var(--line);padding-block:24px 34px;color:var(--muted);font-size:13px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:6px 18px}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="back" href="../">← ちくわゲームズ</a>
+  <h1>プライバシーポリシー</h1>
+  <p class="lead">ちくわゲームズ（以下「当サイト」）で扱う情報と、その使い方について説明します。</p>
+
+  <article>
+    <h2>1. 遊んだ記録の保存</h2>
+    <p>ゲームのセーブデータや設定、名前の入力などは、お使いのブラウザの中（localStorage）に保存します。これらのデータが当サイトのサーバーに送られることはありません。ブラウザのデータを消すと、記録も消えます。</p>
+    <p>セーブデータを書き出す機能やセーブコードは、お使いの端末の中だけで作られます。</p>
+
+    <h2>2. 不具合の報告</h2>
+    <p>一部のゲームには、不具合を知らせる「デバッグ報告」の機能があります。報告ボタンを押したときだけ、ゲームの操作の記録・その時点のゲームの状態・エラーの内容・お使いのブラウザの種類と画面の大きさ・入力されたメモを当サイトのサーバーに送り、不具合を直すためにだけ使います。お名前やメールアドレスなど、個人を特定する情報は集めません。</p>
+
+    <h2>3. みんなで遊ぶ機能（通信対戦）</h2>
+    <p>部屋を作って一緒に遊ぶゲームでは、端末どうしを直接つなぐために、当サイトのサーバーが接続のための情報（部屋コードや、通信に必要な IP アドレスなど）を一時的に仲介します。遊んでいる間のデータは、同じ部屋の端末どうしでやりとりされます。部屋が閉じたあと、これらの情報は保存しません。</p>
+
+    <h2>4. 広告について</h2>
+    <p>当サイトは、第三者配信の広告サービス「Google アドセンス」を利用しています（利用を予定しています）。</p>
+    <ul>
+      <li>Google などの第三者配信事業者は、Cookie を使って、利用者が当サイトやほかのサイトに過去にアクセスした情報にもとづいて広告を配信します。</li>
+      <li>Google が広告 Cookie を使うことで、Google やそのパートナーは、当サイトやほかのサイトへのアクセス情報にもとづいて、適切な広告を表示できます。</li>
+      <li>利用者は、<a href="https://adssettings.google.com/" target="_blank" rel="noopener">Google の広告設定</a>で、パーソナライズ広告を無効にできます。また、<a href="https://www.aboutads.info/" target="_blank" rel="noopener">www.aboutads.info</a> で、第三者配信事業者の Cookie を無効にできます。</li>
+    </ul>
+    <p>Google による情報の扱いは、<a href="https://policies.google.com/technologies/partner-sites?hl=ja" target="_blank" rel="noopener">Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</a>をご覧ください。</p>
+
+    <h2>5. 外部のサービス</h2>
+    <p>当サイトは、文字の表示に Google Fonts、一部の機能（QR コードなど）に cdnjs を使います。これらを読み込むとき、お使いのブラウザからそれぞれのサービスへ通信が行われます。サイトは Cloudflare のサービスで配信しており、配信のための通信の記録（アクセスログ）が Cloudflare で扱われることがあります。</p>
+
+    <h2>6. SNS への共有</h2>
+    <p>ゲームの結果を X・LINE・Facebook などへ共有するボタンは、押したときだけ各サービスのページを開きます。共有する前に、内容はご自身で確認・変更できます。</p>
+
+    <h2>7. 年齢について</h2>
+    <p>当サイトのゲームは、どなたでも無料で遊べます。お子さまが遊ぶときは、保護者の方と一緒に内容をご確認ください。</p>
+
+    <h2>8. 免責事項</h2>
+    <p>当サイトのゲームや内容は、できるかぎり正しく動くように作っていますが、そのことを保証するものではありません。当サイトを利用して生じた損害について、当サイトは責任を負いかねます。当サイトからリンクしているほかのサイトの内容についても、責任を負いません。</p>
+
+    <h2>9. このページの変更</h2>
+    <p>このポリシーは、必要に応じて変更することがあります。変更したときは、このページでお知らせします。お問い合わせは<a href="../about/">運営者情報・お問い合わせ</a>からどうぞ。</p>
+
+    <p class="date">制定：2026年10月26日</p>
+  </article>
+</main>
+<footer>
+  <div class="wrap">
+    <span>© 2026 ちくわゲームズ</span>
+    <a href="../about/">運営者情報・お問い合わせ</a>
+    <a href="../privacy/">プライバシーポリシー</a>
+  </div>
+</footer>
+</body>
+</html>
