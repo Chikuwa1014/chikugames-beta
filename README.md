@@ -4,7 +4,7 @@
 
 ルールは号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` を参照してください。ここにはβ版だけの事実を書いています（`CLAUDE.md`）。
 
-- `index.html`：ベータのトップ。開くと、ちくわげーむず本番（https://chikuwa-games.chikuwa-hookah.workers.dev/）のトップへ自動で移動する
+- `index.html`：ベータのトップ（ちくわゲームズβ）。`cards.js` のβのゲームを一覧で並べる
 - `cards.js`：本番トップの「Beta」欄に出すカード（紹介文・版数・サムネイル・鍵または開発中）
 - `shisaku/`：号口トップの試作環境（どこからもリンクしない）
 - `gatasu/index.html`：がたす、モテる。のベータ（`/gatasu/`。β0.1.0・限定公開）
