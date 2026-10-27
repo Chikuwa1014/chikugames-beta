@@ -64,7 +64,9 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 #view { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 #hud { position: absolute; left: 6px; top: 6px; right: 6px; display: flex; justify-content: space-between; pointer-events: none; gap: 6px; }
 #hud div { background: rgba(30,40,36,.72); color: #FFF8EA; border-radius: 8px; padding: 4px 8px; font-size: 11.5px; line-height: 1.45; }
-#placeBar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); background: rgba(30,40,36,.88); color: #fff; border-radius: 12px; padding: 6px 8px 6px 12px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+#placeBar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); background: rgba(30,40,36,.88); color: #fff; border-radius: 12px; padding: 6px 8px 6px 12px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; white-space: nowrap; max-width: calc(100% - 56px); }
+#placeTx { overflow: hidden; text-overflow: ellipsis; }
+#placeBar button:disabled { opacity: .45; }
 #placeBar button { background: #fff; color: var(--ink); border-radius: 8px; padding: 4px 10px; font-weight: 800; }
 #zoom { position: absolute; right: 6px; bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
 #zoom button { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,248,234,.9); font-size: 18px; font-weight: 800; }
@@ -182,7 +184,7 @@ body.mopen #toastBox { top: 12px; bottom: auto; }
   <div id="viewWrap">
     <canvas id="view"></canvas>
     <div id="hud"><div id="hudL"></div><div id="hudR"></div></div>
-    <div id="placeBar" class="hide"><span id="placeTx"></span><button id="placeEnd">おわる</button></div>
+    <div id="placeBar" class="hide"><span id="placeTx"></span><button id="placeUndo">↶ 取り消し</button><button id="placeEnd">おわる</button></div>
     <div id="zoom"><button id="zin">＋</button><button id="zout">－</button></div>
   </div>
   <div id="ctrl">

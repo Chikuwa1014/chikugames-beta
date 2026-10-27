@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.3.1', '2026-10-27', 'きかいを置くとき、タップした場所とずれて置かれることがあるのを直した。置いたきかいを1つずつもどせる「取り消し」を足した'],
     ['β0.3.0', '2026-10-27', '「持つ」と「置く」を別のピースに。指示書は最後まで行くと止まる（自動でくり返さない）。くり返しピース（開始・おわりの1対、入れ子OK、回数はプルダウン）。取り場・出荷ヤードなど背の高いものも、絵をタップすればナビが出る'],
     ['β0.2.0', '2026-10-27', '指示書の左端に「起動」ピース。「停止」ピース（最後にだけ置ける）。進むピースを指示書でタップして歩数を決められる。オブジェクトをタップすると、選んでいるちくわ君からの最短ルートとナビを表示'],
     ['β0.1.1', '2026-10-27', '指示ピースをパズルのピースの形にした（となりのピースとはまる）。集荷がそろうと、ちくわ君がピース✌'],
@@ -174,7 +175,8 @@
     $('#btnFridge').textContent = canF ? (r.brk.phase === 'in' ? '🧊 出す' : '🧊 入る') : '🧊 れいぞうこ';
     $('#btnFridge').classList.toggle('hot', !!canF);
     $('#placeBar').classList.toggle('hide', !placing);
-    if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}（${UC.MACHINES[placing].cost}恋ン）：置くマスをタップ`;
+    if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}（${UC.MACHINES[placing].cost}恋ン）をタップで置く`;
+    $('#placeUndo').disabled = !placedLog.length;
   }
   function refreshHud() {
     const b = G.bases[curBase];
@@ -215,7 +217,19 @@
   $('#btnShift').onclick = () => openShift();
   $('#btnKanban').onclick = () => openKanban();
   $('#btnSet').onclick = () => openSettings();
-  $('#placeEnd').onclick = () => { placing = null; refreshCtrl(); };
+  $('#placeEnd').onclick = () => { placing = null; placedLog.length = 0; refreshCtrl(); };
+  /* 取り消し：置いたきかいを新しい順に 1 つずつもどす（払った恋ンは全部もどる。製品がのっているものはもどせない） */
+  const placedLog = [];
+  $('#placeUndo').onclick = () => {
+    while (placedLog.length) {
+      const e = placedLog.pop(), b = G.bases[e.base], k = UC.key(e.x, e.y);
+      if (b.objs[k] !== e.o) continue;   // もう撤去したもの
+      if (e.o.item || (e.o.stock && e.o.stock.length)) { toast('製品がのっているので取り消せません'); placedLog.push(e); return; }
+      delete b.objs[k]; G.coin += e.cost; Snd.put(); UC.save(G); refreshTop(); refreshCtrl();
+      return;
+    }
+    refreshCtrl();
+  };
 
   /* ---------- 指示書（BUILD） ---------- */
   let buildOpen = false, bTab = 'main', bSel = -1;
@@ -482,12 +496,14 @@
     G.coin -= m.cost;
     const b = G.bases[curBase];
     // 向きは、最後に回したきかいと同じ（続けて置くコンベアがそろうように）
-    UC.put(b, placing, x, y, lastDir);
+    const o = UC.put(b, placing, x, y, lastDir);
+    placedLog.push({ base: curBase, x, y, o, cost: m.cost });
+    flash = { x, y, until: performance.now() + 500 };
     delete b.coins[UC.key(x, y)];
     Snd.put(); CG.debug.add('place', { m: placing, x, y });
     UC.save(G); refreshTop();
   }
-  let lastDir = 0;
+  let lastDir = 0, flash = null;
 
   /* ---------- 設定 ---------- */
   function openSettings() {
@@ -524,6 +540,9 @@
     cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
   }
   window.addEventListener('resize', () => { if (G) resize(); });
+  if (window.ResizeObserver) new ResizeObserver(() => { if (G) resize(); }).observe(cv);
+  /* ページ上の座標 → canvas の中の座標（offsetX はブラウザによってずれることがあるので使わない） */
+  const ptOf = e => { const rc = cv.getBoundingClientRect(); return [e.clientX - rc.left, e.clientY - rc.top]; };
 
   function cam() {
     if (cams[curBase]) return cams[curBase];
@@ -548,26 +567,26 @@
   const ptrs = new Map(); let drag = null, pinch = null, moved = false;
   cv.addEventListener('pointerdown', e => {
     cv.setPointerCapture(e.pointerId);
-    ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
-    if (ptrs.size === 1) { drag = { x: e.offsetX, y: e.offsetY, cx: cam().x, cy: cam().y }; moved = false; }
+    ptrs.set(e.pointerId, [...ptOf(e)]);
+    if (ptrs.size === 1) { const [px, py] = ptOf(e); drag = { x: px, y: py, cx: cam().x, cy: cam().y }; moved = false; }
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: cam().z }; moved = true; }
   });
   cv.addEventListener('pointermove', e => {
-    if (!ptrs.has(e.pointerId)) { hover = toTile(e.offsetX, e.offsetY); return; }
-    ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
+    if (!ptrs.has(e.pointerId)) { hover = toTile(...ptOf(e)); return; }
+    ptrs.set(e.pointerId, [...ptOf(e)]);
     const c = cam();
     if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; c.z = Math.max(0.4, Math.min(5, pinch.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d)); return; }
     if (drag) {
-      const dx = e.offsetX - drag.x, dy = e.offsetY - drag.y;
+      const [px, py] = ptOf(e), dx = px - drag.x, dy = py - drag.y;
       if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
       if (moved) { c.x = drag.cx - dx / c.z; c.y = drag.cy - dy / c.z; }
     }
-    hover = toTile(e.offsetX, e.offsetY);
+    hover = toTile(...ptOf(e));
   });
   const up = e => {
     if (ptrs.has(e.pointerId) && ptrs.size === 1 && !moved && G) {
-      const [x, y] = toTile(e.offsetX, e.offsetY), b = G.bases[curBase];
-      const hit = placing ? null : pickSprite(e.offsetX, e.offsetY);
+      const [x, y] = toTile(...ptOf(e)), b = G.bases[curBase];
+      const hit = placing ? null : pickSprite(...ptOf(e));
       if (hit) inspect(hit[0], hit[1]);
       else if (x >= 0 && y >= 0 && x < b.w && y < b.h) { if (placing) placeAt(x, y); else inspect(x, y); }
     }
@@ -626,6 +645,10 @@
         ctx.fillStyle = ok ? 'rgba(80,200,120,.45)' : 'rgba(220,70,60,.45)';
         ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([a, d], n) => { const p = UC.iso(hx + a, hy + d); n ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.fill();
       }
+    }
+    if (flash && performance.now() < flash.until) {
+      ctx.fillStyle = 'rgba(255,224,102,.6)';
+      ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([a, d], n) => { const p = UC.iso(flash.x + a, flash.y + d); n ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.fill();
     }
     // ナビのルート（最短ルートのマス）
     if (nav && nav.base === curBase) {

@@ -170,6 +170,22 @@ def run(p, w, h, tag):
     check(nb == 2, f'{tag}: 保存して、つづきから読める（拠点 2 つ）')
     page.click('#bases button[data-i="1"]'); page.wait_for_timeout(300)
     shot(page, tag + '-12-baseL')
+    # きかいをタップで置く（拠点のタブが出て画面の高さが変わったあとでも、タップしたマスに置く）→ 取り消し
+    page.evaluate('() => { UCT.G.coin = 5000 }')
+    page.click('#btnShop'); page.wait_for_timeout(200)
+    page.click('button[data-a="place:belt"]'); page.wait_for_timeout(200)
+    ok = True
+    for (tx, ty) in [(5, 5), (20, 10), (40, 25)]:
+        xy = page.evaluate(f"() => UCT.screenOf({tx} + 0.5, {ty} + 0.5)")
+        page.mouse.click(xy[0], xy[1]); page.wait_for_timeout(100)
+        got = page.evaluate(f"() => !!UCT.G.bases[1].objs['{tx},{ty}']")
+        ok = ok and got
+    check(ok, f'{tag}: タップしたマスにきかいを置ける')
+    c0 = page.evaluate('() => UCT.G.coin')
+    page.click('#placeUndo'); page.wait_for_timeout(100)
+    st = page.evaluate("() => ({ gone: !UCT.G.bases[1].objs['40,25'], coin: UCT.G.coin })")
+    check(st['gone'] and st['coin'] == c0 + 30, f'{tag}: 取り消しで最後に置いたきかいがもどり、恋ンももどる')
+    shot(page, tag + '-15-place')
     b.close()
 
 
