@@ -125,6 +125,18 @@ def run(p, w, h, tag):
     print(tag, st)
     check(st['x'] == 6, f'{tag}: 「3歩進む」で 3 マスだけ進む')
     check(not st['run'], f'{tag}: 停止ピースで止まる')
+    # ファンクションの中の停止は「ファンクション終了」：呼んだところへもどって、メインの続きを実行する
+    st = page.evaluate("""() => {
+      const G = UCT.G, r = G.robots[0];
+      r.x = 3; r.y = 2; r.dir = 0;
+      r.prog.main = ['f1', 'fwd:1', 'stop']; r.prog.f[0] = ['fwd:1', 'stop'];
+      UC.run(G, r);
+      for (let i = 0; i < 80; i++) UC.step(G, 0.25);
+      const out = { x: r.x, run: r.running };
+      r.prog.f[0] = []; r.prog.main = ['fwd:3', 'stop'];
+      return out;
+    }""")
+    check(st['x'] == 5 and not st['run'], f'{tag}: ファンクションの停止は「ファンクション終了」で、メインの続きへもどる {st}')
     # くり返し 3 回（入れ子）と、最後まで行ったら止まる
     st = page.evaluate("""() => {
       const G = UCT.G, r = G.robots[0];
