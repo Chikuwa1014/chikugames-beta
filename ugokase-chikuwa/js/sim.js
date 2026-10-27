@@ -512,6 +512,7 @@
         if (lp.n === 0 || --lp.n > 0) fr.ip = lp.i + 1; else fr.loops.pop();
         r.act = { k: 'wait', left: CFG.callMin }; return true;
       }
+      if (pc === 'stop' && fr.w !== 'main') { r.stack.pop(); r.act = { k: 'wait', left: CFG.callMin }; return true; }   // ファンクションの中では「ファンクション終了」：呼んだところへもどる
       if (pc === 'stop') { UC.stop(G, r); bubble(G, r, '■'); emit('stopped', r); return false; }   // 停止：ここで指示書をおえる
       r.lastOk = true;   // うまくいかなかったピースは「？」を出すときに false にする
       r.act = startPiece(G, r, pc);

@@ -47,6 +47,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 #speed { display: flex; gap: 2px; position: relative; }
 #spdTip { position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; width: max-content; max-width: 230px; background: #FFF8EA; color: #3A2A1A; border: 2px solid var(--chikuwa); border-radius: 12px; padding: 7px 10px; font-size: 12px; font-weight: 700; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,.25); animation: tipBob 1.2s ease-in-out infinite; pointer-events: none; }
 #spdTip::before { content: ''; position: absolute; top: -9px; right: 74px; border: 8px solid transparent; border-top: 0; border-bottom-color: var(--chikuwa); }
+body.mopen #spdTip { display: none; }
 @keyframes tipBob { 50% { transform: translateY(3px); } }
 #speed button { background: #EFE3CB; border-radius: 6px; padding: 3px 4px; font-size: 10px; min-width: 24px; }
 #speed button.on { background: var(--chikuwa); color: #fff; }

@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.7.2', '2026-10-27', 'ファンクション（F1〜F3）の中では、停止のピースが「ファンクション終了」になる（呼んだところへもどる）'],
     ['β0.7.1', '2026-10-27', 'ちくわ君の見た目をかわいくした（大きな目・ほっぺ・♥のアンテナ・ちょこんとした足）'],
     ['β0.7.0', '2026-10-27', 'ゲームを始めたら時間は止まった状態に（速さのボタンを吹き出しで案内）。集荷の未達の数を次の集荷に上乗せ。⟲⟳ で視点を 90° ずつ回せる'],
     ['β0.6.1', '2026-10-27', '製造ラインに接続できるのを、取り場の上下左右のとなりだけにした（ななめはふくまない）'],
@@ -133,7 +134,7 @@
     openModal('あそびかた', `
       <p><b>目的：</b>製造ラインの終点（<b>取り場</b>・オレンジの機械）に出てくる製品を、ちくわ君に<b>出荷ヤード</b>（黄色のしまのパレット）まで運ばせよう。<b>かんばん</b>の時刻に個数がそろっていれば売上の恋ンが入り、ちくわ君の精神力（自己肯定感）が回復する。足りないと精神力がへる。</p>
       <p><b>指示書：</b>「BUILD」で指示ピースを並べ、「RUN」で実行。指示書は最後まで行くと止まる（くり返したいところは、くり返しピースではさむ）。「緊急停止」でとまる。</p>
-      <div class="note">⬆ 進む：ものに当たるまで進む ／ ↶↷⟲ 向きをかえる ／ ✋ 持つ：前の取り場などから製品を持つ ／ 📥 置く：前の出荷ヤードなどに置く ／ 🔁 くり返し〜↩ おわり：はさんだピースをくり返す（かならず1対・入れ子もできる） ／ ❓ 場合わけ〜❗ おわり：条件（プルダウン）に合うときだけ、はさんだピースを実行 ／ ■ 停止 ／ 🔨 作業する：前の梱包台で梱包 ／ ⏻ 操作する：前のきかいのスイッチ ／ F1〜F3：ファンクションを呼ぶ</div>
+      <div class="note">⬆ 進む：ものに当たるまで進む ／ ↶↷⟲ 向きをかえる ／ ✋ 持つ：前の取り場などから製品を持つ ／ 📥 置く：前の出荷ヤードなどに置く ／ 🔁 くり返し〜↩ おわり：はさんだピースをくり返す（かならず1対・入れ子もできる） ／ ❓ 場合わけ〜❗ おわり：条件（プルダウン）に合うときだけ、はさんだピースを実行 ／ ■ 停止（ファンクションの中では ⏎ ファンクション終了：呼んだところへもどる） ／ 🔨 作業する：前の梱包台で梱包 ／ ⏻ 操作する：前のきかいのスイッチ ／ F1〜F3：ファンクションを呼ぶ</div>
       <p><b>製造ライン：</b>取り場の上下左右のとなり（ななめはだめ）にコンベアを置くと「製造ラインに接続」できる。つなぐと、取り場の製品が自動でコンベアへ流れていく。</p>
       <p><b>恋ン：</b>ちくわ君が工場を歩くと、落ちている恋ン（金色の♥）を拾って社長のポケットマネーにできる。コンサルで、きかい・福利厚生・ちくわ君の能力アップ・拠点・ちくわ君の増設に使える。</p>
       <p><b>時間：</b>1ヶ月は7日、1年は12ヶ月。ちくわ君はシフトの時間だけ働き、勤務のまん中で休けい（1時間＋15分）。休けいは自動で<b>れいぞうこ</b>へ入って体力・精神力が回復する。だれも勤務していないあいだは自動で早送り。</p>
@@ -305,12 +306,14 @@
   function drawBuild() {
     const r = robot(); if (!r) return;
     const list = progList(r), max = bTab === 'main' ? UC.MAIN_MAX : UC.FUNC_MAX;
+    // ファンクションのタブでは、停止のピースは「ファンクション終了」（呼んだところへもどる）
+    const fend = bTab !== 'main', stopIcon = fend ? '⏎' : UC.PIECES.stop.icon, stopName = fend ? 'F' + (+bTab + 1) + ' 終了' : UC.PIECES.stop.name;
     const pc = (v, i) => {
       const k = UC.pieceKey(v), P = UC.PIECES[k], n = UC.pieceArg(v);
       const ln = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯'[(lp.no[i] || 1) - 1] || '';
       const ca = String(v).split(':')[1] || 'hold', cneg = ca[0] === '!', cd = UC.CONDS.find(c => c.id === ca.replace('!', ''));
-      const nm = k === 'fwd' ? (n ? `${n}歩進む` : 'ぶつかるまで') : k === 'loop' ? `${ln}${n ? n + '回' : 'ずっと'}` : k === 'end' || k === 'endif' ? `${ln}おわり` : k === 'if' ? `${ln}${cneg ? '✕' : ''}${cd ? cd.s : '?'}` : P.name;
-      return `<button class="piece${k === 'stop' ? ' stop' : ''}${lp.bad[i] ? ' bad' : ''}" data-i="${i}" style="--c:${P.col}"><span class="no">${i + 1}</span><span>${P.icon}</span><small>${nm}</small></button>`;
+      const nm = k === 'fwd' ? (n ? `${n}歩進む` : 'ぶつかるまで') : k === 'loop' ? `${ln}${n ? n + '回' : 'ずっと'}` : k === 'end' || k === 'endif' ? `${ln}おわり` : k === 'if' ? `${ln}${cneg ? '✕' : ''}${cd ? cd.s : '?'}` : k === 'stop' ? stopName : P.name;
+      return `<button class="piece${k === 'stop' ? ' stop' : ''}${lp.bad[i] ? ' bad' : ''}" data-i="${i}" style="--c:${P.col}"><span class="no">${i + 1}</span><span>${k === 'stop' ? stopIcon : P.icon}</span><small>${nm}</small></button>`;
     };
     const lp = UC.loopPairs(list);
     const selK = bSel >= 0 ? UC.pieceKey(list[bSel]) : '';
@@ -328,8 +331,8 @@
       ${selK === 'loop' ? `<div class="steps">${bSel + 1}番のくり返し：<select id="bLoop">${Array.from({ length: UC.LOOP_MAX }, (_, n) => n === 1 ? '' : `<option value="${n}" ${UC.pieceArg(list[bSel]) === n ? 'selected' : ''}>${n ? n + '回' : 'ずっと'}</option>`).join('')}</select></div>` : ''}
       ${selK === 'fwd' ? `<div class="steps">${bSel + 1}番の進む：<select id="bSteps">${Array.from({ length: UC.FWD_MAX + 1 }, (_, n) => `<option value="${n}" ${UC.pieceArg(list[bSel]) === n ? 'selected' : ''}>${n ? n + '歩' : 'ぶつかるまで'}</option>`).join('')}</select></div>` : ''}
       <div class="edrow"><button id="bL">◀ 前へ</button><button id="bR">後ろへ ▶</button><button id="bDel">けす</button><button id="bClr">ぜんぶけす</button></div>
-      <div class="cnt">✌ 指示ピース（タップで${bSel >= 0 ? (bSel + 1) + '番のうしろに' : '最後に'}つなぐ。■停止は右にへこみがないので最後だけ）</div>
-      <div class="palette" id="bPal">${Object.keys(UC.PIECES).filter(k => !UC.PIECES[k].old).map(k => `<button class="piece${k === 'stop' ? ' stop' : ''}" data-k="${k}" style="--c:${UC.PIECES[k].col}"><span>${UC.PIECES[k].icon}</span><small>${UC.PIECES[k].name}</small><span class="pz">✌</span></button>`).join('')}</div>
+      <div class="cnt">✌ 指示ピース（タップで${bSel >= 0 ? (bSel + 1) + '番のうしろに' : '最後に'}つなぐ。${fend ? '⏎ ファンクション終了は、呼んだところへもどる。右にへこみがないので最後だけ' : '■停止は右にへこみがないので最後だけ'}）</div>
+      <div class="palette" id="bPal">${Object.keys(UC.PIECES).filter(k => !UC.PIECES[k].old).map(k => `<button class="piece${k === 'stop' ? ' stop' : ''}" data-k="${k}" style="--c:${UC.PIECES[k].col}"><span>${k === 'stop' ? stopIcon : UC.PIECES[k].icon}</span><small>${k === 'stop' ? stopName : UC.PIECES[k].name}</small><span class="pz">✌</span></button>`).join('')}</div>
       <div class="row" style="margin-top:14px"><button class="cbtn run" id="bRun">RUN してとじる</button></div>`;
     $('#bWrap').querySelectorAll('.tabs button').forEach(b => b.onclick = () => { bTab = b.dataset.t; bSel = -1; drawBuild(); });
     $('#bProg').querySelectorAll('.piece[data-i]').forEach(b => b.onclick = () => { const i = +b.dataset.i; bSel = bSel === i ? -1 : i; drawBuild(); });
@@ -347,11 +350,11 @@
       const at = k === 'stop' ? list.length : (bSel >= 0 ? bSel + 1 : list.length);
       const v = k === 'loop' ? 'loop:2' : k === 'if' ? 'if:hold' : k;   // くり返しは 2 回から、場合わけは「持っているとき」から
       const next = list.slice(); next.splice(at, 0, v);
-      if (!stopOk(next)) { toast(k === 'stop' ? '停止はひとつだけです' : '停止のうしろにはつなげません'); return; }
+      if (!stopOk(next)) { toast(k === 'stop' ? stopName + 'はひとつだけです' : stopName + 'のうしろにはつなげません'); return; }
       list.splice(at, 0, v); bSel = at;
       Snd.click(); edited(r); drawBuild();
     });
-    const swap = (i, j) => { const next = list.slice(); [next[i], next[j]] = [next[j], next[i]]; if (!stopOk(next)) { toast('停止は最後から動かせません'); return false; } [list[i], list[j]] = [list[j], list[i]]; return true; };
+    const swap = (i, j) => { const next = list.slice(); [next[i], next[j]] = [next[j], next[i]]; if (!stopOk(next)) { toast(stopName + 'は最後から動かせません'); return false; } [list[i], list[j]] = [list[j], list[i]]; return true; };
     $('#bL').onclick = () => { if (bSel > 0 && swap(bSel - 1, bSel)) { bSel--; edited(r); drawBuild(); } };
     $('#bR').onclick = () => { if (bSel >= 0 && bSel < list.length - 1 && swap(bSel + 1, bSel)) { bSel++; edited(r); drawBuild(); } };
     $('#bDel').onclick = () => { if (bSel >= 0) { list.splice(bSel, 1); bSel = Math.min(bSel, list.length - 1); edited(r); drawBuild(); } };
