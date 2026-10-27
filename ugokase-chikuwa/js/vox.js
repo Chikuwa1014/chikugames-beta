@@ -6,8 +6,16 @@
   UC.TW = 32; UC.TH = 16;           // 1 マスの菱形（幅・高さ）
   const VW = 2, VT = 1, VZ = 2.5;   // ボクセル 1 つの横・奥・高さ（px）
 
-  /* マス (x, y) の上の角（画面の座標） */
-  UC.iso = (x, y) => [(x - y) * UC.TW / 2, (x + y) * UC.TH / 2];
+  /* 視点の回転（90° ずつ。rot 0〜3）。W・H はいま描いている拠点の大きさ。
+     世界の座標 (x, y) → 回した座標 (u, v) にしてから、ななめ上から見た図にする */
+  UC.view = { rot: 0, W: 1, H: 1 };
+  UC.rp = (x, y) => { const { rot, W, H } = UC.view; return rot === 0 ? [x, y] : rot === 1 ? [H - y, x] : rot === 2 ? [W - x, H - y] : [y, W - x]; };
+  /* マス (x, y) を回したときの、マスの位置（回した座標で、そのマスのいちばん奥の角） */
+  UC.rt = (x, y) => { const { rot, W, H } = UC.view; return rot === 0 ? [x, y] : rot === 1 ? [H - 1 - y, x] : rot === 2 ? [W - 1 - x, H - 1 - y] : [y, W - 1 - x]; };
+  UC.unrt = (u, v) => { const { rot, W, H } = UC.view; return rot === 0 ? [u, v] : rot === 1 ? [v, H - 1 - u] : rot === 2 ? [W - 1 - u, H - 1 - v] : [W - 1 - v, u]; };
+  UC.iso0 = (u, v) => [(u - v) * UC.TW / 2, (u + v) * UC.TH / 2];
+  /* 世界の点 (x, y)（画面の座標） */
+  UC.iso = (x, y) => UC.iso0(...UC.rp(x, y));
 
   const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
   const shade = (c, k) => 'rgb(' + c.map(v => Math.max(0, Math.min(255, Math.round(v * k)))).join(',') + ')';
@@ -58,9 +66,18 @@
   };
   /* マス (tx, ty) の上にモデルを置いて描く。dx, dy はボクセル単位のずらし、lift は高さ（px） */
   UC.drawModel = function (c, name, dir, tx, ty, dx = 0, dy = 0, lift = 0) {
-    const s = UC.sprite(name, dir);
-    const [x, y] = UC.iso(tx + dx / 8, ty + dy / 8);
+    const m = MODELS[name], x0 = tx + dx / 8, y0 = ty + dy / 8;
+    // 世界での大きさ（マス単位）→ 回した座標で、いちばん奥の角
+    const fw = (dir % 2 ? m[1] : m[0]) / 8, fh = (dir % 2 ? m[0] : m[1]) / 8;
+    const a = UC.rp(x0, y0), b = UC.rp(x0 + fw, y0 + fh);
+    const s = UC.sprite(name, (dir + UC.view.rot) % 4);
+    const [x, y] = UC.iso0(Math.min(a[0], b[0]), Math.min(a[1], b[1]));
     c.drawImage(s.cv, Math.round(x - s.ox), Math.round(y - s.oy - lift));
+  };
+  /* 絵のうえのタップ判定用：マス (tx, ty) に置いたモデルの、画面での四角 */
+  UC.spriteBox = function (name, dir, tx, ty) {
+    const s = UC.sprite(name, (dir + UC.view.rot) % 4), [x, y] = UC.iso0(...UC.rt(tx, ty));
+    return [x - s.ox, y - s.oy, s.cv.width, s.cv.height];
   };
 
   /* ---------- モデル（i：前うしろ、+x が前／j：左右／k：上） ---------- */
@@ -176,7 +193,8 @@
 
   /* ---------- 床と壁（絵として 1 枚に描いておく） ---------- */
   UC.paintFloor = function (base) {
-    const W = base.w, H = base.h, TW = UC.TW, TH = UC.TH;
+    // 回した向きで描く（奥の 2 面が壁）。床のしみは世界のマスで決める
+    const rot = UC.view.rot, W = rot % 2 ? base.h : base.w, H = rot % 2 ? base.w : base.h, TW = UC.TW, TH = UC.TH;
     const wallH = 70;
     const cv = document.createElement('canvas');
     const ox = H * TW / 2 + 4, oy = wallH + 4;
@@ -201,7 +219,7 @@
     for (let y = 0; y < H; y++) { const a = P(0, y), b = P(0, y + 1); poly([[a[0], a[1] - 6], [b[0], b[1] - 6], b, a], y % 2 ? '#2A2A2A' : '#F2C230'); }
     // 床（コンクリート。ところどころしみ）
     for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
-      const n = h3(x, y, 3);
+      const [wx, wy] = UC.unrt(x, y), n = h3(wx, wy, 3);
       poly([P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)], n > 0.85 ? '#A7ABA8' : n > 0.5 ? '#B4B8B4' : '#BBBFBA');
     }
     c.strokeStyle = 'rgba(80,90,85,0.25)'; c.lineWidth = 1;

@@ -292,6 +292,12 @@
         if (!b.kanban.some(k => k.t === t && k.yard === yk) && t > G.time) b.kanban.push({ t, need: need(), got: null, yard: yk });
       }
       b.kanban.sort((a, z) => a.t - z.t || (b.objs[a.yard] ? b.objs[a.yard].no : 0) - (b.objs[z.yard] ? b.objs[z.yard].no : 0));
+      // 前の日に足りなかった数を、そのヤードのいちばん早い集荷に上乗せする
+      for (const yk in b.carry || {}) {
+        const nk = b.kanban.find(k => k.got == null && k.yard === yk);
+        if (!nk) continue;
+        nk.need += b.carry[yk]; nk.carry = (nk.carry || 0) + b.carry[yk]; delete b.carry[yk];
+      }
     });
     emit('day', c);
   }
@@ -310,9 +316,16 @@
       r.mp = clamp(r.mp + (ok ? CFG.okMental : CFG.ngMental), 0, 100);
       bubble(G, r, ok ? '✌' : '💦', 40);   // そろったらピース（平和）
     }
+    // 足りなかった数は、同じヤードの次の集荷に上乗せする（きょうの予定が無ければ、次に届くかんばんへ）
+    const short = k.need - take.length;
+    if (short > 0) {
+      const nk = b.kanban.find(q => q !== k && q.got == null && q.t > k.t && q.yard === k.yard);
+      if (nk) { nk.need += short; nk.carry = (nk.carry || 0) + short; }
+      else { b.carry = b.carry || {}; b.carry[k.yard] = (b.carry[k.yard] || 0) + short; }
+    }
     b.log.unshift({ t: k.t, need: k.need, got: take.length, earn, yard: yard ? yard.no : 1 });
     b.log.length = Math.min(b.log.length, 20);
-    emit('pickup', { base: b, ok, need: k.need, got: take.length, earn, yard });
+    emit('pickup', { base: b, ok, need: k.need, got: take.length, earn, yard, short });
     // 累計集荷数でレベルアップ（拠点の大きさで上限がある）
     b.shipped = (b.shipped || 0) + take.length;
     let nx;
