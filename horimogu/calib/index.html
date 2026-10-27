@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>センサーのキャリブレーション｜ほりほりもぐもぐ</title>
+<meta name="robots" content="noindex">
+<style>
+/* 開発用：モーションセンサーの向きを調べるページ。結果の文字をコピーして会話に貼ってもらう */
+:root{
+  --bg:#FBF4E2; --panel:#FFFBF0; --line:#E3D2A8; --ink:#3A2412; --muted:#8A6A48;
+  --accent:#C9772E; --ok:#3FBF62; --rec:#E0473C;
+  --font:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#211812; --panel:#2E2219; --line:#4E3A29; --ink:#FFF1DC; --muted:#C9A987; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;
+  padding-block:max(16px,env(safe-area-inset-top)) 32px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+main{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:20px;margin:0}
+p{margin:0}
+.note{color:var(--muted);font-size:13px}
+button{font:inherit;font-weight:800;border:0;border-radius:12px;padding:12px 16px;cursor:pointer;background:var(--accent);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+button.sub{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.step{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
+.step b{font-size:15px}
+.step small{grid-column:1;color:var(--muted);font-size:12px}
+.step .st{grid-row:1/3;grid-column:2;font-size:12px;font-weight:800;color:var(--muted)}
+.step.done .st{color:var(--ok)}
+.step.cur{border-color:var(--accent)}
+.step.rec{border-color:var(--rec)}
+.step.rec .st{color:var(--rec)}
+#live{font-family:var(--mono);font-size:12px;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;white-space:pre}
+#big{font-size:18px;font-weight:900;text-align:center;min-height:1.6em}
+textarea{width:100%;height:160px;font-family:var(--mono);font-size:11px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<main>
+  <h1>📱 センサーのキャリブレーション</h1>
+  <p>ゲームを遊ぶときと同じように、<b>スマホを縦に持って</b>ください。各項目で「測る」を押すと 3 秒間記録します。記録中に、書いてある向きへ<b>ゆっくり 1 回だけ</b>動かしてください。</p>
+  <p class="note">全部終わったら、いちばん下の結果をコピーして会話に貼り付けてください。</p>
+  <div class="row"><button type="button" id="perm">センサーを使う</button></div>
+  <div id="live">センサー：まだ使っていません</div>
+  <div id="big"></div>
+  <ol class="steps" id="steps"></ol>
+  <div class="row">
+    <button type="button" id="go" disabled>測る</button>
+    <button type="button" class="sub" id="redo" disabled>この項目をやり直す</button>
+  </div>
+  <textarea id="out" readonly placeholder="ここに結果が出ます"></textarea>
+  <div class="row"><button type="button" id="copy" disabled>結果をコピー</button></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  // 上下・左右・ななめ（向きは「ゲームで見たい方向」）
+  const STEPS = [
+    { key: 'still', name: 'じっと持つ', how: '動かさずに持ったまま（ゆれの大きさを測る）' },
+    { key: 'right', name: '左右：右を向く', how: '体ごと右へ 90° くらい回る' },
+    { key: 'left', name: '左右：左を向く', how: '体ごと左へ 90° くらい回る' },
+    { key: 'up', name: '上下：上を見る', how: 'スマホの背中（カメラ）を天井へ向けるように、上へ向ける' },
+    { key: 'down', name: '上下：下を見る', how: 'スマホの背中（カメラ）を床へ向けるように、下へ向ける' },
+    { key: 'upright', name: 'ななめ：右上を見る', how: '右を向きながら上を見る' },
+    { key: 'downleft', name: 'ななめ：左下を見る', how: '左を向きながら下を見る' }
+  ];
+  const REC_MS = 3000;
+  const res = {};
+  let cur = 0, rec = null, motionSeen = false, orient = null, lastRate = null;
+
+  function render() {
+    $('#steps').innerHTML = '';
+    STEPS.forEach((s, i) => {
+      const li = document.createElement('li');
+      li.className = 'step' + (res[s.key] ? ' done' : '') + (i === cur ? ' cur' : '') + (rec && i === cur ? ' rec' : '');
+      const b = document.createElement('b'); b.textContent = s.name;
+      const st = document.createElement('span'); st.className = 'st';
+      st.textContent = rec && i === cur ? '記録中' : res[s.key] ? '済み' : i === cur ? 'つぎ' : '';
+      const sm = document.createElement('small'); sm.textContent = s.how;
+      li.append(b, st, sm);
+      li.onclick = () => { if (!rec) { cur = i; render(); } };
+      $('#steps').append(li);
+    });
+    const ready = motionSeen && !rec && cur < STEPS.length;
+    $('#go').disabled = !ready;
+    $('#go').textContent = cur < STEPS.length ? '測る：' + STEPS[cur].name : '全部終わりました';
+    $('#redo').disabled = !(motionSeen && !rec && cur < STEPS.length && res[STEPS[cur].key]);
+    const n = Object.keys(res).length;
+    $('#copy').disabled = n === 0;
+    if (n) $('#out').value = JSON.stringify(report());
+  }
+
+  async function ask() {
+    try {
+      const DM = window.DeviceMotionEvent, DO = window.DeviceOrientationEvent;
+      if (DM && typeof DM.requestPermission === 'function') {
+        const r = await DM.requestPermission();
+        if (r === 'denied') { $('#live').textContent = 'センサーの使用が許可されませんでした。設定で許可してから開き直してください'; return; }
+      }
+      if (DO && typeof DO.requestPermission === 'function') { try { await DO.requestPermission(); } catch (e) { } }
+    } catch (e) { $('#live').textContent = 'センサーの許可を聞けませんでした：' + e; return; }
+    window.addEventListener('devicemotion', onMotion);
+    window.addEventListener('deviceorientation', e => { orient = [e.alpha, e.beta, e.gamma]; });
+    $('#perm').disabled = true;
+    $('#live').textContent = 'センサーの値を待っています…（出ないときは、この端末では使えません）';
+  }
+
+  const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+  function onMotion(e) {
+    const r = e.rotationRate;
+    if (!r) return;
+    if (!motionSeen) { motionSeen = true; render(); }
+    lastRate = [r.alpha, r.beta, r.gamma];
+    const t = performance.now();
+    $('#live').textContent = '回転の速さ（度/秒）\n alpha ' + f(r.alpha) + '  beta ' + f(r.beta) + '  gamma ' + f(r.gamma)
+      + '\n画面の向き ' + angle() + '°  interval ' + e.interval;
+    if (rec) {
+      const dt = rec.last ? (t - rec.last) / 1000 : 0;
+      rec.last = t;
+      for (let i = 0; i < 3; i++) { rec.sum[i] += (lastRate[i] || 0) * dt; rec.peak[i] = Math.abs(lastRate[i] || 0) > Math.abs(rec.peak[i]) ? (lastRate[i] || 0) : rec.peak[i]; }
+      rec.n++;
+      rec.intervals.push(e.interval);
+      if (t - rec.lastSample >= 50) { rec.lastSample = t; rec.raw.push([Math.round(t - rec.t0), r1(r.alpha), r1(r.beta), r1(r.gamma)]); }
+    }
+  }
+  const f = v => (v == null ? '-' : (v >= 0 ? ' ' : '') + v.toFixed(1)).padStart(7);
+  const angle = () => (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+
+  function start() {
+    const s = STEPS[cur];
+    rec = { key: s.key, t0: performance.now(), last: 0, lastSample: 0, sum: [0, 0, 0], peak: [0, 0, 0], n: 0, raw: [], intervals: [], o0: orient && orient.slice(), angle: angle() };
+    render();
+    const tick = () => {
+      if (!rec) return;
+      const left = REC_MS - (performance.now() - rec.t0);
+      if (left <= 0) return stop();
+      $('#big').textContent = '記録中… ' + Math.ceil(left / 1000) + '　' + s.name.replace(/^.*：/, '');
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  function stop() {
+    const s = STEPS[cur];
+    const iv = rec.intervals.filter(v => v != null);
+    res[s.key] = {
+      sum: rec.sum.map(r1),             // 3 秒で回った角度（度）[alpha, beta, gamma]
+      peak: rec.peak.map(r1),           // いちばん速かった値（度/秒）
+      n: rec.n, angle: rec.angle,
+      interval: iv.length ? iv[Math.floor(iv.length / 2)] : null,
+      o0: rec.o0 && rec.o0.map(r1), o1: orient && orient.map(r1),   // deviceorientation の始めと終わり
+      raw: rec.raw                      // [ms, alpha, beta, gamma] 50ms ごと
+    };
+    rec = null;
+    $('#big').textContent = '記録しました：' + s.name;
+    cur = STEPS.findIndex(x => !res[x.key]);
+    if (cur < 0) { cur = STEPS.length; $('#big').textContent = '全部終わりました。結果をコピーしてください'; }
+    render();
+  }
+  function report() {
+    return { page: 'horimogu-calib-1', ua: navigator.userAgent, screen: [screen.width, screen.height], at: new Date().toISOString(), steps: res };
+  }
+
+  $('#perm').onclick = ask;
+  $('#go').onclick = () => { if (!rec && cur < STEPS.length) start(); };
+  $('#redo').onclick = () => { if (!rec) { delete res[STEPS[cur].key]; render(); } };
+  $('#copy').onclick = async () => {
+    const t = $('#out').value;
+    try { await navigator.clipboard.writeText(t); $('#copy').textContent = 'コピーしました'; }
+    catch (e) { $('#out').focus(); $('#out').select(); $('#copy').textContent = '選択しました。長押しでコピーしてください'; }
+    setTimeout(() => { $('#copy').textContent = '結果をコピー'; }, 2500);
+  };
+  render();
+})();
+</script>
+</body>
+</html>
