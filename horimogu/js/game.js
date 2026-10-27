@@ -833,7 +833,7 @@
       }
       case 'dead': {
         const pl = G.players.get(ev.pid);
-        if (pl) { pl.alive = false; pl.hp = 0; pl.why = ev.why; }
+        if (pl) { pl.alive = false; pl.hp = 0; pl.why = ev.why; pl.rank = [...G.players.values()].filter(p => p.alive).length + 1; }
         const name = pl ? pl.name : '?';
         const msg = ev.why === 'pot' ? name + ' はおでん鍋に沈んだ…' : ev.why === 'left' ? name + ' はぬけたので負け' : name + ' はやられた！';
         G.toast && G.toast(msg);
