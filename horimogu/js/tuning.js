@@ -2,7 +2,7 @@
    ちくわ君の大きさを 1 とする。地形の 1 マスも 1。 */
 const HM = window.HM = window.HM || {};
 
-HM.VERSION = 'β0.3.2';
+HM.VERSION = 'β0.4.0';
 HM.GAME = 'horimogu';
 
 HM.T = {
@@ -78,13 +78,15 @@ HM.T = {
     bosses: ['boss1', 'boss2', 'boss3', 'boss4', 'boss5'],
     spawnMin: 35, spawnMax: 60
   },
-  /* 敵（まわせ！ちくわルーレットのボス）。speed＝追いかける速さ、wander＝気づく前の速さ、notice＝気づく距離 */
+  /* 敵（まわせ！ちくわルーレットのボス）。speed＝追いかける速さ、wander＝気づく前の速さ、notice＝気づく距離
+     seek＝気づく前にちくわ君へ寄ってくる度合い（1＝まっすぐ寄ってくる、0＝寄ってこない。こちらから探す）
+     弱い順：きんちゃく姫 → 大根大将 → がんも番長 → マグマすじ将軍 → おでん大王。弱いほど寄ってくる */
   bosses: {
-    boss1: { name: '大根大将',       shape: 'daikon', col: '#F4F1E8', hp: 60,  speed: 2.4, wander: 0.9, dmg: 7,  atk: 1.2, notice: 26 },
-    boss2: { name: 'がんも番長',     shape: 'ball',   col: '#B07038', hp: 70,  speed: 2.2, wander: 0.9, dmg: 8,  atk: 1.3, notice: 26 },
-    boss3: { name: 'きんちゃく姫',   shape: 'bag',    col: '#F08AB0', hp: 50,  speed: 2.9, wander: 1.1, dmg: 6,  atk: 1.0, notice: 30 },
-    boss4: { name: 'マグマすじ将軍', shape: 'skewer', col: '#B8402A', hp: 60,  speed: 2.5, wander: 0.9, dmg: 10, atk: 1.4, notice: 26 },
-    boss5: { name: 'おでん大王',     shape: 'pot',    col: '#5A5560', hp: 100, speed: 1.9, wander: 0.8, dmg: 12, atk: 1.6, notice: 24 }
+    boss1: { name: '大根大将',       shape: 'daikon', col: '#F4F1E8', hp: 60,  speed: 2.4, wander: 1.2, dmg: 7,  atk: 1.2, notice: 40,  seek: 0.8 },
+    boss2: { name: 'がんも番長',     shape: 'ball',   col: '#B07038', hp: 70,  speed: 2.2, wander: 0.9, dmg: 8,  atk: 1.3, notice: 26,  seek: 0.5 },
+    boss3: { name: 'きんちゃく姫',   shape: 'bag',    col: '#F08AB0', hp: 50,  speed: 2.9, wander: 1.4, dmg: 6,  atk: 1.0, notice: 999, seek: 1 },
+    boss4: { name: 'マグマすじ将軍', shape: 'skewer', col: '#B8402A', hp: 60,  speed: 2.5, wander: 0.7, dmg: 10, atk: 1.4, notice: 14,  seek: 0.2 },
+    boss5: { name: 'おでん大王',     shape: 'pot',    col: '#5A5560', hp: 100, speed: 1.9, wander: 0.5, dmg: 12, atk: 1.6, notice: 7,   seek: 0 }
   },
   bossReach: 1.7,
   bossDigRadius: 1.5,

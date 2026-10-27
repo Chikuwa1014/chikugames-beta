@@ -661,10 +661,13 @@
       dir = V.norm([Math.cos(b.wob * 1.7 + b.id.length), Math.sin(b.wob * 0.9) * 0.3, Math.sin(b.wob * 1.3 + 1)]);
       sp = B.wander * 0.7;
     } else if (!b.aware) {
-      // 気づく前は、ふらふら近づいてくる
+      // 気づく前は、ふらふら掘り歩く。seek が大きい（弱い）ボスほど、ちくわ君のほうへ寄ってくる
       b.wob += dt * 0.7;
       const a = Math.sin(b.wob) * 0.9, c = Math.cos(a), s = Math.sin(a);
-      dir = V.norm([dir[0] * c - dir[2] * s, dir[1] * 0.5 + Math.sin(b.wob * 1.3) * 0.2, dir[0] * s + dir[2] * c]);
+      const toward = V.norm([dir[0] * c - dir[2] * s, dir[1] * 0.5 + Math.sin(b.wob * 1.3) * 0.2, dir[0] * s + dir[2] * c]);
+      const roam = V.norm([Math.cos(b.wob * 0.6 + b.id.length), Math.sin(b.wob * 0.9) * 0.3, Math.sin(b.wob * 0.45 + 1)]);
+      const k = B.seek == null ? 1 : B.seek;
+      dir = V.norm(V.add(V.mul(toward, k), V.mul(roam, 1 - k + 1e-3)));
     }
     if (G.t < b.slipUntil) { sp *= 0.25; dir = V.norm(V.add(dir, [Math.sin(G.t * 9), 0, Math.cos(G.t * 7)])); }
     if (td < 1.15) sp = 0;
