@@ -74,6 +74,7 @@
     G.proj = []; G.traps = new Map(); G.pickups = new Map(); G.pops = []; G.crumbs = [];
     G.timeLeft = opt.mode === 'solo' ? T.solo.time : 0;
     G.t = 0; G.over = false; G.running = true;
+    G.hurtAt = 0;   // 前の試合の時刻が残ると、G.t が追いつくまで赤いままになる
     G.pendingDigs = [];
     G.stateTimer = 0; G.snapTimer = 0; G.laserTick = new Map();
     G.lastSnapAt = now();

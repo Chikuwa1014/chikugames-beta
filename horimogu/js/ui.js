@@ -204,6 +204,23 @@
   // さわる操作：左半分の下＝スティック、それ以外＝見回す
   const stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
   const looks = new Map();
+  const STICK_R = 46;
+  /** スティックを倒す。半径より外へ指が出たら、中心が指についていく（端で止まって効かなくならないように） */
+  function moveStick(cx, cy) {
+    let dx = cx - stick.ox, dy = cy - stick.oy;
+    const l = Math.hypot(dx, dy);
+    if (l > STICK_R) {
+      stick.ox += dx - dx / l * STICK_R; stick.oy += dy - dy / l * STICK_R;
+      dx = dx / l * STICK_R; dy = dy / l * STICK_R;
+      const k = $('#stick'); k.style.left = stick.ox + 'px'; k.style.top = stick.oy + 'px';
+    }
+    stick.x = dx / STICK_R; stick.y = dy / STICK_R;
+    $('#knob').style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  }
+  function resetStick() {
+    stick.id = null; stick.x = stick.y = 0;
+    $('#stick').hidden = true; $('#knob').style.transform = 'translate(-50%,-50%)';
+  }
   function setupTouch() {
     const area = $('#touchArea');
     area.addEventListener('pointerdown', e => {
@@ -212,22 +229,19 @@
       HM.sfx.unlock();
       const r = area.getBoundingClientRect();
       if (stick.id === null && e.clientX < r.width * 0.45 && e.clientY > r.height * 0.35) {
-        stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.x = stick.y = 0;
-        const k = $('#stick'); k.hidden = false; k.style.left = e.clientX + 'px'; k.style.top = e.clientY + 'px';
-        $('#knob').style.transform = 'translate(-50%,-50%)';
+        // 画面の端やアイテム欄の近くで触っても、スティックがどの向きにも倒せる位置に中心を置く
+        const R = STICK_R * 0.75, bar = $('#itembar').getBoundingClientRect();
+        const maxY = Math.min(r.height - R, (bar.height ? bar.top : r.height) - R * 0.6);
+        stick.id = e.pointerId; stick.x = stick.y = 0;
+        stick.ox = Math.max(R, e.clientX); stick.oy = Math.max(r.height * 0.35, Math.min(maxY, e.clientY));
+        const k = $('#stick'); k.hidden = false; k.style.left = stick.ox + 'px'; k.style.top = stick.oy + 'px';
+        moveStick(e.clientX, e.clientY);
       } else looks.set(e.pointerId, { x: e.clientX, y: e.clientY });
       try { area.setPointerCapture(e.pointerId); } catch (er) { }
     });
     area.addEventListener('pointermove', e => {
       if (e.pointerType === 'mouse') return;
-      if (e.pointerId === stick.id) {
-        let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy;
-        const l = Math.hypot(dx, dy), R = 46;
-        if (l > R) { dx = dx / l * R; dy = dy / l * R; }
-        stick.x = dx / R; stick.y = dy / R;
-        $('#knob').style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-        return;
-      }
+      if (e.pointerId === stick.id) { moveStick(e.clientX, e.clientY); return; }
       const L = looks.get(e.pointerId);
       if (L && G.me) {
         G.me.yaw -= (e.clientX - L.x) * 0.0065 * sens;
@@ -236,11 +250,15 @@
       }
     });
     const end = e => {
-      if (e.pointerId === stick.id) { stick.id = null; stick.x = stick.y = 0; $('#stick').hidden = true; }
+      if (e.pointerId === stick.id) resetStick();
       looks.delete(e.pointerId);
     };
     area.addEventListener('pointerup', end);
     area.addEventListener('pointercancel', end);
+    area.addEventListener('lostpointercapture', end);
+    // 指が離れた合図が届かなかったときも、歩きっぱなしにしない
+    window.addEventListener('blur', () => { resetStick(); looks.clear(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { resetStick(); looks.clear(); } });
     // 観戦中はタップで見る人を変える
     area.addEventListener('click', () => { if (G.me && G.players.get(G.me.pid) && !G.players.get(G.me.pid).alive) nextSpectate(); });
   }
@@ -415,7 +433,7 @@
     }
     // 痛いときは赤く
     if (G.hurtAt && G.t - G.hurtAt < 0.35) {
-      const a = 1 - (G.t - G.hurtAt) / 0.35;
+      const a = Math.max(0, Math.min(1, 1 - (G.t - G.hurtAt) / 0.35));
       const g = x.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
       g.addColorStop(0, 'rgba(255,40,30,0)'); g.addColorStop(1, `rgba(255,40,30,${0.45 * a})`);
       x.fillStyle = g; x.fillRect(0, 0, W, H);
@@ -498,6 +516,18 @@
     box.hidden = false;
   };
 
+  /**
+   * 結果を共有する。iPhone の共有メニューは url を渡すと文面を捨てて URL だけにするアプリが多いので、
+   * URL も文面（CG.share.text）の中に入れて text だけで渡す。共有メニューが無ければ X の投稿画面
+   */
+  async function shareResult(s) {
+    if (navigator.share) {
+      try { await navigator.share({ text: CG.share.text(s) }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    CG.share.x(s);
+  }
+
   /* ---------- ひとりで始める ---------- */
   function startSolo() {
     HM.sfx.unlock();
@@ -523,6 +553,7 @@
   function beginPlay(startFn) {
     show('play');
     $('#result').hidden = true; closePause();
+    resetStick(); looks.clear();
     $('#loading').hidden = false;
     // 地形を作る前に「準備中」を出す
     setTimeout(() => {
@@ -607,7 +638,7 @@
       drawLobbyExtra();
     };
     $('#resHome').onclick = () => { if (G.mode === 'multi') NET.leave(); G.stop(); $('#result').hidden = true; show('home'); };
-    $('#resShare').onclick = () => CG.share.open({ msg: $('#result').dataset.share, tags: ['ほりほりもぐもぐ'], url: CG.pageUrl() });
+    $('#resShare').onclick = () => shareResult({ msg: $('#result').dataset.share, tags: ['ほりほりもぐもぐ'], url: CG.pageUrl() });
     holdBtn('#btnMain', 'main'); holdBtn('#btnItem', 'item'); holdBtn('#btnJump', 'jump');
     $('#howBtn').onclick = () => { $('#how').hidden = !$('#how').hidden; };
     $('#histBtn').onclick = () => { $('#hist').hidden = !$('#hist').hidden; };
