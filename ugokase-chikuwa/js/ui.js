@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.1.1', '2026-10-27', '指示ピースをパズルのピースの形にした（となりのピースとはまる）。集荷がそろうと、ちくわ君がピース✌'],
     ['β0.1.0', '2026-10-27', '最初の試作版。ほんしゃ・指示書（BUILD／RUN／緊急停止・F1〜F3）・きかい・シフト・かんばん・れいぞうこ・福利厚生・拠点の追加'],
   ];
 
@@ -223,15 +224,15 @@
   function drawBuild() {
     const r = robot(); if (!r) return;
     const list = progList(r), max = bTab === 'main' ? UC.MAIN_MAX : UC.FUNC_MAX;
-    const pc = (k, i) => { const P = UC.PIECES[k]; return `<button class="piece" data-i="${i}" style="background:${P.col}">${i != null ? `<span class="no">${i + 1}</span>` : ''}${P.icon}<small>${P.name}</small></button>`; };
+    const pc = (k, i) => { const P = UC.PIECES[k]; return `<button class="piece" data-i="${i}" style="--c:${P.col}">${i != null ? `<span class="no">${i + 1}</span>` : ''}<span>${P.icon}</span><small>${P.name}</small></button>`; };
     const tabs = [['main', 'メイン'], ['0', 'F1'], ['1', 'F2'], ['2', 'F3']];
     $('#bWrap').innerHTML = `
       <div class="tabs">${tabs.map(([k, n]) => `<button data-t="${k}" class="${bTab === k ? 'on' : ''}">${n}${k !== 'main' && r.prog.f[+k].length ? '・' + r.prog.f[+k].length : ''}</button>`).join('')}</div>
       <div class="cnt">${bTab === 'main' ? 'メイン指示書（最後まで行くと最初にもどる）' : 'ファンクション ' + tabs.find(t => t[0] === bTab)[1] + '（メインから呼び出す）'}　${list.length}/${max}</div>
       <div class="prog" id="bProg">${list.length ? list.map((k, i) => pc(k, i)).join('') : '<span class="empty">下のピースをタップして並べよう</span>'}</div>
       <div class="edrow"><button id="bL">◀ 前へ</button><button id="bR">後ろへ ▶</button><button id="bDel">けす</button><button id="bClr">ぜんぶけす</button></div>
-      <div class="cnt">ピース（タップで${bSel >= 0 ? (bSel + 1) + '番のうしろに' : '最後に'}追加）</div>
-      <div class="palette" id="bPal">${Object.keys(UC.PIECES).filter(k => bTab === 'main' || !k.startsWith('f') || true).map(k => `<button class="piece" data-k="${k}" style="background:${UC.PIECES[k].col}">${UC.PIECES[k].icon}<small>${UC.PIECES[k].name}</small></button>`).join('')}</div>
+      <div class="cnt">✌ 指示ピース（タップで${bSel >= 0 ? (bSel + 1) + '番のうしろに' : '最後に'}追加）</div>
+      <div class="palette" id="bPal">${Object.keys(UC.PIECES).filter(k => bTab === 'main' || !k.startsWith('f') || true).map(k => `<button class="piece" data-k="${k}" style="--c:${UC.PIECES[k].col}"><span>${UC.PIECES[k].icon}</span><small>${UC.PIECES[k].name}</small><span class="pz">✌</span></button>`).join('')}</div>
       <div class="row" style="margin-top:14px"><button class="cbtn run" id="bRun">RUN してとじる</button></div>`;
     $('#bWrap').querySelectorAll('.tabs button').forEach(b => b.onclick = () => { bTab = b.dataset.t; bSel = -1; drawBuild(); });
     $('#bProg').querySelectorAll('.piece').forEach(b => b.onclick = () => { const i = +b.dataset.i; bSel = bSel === i ? -1 : i; drawBuild(); });
