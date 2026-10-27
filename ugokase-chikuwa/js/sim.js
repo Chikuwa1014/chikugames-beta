@@ -240,7 +240,7 @@
     const ok = take.length >= k.need;
     for (const r of G.robots) if (r.base === bi) {
       r.mp = clamp(r.mp + (ok ? CFG.okMental : CFG.ngMental), 0, 100);
-      bubble(G, r, ok ? '♪' : '💦', 40);
+      bubble(G, r, ok ? '✌' : '💦', 40);   // そろったらピース（平和）
     }
     b.log.unshift({ t: k.t, need: k.need, got: take.length, earn });
     b.log.length = Math.min(b.log.length, 20);

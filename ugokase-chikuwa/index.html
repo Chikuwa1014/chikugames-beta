@@ -106,15 +106,20 @@ table.kb .ok { color: var(--run); font-weight: 800; } table.kb .ng { color: var(
 .seg button.on { background: var(--chikuwa); color: #fff; }
 
 /* ---------- 指示書（BUILD） ---------- */
-.prog { display: flex; flex-wrap: wrap; gap: 6px; min-height: 64px; background: #F4ECDC; border-radius: 12px; padding: 8px; }
-.piece { position: relative; width: 52px; height: 52px; border-radius: 10px; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 19px; box-shadow: 0 3px 0 rgba(0,0,0,.25); line-height: 1; }
+.prog { display: flex; flex-wrap: wrap; gap: 8px 3px; min-height: 64px; background: #F4ECDC; border-radius: 12px; padding: 8px 8px 8px 12px; --hole: #F4ECDC; }
+/* 指示ピースはパズルのピース（と、ピース＝平和✌ のダブルミーニング）。右の出っぱりが、次のピースの左のへこみにはまる */
+.piece { position: relative; width: 52px; height: 52px; border-radius: 8px; color: #fff; background: var(--c); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 19px; box-shadow: 0 3px 0 rgba(0,0,0,.25); line-height: 1; margin-right: 6px; }
+.piece::before { content: ''; position: absolute; left: -8px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: var(--hole, #FFFDF7); z-index: 1; }
+.piece::after { content: ''; position: absolute; right: -7px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--c); z-index: 2; }
+.piece > * { position: relative; z-index: 3; }
 .piece small { font-size: 8.5px; margin-top: 3px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
-.piece .no { position: absolute; left: 3px; top: 2px; font-size: 9px; opacity: .8; }
+.piece .no { position: absolute; left: 7px; top: 2px; font-size: 9px; opacity: .8; }
+.piece .pz { position: absolute; right: 2px; bottom: 1px; font-size: 9px; opacity: .55; }
 .piece.sel { outline: 3px solid #3B2A1C; outline-offset: 1px; }
 .piece.now { box-shadow: 0 0 0 4px #FFE066, 0 3px 0 rgba(0,0,0,.25); }
 .prog .empty { color: var(--sub); font-size: 12.5px; align-self: center; padding: 0 6px; }
-.palette { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; justify-items: center; margin-top: 8px; }
-.palette .piece { width: 100%; max-width: 64px; }
+.palette { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px 10px; justify-items: center; margin-top: 8px; padding-left: 8px; --hole: #FFFDF7; }
+.palette .piece { width: 100%; max-width: 60px; margin-right: 0; }
 .edrow { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
 .edrow button { background: #EFE3CB; border-radius: 10px; padding: 6px 10px; font-weight: 800; font-size: 12.5px; }
 .cnt { font-size: 12px; color: var(--sub); margin: 4px 0; }

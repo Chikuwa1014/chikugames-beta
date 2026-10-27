@@ -2,7 +2,7 @@
 (function () {
   const UC = window.UC = window.UC || {};
 
-  UC.VERSION = 'β0.1.0';
+  UC.VERSION = 'β0.1.1';
   UC.KEY = 'ugokase-chikuwa-v1';
 
   /* 向き：0＝東（+x）・1＝南（+y）・2＝西（-x）・3＝北（-y） */
@@ -103,7 +103,7 @@
   UC.ROBOT_COST = [0, 1500, 4000];   // 2 台目・3 台目
   UC.ROBOT_MAX = 3;
 
-  /* 指示ピース */
+  /* 指示ピース（パズルのピースと、ピース＝平和✌ のダブルミーニング。開発者の指定） */
   UC.PIECES = {
     fwd: { name: '進む', icon: '⬆', col: '#3E8ED0' },
     left: { name: '左に向く', icon: '↶', col: '#6C63C9' },
