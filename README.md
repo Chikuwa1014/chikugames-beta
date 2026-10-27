@@ -12,7 +12,7 @@
 - `ikuiku-sumo/index.html`：いくいく！雲紅亭珍光〜すもう編〜のベータ（`/ikuiku-sumo/`。β0.3.3・限定公開（鍵付き））
 - `horimogu/index.html`：ほりほりもぐもぐのベータ（`/horimogu/`。β0.4.0・開発に公開）
 - `yasunyan-sanpo/`：やすにゃんこんにゃん！散歩チュウ（`β0.7.2`。開発に公開。仕様と引き継ぎは `CLAUDE.md`）
-- `ugokase-chikuwa/`：うごかせ！ちくわくん（`β0.6.0`。開発に公開。仕様と引き継ぎは `CLAUDE.md`）
+- `ugokase-chikuwa/`：うごかせ！ちくわくん（`β0.6.1`。開発に公開。仕様と引き継ぎは `CLAUDE.md`）
 - `hayaoshi-chikupon/`：早押し！ちくぽん！は 2026-10-24 に号口へ昇格。号口のページへ移動するだけのページを残している
 - `common/v1/`：共通部品（本番と同じ中身）
 - `worker/index.js`：マルチの仲介（本番と同じ `MultiRoom`）
