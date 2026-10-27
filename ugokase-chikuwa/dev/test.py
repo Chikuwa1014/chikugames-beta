@@ -47,7 +47,7 @@ def run(p, w, h, tag):
       b.coins['5,4'] = 10;
       const r = G.robots[0]; r.x = 1; r.y = 4; r.dir = 2;
       // 取り場（西）から持って、東へ進んでヤードに置き、もどる
-      r.prog.main = ['hold', 'back', 'fwd', 'hold', 'back', 'fwd'];
+      r.prog.main = ['loop:0', 'take', 'back', 'fwd', 'put', 'back', 'fwd', 'end'];
       G.time = 9 * 60 - 1;   // 1 日目 8:59
     }''')
     page.click('#btnRun')
@@ -66,7 +66,7 @@ def run(p, w, h, tag):
     shot(page, tag + '-05-build')
     page.click('#bPal .piece[data-k="fwd"]')
     n = page.evaluate('() => UCT.G.robots[0].prog.main.length')
-    check(n == 7, f'{tag}: ピースを追加できる')
+    check(n == 9, f'{tag}: ピースを追加できる')
     page.click('#mClose')
 
     # お店：コンベアを置く
@@ -120,6 +120,30 @@ def run(p, w, h, tag):
     print(tag, st)
     check(st['x'] == 6, f'{tag}: 「3歩進む」で 3 マスだけ進む')
     check(not st['run'], f'{tag}: 停止ピースで止まる')
+    # くり返し 3 回（入れ子）と、最後まで行ったら止まる
+    st = page.evaluate("""() => {
+      const G = UCT.G, r = G.robots[0];
+      UC.stop(G, r); r.x = 3; r.y = 2; r.dir = 0;
+      r.prog.main = ['loop:3', 'loop:2', 'right', 'end', 'end'];   // 右を向く×6 回＝1 周半＝西
+      UC.run(G, r);
+      for (let i = 0; i < 60; i++) UC.step(G, 0.25);
+      const bad = UC.loopPairs(['loop:2', 'end', 'end']).ok;
+      const out = { dir: r.dir, run: r.running, bad };
+      r.prog.main = ['fwd:3', 'stop'];
+      return out;
+    }""")
+    print(tag, st)
+    check(st['dir'] == 2, f'{tag}: 入れ子のくり返しが回数どおり')
+    check(not st['run'], f'{tag}: 指示書は最後まで行ったら止まる')
+    check(not st['bad'], f'{tag}: 1 対でないくり返しを見つける')
+    # 出荷ヤードの絵の上（マスより上）をタップしてもナビが出る
+    pos = page.evaluate("""() => { const b = UCT.G.bases[0], o = Object.values(b.objs).find(o => o.type === 'src'); return [o.x, o.y]; }""")
+    page.evaluate('() => UCT.clearNav()')
+    xy = page.evaluate(f"""() => UCT.screenOf({pos[0]} + 0.5, {pos[1]} + 0.5, 22)""")
+    page.mouse.click(xy[0], xy[1]); page.wait_for_timeout(200)
+    nv = page.evaluate('() => UCT.nav && UCT.nav.lines[0]')
+    check(bool(nv) and '取り場' in nv, f'{tag}: 取り場の絵をタップしてナビ（{nv}）')
+
     # BUILD：起動ピース・停止のうしろにつなげない・歩数のプルダウン
     page.click('#btnBuild'); page.wait_for_timeout(200)
     check(page.locator('#bProg .piece.start').count() == 1, f'{tag}: 指示書の左端に起動ピース')
@@ -133,7 +157,7 @@ def run(p, w, h, tag):
     shot(page, tag + '-13-build-steps')
     page.click('#mClose')
     # ナビ：取り場をタップ → ルートと吹き出し
-    nv = page.evaluate("""() => { const b = UCT.G.bases[0], o = Object.values(b.objs).find(o => o.type === 'src'); UCT.inspect(o.x, o.y); return UCT.nav; }""")
+    nv = page.evaluate("""() => { UCT.clearNav(); const b = UCT.G.bases[0], o = Object.values(b.objs).find(o => o.type === "src"); UCT.inspect(o.x, o.y); return UCT.nav; }""")
     check(nv is not None and len(nv['lines']) >= 2, f'{tag}: オブジェクトをタップすると最短ルートとナビ（{nv and nv["lines"]}）')
     page.wait_for_timeout(300)
     shot(page, tag + '-14-nav')

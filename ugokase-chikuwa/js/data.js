@@ -2,7 +2,7 @@
 (function () {
   const UC = window.UC = window.UC || {};
 
-  UC.VERSION = 'β0.2.0';
+  UC.VERSION = 'β0.3.0';
   UC.KEY = 'ugokase-chikuwa-v1';
 
   /* 向き：0＝東（+x）・1＝南（+y）・2＝西（-x）・3＝北（-y） */
@@ -109,9 +109,13 @@
     left: { name: '左に向く', icon: '↶', col: '#6C63C9' },
     right: { name: '右に向く', icon: '↷', col: '#6C63C9' },
     back: { name: 'うしろを向く', icon: '⟲', col: '#6C63C9' },
-    hold: { name: '持つ／置く', icon: '✋', col: '#D98A2B' },
+    hold: { name: '持つ／置く', icon: '✋', col: '#D98A2B', old: true },   // β0.2 までのピース（パレットには出さない）
+    take: { name: '持つ', icon: '✋', col: '#D98A2B' },
+    put: { name: '置く', icon: '📥', col: '#C07020' },
     work: { name: '作業する', icon: '🔨', col: '#4E9A51' },
     op: { name: '操作する', icon: '⏻', col: '#C94A4A' },
+    loop: { name: 'くり返し', icon: '🔁', col: '#B0567E' },     // 'loop:3'＝3 回、'loop:0'＝ずっと
+    end: { name: 'くり返しおわり', icon: '↩', col: '#B0567E' },
     stop: { name: '停止', icon: '■', col: '#3B3B3B' },   // 右にへこみがない＝いちばん最後にだけ置ける
     f1: { name: 'F1', icon: 'F1', col: '#7A7A7A' },
     f2: { name: 'F2', icon: 'F2', col: '#7A7A7A' },
@@ -119,10 +123,23 @@
   };
   UC.MAIN_MAX = 16;   // メイン指示書のピース数（仮）
   UC.FUNC_MAX = 8;    // ファンクションのピース数（仮）
+  UC.LOOP_MAX = 20;   // くり返しの回数の上限（0 は「ずっと」）
   UC.FWD_MAX = 20;    // 進むピースの歩数の上限（0 は「ぶつかるまで」）
   /* 指示書の 1 つのピースは文字列。進むは 'fwd'（ぶつかるまで）か 'fwd:3'（3 歩） */
   UC.pieceKey = pc => String(pc).split(':')[0];
   UC.pieceArg = pc => +(String(pc).split(':')[1] || 0);
+  /* くり返しの開始と終了の組（かならず 1 対。入れ子できる）。pair[開始]＝終了・pair[終了]＝開始、no[i]＝何組目か、ok＝ぜんぶ 1 対か */
+  UC.loopPairs = function (list) {
+    const st = [], pair = {}, no = {}, bad = {};
+    let n = 0, ok = true;
+    list.forEach((pc, i) => {
+      const k = UC.pieceKey(pc);
+      if (k === 'loop') { st.push(i); no[i] = ++n; }
+      if (k === 'end') { if (!st.length) { ok = false; bad[i] = 1; return; } const s = st.pop(); pair[s] = i; pair[i] = s; no[i] = no[s]; }
+    });
+    st.forEach(i => { ok = false; bad[i] = 1; });
+    return { pair, no, bad, ok };
+  };
 
   UC.WEEK = ['月', '火', '水', '木', '金', '土', '日'];
   UC.season = m => (m >= 3 && m <= 5) ? 'spring' : (m >= 6 && m <= 8) ? 'summer' : (m >= 9 && m <= 11) ? 'autumn' : 'winter';

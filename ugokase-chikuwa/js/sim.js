@@ -400,7 +400,7 @@
       const fr = r.stack[r.stack.length - 1];
       const list = fr.w === 'main' ? r.prog.main : r.prog.f[fr.w];
       if (fr.ip >= list.length) {
-        if (fr.w === 'main') { if (!list.length) return false; fr.ip = 0; r.act = { k: 'wait', left: CFG.callMin }; return true; }   // メインは最後まで行くとくり返す
+        if (fr.w === 'main') { UC.stop(G, r); if (list.length) { bubble(G, r, '✓'); emit('done', r); } return false; }   // メインは最後まで行ったら止まる（自動でくり返さない）
         r.stack.pop(); continue;
       }
       const pc = list[fr.ip++];
@@ -409,6 +409,17 @@
         const fi = +pc[1] - 1;
         if (r.stack.length >= 8 || !r.prog.f[fi].length) { bubble(G, r, '？'); r.act = { k: 'wait', left: CFG.bumpMin }; return true; }
         r.stack.push({ w: fi, ip: 0 });
+        r.act = { k: 'wait', left: CFG.callMin }; return true;
+      }
+      const pk = UC.pieceKey(pc);
+      if (pk === 'loop') {   // くり返し開始：回数を覚える（0＝ずっと）
+        (fr.loops = fr.loops || []).push({ i: fr.ip - 1, n: UC.pieceArg(pc) });
+        r.act = { k: 'wait', left: CFG.callMin }; return true;
+      }
+      if (pk === 'end') {    // くり返しおわり：回数が残っていれば開始のつぎへもどる
+        const lp = fr.loops && fr.loops[fr.loops.length - 1];
+        if (!lp) { bubble(G, r, '？'); r.act = { k: 'wait', left: CFG.bumpMin }; return true; }
+        if (lp.n === 0 || --lp.n > 0) fr.ip = lp.i + 1; else fr.loops.pop();
         r.act = { k: 'wait', left: CFG.callMin }; return true;
       }
       if (pc === 'stop') { UC.stop(G, r); bubble(G, r, '■'); emit('stopped', r); return false; }   // 停止：ここで指示書をおえる
@@ -424,7 +435,9 @@
       case 'left': r.dir = (r.dir + 3) % 4; return { k: 'wait', left: CFG.turnMin };
       case 'right': r.dir = (r.dir + 1) % 4; return { k: 'wait', left: CFG.turnMin };
       case 'back': r.dir = (r.dir + 2) % 4; return { k: 'wait', left: CFG.turnMin * 2 };
-      case 'hold': return { k: 'hold', left: CFG.holdMin };
+      case 'take': return { k: 'take', left: CFG.holdMin };
+      case 'put': return { k: 'put', left: CFG.holdMin };
+      case 'hold': return { k: r.hold ? 'put' : 'take', left: CFG.holdMin };   // β0.2 までの「持つ／置く」
       case 'work': {
         const o = front(G, r);
         if (o && o.type === 'pack' && o.item && !o.item.packed) { o.busy = true; return { k: 'work', left: CFG.workMin, o }; }
@@ -454,7 +467,8 @@
       r.act = { k: 'move', tx: nx, ty: ny, left: CFG.moveMin, total: CFG.moveMin, p: 0, steps: a.steps, n };
       return;
     }
-    if (a.k === 'hold') return doHold(G, r, b);
+    if (a.k === 'take') return doTake(G, r);
+    if (a.k === 'put') return doPut(G, r, b);
     if (a.k === 'work') { if (a.o && a.o.item) { a.o.item.packed = true; a.o.busy = false; emit('packed', r); } return; }
     if (a.k === 'op') {
       const o = front(G, r);
@@ -463,20 +477,22 @@
     }
   }
 
-  function doHold(G, r, b) {
+  /* 持つ：前のマス（取り場・コンベア・製品プール・梱包台）から製品を 1 つ持つ */
+  function doTake(G, r) {
     const o = front(G, r);
-    if (!o) return bubble(G, r, '？');
-    if (!r.hold) {
-      let p = null;
-      if (o.type === 'src' && o.stock.length) p = o.stock.shift();
-      else if (UC.BELTS.includes(o.type) && o.item) { p = o.item; o.item = null; o.prog = 0; }
-      else if (o.type === 'pool' && o.stock.length) p = o.stock.pop();
-      else if (o.type === 'pack' && o.item && !o.busy) { p = o.item; o.item = null; }
-      if (p) { r.hold = p; emit('take', r); } else bubble(G, r, '？');
-    } else {
-      if (o.type === 'src' || o.type === 'fridge' || o.type === 'pc') return bubble(G, r, '？');
-      if (accept(b, o, r.hold)) { r.hold = null; emit('put', r); } else bubble(G, r, '？');
-    }
+    if (!o || r.hold) return bubble(G, r, '？');
+    let p = null;
+    if (o.type === 'src' && o.stock.length) p = o.stock.shift();
+    else if (UC.BELTS.includes(o.type) && o.item) { p = o.item; o.item = null; o.prog = 0; }
+    else if (o.type === 'pool' && o.stock.length) p = o.stock.pop();
+    else if (o.type === 'pack' && o.item && !o.busy) { p = o.item; o.item = null; }
+    if (p) { r.hold = p; emit('take', r); } else bubble(G, r, '？');
+  }
+  /* 置く：持っている製品を前のマス（出荷ヤード・コンベア・製品プール・梱包台）に置く */
+  function doPut(G, r, b) {
+    const o = front(G, r);
+    if (!o || !r.hold || o.type === 'src' || o.type === 'fridge' || o.type === 'pc') return bubble(G, r, '？');
+    if (accept(b, o, r.hold)) { r.hold = null; emit('put', r); } else bubble(G, r, '？');
   }
 
   /* RUN・緊急停止 */
