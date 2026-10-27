@@ -4,10 +4,10 @@
    成人向けのゲームは adult: true を書く（トップの一覧に出さない）。
    限定公開にするカードは lock にパスワードの SHA-256（16進。例：printf 'pass' | sha256sum）を書く。
    限定公開のカードにも href は必ず書く（本番トップがパスワード欄と鍵の記録に href を使う。無いとエラーで Beta 欄が出なくなる）。
-   href は βの Worker（BETA）の絶対 URL。version は β 付き（ゲーム内の VERSION とそろえる）。
+   href は βの公開アドレス（BETA。独自ドメイン beta-games.chikuwa-hookah.com）の絶対 URL。version は β 付き（ゲーム内の VERSION とそろえる）。
    正式版にするときは、本番リポジトリに同じ名前のフォルダと card.js（beta なし）を作り、ここから消す */
 (() => {
-const BETA = 'https://chikuwagames-beta.chikuwa-hookah.workers.dev';
+const BETA = 'https://beta-games.chikuwa-hookah.com';
 const add = g => (window.CHIKUWA_GAMES = window.CHIKUWA_GAMES || []).push(Object.assign({ beta: true }, g));
 
 add({
