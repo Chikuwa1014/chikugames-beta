@@ -1,4 +1,4 @@
-# ちくわゲームズ β（chikugames-beta）
+# ちくわゲームズβ（chikugames-beta）
 
 **このリポジトリのルールは、号口リポジトリ `Chikuwa1014/chikugames` の `CLAUDE.md` に準拠する。**
 公開のルール（環境・push・公開の種類・試作環境・テスト）は、号口の `CLAUDE.md` の 3 章と 11 章・12 章を読む。ここには β版だけの事実を書く。
