@@ -317,6 +317,9 @@
   /* ---------- モーションセンサーで見回す ----------
      端末を回した速さ（devicemotion の rotationRate、度/秒）を、そのまま向きの変化に足す。
      スワイプの見回しもそのまま使える。iPhone は押したときに許可を聞く（requestPermission） */
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  /** 止まっているときの小さなゆれ（手ぶれ）を消す。しきい値より上は、なめらかにつなぐ */
+  const dead = (v, d) => Math.abs(v) <= d ? 0 : v - Math.sign(v) * d;
   const gyro = { on: CG.ls.get(KEY_GYRO, '0') === '1', ok: false, last: 0 };
   const gyroLabel = () => '📱 傾けて見回す：' + (gyro.on ? 'オン' : 'オフ');
   async function gyroAsk() {
@@ -345,9 +348,14 @@
     gyro.last = t;
     if (!gyro.on || !r || !G.running || G.over || !G.me || !$('#pause').hidden) return;
     const a = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    const rb = r.beta || 0, rg = r.gamma || 0, k = Math.PI / 180 * dt * sens;
-    // 画面の向きに合わせて、左右に回す軸・上下に傾ける軸を選ぶ
-    const [yr, pr] = a === 90 ? [rb, -rg] : (a === 270 || a === -90) ? [-rb, rg] : a === 180 ? [-rg, -rb] : [rg, rb];
+    // 端末の軸ごとの回る速さ（x＝画面の横の軸、y＝画面の縦の軸）。
+    // iPhone の Safari は名前が仕様とずれていて、alpha が x、beta が y（2026-10-27 キャリブレーションで確認）。
+    // 仕様どおり（Android など）は beta が x、gamma が y
+    const T2 = T.gyro;
+    const ax = IOS ? r.alpha : r.beta, ay = IOS ? r.beta : r.gamma;
+    const x = dead(ax || 0, T2.dead), y = dead(ay || 0, T2.dead), k = Math.PI / 180 * dt * sens * T2.gain;
+    // 画面の向きに合わせて、左右に回す軸・上下に傾ける軸を選ぶ（縦持ち：右を向くと y が −、上を見ると x が ＋）
+    const [yr, pr] = a === 90 ? [x, -y] : (a === 270 || a === -90) ? [-x, y] : a === 180 ? [-y, -x] : [y, x];
     G.me.yaw += yr * k;
     G.me.pitch = clampPitch(G.me.pitch + pr * k);
   });
