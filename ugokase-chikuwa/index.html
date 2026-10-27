@@ -66,7 +66,12 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 #hud div { background: rgba(30,40,36,.72); color: #FFF8EA; border-radius: 8px; padding: 4px 8px; font-size: 11.5px; line-height: 1.45; }
 #placeBar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); background: rgba(30,40,36,.88); color: #fff; border-radius: 12px; padding: 6px 8px 6px 12px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; white-space: nowrap; max-width: calc(100% - 56px); }
 #placeTx { overflow: hidden; text-overflow: ellipsis; }
-#placeBar button:disabled { opacity: .45; }
+#placeBar button:disabled, #editBar button:disabled { opacity: .45; }
+#editBar { position: absolute; left: 8px; right: 50px; bottom: 8px; background: rgba(30,40,36,.9); color: #fff; border-radius: 12px; padding: 6px 8px; font-size: 12.5px; }
+#editBar .eb { display: flex; gap: 6px; margin-top: 5px; }
+#editBar button { flex: 1; background: #fff; color: var(--ink); border-radius: 8px; padding: 5px 4px; font-weight: 800; font-size: 12.5px; white-space: nowrap; }
+#editBar button.on { background: #FFE066; }
+#zoom button.on { background: #FFE066; }
 #placeBar button { background: #fff; color: var(--ink); border-radius: 8px; padding: 4px 10px; font-weight: 800; }
 #zoom { position: absolute; right: 6px; bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
 #zoom button { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,248,234,.9); font-size: 18px; font-weight: 800; }
@@ -184,8 +189,9 @@ body.mopen #toastBox { top: 12px; bottom: auto; }
   <div id="viewWrap">
     <canvas id="view"></canvas>
     <div id="hud"><div id="hudL"></div><div id="hudR"></div></div>
-    <div id="placeBar" class="hide"><span id="placeTx"></span><button id="placeUndo">↶ 取り消し</button><button id="placeEnd">おわる</button></div>
-    <div id="zoom"><button id="zin">＋</button><button id="zout">－</button></div>
+    <div id="placeBar" class="hide"><span id="placeTx"></span><button id="placeRot">↻</button><button id="placeUndo">↶ 取り消し</button><button id="placeEnd">おわる</button></div>
+    <div id="editBar" class="hide"><span id="editTx"></span><div class="eb"><button id="edRot">↻ 90°</button><button id="edMove">✥ 移動</button><button id="edDel">🗑 撤去</button><button id="edEnd">おわる</button></div></div>
+    <div id="zoom"><button id="btnEdit" title="きかいの移動・撤去・向き">🔧</button><button id="zin">＋</button><button id="zout">－</button></div>
   </div>
   <div id="ctrl">
     <div class="row">

@@ -186,6 +186,22 @@ def run(p, w, h, tag):
     st = page.evaluate("() => ({ gone: !UCT.G.bases[1].objs['40,25'], coin: UCT.G.coin })")
     check(st['gone'] and st['coin'] == c0 + 30, f'{tag}: 取り消しで最後に置いたきかいがもどり、恋ンももどる')
     shot(page, tag + '-15-place')
+    # 配置がえ：選ぶ → 90°回す → 移動 → 撤去
+    page.click('#placeEnd'); page.click('#btnEdit'); page.wait_for_timeout(100)
+    xy = page.evaluate("() => UCT.screenOf(20 + 0.5, 10 + 0.5)")
+    page.mouse.click(*xy); page.wait_for_timeout(100)
+    d0 = page.evaluate("() => UCT.G.bases[1].objs['20,10'].dir")
+    page.click('#edRot'); page.wait_for_timeout(50)
+    d1 = page.evaluate("() => UCT.G.bases[1].objs['20,10'].dir")
+    check(d1 == (d0 + 1) % 4, f'{tag}: 配置がえで 90° 回せる')
+    page.click('#edMove'); xy = page.evaluate("() => UCT.screenOf(22 + 0.5, 12 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(100)
+    st = page.evaluate("() => ({ old: !!UCT.G.bases[1].objs['20,10'], now: !!UCT.G.bases[1].objs['22,12'] })")
+    check(not st['old'] and st['now'], f'{tag}: 配置がえで移動できる')
+    shot(page, tag + '-16-edit')
+    c0 = page.evaluate('() => UCT.G.coin'); page.click('#edDel'); page.wait_for_timeout(100)
+    st = page.evaluate("() => ({ gone: !UCT.G.bases[1].objs['22,12'], coin: UCT.G.coin })")
+    check(st['gone'] and st['coin'] == c0 + 15, f'{tag}: 配置がえで撤去できる（半額もどる）')
+    page.click('#edEnd')
     b.close()
 
 
