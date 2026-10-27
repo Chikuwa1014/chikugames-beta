@@ -456,26 +456,39 @@
     if (document.exitPointerLock) document.exitPointerLock();
     const box = $('#result');
     let title, sub, share;
+    const size = T.sizes.find(s => s.key === (G.sizeKey || 'grande')) || T.sizes[T.sizes.length - 1];
+    const head = `ほりほりもぐもぐ【${size.name}のお豆腐】`;
+    const mine = G.players.get(G.me.pid);
     if (G.mode === 'solo') {
-      const killed = G.bots.filter(b => !b.alive).length;
+      const killed = G.bots.filter(b => !b.alive);
       if (ev.win) {
         const best = soloBest(ev.left);
         title = '全滅させた！';
         sub = `のこり時間 ${ev.left} 秒${best ? '（自己ベスト！）' : ''}`;
         HM.sfx.win();
-        share = `ほりほりもぐもぐで、おでん横丁のボス${G.bots.length}体を全滅させた！ のこり${ev.left}秒`;
+        share = `${head}\nお豆腐をほりほり掘りすすんで、おでん横丁のボス${G.bots.length}体を全滅させた！🥢\n`
+          + `のこり${ev.left}秒${best ? '（自己ベスト更新！）' : ''}・体力 ${Math.max(0, Math.round(mine ? mine.hp : 0))}/${T.player.hp} で生還\n`
+          + 'キミはボスを見つけだせる？';
       } else {
         title = ev.why === 'time' ? '時間切れ…' : ev.why === 'pot' ? 'おでん鍋に沈んだ…' : 'やられた…';
-        sub = `たおしたボス ${killed} / ${G.bots.length}`;
-        share = `ほりほりもぐもぐで、ボスを${killed}体たおした！`;
+        sub = `たおしたボス ${killed.length} / ${G.bots.length}`;
+        const why = ev.why === 'time' ? '時間切れで、ボスを見つけきれなかった…⏰' : ev.why === 'pot' ? '床を掘り抜いて、奈落のおでん鍋に沈んだ…🍢' : 'おでん横丁のボスにやられた…💥';
+        const names = killed.map(b => T.bosses[b.key].name).join('・');
+        share = `${head}\n${why}\n`
+          + `たおしたボス ${killed.length}/${G.bots.length}${names ? `（${names}）` : ''}\n`
+          + 'つぎこそ全滅させる！';
       }
     } else {
       const w = ev.winner && G.players.get(ev.winner);
-      const iWin = ev.winner === G.me.pid;
+      const iWin = ev.winner === G.me.pid, n = G.players.size;
       title = iWin ? '勝った！' : w ? w.name + ' の勝ち！' : '引き分け';
       sub = iWin ? 'さいごまで残ったちくわ君！' : '';
       if (iWin) HM.sfx.win();
-      share = w ? `ほりほりもぐもぐのバトルで ${w.name} が勝った！` : 'ほりほりもぐもぐでバトルした！';
+      const myLine = iWin ? `${n}人のちくわ君の中で、さいごまで残って優勝！🏆`
+        : mine && mine.rank ? `わたしは${n}人中 ${mine.rank}位${mine.why === 'pot' ? '（おでん鍋に沈んだ…）' : mine.why === 'left' ? '（とちゅうでぬけた）' : '（やられた…）'}`
+        : `${n}人で掘りあった！`;
+      share = `${head}\n${n}人で地中バトル！${iWin ? '' : w ? `勝ったのは ${w.name}！` : '引き分け！'}\n${myLine}\n`
+        + 'いっしょに掘りあおう！';
     }
     $('#resTitle').textContent = title;
     $('#resSub').textContent = sub;
