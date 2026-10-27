@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.6.0', '2026-10-27', '製造ラインに接続：取り場のとなりにコンベアを置くと、つなぐか聞く。つなぐと製品が自動でコンベアへ流れる'],
     ['β0.5.0', '2026-10-27', '拠点のレベル（累計集荷数で1〜8。取り場・出荷ヤードが増え、レベル5からヤードに製品指定）。拠点の大きさ別の上限。場合わけピース（開始・おわりの1対、条件はプルダウン）'],
     ['β0.4.1', '2026-10-27', '「お店」の表記を「コンサル」に変えた'],
     ['β0.4.0', '2026-10-27', '🔧 配置がえモード：置いたきかいを選んで、90°回す・移動・撤去。置くときも「↻ 向き」で向きを決めてから置ける'],
@@ -128,6 +129,7 @@
       <p><b>目的：</b>製造ラインの終点（<b>取り場</b>・オレンジの機械）に出てくる製品を、ちくわ君に<b>出荷ヤード</b>（黄色のしまのパレット）まで運ばせよう。<b>かんばん</b>の時刻に個数がそろっていれば売上の恋ンが入り、ちくわ君の精神力（自己肯定感）が回復する。足りないと精神力がへる。</p>
       <p><b>指示書：</b>「BUILD」で指示ピースを並べ、「RUN」で実行。指示書は最後まで行くと止まる（くり返したいところは、くり返しピースではさむ）。「緊急停止」でとまる。</p>
       <div class="note">⬆ 進む：ものに当たるまで進む ／ ↶↷⟲ 向きをかえる ／ ✋ 持つ：前の取り場などから製品を持つ ／ 📥 置く：前の出荷ヤードなどに置く ／ 🔁 くり返し〜↩ おわり：はさんだピースをくり返す（かならず1対・入れ子もできる） ／ ❓ 場合わけ〜❗ おわり：条件（プルダウン）に合うときだけ、はさんだピースを実行 ／ ■ 停止 ／ 🔨 作業する：前の梱包台で梱包 ／ ⏻ 操作する：前のきかいのスイッチ ／ F1〜F3：ファンクションを呼ぶ</div>
+      <p><b>製造ライン：</b>取り場のとなり（ななめもOK）にコンベアを置くと「製造ラインに接続」できる。つなぐと、取り場の製品が自動でコンベアへ流れていく。</p>
       <p><b>恋ン：</b>ちくわ君が工場を歩くと、落ちている恋ン（金色の♥）を拾って社長のポケットマネーにできる。コンサルで、きかい・福利厚生・ちくわ君の能力アップ・拠点・ちくわ君の増設に使える。</p>
       <p><b>時間：</b>1ヶ月は7日、1年は12ヶ月。ちくわ君はシフトの時間だけ働き、勤務のまん中で休けい（1時間＋15分）。休けいは自動で<b>れいぞうこ</b>へ入って体力・精神力が回復する。だれも勤務していないあいだは自動で早送り。</p>
       <p><b>拠点のレベル：</b>その拠点の累計集荷数でレベルが上がり、取り場と出荷ヤードが増える。レベル5からはヤードに製品指定がつき、その製品しか置けない（場合わけピースやふりわけそうちで分けよう）。拠点の大きさでレベルの上限がある（S：5・M：6・L：8）。</p>
@@ -261,7 +263,8 @@
       if (!UC.canPlace(G, curBase, x, y)) { toast('そこにはうつせません'); return; }
       delete b.objs[UC.key(s.x, s.y)]; s.x = x; s.y = y; b.objs[UC.key(x, y)] = s; delete b.coins[UC.key(x, y)];
       edit.moving = false; flash = { x, y, until: performance.now() + 500 };
-      Snd.put(); UC.save(G); refreshCtrl(); return;
+      if (s.feed) s.feed = null;   // 動かしたら製造ラインからはずれる
+      Snd.put(); UC.save(G); refreshCtrl(); askLine(b, s); return;
     }
     // 取り場・出荷ヤード・れいぞうこ・コンピュータは動かせない
     edit.sel = o && UC.MACHINES[o.type] ? o : null;
@@ -538,6 +541,9 @@
     if (o.type === 'pc') h += '<p>集荷の予定（かんばん）を受け取ります。</p>';
     if (UC.MACHINES[o.type]) h += `<p>${UC.MACHINES[o.type].desc}</p>`;
     if (UC.BELTS.includes(o.type) || o.type === 'pack') h += `<p>のっている製品：${pname(o.item)}</p>`;
+    const lsrc = UC.BELTS.includes(o.type) && UC.srcNear(b, o.x, o.y), lon = !!UC.feedOf(b, o);
+    if (lsrc) h += `<div class="item"><div class="tx"><b>製造ライン</b><small>${lon ? objName(UC.feedOf(b, o)) + 'に接続中。製品が自動で流れてきます' : '接続していません'}</small></div><button id="iLine">${lon ? 'はずす' : '接続する'}</button></div>`;
+    if (o.type === 'src') { const n = Object.values(b.objs).filter(v => UC.feedOf(b, v) === o).length; if (n) h += `<p>製造ラインに接続したコンベア：${n}本。製品は自動でコンベアへ流れます。</p>`; }
     if (o.type === 'pool') h += `<p>製品 ${o.stock.length}/${UC.poolCap(b)}個</p>`;
     if ('on' in o) h += `<p>スイッチ：<b>${o.on ? 'オン' : 'オフ'}</b>（ちくわ君の「操作する」で切りかえ）</p>`;
     if (o.type === 'sorter') h += `<div class="cnt">左へよける製品</div><div class="seg">${UC.PRODUCTS.map((p, i) => `<button data-tg="${i}" class="${o.target === i ? 'on' : ''}">${p.name}</button>`).join('')}</div>`;
@@ -547,6 +553,7 @@
     const body = $('#mBody');
     body.querySelectorAll('button[data-tg]').forEach(x => x.onclick = () => { o.target = +x.dataset.tg; Snd.click(); inspect(x0, y0); });
     const x0 = x, y0 = y;
+    if (lsrc) $('#iLine').onclick = () => { o.feed = lon ? null : UC.key(lsrc.x, lsrc.y); Snd.click(); UC.save(G); closeModal(); toast(lon ? '製造ラインからはずしました' : '製造ラインに接続しました'); };
     if (movable) {
       $('#iRot').onclick = () => { o.dir = (o.dir + 1) % 4; lastDir = o.dir; Snd.click(); };
       $('#iDel').onclick = () => {
@@ -568,6 +575,17 @@
     delete b.coins[UC.key(x, y)];
     Snd.put(); CG.debug.add('place', { m: placing, x, y });
     UC.save(G); refreshTop();
+    askLine(b, o);
+  }
+  /* 取り場のまわり 1 マスにコンベアを置いたら、製造ラインにつなぐか聞く */
+  function askLine(b, o) {
+    if (!UC.BELTS.includes(o.type)) return;
+    const s = UC.srcNear(b, o.x, o.y);
+    if (!s) return;
+    openModal('製造ラインに接続', `<p>${objName(s)}のとなりにコンベアを置きました。製造ラインに接続すると、取り場の製品が自動でこのコンベアへ流れていきます。</p>
+      <div class="edrow" style="margin-top:12px"><button id="lnYes" class="pbtn">する</button><button id="lnNo">しない</button></div>`);
+    $('#lnYes').onclick = () => { o.feed = UC.key(s.x, s.y); Snd.put(); UC.save(G); closeModal(); toast('製造ラインに接続しました'); };
+    $('#lnNo').onclick = () => { o.feed = null; Snd.click(); UC.save(G); closeModal(); };
   }
   let lastDir = 0, flash = null;
   const ARROW = ['↘', '↙', '↖', '↗'];   // 向き（東・南・西・北）が画面でどちらを向くか
@@ -814,6 +832,7 @@
       else if (o.type === 'tee') { UC.drawArrow(ctx, o.x, o.y, (o.dir + 1) % 4, o.dir, col); UC.drawArrow(ctx, o.x, o.y, (o.dir + 3) % 4, o.dir, col, t * 0.5); }
       else UC.drawArrow(ctx, o.x, o.y, null, o.dir, col, t * 0.5);
       if (o.type === 'sorter') { const [sx, sy] = UC.iso(o.x + 0.5, o.y + 0.5); label(sx, sy - 16, UC.PRODUCTS[o.target].name, 'rgba(30,40,36,.7)'); }
+      else if (UC.feedOf(b, o)) { const [sx, sy] = UC.iso(o.x + 0.5, o.y + 0.5); label(sx, sy - 16, 'ライン', '#C2551A'); }
       if (o.item) {
         const d = UC.outDir(o), p = Math.min(1, o.prog) - 0.5;
         UC.drawModel(ctx, UC.productModel(o.item), 0, o.x + DX[d] * p * 0.8, o.y + DY[d] * p * 0.8, 2, 2, 7);
@@ -863,7 +882,7 @@
   window.addEventListener('pagehide', () => { if (G) UC.save(G); });
 
   /* テスト用（dev/test.py から使う） */
-  window.UCT = { get edit() { return edit; }, get nav() { return nav; }, clearNav() { nav = null; },
+  window.UCT = { get edit() { return edit; }, setDir(d) { lastDir = d; }, get nav() { return nav; }, clearNav() { nav = null; },
     /* マスの中の点を、ページの上の座標に（lift は上へずらす px） */
     screenOf(x, y, lift = 0) { const c = cam(), [wx, wy] = UC.iso(x, y), rc = cv.getBoundingClientRect(); return [rc.left + (wx - c.x) * c.z + VW / 2, rc.top + (wy - lift - c.y) * c.z + VH / 2]; }, get G() { return G; }, set G(v) { G = v; }, startGame, setSpeed: s => { speed = s; }, inspect, robot, get curBase() { return curBase; } };
 
