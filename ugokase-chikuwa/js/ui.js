@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.4.0', '2026-10-27', '🔧 配置がえモード：置いたきかいを選んで、90°回す・移動・撤去。置くときも「↻ 向き」で向きを決めてから置ける'],
     ['β0.3.1', '2026-10-27', 'きかいを置くとき、タップした場所とずれて置かれることがあるのを直した。置いたきかいを1つずつもどせる「取り消し」を足した'],
     ['β0.3.0', '2026-10-27', '「持つ」と「置く」を別のピースに。指示書は最後まで行くと止まる（自動でくり返さない）。くり返しピース（開始・おわりの1対、入れ子OK、回数はプルダウン）。取り場・出荷ヤードなど背の高いものも、絵をタップすればナビが出る'],
     ['β0.2.0', '2026-10-27', '指示書の左端に「起動」ピース。「停止」ピース（最後にだけ置ける）。進むピースを指示書でタップして歩数を決められる。オブジェクトをタップすると、選んでいるちくわ君からの最短ルートとナビを表示'],
@@ -176,6 +177,15 @@
     $('#btnFridge').classList.toggle('hot', !!canF);
     $('#placeBar').classList.toggle('hide', !placing);
     if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}（${UC.MACHINES[placing].cost}恋ン）をタップで置く`;
+    $('#placeRot').textContent = '↻ 向き ' + ARROW[lastDir];
+    $('#editBar').classList.toggle('hide', !edit);
+    $('#btnEdit').classList.toggle('on', !!edit);
+    if (edit) {
+      const o = edit.sel;
+      $('#editTx').textContent = !o ? '🔧 動かしたいきかいをタップ' : edit.moving ? `${UC.MACHINES[o.type].name}：うつす先のマスをタップ` : `${UC.MACHINES[o.type].name}（向き ${ARROW[o.dir]}）`;
+      ['#edRot', '#edMove', '#edDel'].forEach(k => $(k).disabled = !o);
+      $('#edMove').classList.toggle('on', !!edit.moving);
+    }
     $('#placeUndo').disabled = !placedLog.length;
   }
   function refreshHud() {
@@ -218,6 +228,36 @@
   $('#btnKanban').onclick = () => openKanban();
   $('#btnSet').onclick = () => openSettings();
   $('#placeEnd').onclick = () => { placing = null; placedLog.length = 0; refreshCtrl(); };
+  $('#placeRot').onclick = () => { lastDir = (lastDir + 1) % 4; Snd.click(); refreshCtrl(); };
+
+  /* ---------- 配置がえモード（置いたきかいの移動・撤去・90°回転） ---------- */
+  let edit = null;   // { sel: 選んだきかい, moving: うつす先を待っている }
+  $('#btnEdit').onclick = () => { edit = edit ? null : { sel: null, moving: false }; placing = null; nav = null; Snd.click(); refreshCtrl(); };
+  $('#edEnd').onclick = () => { edit = null; refreshCtrl(); };
+  $('#edRot').onclick = () => { const o = edit && edit.sel; if (!o) return; o.dir = (o.dir + 1) % 4; lastDir = o.dir; Snd.click(); UC.save(G); refreshCtrl(); };
+  $('#edMove').onclick = () => { if (edit && edit.sel) { edit.moving = !edit.moving; Snd.click(); refreshCtrl(); } };
+  $('#edDel').onclick = () => {
+    const o = edit && edit.sel; if (!o) return;
+    if (o.item || (o.stock && o.stock.length)) { toast('製品がのっているので撤去できません'); return; }
+    const b = G.bases[curBase], back = Math.floor(UC.MACHINES[o.type].cost / 2);
+    delete b.objs[UC.key(o.x, o.y)]; G.coin += back; edit.sel = null; edit.moving = false;
+    Snd.put(); toast(`撤去しました（${back}恋ン もどった）`); UC.save(G); refreshTop(); refreshCtrl();
+  };
+  function editTap(x, y) {
+    const b = G.bases[curBase], o = b.objs[UC.key(x, y)];
+    if (edit.moving && edit.sel) {
+      const s = edit.sel;
+      if (o === s) { edit.moving = false; refreshCtrl(); return; }
+      if (!UC.canPlace(G, curBase, x, y)) { toast('そこにはうつせません'); return; }
+      delete b.objs[UC.key(s.x, s.y)]; s.x = x; s.y = y; b.objs[UC.key(x, y)] = s; delete b.coins[UC.key(x, y)];
+      edit.moving = false; flash = { x, y, until: performance.now() + 500 };
+      Snd.put(); UC.save(G); refreshCtrl(); return;
+    }
+    // 取り場・出荷ヤード・れいぞうこ・コンピュータは動かせない
+    edit.sel = o && UC.MACHINES[o.type] ? o : null;
+    if (o && !edit.sel) toast('これは動かせません');
+    Snd.click(); refreshCtrl();
+  }
   /* 取り消し：置いたきかいを新しい順に 1 つずつもどす（払った恋ンは全部もどる。製品がのっているものはもどせない） */
   const placedLog = [];
   $('#placeUndo').onclick = () => {
@@ -355,7 +395,7 @@
     const [k, v] = a.split(':'), b = G.bases[curBase], r = robot();
     const pay = c => { if (G.coin < c) { toast('恋ンが足りません'); return false; } G.coin -= c; Snd.coin(); return true; };
     CG.debug.add('buy', { a });
-    if (k === 'place') { placing = v; closeModal(); refreshCtrl(); return; }
+    if (k === 'place') { placing = v; edit = null; closeModal(); refreshCtrl(); return; }
     if (k === 'upg') { const c = UC.UPG[v].costs[b.upg[v]]; if (c != null && pay(c)) b.upg[v]++; }
     if (k === 'abil') { const c = UC.ABIL[v].costs[G.abil[v]]; if (c != null && pay(c)) G.abil[v]++; }
     if (k === 'care' && r) {
@@ -504,6 +544,8 @@
     UC.save(G); refreshTop();
   }
   let lastDir = 0, flash = null;
+  const ARROW = ['↘', '↙', '↖', '↗'];   // 向き（東・南・西・北）が画面でどちらを向くか
+
 
   /* ---------- 設定 ---------- */
   function openSettings() {
@@ -586,9 +628,9 @@
   const up = e => {
     if (ptrs.has(e.pointerId) && ptrs.size === 1 && !moved && G) {
       const [x, y] = toTile(...ptOf(e)), b = G.bases[curBase];
-      const hit = placing ? null : pickSprite(...ptOf(e));
-      if (hit) inspect(hit[0], hit[1]);
-      else if (x >= 0 && y >= 0 && x < b.w && y < b.h) { if (placing) placeAt(x, y); else inspect(x, y); }
+      const hit = placing || (edit && edit.moving) ? null : pickSprite(...ptOf(e));
+      const [hx, hy] = hit || [x, y];
+      if (hx >= 0 && hy >= 0 && hx < b.w && hy < b.h) { if (edit) editTap(hx, hy); else if (placing) placeAt(hx, hy); else inspect(hx, hy); }
     }
     ptrs.delete(e.pointerId);
     if (ptrs.size < 2) pinch = null;
@@ -645,6 +687,15 @@
         ctx.fillStyle = ok ? 'rgba(80,200,120,.45)' : 'rgba(220,70,60,.45)';
         ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([a, d], n) => { const p = UC.iso(hx + a, hy + d); n ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.fill();
       }
+    }
+    // 配置がえ：選んだきかいの枠と、うつす先
+    if (edit && edit.sel && b.objs[UC.key(edit.sel.x, edit.sel.y)] === edit.sel) {
+      ctx.strokeStyle = '#FFE066'; ctx.lineWidth = 2.5; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([a, d], n) => { const p = UC.iso(edit.sel.x + a, edit.sel.y + d); n ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+    }
+    if (edit && edit.moving && hover) {
+      const [hx, hy] = hover, ok = UC.canPlace(G, curBase, hx, hy);
+      if (hx >= 0 && hy >= 0 && hx < b.w && hy < b.h) { ctx.fillStyle = ok ? 'rgba(80,200,120,.45)' : 'rgba(220,70,60,.45)'; ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([a, d], n) => { const p = UC.iso(hx + a, hy + d); n ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.fill(); }
     }
     if (flash && performance.now() < flash.until) {
       ctx.fillStyle = 'rgba(255,224,102,.6)';
@@ -785,7 +836,7 @@
   window.addEventListener('pagehide', () => { if (G) UC.save(G); });
 
   /* テスト用（dev/test.py から使う） */
-  window.UCT = { get nav() { return nav; }, clearNav() { nav = null; },
+  window.UCT = { get edit() { return edit; }, get nav() { return nav; }, clearNav() { nav = null; },
     /* マスの中の点を、ページの上の座標に（lift は上へずらす px） */
     screenOf(x, y, lift = 0) { const c = cam(), [wx, wy] = UC.iso(x, y), rc = cv.getBoundingClientRect(); return [rc.left + (wx - c.x) * c.z + VW / 2, rc.top + (wy - lift - c.y) * c.z + VH / 2]; }, get G() { return G; }, set G(v) { G = v; }, startGame, setSpeed: s => { speed = s; }, inspect, robot, get curBase() { return curBase; } };
 
