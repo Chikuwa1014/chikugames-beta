@@ -2,7 +2,7 @@
    ちくわ君の大きさを 1 とする。地形の 1 マスも 1。 */
 const HM = window.HM = window.HM || {};
 
-HM.VERSION = 'β0.3.1';
+HM.VERSION = 'β0.3.2';
 HM.GAME = 'horimogu';
 
 HM.T = {
