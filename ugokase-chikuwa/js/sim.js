@@ -96,6 +96,21 @@
     return o;
   }
   UC.put = put;
+  /* 製造ラインに接続：取り場のまわり 1 マス（ななめもふくむ）のコンベアに、取り場の製品が自動で流れる。
+     コンベアの feed に取り場のマス（"x,y"）を持つ。コンベアを動かしたら、つなぎ直すまで切れる */
+  UC.srcNear = (b, x, y) => spots(b, 'src').find(s => Math.max(Math.abs(s.x - x), Math.abs(s.y - y)) === 1) || null;
+  UC.feedOf = (b, o) => {
+    const s = o && o.feed ? b.objs[o.feed] : null;
+    return s && s.type === 'src' && Math.max(Math.abs(s.x - o.x), Math.abs(s.y - o.y)) === 1 ? s : null;
+  };
+  function stepFeed(b) {
+    for (const o of Object.values(b.objs)) {
+      if (!o.feed || !UC.BELTS.includes(o.type) || o.item) continue;
+      const s = UC.feedOf(b, o);
+      if (!s) { o.feed = null; continue; }
+      if (s.stock.length) { o.item = s.stock.shift(); o.prog = 0; }
+    }
+  }
 
   function newRobot(id, base, x, y) {
     return {
@@ -236,6 +251,7 @@
         }
         b.coinT += dt;
         while (b.coinT >= CFG.coinEvery) { b.coinT -= CFG.coinEvery; if (Math.random() < 0.7) dropCoin(b, c.mi); }
+        stepFeed(b);
         stepBelts(b, dt);
       }
       // かんばん（集荷）

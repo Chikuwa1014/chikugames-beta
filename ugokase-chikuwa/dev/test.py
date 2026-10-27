@@ -26,7 +26,7 @@ def run(p, w, h, tag):
     b = p.chromium.launch(executable_path=exe) if os.path.exists(exe) else p.chromium.launch()
     page = b.new_page(viewport={'width': w, 'height': h}, device_scale_factor=2)
     page.on('pageerror', lambda e: errors.append(f'{tag} pageerror: {e}'))
-    page.on('console', lambda m: m.type == 'error' and 'ERR_TUNNEL' not in m.text and 'fonts' not in m.text and errors.append(f'{tag} console: {m.text}'))
+    page.on('console', lambda m: m.type == 'error' and 'ERR_TUNNEL' not in m.text and 'fonts' not in m.text and 'favicon' not in str(m.location) and errors.append(f'{tag} console: {m.text}'))
     page.goto(URL)
     page.wait_for_timeout(600)
     shot(page, tag + '-01-title')
@@ -226,6 +226,7 @@ def run(p, w, h, tag):
     for (tx, ty) in [(5, 5), (20, 10), (40, 25)]:
         xy = page.evaluate(f"() => UCT.screenOf({tx} + 0.5, {ty} + 0.5)")
         page.mouse.click(xy[0], xy[1]); page.wait_for_timeout(100)
+        if page.is_visible('#lnNo'): page.click('#lnNo')   # たまたま取り場のとなりだったとき
         got = page.evaluate(f"() => !!UCT.G.bases[1].objs['{tx},{ty}']")
         ok = ok and got
     check(ok, f'{tag}: タップしたマスにきかいを置ける')
@@ -243,6 +244,7 @@ def run(p, w, h, tag):
     d1 = page.evaluate("() => UCT.G.bases[1].objs['20,10'].dir")
     check(d1 == (d0 + 1) % 4, f'{tag}: 配置がえで 90° 回せる')
     page.click('#edMove'); xy = page.evaluate("() => UCT.screenOf(22 + 0.5, 12 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(100)
+    if page.is_visible('#lnNo'): page.click('#lnNo')
     st = page.evaluate("() => ({ old: !!UCT.G.bases[1].objs['20,10'], now: !!UCT.G.bases[1].objs['22,12'] })")
     check(not st['old'] and st['now'], f'{tag}: 配置がえで移動できる')
     shot(page, tag + '-16-edit')
@@ -250,6 +252,35 @@ def run(p, w, h, tag):
     st = page.evaluate("() => ({ gone: !UCT.G.bases[1].objs['22,12'], coin: UCT.G.coin })")
     check(st['gone'] and st['coin'] == c0 + 15, f'{tag}: 配置がえで撤去できる（半額もどる）')
     page.click('#edEnd')
+
+    # 製造ラインに接続：取り場（0,4）のとなりにコンベアを置くと聞かれる。する → 製品が自動で流れる
+    page.click('#bases button[data-i="0"]'); page.wait_for_timeout(200)
+    page.evaluate('''() => { const G = UCT.G, b = G.bases[0], r = G.robots[0];
+      r.running = false; r.prog.main = ['stop']; r.x = 5; r.y = 1; r.path = null;
+      G.time = Math.floor(G.time / 1440) * 1440 + 10 * 60;
+      const s = b.objs['0,4']; s.stock = [{ t: 0, packed: false }, { t: 1, packed: false }];
+      for (const k of ['0,5', '1,5', '2,5']) delete b.objs[k]; }''')
+    page.click('#btnShop'); page.wait_for_timeout(200)
+    page.click('button[data-a="place:belt"]'); page.wait_for_timeout(200)
+    page.evaluate('() => UCT.setDir && UCT.setDir(0)')
+    xy = page.evaluate("() => UCT.screenOf(0 + 0.5, 5 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(150)
+    check(page.is_visible('#lnYes') and '製造ラインに接続' in page.inner_text('#mTitle'), f'{tag}: 取り場のとなりにコンベアを置くと「製造ラインに接続」を聞かれる')
+    shot(page, tag + '-17-line')
+    page.click('#lnYes'); page.wait_for_timeout(100)
+    xy = page.evaluate("() => UCT.screenOf(1 + 0.5, 5 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(150)
+    asked = page.is_visible('#lnNo')
+    if asked: page.click('#lnNo')
+    check(asked, f'{tag}: ななめのとなりでも聞かれる（しない を選べる）')
+    xy = page.evaluate("() => UCT.screenOf(2 + 0.5, 5 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(150)
+    check(not page.is_visible('#lnYes'), f'{tag}: 取り場からはなれたコンベアでは聞かれない')
+    page.click('#placeEnd')
+    st = page.evaluate("() => { const b = UCT.G.bases[0]; return { f0: b.objs['0,5'].feed, f1: b.objs['1,5'].feed || null, d: b.objs['0,5'].dir } }")
+    check(st['f0'] == '0,4' and st['f1'] is None, f'{tag}: する／しない が覚えられる {st}')
+    page.wait_for_timeout(4000)
+    st = page.evaluate("() => { const b = UCT.G.bases[0]; return { src: b.objs['0,4'].stock.length, items: ['0,5','1,5','2,5'].map(k => b.objs[k].item ? 1 : 0), mode: UCT.G.robots[0].mode } }")
+    print(tag, st)
+    check(st['items'][2] == 1, f'{tag}: 接続すると取り場の製品が自動でコンベアを流れる')
+    shot(page, tag + '-18-flow')
     b.close()
 
 
