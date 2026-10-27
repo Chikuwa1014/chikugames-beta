@@ -2,7 +2,7 @@
 (function () {
   const HM = window.HM, T = HM.T, G = HM.G, NET = HM.NET, M4 = HM.M4;
   const $ = s => document.querySelector(s);
-  const KEY_COLOR = 'horimogu-color', KEY_SENS = 'horimogu-sens', KEY_BEST = 'horimogu-best-v2', KEY_CAM = 'horimogu-cam', KEY_SIZE = 'horimogu-size';
+  const KEY_COLOR = 'horimogu-color', KEY_SENS = 'horimogu-sens', KEY_BEST = 'horimogu-best-v2', KEY_CAM = 'horimogu-cam', KEY_SIZE = 'horimogu-size', KEY_GYRO = 'horimogu-gyro';
   // フィールドの大きさ（short・tall・venti・grande）。はじめはグランデ
   let sizePick = CG.ls.get(KEY_SIZE, 'grande');
   if (!T.sizes.find(s => s.key === sizePick)) sizePick = 'grande';
@@ -314,6 +314,44 @@
     G.me.spectate = al[(i + 1) % al.length].pid;
   }
 
+  /* ---------- モーションセンサーで見回す ----------
+     端末を回した速さ（devicemotion の rotationRate、度/秒）を、そのまま向きの変化に足す。
+     スワイプの見回しもそのまま使える。iPhone は押したときに許可を聞く（requestPermission） */
+  const gyro = { on: CG.ls.get(KEY_GYRO, '0') === '1', ok: false, last: 0 };
+  const gyroLabel = () => '📱 傾けて見回す：' + (gyro.on ? 'オン' : 'オフ');
+  async function gyroAsk() {
+    if (gyro.ok) return true;
+    const DM = window.DeviceMotionEvent;
+    if (!DM) return false;
+    if (typeof DM.requestPermission === 'function') {
+      // Android の Chrome は 'prompt' を返すことがあるので、断られたときだけやめる
+      try { if (await DM.requestPermission() === 'denied') return false; }
+      catch (e) { return false; }   // 押したとき以外に呼ぶと失敗する
+    }
+    gyro.ok = true;
+    return true;
+  }
+  async function gyroToggle() {
+    if (!gyro.on || !gyro.ok) {   // オンのまま再読み込みしたときは、押すと許可を聞き直す
+      if (!await gyroAsk()) { G.toast('この端末ではモーションセンサーが使えません'); return; }
+      gyro.on = true;
+    } else gyro.on = false;
+    CG.ls.set(KEY_GYRO, gyro.on ? '1' : '0');
+    $('#gyroBtn').textContent = gyroLabel();
+  }
+  window.addEventListener('devicemotion', e => {
+    const r = e.rotationRate, t = performance.now();
+    const dt = Math.min(0.1, (t - (gyro.last || t)) / 1000);
+    gyro.last = t;
+    if (!gyro.on || !r || !G.running || G.over || !G.me || !$('#pause').hidden) return;
+    const a = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    const rb = r.beta || 0, rg = r.gamma || 0, k = Math.PI / 180 * dt * sens;
+    // 画面の向きに合わせて、左右に回す軸・上下に傾ける軸を選ぶ
+    const [yr, pr] = a === 90 ? [rb, -rg] : (a === 270 || a === -90) ? [-rb, rg] : a === 180 ? [-rg, -rb] : [rg, rb];
+    G.me.yaw += yr * k;
+    G.me.pitch = clampPitch(G.me.pitch + pr * k);
+  });
+
   /* ---------- 描画とループ ---------- */
   let R = null, last = 0, raf = 0, hudT = 0;
   function resize() {
@@ -531,6 +569,7 @@
   /* ---------- ひとりで始める ---------- */
   function startSolo() {
     HM.sfx.unlock();
+    if (gyro.on) gyroAsk();
     const seed = (Math.random() * 2 ** 31) >>> 0, r = HM.rng(seed ^ 0x1234567), N = HM.fieldSize(sizePick);
     // 大きさに合わせて、スタート地点と敵の出る距離を決める（ラージは今までと同じ）
     const spread = Math.min(80, N * 0.27);
@@ -554,6 +593,9 @@
     show('play');
     $('#result').hidden = true; closePause();
     resetStick(); looks.clear();
+    const DM = window.DeviceMotionEvent;
+    if (gyro.on && !gyro.ok && DM && typeof DM.requestPermission === 'function')
+      setTimeout(() => G.toast('傾けて見回すには、一時停止の「📱 傾けて見回す」を押してください'), 1500);
     $('#loading').hidden = false;
     // 地形を作る前に「準備中」を出す
     setTimeout(() => {
@@ -627,6 +669,8 @@
       G.stop(); show('home');
     };
     $('#sens').oninput = e => { sens = +e.target.value; CG.ls.set(KEY_SENS, String(sens)); };
+    $('#gyroBtn').textContent = gyroLabel();
+    $('#gyroBtn').onclick = gyroToggle;
     $('#muteBtn').onclick = () => { HM.sfx.setMuted(!HM.sfx.muted); $('#muteBtn').textContent = HM.sfx.muted ? '🔇 音：オフ' : '🔊 音：オン'; };
     $('#resRetry').onclick = startSolo;
     $('#resLobby').onclick = () => {
