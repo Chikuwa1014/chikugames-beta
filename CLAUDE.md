@@ -5,7 +5,7 @@
 
 ## β版だけの事実
 
-- 公開先：Worker `chikuwagames-beta`（https://chikuwagames-beta.chikuwa-hookah.workers.dev/）。リポジトリのルートがそのまま公開される（公開しないファイルは `.assetsignore` に書く）。
+- 公開先：Worker `chikuwagames-beta`。βの公開アドレスは https://beta-games.chikuwa-hookah.com/ （独自ドメイン、2026-10-27〜。`wrangler.jsonc` の `routes`）。https://chikuwagames-beta.chikuwa-hookah.workers.dev/ でも同じものが開く（号口トップが読む `cards.js` とカードの `href` はこちらのまま）。リポジトリのルートがそのまま公開される（公開しないファイルは `.assetsignore` に書く）。
 - `index.html`：β のトップ（ちくわゲームズβ）。`cards.js` のβのゲームを、号口トップの「Beta」欄と同じ出し方（鍵・開発中・成人向けは出さない）で並べる。カードの描き方を号口トップで変えたら、ここもそろえる（2026-10-27、開発者の指示で自動移動をやめた）。
 - `cards.js`：号口トップの「Beta」欄に出すカード。カードの書き方（`lock`・`dev`・`href`・`version`）は号口の `CLAUDE.md` 3 章「β版のカードの書き方」。
 - `shisaku/`：号口トップの試作環境。**どこからもリンクしない。** URL は、ユーザーへの返答にだけ書く。
