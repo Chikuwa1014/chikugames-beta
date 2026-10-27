@@ -1,0 +1,2042 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- 試作環境（号口のゲームの写し。1ファイルに埋め込み）。確認用 -->
+<meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>まわせ！ちくわルーレット</title>
+<meta name="description" content="ひとりでルーレットすごろくの冒険、みんなでルーレットで決めごと。最大8人まで、出てほしくない出目は攻撃ボタンではじき返せ！">
+<meta property="og:type" content="website">
+<meta property="og:title" content="まわせ！ちくわルーレット">
+<meta property="og:description" content="ルーレットすごろくRPGと、最大8人の決めごとルーレット。">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#1B1622">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C9772E'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23E9A55B'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23FFF6EA'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1B1622; --panel:#272030; --sunk:#14101A; --line:#3B3146; --ink:#FFF3E6; --muted:#B7A9BF;
+  --accent:#F0A35A; --accent-ink:#2A1606; --red:#E8483A; --green:#7FB069; --blue:#5B8DD9; --gold:#F2B23A; --purple:#9A6BC9;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+body{
+  min-height:100vh;background:radial-gradient(120% 60% at 50% 0%,#2C2240 0%,var(--bg) 60%) fixed;color:var(--ink);
+  font-family:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+}
+main{max-width:480px;margin:0 auto;padding:12px 16px 40px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.topbar a{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.topbar .ver{color:var(--muted);font-size:12px}
+h1{font-size:26px;line-height:1.25;margin:6px 0 4px;font-weight:800;letter-spacing:.02em}
+h1 small{display:block;font-size:13px;color:var(--muted);font-weight:500;letter-spacing:.1em}
+h2{font-size:18px;margin:0 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+button{
+  font:inherit;font-weight:800;border:0;border-radius:12px;padding:12px 16px;cursor:pointer;width:100%;
+  background:var(--accent);color:var(--accent-ink);touch-action:manipulation;
+}
+button.sub{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.small{width:auto;padding:7px 12px;font-size:13px;border-radius:10px}
+button:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;margin-top:10px}
+.row>*{flex:1;min-width:0}
+input,textarea{
+  font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;
+}
+textarea{min-height:150px;resize:vertical;line-height:1.5}
+.code-in{font-size:20px;letter-spacing:.3em;text-align:center}
+.muted{color:var(--muted);font-size:13px}
+.msg{min-height:1.4em;margin-top:8px;font-size:13px;color:var(--muted)}
+.msg.err{color:#FF8A7A}
+.center{text-align:center}
+
+/* タイトル */
+.hero{display:flex;justify-content:center;margin:8px 0 14px}
+.hero canvas{width:220px;height:220px}
+.modes{display:grid;gap:12px}
+.mode{display:block;text-align:left;padding:16px;border-radius:16px;background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+.mode b{display:block;font-size:19px;margin-bottom:2px}
+.mode span{color:var(--muted);font-size:13px;font-weight:500}
+.mode.solo{border-color:#6B4A2A;background:linear-gradient(135deg,#3A2A1B,#272030)}
+.mode.multi{border-color:#3A4A6B;background:linear-gradient(135deg,#1F2A40,#272030)}
+
+/* ルーレット */
+.wheel-box{position:relative;display:flex;flex-direction:column;align-items:center}
+.wheel-box canvas{width:100%;max-width:340px;aspect-ratio:1;display:block;touch-action:manipulation}
+.readout{margin-top:6px;font-weight:800;font-size:20px;min-height:1.5em;text-align:center;word-break:break-all}
+.wheel-title{font-weight:800;color:var(--accent);font-size:14px;letter-spacing:.08em;text-align:center;margin-bottom:4px}
+
+/* ひとり：ステータス */
+.status{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.stage-name{font-weight:800;font-size:15px}
+.chips{display:flex;gap:8px;font-size:13px;color:var(--muted)}
+.chips b{color:var(--ink)}
+.bar{height:10px;border-radius:5px;background:var(--sunk);overflow:hidden;grid-column:1/-1}
+.bar>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#7FB069,#B5D96B);transition:width .3s}
+.bar.enemy>i{background:linear-gradient(90deg,#E8483A,#F08A5A)}
+.hpnum{font-size:12px;color:var(--muted);grid-column:1/-1;text-align:right;margin-top:-2px}
+
+/* すごろく盤 */
+.board{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:10px;position:relative}
+.sq{
+  aspect-ratio:1;border-radius:8px;background:#3A3044;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#E8DCEF;position:relative;border:1px solid rgba(255,255,255,.06)
+}
+.sq.E{background:#6B2A2E;color:#FFC9C0}
+.sq.H{background:#244A6B;color:#BFE0FF}
+.sq.C{background:#6B5420;color:#FFE5A0}
+.sq.T{background:#4A2E6B;color:#E0C9FF}
+.sq.Q{background:#2E5A4A;color:#C9FFE8}
+.sq.B{background:#8E2E3A;color:#FFF;font-size:11px}
+.sq.S{background:#2A2234;color:var(--muted)}
+.sq.done{opacity:.55}
+.token{
+  position:absolute;width:11%;aspect-ratio:1;pointer-events:none;transition:left .16s ease,top .16s ease;z-index:2;
+  display:flex;align-items:center;justify-content:center
+}
+.token canvas{width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.token.hop{animation:hop .16s ease}
+@keyframes hop{50%{transform:translateY(-35%)}}
+#scr-solo>.card:first-child{background:linear-gradient(180deg,var(--tint,#272030) 0%,var(--panel) 70%)}
+.log{min-height:2.6em;margin:10px 0 0;font-size:14px;white-space:pre-line}
+
+/* バトル */
+.battle{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center}
+.battle canvas{width:110px;height:110px;image-rendering:auto}
+.enemy-name{font-weight:800;font-size:16px}
+.float{position:fixed;pointer-events:none;font-weight:800;font-size:28px;z-index:50;text-shadow:0 2px 0 rgba(0,0,0,.5);animation:float 1s ease-out forwards}
+@keyframes float{0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1;transform:translate(-50%,-10px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
+.shake{animation:shake .35s}
+@keyframes shake{20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-3px,-1px)}80%{transform:translate(3px,1px)}}
+
+/* ショップ・オーバーレイ */
+.overlay{position:fixed;inset:0;background:rgba(10,6,14,.82);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
+.overlay .card{width:100%;max-width:440px;max-height:90vh;overflow:auto;margin:0}
+.shop-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.shop-item div{flex:1}
+.shop-item b{display:block}
+.shop-item button{width:auto;padding:8px 12px;font-size:13px;white-space:nowrap}
+.big{font-size:22px;font-weight:800;text-align:center;margin:6px 0 10px;white-space:pre-line}
+
+/* マルチ */
+.room-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.room-code{font-size:30px;font-weight:800;letter-spacing:.2em;font-variant-numeric:tabular-nums}
+.players{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pl{display:flex;align-items:center;gap:6px;background:var(--sunk);border-radius:999px;padding:4px 10px 4px 6px;font-size:13px;max-width:100%}
+.pl i{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,.7)}
+.pl small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9em}
+.pl.me{outline:2px solid var(--accent)}
+.dots{letter-spacing:1px;color:var(--gold)}
+.picks{display:flex;flex-wrap:wrap;gap:6px;max-height:240px;overflow:auto;padding:2px}
+.picks button{width:auto;padding:7px 11px;font-size:13px;background:var(--sunk);color:var(--ink);border:1px solid var(--line);font-weight:700}
+.picks button.on{background:var(--red);border-color:var(--red);color:#fff}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.qr{margin-top:12px;text-align:center}
+#qr{display:inline-block;background:#fff;padding:10px;border-radius:10px}
+#qr img,#qr canvas{display:block}
+.atk{
+  font-size:24px;padding:18px;border-radius:18px;background:linear-gradient(180deg,#FF6A55,#D63A2C);color:#fff;
+  box-shadow:0 6px 0 #8E1F16;user-select:none;-webkit-user-select:none
+}
+.atk:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #8E1F16}
+.fx{min-height:1.5em;text-align:center;font-weight:800;margin-top:6px}
+.result-name{font-size:30px;font-weight:800;text-align:center;word-break:break-all;color:var(--gold);margin:4px 0}
+.share{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.share a,.share button{flex:1;min-width:30%;text-align:center;text-decoration:none;font-weight:800;font-size:13px;border-radius:10px;padding:10px;background:var(--sunk);color:var(--ink);border:1px solid var(--line);width:auto}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+.help li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar"><a href="../">← ちくわゲームズ</a><span class="ver" id="verLabel"></span></div>
+
+  <!-- ===== タイトル ===== -->
+  <section id="scr-title">
+    <h1>まわせ！ちくわルーレット<small>CHIKUWA ROULETTE</small></h1>
+    <div class="hero"><canvas id="heroCv" width="440" height="440" aria-hidden="true"></canvas></div>
+    <div class="modes">
+      <button class="mode solo" id="goSolo"><b>ひとりで冒険</b><span>ルーレットすごろくRPG。出目で進んで、出目で戦う。おでん横丁の全5ステージ</span></button>
+      <button class="mode multi" id="goMulti"><b>みんなで決める</b><span>最大8人。親が項目を決めて、みんなで1つのルーレット。出てほしくない出目は攻撃ではじき返せ</span></button>
+    </div>
+    <details class="card" style="margin-top:12px">
+      <summary>あそびかた</summary>
+      <ul class="help muted">
+        <li><b>ひとりで冒険</b>：いどうルーレットで進みます。「敵」のマスは通せんぼ。こうげき・ぼうぎょのルーレットを「とめる」で止めて戦います。ボスを倒すとステージクリア。集めたちくわでルーレットを強化できます。</li>
+        <li><b>みんなで決める</b>：親が部屋を作って項目を入れ、子は部屋コードか招待リンクで参加。みんな「出てほしくない項目」を1つえらびます。ルーレットが回っている間、針が自分のNG項目に来たときに「はじく！」を押すとルーレットが押し出されます（1回のルーレットで3回まで。外すと空ぶり）。</li>
+      </ul>
+    </details>
+    <div class="card" id="cgMove"></div>
+    <details class="card">
+      <summary>更新履歴</summary>
+      <ul class="muted"><li>v1.0.1（2026-10-27）セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように</li><li>v1.0.0（2026-10-23）はじめての公開。ひとりで冒険（全5ステージ）とみんなで決める（最大8人）</li></ul>
+    </details>
+  </section>
+
+  <!-- ===== ひとり：冒険 ===== -->
+  <section id="scr-solo" hidden>
+    <div class="card">
+      <div class="status">
+        <div class="stage-name" id="stName"></div>
+        <div class="chips"><span>LV <b id="stLv"></b></span><span>ちくわ <b id="stCoin"></b></span></div>
+        <div class="bar"><i id="hpBar"></i></div>
+        <div class="hpnum" id="hpNum"></div>
+      </div>
+      <div id="boardWrap">
+        <div class="board" id="board"></div>
+      </div>
+      <div id="battleWrap" hidden>
+        <div class="battle" style="margin-top:10px">
+          <canvas id="enemyCv" width="220" height="220"></canvas>
+          <div>
+            <div class="enemy-name" id="enName"></div>
+            <div class="bar enemy" style="margin-top:6px"><i id="enBar"></i></div>
+            <div class="hpnum" id="enNum" style="text-align:left"></div>
+            <div class="muted" id="enInfo"></div>
+          </div>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+    <div class="card">
+      <div class="wheel-title" id="soloWheelTitle">いどうルーレット</div>
+      <div class="wheel-box"><canvas id="soloCv"></canvas><div class="readout" id="soloRead"></div></div>
+      <div class="row"><button id="soloBtn">まわす</button></div>
+    </div>
+    <div class="row"><button class="sub" id="soloQuit">タイトルへ</button></div>
+  </section>
+
+  <!-- ===== マルチ：ロビー ===== -->
+  <section id="scr-mlobby" hidden>
+    <h1>みんなで決める<small>最大8人・ルーレット</small></h1>
+    <div class="card">
+      <div class="muted">あなたの名前</div>
+      <input id="nameIn" maxlength="10" autocomplete="off">
+      <div class="row" style="margin-top:14px"><button id="createBtn">部屋を作る（親になる）</button></div>
+      <div class="muted center" style="margin:14px 0 4px">または部屋コードで参加</div>
+      <div class="row" style="margin-top:4px">
+        <input id="codeIn" class="code-in" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+        <button id="joinBtn" style="flex:0 0 96px">参加</button>
+      </div>
+      <div class="msg" id="lobbyMsg"></div>
+    </div>
+    <p class="muted">みんなで同じページを開き、親が部屋を作って招待リンクやQRコードを送ります。リンクを開いた人は自動で参加します。同じWi-Fiでなくても遊べます。</p>
+    <div class="row"><button class="sub" id="mlobbyBack">タイトルへ</button></div>
+  </section>
+
+  <!-- ===== マルチ：部屋 ===== -->
+  <section id="scr-mroom" hidden>
+    <div class="card">
+      <div class="room-head">
+        <div><div class="muted">部屋コード</div><div class="room-code" id="roomCode">----</div></div>
+        <button class="sub small" id="inviteToggle">招待する</button>
+      </div>
+      <div id="invite" hidden>
+        <div class="row"><button id="shareBtn">招待リンクを送る</button><button class="sub" id="copyBtn">コピー</button></div>
+        <div class="qr" id="qrWrap" hidden><div id="qr"></div><div class="muted">近くの人はQRコードを読み取ってもOK</div></div>
+      </div>
+      <div class="players" id="players"></div>
+      <div class="msg" id="roomMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="wheel-box"><canvas id="multiCv"></canvas><div class="readout" id="multiRead"></div></div>
+    </div>
+
+    <!-- 親：項目の編集 -->
+    <div class="card" id="pEdit" hidden>
+      <h2>ルーレットの項目</h2>
+      <div class="presets">
+        <button class="sub small" data-preset="yesno">はい／いいえ</button>
+        <button class="sub small" data-preset="dice">1〜6</button>
+        <button class="sub small" data-preset="names">参加者の名前</button>
+        <button class="sub small" data-preset="nums">番号 1〜N</button>
+        <button class="sub small" data-preset="food">ごはん</button>
+      </div>
+      <textarea id="itemsIn" placeholder="1行に1つずつ書いてください"></textarea>
+      <div class="muted" id="itemsCount"></div>
+      <div class="row"><button id="toPick">この項目で決定 →</button></div>
+    </div>
+    <!-- 子：親の準備待ち -->
+    <div class="card center" id="pWait" hidden><div class="muted" id="waitText">親がルーレットを準備しています…</div></div>
+
+    <!-- NG えらび -->
+    <div class="card" id="pPick" hidden>
+      <h2>出てほしくない項目は？</h2>
+      <div class="muted" style="margin-bottom:8px">1つえらぶと、回っている間に「はじく！」で防御できます</div>
+      <div class="picks" id="picks"></div>
+      <div class="row" id="hostPickRow"><button class="sub" id="backEdit">項目を直す</button><button id="spinBtn">まわす！</button></div>
+      <div class="msg" id="pickMsg"></div>
+    </div>
+
+    <!-- 回転中 -->
+    <div class="card" id="pSpin" hidden>
+      <div class="muted center" id="myNg"></div>
+      <div class="row"><button class="atk" id="atkBtn">はじく！</button></div>
+      <div class="fx" id="fx"></div>
+    </div>
+
+    <!-- 結果 -->
+    <div class="card" id="pResult" hidden>
+      <div class="muted center">けっか</div>
+      <div class="result-name" id="resultName"></div>
+      <div class="center" id="resultSub"></div>
+      <div class="row" id="hostResultRow"><button class="sub" id="againEdit">項目を直す</button><button id="againBtn">もう一回</button></div>
+    </div>
+
+    <div class="row"><button class="sub" id="leaveBtn">退出</button></div>
+  </section>
+</main>
+
+<!-- ショップ -->
+<div class="overlay" id="shop" hidden>
+  <div class="card">
+    <div class="big" id="shopTitle"></div>
+    <div class="muted center">ちくわ <b id="shopCoin" style="color:var(--gold)"></b> 本。ルーレットを強化しよう</div>
+    <div id="shopList"></div>
+    <div class="row"><button id="shopGo">次のステージへ</button></div>
+  </div>
+</div>
+<!-- メッセージ（ゲームオーバー・エンディング） -->
+<div class="overlay" id="dialog" hidden>
+  <div class="card">
+    <div class="big" id="dlgTitle"></div>
+    <div id="dlgBody" class="center"></div>
+    <div id="dlgShare" class="share" hidden></div>
+    <div class="row" id="dlgBtns"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+"use strict";
+const VERSION = "1.0.1";
+const $ = (id) => document.getElementById(id);
+$("verLabel").textContent = "v" + VERSION;
+const TAU = Math.PI * 2;
+const POINTER = -Math.PI / 2;           // 針は真上
+const mod = (a, n) => ((a % n) + n) % n;
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+/* =====================================================================
+   調整用の数値（難しさ・値段・ルーレットの手ざわり）はここにまとめる
+   s はステージ番号（1〜5）、lv はレベル
+   ===================================================================== */
+const TUNING = {
+  // ルーレットの回り方：摩擦 dω/dt = -(A + B·ω)。とめるボタンを押すと BRAKE に切り替える
+  friction: { A: 0.6, B: 0.35 },
+  brake: { A: 4.2, B: 1.3 },
+  spinSpeed: () => 13 + Math.random() * 5,      // まわし始めの速さ（rad/s）。ひとり・マルチ共通
+
+  // ---- ひとりで冒険 ----
+  boardLen: 24,                                  // スタート＋22マス＋ボス
+  squares: (stage) => ({ E: 4 + Math.floor(stage / 2), H: 3, C: 4, T: 2 + Math.floor(stage / 2), Q: 3 }),  // stage は 0 始まり
+  maxHp: (lv, hpUp) => 20 + (lv - 1) * 3 + hpUp * 6,
+  levelUpHeal: 3,
+  expNeed: (lv) => lv * 10,
+  attackValues: [2, 3, 3, 4, 4, 5],              // こうげきルーレットのダメージ（＋ボーナス）
+  critBase: 6,                                   // かいしん＝(critBase＋ボーナス)×2
+  counterBase: 3,                                // はんげき＝counterBase＋ボーナス
+  enemy: {
+    hp: (s, boss) => boss ? 14 + 11 * s : 5 + 5 * s + rnd(0, 2),
+    atk: (s, boss) => boss ? 4 + 3 * s : 2 + Math.round(1.5 * s) + rnd(0, 1),
+    exp: (s, boss) => boss ? 10 + 5 * s : 2 + 3 * s,
+    coin: (s, boss) => boss ? 10 + 2 * s : 2 + s,
+  },
+  healRate: 0.4,                                 // だしの湯：さいだいHPの割合
+  coinSquare: (s) => rnd(2, 3) + s,
+  trapDamage: (s) => 2 + s,
+  event: { coin: (s) => 4 + s, damage: (s) => 3 + s, rates: [0.3, 0.55, 0.8] },  // ？マス：ちくわ／全回復／おい風／からし の境目
+  gameOverKeep: 0.5,                             // ゲームオーバーで残るちくわの割合
+  upgrades: [
+    { id: "crit",  name: "かいしんマス＋1",   desc: "こうげきルーレットに「かいしん」を1マス追加", cost: 10, max: 3 },
+    { id: "miss",  name: "ミスマスを消す",     desc: "こうげきルーレットの「ミス」をなくす",        cost: 14, max: 1 },
+    { id: "guard", name: "ガードマス＋1",      desc: "ぼうぎょルーレットに「ガード」を1マス追加",   cost: 10, max: 3 },
+    { id: "hp",    name: "さいだいHP＋6",      desc: "体力の上限が6ふえる",                         cost: 8,  max: 5 },
+    { id: "pow",   name: "こうげき力＋1",      desc: "こうげきのダメージがすべて＋1",               cost: 12, max: 3 },
+  ],
+
+  // ---- みんなで決める ----
+  maxPlayers: 8,
+  maxItems: 256,
+  itemMaxLen: 16,
+  guards: 3,            // 1回のルーレットで使える「はじく」の回数
+  kick: 3.4,            // はじいたときに足される回転の速さ
+  hitWindow: 220,       // 針がNG項目を通り過ぎてからも成功にする猶予（ミリ秒・通信の遅れ分）
+};
+
+const SCREENS = ["scr-title", "scr-solo", "scr-mlobby", "scr-mroom"];
+function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; window.scrollTo(0, 0); }
+
+/* =====================================================================
+   ルーレット（描画と動き）。ひとり・マルチ共通
+   ===================================================================== */
+const SEG_COLORS = ["#F2B23A", "#E8483A", "#F3DDB2", "#7FB069", "#C9772E", "#5B8DD9", "#E98BC2", "#8D8E96"];
+const PLAYER_COLORS = ["#FF5A4A", "#3FA9FF", "#FFD23F", "#57D17A", "#C77DFF", "#FF8FC7", "#FF9F40", "#3FE0D0"];
+function textOn(hex) {
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? "#2A1A10" : "#FFFFFF";
+}
+
+const FRICTION = TUNING.friction;
+const BRAKE = TUNING.brake;
+
+class Wheel {
+  constructor(canvas) {
+    this.cv = canvas; this.ctx = canvas.getContext("2d");
+    this.items = ["？"]; this.colors = null;
+    this.angle = 0; this.omega = 0; this.fr = FRICTION;
+    this.marks = {};      // 項目番号 → [色, ...]（マルチの NG 表示）
+    this.win = -1;        // 当たり項目を光らせる
+    this.size = 0;
+  }
+  setItems(items, colors) { this.items = items.length ? items : ["？"]; this.colors = colors || null; this.win = -1; }
+  seg() { return TAU / this.items.length; }
+  index(angle = this.angle) {
+    const i = Math.floor(mod(POINTER - angle, TAU) / this.seg());
+    return Math.min(this.items.length - 1, Math.max(0, i));
+  }
+  // 項目 i の中央が針に来る角度
+  angleFor(i) { return POINTER - (i + 0.5) * this.seg(); }
+  step(dt) {
+    if (this.omega <= 0) return false;
+    // 大きな dt（裏に回った後など）は小分けにして同じ結果になるようにする
+    let left = Math.min(dt, 5);
+    while (left > 0) {
+      const h = Math.min(left, 1 / 60);
+      this.omega -= (this.fr.A + this.fr.B * this.omega) * h;
+      if (this.omega < 0) this.omega = 0;
+      this.angle = mod(this.angle + this.omega * h, TAU);
+      left -= h;
+      if (this.omega === 0) break;
+    }
+    return this.omega === 0;
+  }
+  colorOf(i) {
+    if (this.colors) return this.colors[i % this.colors.length];
+    const n = this.items.length, L = SEG_COLORS.length;
+    let c = i % L;
+    if (n > 1 && i === n - 1 && c === 0) c = 3;          // 最後と最初が同じ色にならないように
+    return SEG_COLORS[c];
+  }
+  fit() {
+    const css = this.cv.getBoundingClientRect().width || 300;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const px = Math.round(css * dpr);
+    if (px !== this.size) { this.cv.width = this.cv.height = px; this.size = px; }
+    return px;
+  }
+  draw(t = 0) {
+    const S = this.fit(), c = this.ctx, cx = S / 2, cy = S / 2, R = S * 0.46;
+    const n = this.items.length, s = this.seg();
+    c.clearRect(0, 0, S, S);
+    // 外わく
+    c.fillStyle = "#5A3A28"; c.beginPath(); c.arc(cx, cy, R + S * 0.03, 0, TAU); c.fill();
+    for (let k = 0; k < 24; k++) {
+      const a = (k / 24) * TAU;
+      c.fillStyle = (Math.floor(t * 4) + k) % 2 ? "#FFD9A8" : "#F2B23A";
+      c.beginPath(); c.arc(cx + Math.cos(a) * (R + S * 0.015), cy + Math.sin(a) * (R + S * 0.015), S * 0.007, 0, TAU); c.fill();
+    }
+    // 項目
+    for (let i = 0; i < n; i++) {
+      const a0 = this.angle + i * s, a1 = a0 + s;
+      c.fillStyle = this.colorOf(i);
+      c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, R, a0, a1); c.closePath(); c.fill();
+      if (n <= 120) { c.strokeStyle = "rgba(40,20,10,.35)"; c.lineWidth = Math.max(1, S * 0.002); c.stroke(); }
+    }
+    if (this.win >= 0) {
+      const a0 = this.angle + this.win * s;
+      c.fillStyle = `rgba(255,255,255,${0.25 + 0.2 * Math.sin(t * 8)})`;
+      c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, R, a0, a0 + s); c.closePath(); c.fill();
+    }
+    // 文字
+    const arcLen = s * R * 0.72;
+    if (arcLen >= S * 0.022) {
+      const fs = Math.max(S * 0.022, Math.min(S * 0.055, arcLen * 0.62));
+      c.font = `800 ${fs}px "M PLUS 1", sans-serif`;
+      c.textAlign = "right"; c.textBaseline = "middle";
+      const maxW = R * 0.58;
+      for (let i = 0; i < n; i++) {
+        const mid = this.angle + (i + 0.5) * s;
+        // 左半分は文字が逆さにならないよう 180° 回して左寄せにする
+        const flip = Math.cos(mid) < -0.001;
+        c.save(); c.translate(cx, cy); c.rotate(flip ? mid + Math.PI : mid);
+        c.textAlign = flip ? "left" : "right";
+        c.fillStyle = textOn(this.colorOf(i));
+        let label = String(this.items[i]);
+        if (c.measureText(label).width > maxW) {
+          while (label.length > 1 && c.measureText(label + "…").width > maxW) label = label.slice(0, -1);
+          label += "…";
+        }
+        c.fillText(label, flip ? -R * 0.84 : R * 0.84, 0);
+        c.restore();
+      }
+    }
+    // NG の印（外周の色つき丸）
+    for (const k in this.marks) {
+      const i = +k; if (i >= n) continue;
+      const cols = this.marks[k], mid = this.angle + (i + 0.5) * s;
+      const rr = Math.max(S * 0.01, Math.min(S * 0.02, s * R * 0.16));
+      cols.forEach((col, j) => {
+        const rad = R - rr * 1.25 - j * rr * 2.3;
+        c.fillStyle = col; c.strokeStyle = "#fff"; c.lineWidth = S * 0.004;
+        c.beginPath(); c.arc(cx + Math.cos(mid) * rad, cy + Math.sin(mid) * rad, rr, 0, TAU); c.fill(); c.stroke();
+      });
+    }
+    // 中心のちくわ
+    const hr = S * 0.11;
+    c.fillStyle = "#C9772E"; c.beginPath(); c.arc(cx, cy, hr, 0, TAU); c.fill();
+    c.fillStyle = "#E9A55B"; c.beginPath(); c.arc(cx, cy, hr * 0.8, 0, TAU); c.fill();
+    c.fillStyle = "#F3DDB2"; c.beginPath(); c.arc(cx, cy, hr * 0.62, 0, TAU); c.fill();
+    c.fillStyle = "#2A1A10"; c.beginPath(); c.arc(cx, cy, hr * 0.3, 0, TAU); c.fill();
+    c.strokeStyle = "rgba(107,58,23,.5)"; c.lineWidth = S * 0.004;
+    for (let k = 0; k < 6; k++) { const a = this.angle * 0.5 + k * TAU / 6; c.beginPath(); c.arc(cx, cy, hr * 0.9, a, a + 0.4); c.stroke(); }
+    // 針
+    c.fillStyle = "#FFF3E6"; c.strokeStyle = "#2A1A10"; c.lineWidth = S * 0.006;
+    c.beginPath(); c.moveTo(cx, cy - R + S * 0.07); c.lineTo(cx - S * 0.035, cy - R - S * 0.035); c.lineTo(cx + S * 0.035, cy - R - S * 0.035); c.closePath();
+    c.fill(); c.stroke();
+  }
+}
+
+/* =====================================================================
+   タイトルのくるくる
+   ===================================================================== */
+const hero = new Wheel($("heroCv"));
+hero.setItems(["ちくわ", "だいこん", "たまご", "こんにゃく", "はんぺん", "がんも", "すじ", "もち巾着"]);
+hero.omega = 0;
+
+/* =====================================================================
+   キャラクターの絵（ちくわくん・敵）
+   ===================================================================== */
+function drawChikuwa(c, S, t = 0) {
+  c.clearRect(0, 0, S, S);
+  const u = S / 16, r = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x * u, y * u, w * u, h * u); };
+  const b = Math.round(Math.sin(t * 6) * 0.5);
+  r(4, 3 + b, 8, 11, "#F3DDB2"); r(4, 3 + b, 8, 3, "#C9772E"); r(5, 2 + b, 6, 2, "#E9A55B"); r(7, 2 + b, 2, 1, "#6B3A17");
+  r(6, 8 + b, 1, 2, "#2A1A10"); r(9, 8 + b, 1, 2, "#2A1A10"); r(5, 11 + b, 6, 1, "#C9772E");
+  r(5, 14, 2, 1, "#6B3A17"); r(9, 14, 2, 1, "#6B3A17");
+}
+
+// 敵：形（shape）と色で描く。すべてオリジナルのおでん横丁の住人
+const MONSTERS = {
+  konnyan:  { name: "こんにゃん",       shape: "cat",    col: "#8D8E96" },
+  chibidai: { name: "ちびだいこん",     shape: "daikon", col: "#F4F1E8" },
+  gobo:     { name: "ごぼてん",         shape: "stick",  col: "#8A5A35" },
+  ganmo:    { name: "がんもドッキー",   shape: "ball",   col: "#C98A4B" },
+  kinchaku: { name: "きんちゃく忍者",   shape: "bag",    col: "#E0B060" },
+  hanpen:   { name: "はんぺんゴースト", shape: "ghost",  col: "#FFFFFF" },
+  tamagon:  { name: "たまごん",         shape: "egg",    col: "#FFF4D6" },
+  suji:     { name: "すじ串ナイト",     shape: "skewer", col: "#7A3B2A" },
+  atsuage:  { name: "あつあげ岩",       shape: "block",  col: "#D98C3A" },
+  kombu:    { name: "こんぶ巻きヘビ",   shape: "knot",   col: "#2F4A3A" },
+  // ボス
+  boss1: { name: "大根大将",         shape: "daikon", col: "#F4F1E8", boss: true },
+  boss2: { name: "がんも番長",       shape: "ball",   col: "#B07038", boss: true },
+  boss3: { name: "きんちゃく姫",     shape: "bag",    col: "#F08AB0", boss: true },
+  boss4: { name: "マグマすじ将軍",   shape: "skewer", col: "#B8402A", boss: true },
+  boss5: { name: "おでん大王",       shape: "pot",    col: "#5A5560", boss: true },
+};
+
+function drawMonster(c, S, key, t = 0, hurt = 0) {
+  const m = MONSTERS[key];
+  c.clearRect(0, 0, S, S);
+  c.save();
+  const bob = Math.sin(t * 3) * S * 0.02;
+  c.translate(S / 2 + (hurt ? Math.sin(t * 60) * S * 0.03 : 0), S / 2 + bob);
+  const k = m.boss ? 1.08 : 0.9;
+  c.scale(k * S / 100, k * S / 100);
+  const fill = (col) => { c.fillStyle = col; c.fill(); };
+  const line = "#2A1A10";
+  c.lineWidth = 3; c.strokeStyle = line;
+  let eyeY = -2, eyeX = 11, mouthY = 12;
+  c.beginPath();
+  switch (m.shape) {
+    case "cat":
+      c.moveTo(-30, -18); c.lineTo(-24, -36); c.lineTo(-12, -24); c.lineTo(12, -24); c.lineTo(24, -36); c.lineTo(30, -18);
+      c.lineTo(30, 28); c.lineTo(-30, 28); c.closePath(); fill(m.col); c.stroke();
+      c.fillStyle = "#6E6F78"; for (let i = 0; i < 4; i++) c.fillRect(-22 + i * 13, 18, 6, 3);
+      break;
+    case "daikon":
+      c.moveTo(-22, -20); c.quadraticCurveTo(-26, 30, 0, 42); c.quadraticCurveTo(26, 30, 22, -20); c.closePath(); fill(m.col); c.stroke();
+      c.beginPath(); c.moveTo(-6, -20); c.lineTo(-18, -44); c.lineTo(-2, -28); c.lineTo(0, -48); c.lineTo(4, -28); c.lineTo(18, -44); c.lineTo(8, -20); c.closePath(); fill("#5E9A3E"); c.stroke();
+      eyeY = 2; mouthY = 16;
+      break;
+    case "stick":
+      c.roundRect(-14, -40, 28, 80, 10); fill(m.col); c.stroke();
+      c.fillStyle = "#E8C38A"; c.fillRect(-14, -14, 28, 6); c.fillRect(-14, 22, 28, 6);
+      eyeX = 6; eyeY = -24; mouthY = -10;
+      break;
+    case "ball":
+      c.arc(0, 4, 36, 0, TAU); fill(m.col); c.stroke();
+      c.fillStyle = "#8A5A30"; for (const [x, y] of [[-20, -16], [18, -20], [-24, 18], [22, 20], [0, 28], [-6, -28]]) { c.beginPath(); c.arc(x, y, 3, 0, TAU); c.fill(); }
+      break;
+    case "bag":
+      c.moveTo(-14, -26); c.quadraticCurveTo(-40, 0, -30, 30); c.quadraticCurveTo(0, 42, 30, 30); c.quadraticCurveTo(40, 0, 14, -26); c.closePath(); fill(m.col); c.stroke();
+      c.beginPath(); c.moveTo(-14, -26); c.lineTo(-20, -40); c.lineTo(20, -40); c.lineTo(14, -26); fill(m.col); c.stroke();
+      c.fillStyle = "#3A6B3A"; c.fillRect(-16, -30, 32, 5);
+      if (key === "kinchaku") { c.fillStyle = "#2A2E5E"; c.fillRect(-30, -6, 60, 10); }
+      eyeY = 2; mouthY = 16;
+      break;
+    case "ghost":
+      c.moveTo(-28, 30); c.lineTo(-28, -24); c.quadraticCurveTo(-28, -34, -18, -34); c.lineTo(18, -34); c.quadraticCurveTo(28, -34, 28, -24); c.lineTo(28, 30);
+      for (let i = 0; i < 4; i++) c.quadraticCurveTo(21 - i * 14, 40, 14 - i * 14, 30);
+      c.closePath(); fill(m.col); c.stroke();
+      break;
+    case "egg":
+      c.ellipse(0, 4, 28, 36, 0, 0, TAU); fill(m.col); c.stroke();
+      c.beginPath(); c.arc(0, 10, 12, 0, TAU); fill("#F2B23A");
+      eyeY = -12; mouthY = 26;
+      break;
+    case "skewer":
+      c.fillStyle = "#E8D3A2"; c.fillRect(-2, -48, 4, 96); c.strokeRect(-2, -48, 4, 96);
+      c.beginPath(); c.moveTo(-26, -30); c.lineTo(22, -38); c.lineTo(28, 20); c.lineTo(-24, 28); c.closePath(); fill(m.col); c.stroke();
+      c.strokeStyle = "rgba(255,220,180,.5)"; c.beginPath(); c.moveTo(-18, -10); c.lineTo(18, -16); c.stroke(); c.strokeStyle = line;
+      break;
+    case "block":
+      c.roundRect(-32, -24, 64, 52, 8); fill(m.col); c.stroke();
+      c.fillStyle = "#F7EBD0"; c.fillRect(-26, -18, 52, 14);
+      eyeY = 8; mouthY = 20;
+      break;
+    case "knot":
+      c.arc(0, 4, 32, 0, TAU); fill(m.col); c.stroke();
+      c.beginPath(); c.arc(0, 4, 20, 0, TAU); fill("#3E6B50");
+      c.fillStyle = "#C9A66B"; c.fillRect(-34, -2, 68, 8);
+      break;
+    case "pot":
+      c.moveTo(-42, -6); c.lineTo(42, -6); c.quadraticCurveTo(42, 40, 0, 40); c.quadraticCurveTo(-42, 40, -42, -6); fill(m.col); c.stroke();
+      c.fillStyle = "#3A3540"; c.fillRect(-48, -12, 96, 8); c.fillRect(-56, 2, 12, 6); c.fillRect(44, 2, 12, 6);
+      // 中のおでん
+      c.fillStyle = "#F4F1E8"; c.fillRect(-30, -26, 16, 16); c.fillStyle = "#FFF4D6"; c.beginPath(); c.arc(4, -18, 10, 0, TAU); c.fill();
+      c.fillStyle = "#8D8E96"; c.fillRect(18, -28, 14, 18);
+      eyeY = 14; mouthY = 28;
+      break;
+  }
+  // かお
+  c.fillStyle = m.shape === "ghost" || m.col === "#FFFFFF" ? "#2A1A10" : "#2A1A10";
+  const blink = Math.floor(t * 2) % 7 === 0;
+  for (const sx of [-1, 1]) {
+    if (blink) c.fillRect(sx * eyeX - 4, eyeY, 8, 2);
+    else { c.beginPath(); c.arc(sx * eyeX, eyeY, 4, 0, TAU); c.fill(); c.fillStyle = "#fff"; c.beginPath(); c.arc(sx * eyeX + 1, eyeY - 1.5, 1.4, 0, TAU); c.fill(); c.fillStyle = "#2A1A10"; }
+  }
+  // まゆげ（ボスはおこり顔）
+  if (m.boss) {
+    c.lineWidth = 3; c.beginPath(); c.moveTo(-eyeX - 6, eyeY - 10); c.lineTo(-eyeX + 5, eyeY - 6); c.moveTo(eyeX + 6, eyeY - 10); c.lineTo(eyeX - 5, eyeY - 6); c.stroke();
+  }
+  c.lineWidth = 2.5; c.beginPath();
+  if (m.boss) { c.moveTo(-7, mouthY + 2); c.quadraticCurveTo(0, mouthY - 4, 7, mouthY + 2); }
+  else { c.moveTo(-6, mouthY); c.quadraticCurveTo(0, mouthY + 5, 6, mouthY); }
+  c.stroke();
+  // ほっぺ
+  c.fillStyle = "rgba(232,72,58,.35)"; c.beginPath(); c.arc(-eyeX - 6, eyeY + 8, 4, 0, TAU); c.arc(eyeX + 6, eyeY + 8, 4, 0, TAU); c.fill();
+  // ボスの冠
+  if (m.boss) {
+    const top = m.shape === "daikon" ? -56 : m.shape === "pot" ? -40 : m.shape === "stick" ? -50 : -46;
+    c.beginPath(); c.moveTo(-14, top + 12); c.lineTo(-14, top); c.lineTo(-7, top + 6); c.lineTo(0, top - 2); c.lineTo(7, top + 6); c.lineTo(14, top); c.lineTo(14, top + 12); c.closePath();
+    c.fillStyle = "#F2B23A"; c.fill(); c.lineWidth = 2; c.stroke();
+  }
+  c.restore();
+}
+
+/* =====================================================================
+   ひとりで冒険（すごろくRPG）
+   ===================================================================== */
+const STAGES = [
+  { name: "ある日の昼下がり横丁", enemies: ["konnyan", "chibidai", "gobo"], boss: "boss1", tint: "#3A4A2E" },
+  { name: "たそがれ商店街",       enemies: ["ganmo", "kinchaku", "konnyan"], boss: "boss2", tint: "#5A3048" },
+  { name: "流星の屋台村",         enemies: ["hanpen", "tamagon", "kinchaku"], boss: "boss3", tint: "#26305A" },
+  { name: "マンマンボルケーノ",   enemies: ["suji", "atsuage", "gobo"], boss: "boss4", tint: "#5A2A1E" },
+  { name: "カチカチ氷室",         enemies: ["kombu", "tamagon", "hanpen"], boss: "boss5", tint: "#24485A" },
+];
+const BOARD_LEN = TUNING.boardLen;
+const SAVE_KEY = "chikuwa-roulette-v1";
+
+const UPGRADES = TUNING.upgrades;
+
+function newSave() {
+  return { stage: 0, lv: 1, exp: 0, coins: 0, up: { crit: 0, miss: 0, guard: 0, hp: 0, pow: 0 }, clear: false };
+}
+function loadSave() {
+  try {
+    const s = JSON.parse(lsGet(SAVE_KEY));
+    if (s && typeof s.stage === "number" && s.up) return Object.assign(newSave(), s);
+  } catch (e) {}
+  return null;
+}
+const G = {
+  sv: null, hp: 0, pos: 0, board: [], done: new Set(),
+  mode: "move",       // move | atk | def | busy
+  spinning: false, braking: false, enemy: null, extraMove: false,
+};
+const maxHp = () => TUNING.maxHp(G.sv.lv, G.sv.up.hp);
+const bonus = () => (G.sv.lv - 1) + G.sv.up.pow;
+const expNeed = () => TUNING.expNeed(G.sv.lv);
+function saveGame() { lsSet(SAVE_KEY, JSON.stringify(G.sv)); }
+
+// 決まった並びの盤を作る（同じステージはやり直しても同じ盤）
+function seeded(seed) { let x = seed * 2654435761 >>> 0; return () => ((x = (x ^ (x << 13)) >>> 0, x = (x ^ (x >>> 17)) >>> 0, x = (x ^ (x << 5)) >>> 0) / 4294967296); }
+function makeBoard(stage) {
+  const r = seeded(stage + 7), b = new Array(BOARD_LEN).fill(".");
+  b[0] = "S"; b[BOARD_LEN - 1] = "B";
+  const place = (type, count, from = 2, to = BOARD_LEN - 2) => {
+    let n = 0, guard = 0;
+    while (n < count && guard++ < 500) {
+      const i = from + Math.floor(r() * (to - from + 1));
+      if (b[i] !== ".") continue;
+      if (type === "E" && (b[i - 1] === "E" || b[i + 1] === "E")) continue;
+      b[i] = type; n++;
+    }
+  };
+  const n = TUNING.squares(stage);
+  place("E", n.E);
+  place("H", n.H); place("C", n.C); place("T", n.T); place("Q", n.Q);
+  return b;
+}
+const SQ_LABEL = { S: "S", ".": "", E: "敵", H: "湯", C: "ち", T: "罠", Q: "？", B: "ボス" };
+
+// ルーレットの中身
+function attackItems() {
+  const u = G.sv.up, list = [];
+  if (!u.miss) list.push({ label: "ミス", k: "miss" });
+  for (const v of TUNING.attackValues) list.push({ label: String(v + bonus()), k: "dmg", v: v + bonus() });
+  for (let i = 0; i <= u.crit; i++) list.push({ label: "かいしん", k: "crit", v: (TUNING.critBase + bonus()) * 2 });
+  // かいしんが固まらないよう混ぜる（毎回同じ並び）
+  return interleave(list);
+}
+function defenseItems() {
+  const list = [
+    { label: "ひだん", k: "hit" }, { label: "はんげん", k: "half" }, { label: "ひだん", k: "hit" },
+    { label: "ガード", k: "guard" }, { label: "はんげん", k: "half" }, { label: "ひだん", k: "hit" }, { label: "はんげき", k: "counter" },
+  ];
+  for (let i = 0; i < G.sv.up.guard; i++) list.push({ label: "ガード", k: "guard" });
+  return interleave(list);
+}
+function interleave(list) {
+  const groups = {};
+  for (const it of list) (groups[it.label] = groups[it.label] || []).push(it);
+  const keys = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length);
+  const out = [];
+  while (out.length < list.length) for (const k of keys) if (groups[k].length) out.push(groups[k].shift());
+  return out;
+}
+const MOVE_ITEMS = [1, 2, 3, 4, 5, 6].map((v) => ({ label: String(v), k: "move", v }));
+const ATK_COLORS = { miss: "#8D8E96", dmg: "#F2B23A", crit: "#E8483A", hit: "#8E2E3A", half: "#C9772E", guard: "#5B8DD9", counter: "#7FB069", move: null };
+
+const soloWheel = new Wheel($("soloCv"));
+let soloItems = MOVE_ITEMS;
+function setSoloWheel(items, title) {
+  soloItems = items;
+  let d = 0;
+  const cols = items.map((it, i) => it.k === "dmg" ? (d++ % 2 ? "#F3DDB2" : "#F2B23A") : ATK_COLORS[it.k] || SEG_COLORS[i % SEG_COLORS.length]);
+  soloWheel.setItems(items.map((it) => it.label), cols);
+  soloWheel.angle = soloWheel.angleFor(0) + soloWheel.seg() * 0.3;
+  $("soloWheelTitle").textContent = title;
+}
+
+function startSolo(fromSave) {
+  G.sv = fromSave || newSave();
+  if (G.sv.clear) G.sv = newSave();
+  saveGame();
+  beginStage();
+  show("scr-solo");
+}
+function beginStage() {
+  const st = STAGES[G.sv.stage];
+  G.hp = maxHp(); G.pos = 0; G.board = makeBoard(G.sv.stage); G.done = new Set(); G.enemy = null; G.mode = "move";
+  renderBoard(); updateStatus(); toBoard();
+  log(`ステージ${G.sv.stage + 1}「${st.name}」\nいどうルーレットをまわそう！`);
+}
+function updateStatus() {
+  const st = STAGES[G.sv.stage];
+  $("stName").textContent = `ステージ${G.sv.stage + 1}　${st.name}`;
+  $("stLv").textContent = G.sv.lv;
+  $("stCoin").textContent = G.sv.coins;
+  const mh = maxHp(); G.hp = Math.max(0, Math.min(G.hp, mh));
+  $("hpBar").style.width = (G.hp / mh * 100) + "%";
+  $("hpNum").textContent = `HP ${G.hp} / ${mh}　EXP ${G.sv.exp} / ${expNeed()}`;
+  $("scr-solo").style.setProperty("--tint", st.tint);
+}
+function log(text) { $("log").textContent = text; }
+
+// 盤（8列のへび型に並べる）
+const COLS = 8;
+function cellPos(i) { const row = Math.floor(i / COLS), col = i % COLS; return { row, col: row % 2 ? COLS - 1 - col : col }; }
+let tokenEl = null;
+function renderBoard() {
+  const el = $("board"); el.innerHTML = "";
+  const rows = Math.ceil(BOARD_LEN / COLS);
+  el.style.gridTemplateRows = `repeat(${rows}, auto)`;
+  G.board.forEach((t, i) => {
+    const d = document.createElement("div");
+    const p = cellPos(i);
+    d.className = "sq " + (t === "." ? "" : t) + (G.done.has(i) ? " done" : "");
+    d.style.gridRow = p.row + 1; d.style.gridColumn = p.col + 1;
+    d.textContent = G.done.has(i) ? "" : SQ_LABEL[t];
+    d.id = "sq" + i;
+    el.append(d);
+  });
+  tokenEl = document.createElement("div"); tokenEl.className = "token";
+  const cv = document.createElement("canvas"); cv.width = cv.height = 64; tokenEl.append(cv);
+  el.append(tokenEl);
+  placeToken();
+}
+function placeToken() {
+  const sq = $("sq" + G.pos); if (!sq || !tokenEl) return;
+  tokenEl.style.left = (sq.offsetLeft + sq.offsetWidth * 0.06) + "px";
+  tokenEl.style.top = (sq.offsetTop - sq.offsetHeight * 0.18) + "px";
+  tokenEl.style.width = (sq.offsetWidth * 0.88) + "px";
+}
+window.addEventListener("resize", () => { if (!$("scr-solo").hidden) placeToken(); });
+
+function toBoard() {
+  $("boardWrap").hidden = false; $("battleWrap").hidden = true;
+  setSoloWheel(MOVE_ITEMS, "いどうルーレット");
+  G.mode = "move"; setSoloBtn("まわす", false);
+  requestAnimationFrame(placeToken);
+}
+function setSoloBtn(text, disabled) { $("soloBtn").textContent = text; $("soloBtn").disabled = disabled; }
+
+// まわす → とめる → 結果
+$("soloBtn").onclick = () => {
+  if (G.mode === "busy") return;
+  if (!G.spinning) {
+    soloWheel.win = -1; soloWheel.fr = FRICTION; soloWheel.omega = TUNING.spinSpeed();
+    G.spinning = true; G.braking = false;
+    setSoloBtn("とめる", false);
+  } else if (!G.braking) {
+    G.braking = true; soloWheel.fr = BRAKE;
+    setSoloBtn("…", true);
+  }
+};
+function onSoloStop() {
+  G.spinning = false;
+  const i = soloWheel.index(); soloWheel.win = i;
+  const it = soloItems[i];
+  setSoloBtn("…", true);
+  const mode = G.mode; G.mode = "busy";
+  if (mode === "move") doMove(it.v);
+  else if (mode === "atk") doAttack(it);
+  else if (mode === "def") doDefense(it);
+}
+
+async function doMove(n) {
+  log(`${n} マスすすむ！`);
+  for (let k = 0; k < n; k++) {
+    if (G.pos >= BOARD_LEN - 1) break;
+    G.pos++; placeToken();
+    tokenEl.classList.remove("hop"); void tokenEl.offsetWidth; tokenEl.classList.add("hop");
+    await sleep(200);
+    const t = G.board[G.pos];
+    if ((t === "E" || t === "B") && !G.done.has(G.pos)) {
+      await sleep(250);
+      return startBattle(t === "B");
+    }
+  }
+  await sleep(200);
+  await landEffect();
+}
+
+async function landEffect() {
+  const t = G.board[G.pos], s = G.sv.stage + 1;
+  if (G.done.has(G.pos)) return afterTurn();
+  if (t === "H") {
+    const v = Math.ceil(maxHp() * TUNING.healRate); G.hp += v; floatText(`+${v}`, "#8FD0FF", $("hpBar")); log(`だしの湯でひとやすみ。HPが ${v} かいふく`);
+    markDone();
+  } else if (t === "C") {
+    const v = TUNING.coinSquare(s); G.sv.coins += v; floatText(`ちくわ+${v}`, "#F2B23A", $("stCoin")); log(`ちくわを ${v} 本ひろった！`);
+    markDone();
+  } else if (t === "T") {
+    const v = TUNING.trapDamage(s); G.hp -= v; floatText(`-${v}`, "#FF6A55", $("hpBar")); $("scr-solo").classList.add("shake"); log(`つまようじのわな！ ${v} のダメージ`);
+    setTimeout(() => $("scr-solo").classList.remove("shake"), 400);
+  } else if (t === "Q") {
+    markDone();
+    const r = Math.random();
+    const [r1, r2, r3] = TUNING.event.rates;
+    if (r < r1) { const v = TUNING.event.coin(s); G.sv.coins += v; log(`？マス：屋台のおばちゃんから ちくわ ${v} 本！`); }
+    else if (r < r2) { G.hp = maxHp(); log("？マス：あつあつのおでんを食べてHPぜんかい！"); }
+    else if (r < r3) { G.extraMove = true; log("？マス：おい風！もう一回いどうできる"); }
+    else { const v = TUNING.event.damage(s); G.hp -= v; log(`？マス：からしが目にしみた… ${v} のダメージ`); }
+  } else {
+    log("なにもないマス。");
+  }
+  updateStatus();
+  if (G.hp <= 0) return gameOver();
+  afterTurn();
+}
+function markDone() { G.done.add(G.pos); const el = $("sq" + G.pos); if (el) { el.classList.add("done"); el.textContent = ""; } }
+function afterTurn() {
+  updateStatus(); saveGame();
+  G.mode = "move";
+  if (G.extraMove) { G.extraMove = false; setSoloBtn("まわす（おい風）", false); }
+  else setSoloBtn("まわす", false);
+}
+
+// ----- バトル -----
+function startBattle(isBoss) {
+  const st = STAGES[G.sv.stage], s = G.sv.stage + 1;
+  const key = isBoss ? st.boss : st.enemies[rnd(0, st.enemies.length - 1)];
+  const hp = TUNING.enemy.hp(s, isBoss);
+  const atk = TUNING.enemy.atk(s, isBoss);
+  G.enemy = { key, hp, max: hp, atk, boss: isBoss, hurt: 0 };
+  $("boardWrap").hidden = true; $("battleWrap").hidden = false;
+  $("enName").textContent = MONSTERS[key].name + (isBoss ? "（ボス）" : "");
+  $("enInfo").textContent = `こうげき力 ${atk}`;
+  updateEnemy();
+  log(`${MONSTERS[key].name}があらわれた！\nこうげきルーレットをまわせ！`);
+  setSoloWheel(attackItems(), "こうげきルーレット");
+  G.mode = "atk"; setSoloBtn("まわす", false);
+}
+function updateEnemy() {
+  const e = G.enemy; if (!e) return;
+  $("enBar").style.width = Math.max(0, e.hp / e.max * 100) + "%";
+  $("enNum").textContent = `HP ${Math.max(0, e.hp)} / ${e.max}`;
+}
+async function doAttack(it) {
+  const e = G.enemy;
+  let dmg = 0;
+  if (it.k === "miss") log("ミス！ こうげきが当たらなかった");
+  else { dmg = it.v; log(it.k === "crit" ? `かいしんの いちげき！ ${dmg} のダメージ！` : `${dmg} のダメージ！`); }
+  if (dmg) { e.hp -= dmg; e.hurt = performance.now(); floatText(`-${dmg}`, it.k === "crit" ? "#FFD23F" : "#FFFFFF", $("enemyCv")); }
+  updateEnemy();
+  await sleep(900);
+  if (e.hp <= 0) return winBattle();
+  setSoloWheel(defenseItems(), "ぼうぎょルーレット");
+  log(`${MONSTERS[e.key].name}のこうげき！\nぼうぎょルーレットで身を守れ！`);
+  G.mode = "def"; setSoloBtn("まわす", false);
+}
+async function doDefense(it) {
+  const e = G.enemy;
+  let dmg = 0;
+  if (it.k === "hit") { dmg = e.atk; log(`よけきれない！ ${dmg} のダメージ`); }
+  else if (it.k === "half") { dmg = Math.ceil(e.atk / 2); log(`うまく受けた！ ダメージ半分の ${dmg}`); }
+  else if (it.k === "guard") log("ガード！ ダメージなし");
+  else {
+    const c = TUNING.counterBase + bonus(); e.hp -= c; e.hurt = performance.now(); updateEnemy();
+    floatText(`-${c}`, "#B5FF8F", $("enemyCv")); log(`はんげき！ ${c} のダメージをお返し！`);
+  }
+  if (dmg) { G.hp -= dmg; floatText(`-${dmg}`, "#FF6A55", $("hpBar")); $("scr-solo").classList.add("shake"); setTimeout(() => $("scr-solo").classList.remove("shake"), 400); }
+  updateStatus();
+  await sleep(900);
+  if (G.hp <= 0) return gameOver();
+  if (e.hp <= 0) return winBattle();
+  setSoloWheel(attackItems(), "こうげきルーレット");
+  log("こうげきルーレットをまわせ！");
+  G.mode = "atk"; setSoloBtn("まわす", false);
+}
+async function winBattle() {
+  const e = G.enemy, s = G.sv.stage + 1;
+  const exp = TUNING.enemy.exp(s, e.boss), coin = TUNING.enemy.coin(s, e.boss);
+  G.sv.exp += exp; G.sv.coins += coin;
+  let msg = `${MONSTERS[e.key].name}をたおした！\nEXP +${exp}　ちくわ +${coin}`;
+  while (G.sv.exp >= expNeed()) { G.sv.exp -= expNeed(); G.sv.lv++; G.hp += TUNING.levelUpHeal; msg += `\nレベルアップ！ LV ${G.sv.lv}`; }
+  G.done.add(G.pos); G.enemy = null;
+  updateStatus(); log(msg);
+  await sleep(1300);
+  if (e.boss) return stageClear();
+  renderBoard(); toBoard(); afterTurn();
+}
+function stageClear() {
+  if (G.sv.stage >= STAGES.length - 1) return ending();
+  G.sv.stage++; saveGame();
+  openShop(`ステージ${G.sv.stage}クリア！`);
+}
+function gameOver() {
+  G.mode = "busy";
+  const lost = G.sv.coins - Math.ceil(G.sv.coins * TUNING.gameOverKeep);
+  G.sv.coins -= lost; saveGame();
+  dialog("ちくわくんは力つきた…", `ちくわを ${lost} 本おとしてしまった。<br>このステージの最初からやり直そう。`, [
+    { text: "やり直す", fn: () => { closeDialog(); beginStage(); } },
+    { text: "タイトルへ", sub: true, fn: () => { closeDialog(); goTitle(); } },
+  ]);
+}
+function ending() {
+  G.sv.clear = true; saveGame();
+  const text = `まわせ！ちくわルーレットの全5ステージをクリア！（LV${G.sv.lv}）おでん大王をたおしたぞ！ #まわせちくわルーレット #ちくわげーむず`;
+  dialog("おでん横丁に平和がもどった！", `ちくわくんはおでん大王をたおした！<br>LV ${G.sv.lv}・ちくわ ${G.sv.coins} 本でクリア。<br>あそんでくれてありがとう！`, [
+    { text: "タイトルへ", fn: () => { closeDialog(); goTitle(); } },
+  ], text);
+}
+
+// ショップ
+function openShop(title) {
+  $("shopTitle").textContent = title;
+  renderShop();
+  $("shop").hidden = false;
+}
+function renderShop() {
+  $("shopCoin").textContent = G.sv.coins;
+  $("shopList").innerHTML = UPGRADES.map((u) => {
+    const lv = G.sv.up[u.id], maxed = lv >= u.max;
+    return `<div class="shop-item"><div><b>${esc(u.name)}</b><span class="muted">${esc(u.desc)}（${lv}/${u.max}）</span></div>
+      <button data-up="${u.id}" ${maxed || G.sv.coins < u.cost ? "disabled" : ""}>${maxed ? "MAX" : "ちくわ " + u.cost}</button></div>`;
+  }).join("");
+  for (const b of $("shopList").querySelectorAll("button[data-up]")) {
+    b.onclick = () => {
+      const u = UPGRADES.find((x) => x.id === b.dataset.up);
+      if (G.sv.coins < u.cost || G.sv.up[u.id] >= u.max) return;
+      G.sv.coins -= u.cost; G.sv.up[u.id]++; saveGame(); renderShop();
+    };
+  }
+}
+$("shopGo").onclick = () => { $("shop").hidden = true; saveGame(); beginStage(); };
+
+// ダイアログ
+function dialog(title, html, btns, shareText) {
+  $("dlgTitle").textContent = title; $("dlgBody").innerHTML = html;
+  const row = $("dlgBtns"); row.innerHTML = "";
+  for (const b of btns) { const el = document.createElement("button"); el.textContent = b.text; if (b.sub) el.className = "sub"; el.onclick = b.fn; row.append(el); }
+  const sh = $("dlgShare");
+  if (shareText) {
+    const url = location.origin + location.pathname;
+    sh.innerHTML = `
+      <a target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}">X でシェア</a>
+      <a target="_blank" rel="noopener" href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareText)}">LINE</a>
+      <a target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&hashtag=${encodeURIComponent("#ちくわげーむず")}">Facebook</a>`;
+    if (navigator.share) {
+      const b = document.createElement("button"); b.textContent = "その他";
+      b.onclick = () => navigator.share({ title: "まわせ！ちくわルーレット", text: shareText, url }).catch(() => {});
+      sh.append(b);
+    }
+    sh.hidden = false;
+  } else sh.hidden = true;
+  $("dialog").hidden = false;
+}
+function closeDialog() { $("dialog").hidden = true; }
+
+function floatText(text, color, anchor) {
+  const r = anchor.getBoundingClientRect();
+  const d = document.createElement("div"); d.className = "float"; d.textContent = text; d.style.color = color;
+  d.style.left = (r.left + r.width / 2) + "px"; d.style.top = (r.top + r.height / 2 - 10) + "px";
+  document.body.append(d); setTimeout(() => d.remove(), 1000);
+}
+
+function goTitle() { show("scr-title"); refreshTitle(); }
+function refreshTitle() {
+  const s = loadSave();
+  $("goSolo").querySelector("b").textContent = s && !s.clear && (s.stage > 0 || s.lv > 1) ? `ひとりで冒険（つづき：ステージ${s.stage + 1}）` : "ひとりで冒険";
+}
+$("goSolo").onclick = () => startSolo(loadSave());
+$("soloQuit").onclick = () => { if (G.spinning) return; goTitle(); };
+
+/* =====================================================================
+   みんなで決める（マルチプレイ）
+   仕組みは対戦オセロと同じ：Cloudflare の仲介（WebSocket）で接続情報を交換し、
+   あとは WebRTC のデータチャネルで直接やりとりする。
+   親（部屋を作った人）が子それぞれと1対1でつながる星型。ルーレットの回転は親が計算して配る。
+   ===================================================================== */
+const DEFAULT_SIGNAL_URL = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/roulette/ws`;
+const SIGNAL_URL = new URLSearchParams(location.search).get("signal") || DEFAULT_SIGNAL_URL;
+const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
+const MAX_PLAYERS = TUNING.maxPlayers;
+const MAX_ITEMS = TUNING.maxItems;
+const ITEM_MAXLEN = TUNING.itemMaxLen;
+const GUARDS = TUNING.guards;
+const KICK = TUNING.kick;
+const HIT_WINDOW = TUNING.hitWindow;
+const NAME_KEY = "chikuwa-roulette-name";
+
+const NET = { ws: null, role: null, myId: null, code: null, peers: new Map(), pc: null, dc: null, pendingIce: [], connected: false, chain: Promise.resolve(), leaving: false, mode: null };
+const M = { phase: "edit", items: [], players: [], result: -1, myNg: -1, ngLocal: -1 };
+const multiWheel = new Wheel($("multiCv"));
+let spinHist = [];   // 親だけ：[{t, i}] 直近の針の位置
+
+function roomMsg(text, err) { $("roomMsg").textContent = text || ""; $("roomMsg").classList.toggle("err", !!err); }
+function lobbyMsg(text, err) { $("lobbyMsg").textContent = text || ""; $("lobbyMsg").classList.toggle("err", !!err); }
+function myName() {
+  const v = $("nameIn").value.trim().slice(0, 10) || "ななし";
+  lsSet(NAME_KEY, v); return v;
+}
+
+function resetNet() {
+  NET.leaving = true;
+  try { NET.ws && NET.ws.close(); } catch (e) {}
+  for (const p of NET.peers.values()) { try { p.dc && p.dc.close(); } catch (e) {} try { p.pc.close(); } catch (e) {} }
+  try { NET.dc && NET.dc.close(); } catch (e) {}
+  try { NET.pc && NET.pc.close(); } catch (e) {}
+  Object.assign(NET, { ws: null, role: null, myId: null, code: null, peers: new Map(), pc: null, dc: null, pendingIce: [], connected: false, chain: Promise.resolve(), mode: null });
+  clearTimeout(reconnectTimer);
+}
+function sendSignal(obj) { if (NET.ws && NET.ws.readyState === WebSocket.OPEN) NET.ws.send(JSON.stringify(obj)); }
+
+function openSignal(code, mode, tries = 0) {
+  const keepPeers = mode === "reconnect";
+  if (!keepPeers) resetNet();
+  NET.leaving = false; NET.code = code; NET.mode = mode;
+  let socket;
+  try { socket = new WebSocket(`${SIGNAL_URL}?room=${code}`); }
+  catch (e) { failLobby("サーバーに接続できません"); return; }
+  NET.ws = socket;
+  socket.onerror = () => { if (NET.ws === socket && !NET.connected && NET.role !== "host") failLobby("サーバーに接続できません"); };
+  socket.onclose = () => {
+    if (NET.ws !== socket || NET.leaving) return;
+    NET.ws = null;
+    // 親は新しい人が入れるよう、仲介へつなぎ直す
+    if (NET.role === "host") { roomMsg("仲介サーバーにつなぎ直しています…"); scheduleReconnect(); }
+  };
+  socket.onmessage = (e) => {
+    let msg; try { msg = JSON.parse(e.data); } catch (err) { return; }
+    NET.chain = NET.chain.then(() => onSignal(msg, code, mode, tries)).catch((err) => console.error(err));
+  };
+}
+let reconnectTimer = 0;
+function scheduleReconnect() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = setTimeout(() => { if (NET.role === "host" && !NET.leaving) openSignal(NET.code, "reconnect"); }, 2000);
+}
+function failLobby(text) { resetNet(); lobbyMsg(text, true); show("scr-mlobby"); }
+
+async function onSignal(msg, code, mode, tries) {
+  switch (msg.type) {
+    case "role":
+      if (mode === "create" && msg.role !== "host") {
+        // たまたま使用中のコードだった → 別のコードで作り直す
+        if (tries < 6) return createRoom(tries + 1);
+        return failLobby("部屋を作れませんでした。もう一度お試しください");
+      }
+      if (mode === "reconnect") {
+        if (msg.role !== "host") { roomMsg("部屋コードがほかの人に使われたため、新しい人は入れません", true); NET.leaving = true; try { NET.ws.close(); } catch (e) {} return; }
+        roomMsg(""); return;
+      }
+      if (mode === "join" && msg.role === "host") return failLobby("その部屋は見つかりません");
+      NET.role = msg.role; NET.myId = msg.id;
+      if (NET.role === "host") hostReady();
+      else { roomMsg("親とつないでいます…"); makeGuestPeer(); }
+      return;
+
+    case "full":
+      return failLobby("その部屋は満員です");
+
+    case "host-left":
+      if (!NET.connected) failLobby("部屋が閉じられました");
+      return;
+
+    case "reject":
+      return failLobby(msg.reason === "full" ? "その部屋は満員です（8人まで）" : "参加できませんでした");
+
+    // ---- 親側 ----
+    case "peer-joined": {
+      if (NET.role !== "host") return;
+      if (M.players.length + pendingPeerCount() >= MAX_PLAYERS) { sendSignal({ type: "reject", to: msg.id, reason: "full" }); return; }
+      const p = makeHostPeer(msg.id);
+      p.dc = p.pc.createDataChannel("game");
+      setupHostChannel(msg.id, p.dc);
+      await p.pc.setLocalDescription(await p.pc.createOffer());
+      sendSignal({ type: "offer", to: msg.id, sdp: p.pc.localDescription });
+      return;
+    }
+    case "answer": {
+      const p = NET.peers.get(msg.from); if (!p) return;
+      await p.pc.setRemoteDescription(msg.sdp);
+      for (const c of p.ice) await p.pc.addIceCandidate(c);
+      p.ice = [];
+      return;
+    }
+    case "peer-left": {
+      const p = NET.peers.get(msg.id);
+      if (p && !p.open) { try { p.pc.close(); } catch (e) {} NET.peers.delete(msg.id); }
+      return;
+    }
+
+    // ---- 子側 ----
+    case "offer":
+      await NET.pc.setRemoteDescription(msg.sdp);
+      for (const c of NET.pendingIce) await NET.pc.addIceCandidate(c);
+      NET.pendingIce = [];
+      await NET.pc.setLocalDescription(await NET.pc.createAnswer());
+      sendSignal({ type: "answer", to: "0", sdp: NET.pc.localDescription });
+      return;
+
+    case "ice":
+      if (NET.role === "host") {
+        const p = NET.peers.get(msg.from); if (!p) return;
+        if (p.pc.remoteDescription) await p.pc.addIceCandidate(msg.c); else p.ice.push(msg.c);
+      } else {
+        if (NET.pc.remoteDescription) await NET.pc.addIceCandidate(msg.c); else NET.pendingIce.push(msg.c);
+      }
+      return;
+  }
+}
+function pendingPeerCount() { let n = 0; for (const p of NET.peers.values()) if (!p.open) n++; return n; }
+
+function makeHostPeer(id) {
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  const p = { pc, dc: null, ice: [], open: false };
+  NET.peers.set(id, p);
+  pc.onicecandidate = (e) => { if (e.candidate) sendSignal({ type: "ice", to: id, c: e.candidate }); };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === "failed") dropPeer(id); };
+  return p;
+}
+function setupHostChannel(id, ch) {
+  ch.onopen = () => { const p = NET.peers.get(id); if (p) p.open = true; };
+  ch.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } hostOnMessage(id, m); };
+  ch.onclose = () => dropPeer(id);
+}
+function dropPeer(id) {
+  const p = NET.peers.get(id); if (!p) return;
+  NET.peers.delete(id);
+  try { p.pc.close(); } catch (e) {}
+  const pl = M.players.find((x) => x.id === id);
+  if (pl) { M.players = M.players.filter((x) => x.id !== id); roomMsg(`${pl.name} さんが退出しました`); hostBroadcastState(); }
+}
+function makeGuestPeer() {
+  NET.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  NET.pc.onicecandidate = (e) => { if (e.candidate) sendSignal({ type: "ice", to: "0", c: e.candidate }); };
+  NET.pc.ondatachannel = (e) => { NET.dc = e.channel; setupGuestChannel(NET.dc); };
+  NET.pc.onconnectionstatechange = () => { if (NET.pc && NET.pc.connectionState === "failed") lostHost("親とつながりませんでした（ネットワークを確認してください）"); };
+}
+function setupGuestChannel(ch) {
+  ch.onopen = () => {
+    NET.connected = true;
+    NET.leaving = true; try { NET.ws && NET.ws.close(); } catch (e) {} NET.ws = null; NET.leaving = false;  // 仲介はもう不要
+    sendHost({ t: "hello", name: myName() });
+    roomMsg("");
+    enterRoom();
+  };
+  ch.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } guestOnMessage(m); };
+  ch.onclose = () => { if (NET.connected && !NET.leaving) lostHost("親との接続が切れました"); };
+}
+function lostHost(text) {
+  if (!$("scr-mroom").hidden) {
+    NET.connected = false;
+    M.phase = "gone"; renderRoom(); roomMsg(text, true);
+  } else failLobby(text);
+}
+function sendHost(obj) { if (NET.dc && NET.dc.readyState === "open") NET.dc.send(JSON.stringify(obj)); }
+function sendTo(id, obj) { const p = NET.peers.get(id); if (p && p.dc && p.dc.readyState === "open") p.dc.send(JSON.stringify(obj)); }
+function broadcast(obj) { const s = JSON.stringify(obj); for (const p of NET.peers.values()) if (p.dc && p.dc.readyState === "open") p.dc.send(s); }
+
+// ----- 部屋を作る・参加する -----
+function createRoom(tries = 0) {
+  const code = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+  lobbyMsg("部屋を作っています…");
+  openSignal(code, "create", tries);
+}
+function joinRoom() {
+  const code = $("codeIn").value.trim();
+  if (!/^[0-9]{4}$/.test(code)) { lobbyMsg("4桁の数字を入力してください", true); return; }
+  myName();
+  lobbyMsg("部屋をさがしています…");
+  openSignal(code, "join");
+}
+function hostReady() {
+  lobbyMsg("");
+  M.phase = "edit"; M.result = -1;
+  M.players = [{ id: "0", name: myName(), ng: -1, guards: GUARDS, ci: 0, host: true }];
+  if (!M.items.length) M.items = ["はい", "いいえ"];
+  $("itemsIn").value = M.items.join("\n");
+  enterRoom();
+  $("invite").hidden = false;
+  showInvite();
+}
+function enterRoom() {
+  $("roomCode").textContent = NET.code;
+  $("inviteToggle").hidden = NET.role !== "host";
+  if (NET.role !== "host") $("invite").hidden = true;
+  show("scr-mroom");
+  renderRoom();
+}
+
+// ----- 招待 -----
+function inviteUrl() {
+  const u = new URL(location.origin + location.pathname);
+  u.searchParams.set("room", NET.code);
+  const sig = new URLSearchParams(location.search).get("signal");
+  if (sig) u.searchParams.set("signal", sig);
+  return u.toString();
+}
+function showInvite() {
+  const url = inviteUrl();
+  $("shareBtn").textContent = navigator.share ? "招待リンクを送る" : "招待リンクをコピー";
+  $("copyBtn").hidden = !navigator.share;
+  $("shareBtn").onclick = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: "まわせ！ちくわルーレット", text: `ルーレットでいっしょに決めよう！（部屋コード ${NET.code}）\n#ちくわげーむず`, url }); } catch (e) {}
+    } else copyLink(url);
+  };
+  $("copyBtn").onclick = () => copyLink(url);
+  $("qr").innerHTML = "";
+  if (window.QRCode) {
+    new QRCode($("qr"), { text: url, width: 170, height: 170, correctLevel: QRCode.CorrectLevel.M });
+    $("qrWrap").hidden = false;
+  } else $("qrWrap").hidden = true;
+}
+async function copyLink(url) {
+  try { await navigator.clipboard.writeText(url); roomMsg("リンクをコピーしました。みんなに送ってください"); }
+  catch (e) { window.prompt("このリンクをコピーして送ってください", url); }
+}
+$("inviteToggle").onclick = () => { $("invite").hidden = !$("invite").hidden; if (!$("invite").hidden) showInvite(); };
+
+// ----- 親：ゲームの進行 -----
+function freeColor() { for (let i = 0; i < MAX_PLAYERS; i++) if (!M.players.some((p) => p.ci === i)) return i; return 0; }
+function hostOnMessage(id, m) {
+  if (m.t === "hello") {
+    if (M.players.some((p) => p.id === id)) return;
+    if (M.players.length >= MAX_PLAYERS) { sendTo(id, { t: "full" }); return; }
+    const name = String(m.name || "ななし").slice(0, 10);
+    M.players.push({ id, name, ng: -1, guards: M.phase === "spin" ? 0 : GUARDS, ci: freeColor() });
+    roomMsg(`${name} さんが参加しました`);
+    sendTo(id, { t: "items", items: M.items });
+    hostBroadcastState();
+    if (M.phase === "spin") sendTo(id, { t: "s", a: multiWheel.angle, w: multiWheel.omega });
+  } else if (m.t === "ng") {
+    hostSetNg(id, m.i);
+  } else if (m.t === "atk") {
+    hostAttack(id);
+  }
+}
+function hostSetNg(id, i) {
+  if (M.phase !== "pick") return;
+  const p = M.players.find((x) => x.id === id); if (!p) return;
+  p.ng = Number.isInteger(i) && i >= 0 && i < M.items.length ? i : -2;   // -2 = えらばない
+  hostBroadcastState();
+}
+function publicState() {
+  return { t: "state", phase: M.phase, result: M.result, n: M.items.length,
+    players: M.players.map((p) => ({ id: p.id, name: p.name, ng: p.ng, guards: p.guards, ci: p.ci, host: !!p.host })) };
+}
+function hostBroadcastState() { broadcast(publicState()); renderRoom(); }
+
+function parseItems() {
+  return $("itemsIn").value.split("\n").map((s) => s.trim().slice(0, ITEM_MAXLEN)).filter(Boolean).slice(0, MAX_ITEMS);
+}
+function updateItemsCount() {
+  const lines = $("itemsIn").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  const over = lines.length > MAX_ITEMS;
+  $("itemsCount").textContent = `${Math.min(lines.length, MAX_ITEMS)} 個（2〜${MAX_ITEMS}個・1つ${ITEM_MAXLEN}文字まで）` + (over ? `　※${MAX_ITEMS}個をこえた分は使いません` : "");
+  $("toPick").disabled = lines.length < 2;
+  // 編集中も見た目だけルーレットに反映
+  const items = parseItems();
+  if (items.length >= 1) { multiWheel.setItems(items); multiWheel.marks = {}; }
+}
+$("itemsIn").addEventListener("input", updateItemsCount);
+const PRESETS = {
+  yesno: () => ["はい", "いいえ"],
+  dice: () => ["1", "2", "3", "4", "5", "6"],
+  names: () => M.players.map((p) => p.name),
+  nums: () => { const n = Math.max(2, Math.min(MAX_ITEMS, parseInt(prompt("いくつまで？（2〜256）", "10"), 10) || 0)); return n ? Array.from({ length: n }, (_, i) => String(i + 1)) : null; },
+  food: () => ["ラーメン", "カレー", "おでん", "うどん", "やきにく", "すし", "ハンバーグ", "パスタ"],
+};
+for (const b of document.querySelectorAll("[data-preset]")) {
+  b.onclick = () => { const v = PRESETS[b.dataset.preset](); if (v && v.length) { $("itemsIn").value = v.join("\n"); updateItemsCount(); } };
+}
+$("toPick").onclick = () => {
+  const items = parseItems(); if (items.length < 2) return;
+  M.items = items; M.phase = "pick"; M.result = -1;
+  for (const p of M.players) p.ng = -1;
+  broadcast({ t: "items", items: M.items });
+  hostBroadcastState();
+};
+$("backEdit").onclick = $("againEdit").onclick = () => {
+  if (NET.role !== "host") return;
+  M.phase = "edit"; M.result = -1; $("itemsIn").value = M.items.join("\n");
+  hostBroadcastState(); updateItemsCount();
+};
+$("againBtn").onclick = () => {
+  if (NET.role !== "host") return;
+  M.phase = "pick"; M.result = -1; hostBroadcastState();
+};
+$("spinBtn").onclick = () => {
+  if (NET.role !== "host" || M.phase !== "pick") return;
+  M.phase = "spin"; M.result = -1;
+  for (const p of M.players) { p.guards = GUARDS; if (p.ng === -1) p.ng = -2; }
+  multiWheel.win = -1; multiWheel.fr = FRICTION;
+  multiWheel.omega = TUNING.spinSpeed();
+  spinHist = []; lastBeat = 0;
+  hostBroadcastState();
+  broadcast({ t: "s", a: multiWheel.angle, w: multiWheel.omega });
+};
+function hostAttack(id) {
+  if (M.phase !== "spin") return;
+  const p = M.players.find((x) => x.id === id);
+  if (!p || p.guards <= 0 || p.ng < 0) return;
+  p.guards--;
+  const now = performance.now();
+  const ok = multiWheel.index() === p.ng || spinHist.some((h) => h.i === p.ng && now - h.t <= HIT_WINDOW);
+  if (ok) multiWheel.omega = Math.max(multiWheel.omega, 0) + KICK;
+  const fx = { t: "fx", id, ok };
+  broadcast(fx); showFx(fx);
+  broadcast({ t: "s", a: multiWheel.angle, w: multiWheel.omega });
+  hostBroadcastState();
+}
+let lastBeat = 0;
+function hostSpinTick(now, done) {
+  spinHist.push({ t: now, i: multiWheel.index() });
+  while (spinHist.length && now - spinHist[0].t > 600) spinHist.shift();
+  if (done) {
+    M.result = multiWheel.index(); M.phase = "result"; multiWheel.win = M.result;
+    broadcast({ t: "s", a: multiWheel.angle, w: 0 });
+    hostBroadcastState();
+  } else if (now - lastBeat > 50) {
+    lastBeat = now;
+    broadcast({ t: "s", a: multiWheel.angle, w: multiWheel.omega });
+  }
+}
+
+// ----- 子：受け取り -----
+function guestOnMessage(m) {
+  if (m.t === "items") {
+    M.items = Array.isArray(m.items) ? m.items.map((s) => String(s).slice(0, ITEM_MAXLEN)).slice(0, MAX_ITEMS) : [];
+    multiWheel.setItems(M.items); renderRoom();
+  } else if (m.t === "state") {
+    const prev = M.phase;
+    M.phase = m.phase; M.result = m.result; M.players = m.players || [];
+    if (M.phase === "spin" && prev !== "spin") { multiWheel.win = -1; multiWheel.fr = FRICTION; }
+    if (M.phase === "result" && M.result >= 0) { multiWheel.omega = 0; if (multiWheel.index() !== M.result) multiWheel.angle = multiWheel.angleFor(M.result); multiWheel.win = M.result; }
+    renderRoom();
+  } else if (m.t === "s") {
+    if (M.phase === "result") return;
+    multiWheel.angle = m.a; multiWheel.omega = m.w;
+  } else if (m.t === "fx") {
+    showFx(m);
+  } else if (m.t === "full") {
+    NET.leaving = true; failLobby("その部屋は満員です（8人まで）");
+  }
+}
+
+// ----- 自分の操作（親子共通） -----
+function chooseNg(i) {
+  M.ngLocal = i;
+  if (NET.role === "host") hostSetNg("0", i);
+  else { sendHost({ t: "ng", i }); const me = M.players.find((p) => p.id === NET.myId); if (me) me.ng = i < 0 ? -2 : i; renderRoom(); }
+}
+$("atkBtn").onclick = () => {
+  const me = M.players.find((p) => p.id === NET.myId);
+  if (!me || M.phase !== "spin" || me.guards <= 0 || me.ng < 0) return;
+  if (NET.role === "host") hostAttack("0");
+  else { sendHost({ t: "atk" }); me.guards--; renderRoom(); }
+  if (navigator.vibrate) navigator.vibrate(30);
+};
+let fxTimer = 0;
+function showFx(m) {
+  const p = M.players.find((x) => x.id === m.id);
+  const name = p ? p.name : "だれか";
+  $("fx").textContent = m.ok ? `${name} がはじき返した！` : `${name} の空ぶり…`;
+  $("fx").style.color = m.ok ? "#FFD23F" : "var(--muted)";
+  clearTimeout(fxTimer); fxTimer = setTimeout(() => ($("fx").textContent = ""), 1400);
+  if (m.ok) { $("multiCv").classList.remove("shake"); void $("multiCv").offsetWidth; $("multiCv").classList.add("shake"); }
+}
+
+// ----- 画面 -----
+function renderRoom() {
+  const me = M.players.find((p) => p.id === NET.myId);
+  const host = NET.role === "host";
+  // NG の印
+  const marks = {};
+  if (M.phase !== "edit") for (const p of M.players) if (p.ng >= 0 && p.ng < M.items.length) (marks[p.ng] = marks[p.ng] || []).push(PLAYER_COLORS[p.ci]);
+  multiWheel.marks = marks;
+  if (M.phase !== "edit" || !host) { if (multiWheel.items.join("\n") !== M.items.join("\n") && M.items.length) multiWheel.setItems(M.items); }
+  if (M.phase === "result") multiWheel.win = M.result;
+
+  // 参加者
+  $("players").innerHTML = M.players.map((p) => {
+    const ngName = p.ng >= 0 ? esc(M.items[p.ng] ?? "") : "";
+    let sub = "";
+    if (M.phase === "pick") sub = p.ng >= 0 ? "NG：" + ngName : p.ng === -2 ? "NGなし" : "えらび中…";
+    else if (M.phase === "spin") sub = (p.ng >= 0 ? "NG：" + ngName + " " : "") + `<span class="dots">${"●".repeat(p.guards)}${"○".repeat(Math.max(0, GUARDS - p.guards))}</span>`;
+    else if (M.phase === "result" && p.ng === M.result) sub = "NGが出た…";
+    return `<span class="pl${p.id === NET.myId ? " me" : ""}"><i style="background:${PLAYER_COLORS[p.ci]}"></i>${esc(p.name)}${p.host ? "（親）" : ""}${sub ? `<small>${sub}</small>` : ""}</span>`;
+  }).join("") + `<span class="muted" style="align-self:center">${M.players.length}/${MAX_PLAYERS}人</span>`;
+
+  const phase = M.phase;
+  $("pEdit").hidden = !(phase === "edit" && host);
+  $("pWait").hidden = !((phase === "edit" && !host) || phase === "gone");
+  $("waitText").textContent = phase === "gone" ? "接続が切れました。退出してもう一度参加してください" : "親がルーレットの項目を準備しています…";
+  $("pPick").hidden = phase !== "pick";
+  $("pSpin").hidden = phase !== "spin";
+  $("pResult").hidden = phase !== "result";
+  $("hostPickRow").hidden = !host;
+  $("hostResultRow").hidden = !host;
+
+  if (phase === "edit" && host) updateItemsCount();
+  if (phase === "pick") {
+    const myNg = me ? me.ng : -1;
+    const box = $("picks");
+    const html = `<button data-i="-1" class="${myNg === -2 ? "on" : ""}">えらばない</button>` +
+      M.items.map((it, i) => `<button data-i="${i}" class="${myNg === i ? "on" : ""}">${esc(it)}</button>`).join("");
+    if (box.dataset.html !== html) {
+      const st = box.scrollTop; box.innerHTML = html; box.dataset.html = html; box.scrollTop = st;
+      for (const b of box.querySelectorAll("button")) b.onclick = () => chooseNg(+b.dataset.i);
+    }
+    const waiting = M.players.filter((p) => p.ng === -1).length;
+    $("pickMsg").textContent = host ? (waiting ? `${waiting}人がえらび中。えらんでいない人はNGなしでスタートします` : "全員えらびました！") : "親が「まわす！」を押すとスタートします";
+  }
+  if (phase === "spin") {
+    const ng = me && me.ng >= 0 ? M.items[me.ng] : null;
+    $("myNg").textContent = ng ? `あなたのNG：「${ng}」　針がNGに来たら はじけ！` : "NGをえらんでいないので見守りましょう";
+    $("atkBtn").disabled = !me || me.ng < 0 || me.guards <= 0;
+    $("atkBtn").textContent = me && me.ng >= 0 ? `はじく！（のこり ${me.guards}）` : "はじく！";
+  }
+  if (phase === "result") {
+    const name = M.items[M.result] ?? "";
+    $("resultName").textContent = name;
+    const losers = M.players.filter((p) => p.ng === M.result);
+    $("resultSub").innerHTML = losers.length ? `<span style="color:#FF8A7A">${losers.map((p) => esc(p.name)).join("・")} さんのNGが出ちゃった！</span>` : `<span class="muted">だれのNGでもありませんでした</span>`;
+  }
+}
+
+$("goMulti").onclick = () => { lobbyMsg(""); show("scr-mlobby"); };
+$("mlobbyBack").onclick = () => { resetNet(); goTitle(); };
+$("createBtn").onclick = () => { myName(); M.items = []; createRoom(); };
+$("joinBtn").onclick = joinRoom;
+$("codeIn").addEventListener("keydown", (e) => { if (e.key === "Enter") joinRoom(); });
+$("leaveBtn").onclick = () => {
+  if (NET.role === "host" && M.players.length > 1 && !confirm("親が退出すると部屋が閉じます。退出しますか？")) return;
+  resetNet(); M.players = []; M.phase = "edit"; show("scr-mlobby");
+};
+$("nameIn").value = lsGet(NAME_KEY) || "プレイヤー" + rnd(10, 99);
+
+// 招待リンク（?room=1234）から開いたときは自動で参加する
+(() => {
+  const params = new URLSearchParams(location.search);
+  const code = params.get("room");
+  if (!code || !/^[0-9]{4}$/.test(code)) return;
+  params.delete("room");
+  const rest = params.toString();
+  history.replaceState(null, "", location.pathname + (rest ? "?" + rest : ""));
+  $("codeIn").value = code;
+  show("scr-mlobby");
+  if (lsGet(NAME_KEY)) setTimeout(joinRoom, 0);
+  else lobbyMsg("名前を入れて「参加」を押してください");
+})();
+
+/* =====================================================================
+   メインループ
+   ===================================================================== */
+let lastT = performance.now();
+function frame(now) {
+  const dt = Math.min(0.5, (now - lastT) / 1000); lastT = now;
+  const t = now / 1000;
+  if (!$("scr-title").hidden) {
+    hero.angle = mod(hero.angle + dt * 0.6, TAU); hero.draw(t);
+  }
+  if (!$("scr-solo").hidden) {
+    if (G.spinning) {
+      const stopped = soloWheel.step(dt);
+      $("soloRead").textContent = soloItems[soloWheel.index()].label;
+      if (stopped) onSoloStop();
+    }
+    soloWheel.draw(t);
+    if (tokenEl) drawChikuwa(tokenEl.firstChild.getContext("2d"), 64, t);
+    if (G.enemy) drawMonster($("enemyCv").getContext("2d"), 220, G.enemy.key, t, now - G.enemy.hurt < 350);
+  }
+  if (!$("scr-mroom").hidden) {
+    if (M.phase === "spin") {
+      const stopped = multiWheel.step(dt);
+      if (NET.role === "host") hostSpinTick(now, stopped);
+    }
+    $("multiRead").textContent = M.items.length && M.phase !== "edit" ? (M.items[multiWheel.index()] ?? "") : (NET.role === "host" ? "" : "");
+    multiWheel.draw(t);
+  }
+  requestAnimationFrame(frame);
+}
+// 親はタブが裏に回っても回転を進める（rAF が止まるため）
+setInterval(() => {
+  if (document.hidden && NET.role === "host" && M.phase === "spin") {
+    const now = performance.now(), dt = (now - lastT) / 1000; lastT = now;
+    hostSpinTick(now, multiWheel.step(dt));
+  }
+}, 250);
+refreshTitle();
+requestAnimationFrame(frame);
+</script>
+<!-- ちくわゲームズ共通部品（common/v1）：セーブの引っ越し -->
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — core.js（いちばん最初に読み込む）
+ *
+ * どのゲームでも使う小さな道具をまとめたもの。ほかの共通部品（share・save・debug・room）はこれを前提にする。
+ * すべて window.CG（ちくわゲームズ）の下に置き、ゲームの変数や関数と名前がぶつからないようにする。
+ *
+ *   読み込み：ゲームの HTML で script タグの src に ../common/v1/core.js を書く（ほかの共通部品より先）
+ *   ※ 共通部品のコメントには閉じタグ（スラッシュ＋script）を書かない。1 ファイルに埋め込んだとき、そこで script が終わってしまう
+ *   CG.init({ game: 'shop-sim', title: 'ちいさなお店', version: '1.2.0' });
+ *
+ * 仕様を変えて古いゲームが動かなくなるときは v1 を直さず、common/v2/ を作る（公開済みのゲームを壊さない）。
+ * 使い方の全体はリポジトリ直下の CLAUDE.md「14. 共通部品」と common/README.md。
+ */
+(function () {
+    const CG = window.CG || (window.CG = {});
+    CG.LIB = 'v1';
+
+    /** ゲームの情報（init で決める）。game はフォルダ名＝URL、デバッグ送信・マルチの宛先にも使う */
+    CG.info = { game: '', title: '', version: '' };
+    CG.init = function (o) {
+        Object.assign(CG.info, o || {});
+        return CG;
+    };
+
+    /** localStorage の読み書き（失敗しても止まらない。プライベートモードなど） */
+    CG.ls = {
+        get(k, d = null) {
+            try {
+                const v = localStorage.getItem(k);
+                return v === null ? d : v;
+            }
+            catch (e) {
+                return d;
+            }
+        },
+        set(k, v) {
+            try {
+                localStorage.setItem(k, v);
+                return true;
+            }
+            catch (e) {
+                return false;
+            }
+        },
+        del(k) {
+            try {
+                localStorage.removeItem(k);
+            }
+            catch (e) { }
+        },
+        getJSON(k, d = null) {
+            const v = CG.ls.get(k, null);
+            if (v === null)
+                return d;
+            try {
+                return JSON.parse(v);
+            }
+            catch (e) {
+                return d;
+            }
+        },
+        setJSON(k, v) {
+            return CG.ls.set(k, JSON.stringify(v));
+        }
+    };
+
+    /** HTML に埋め込むときの書き換え（< と & と "） */
+    CG.esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+    /** 2桁ゼロ埋め */
+    CG.p2 = n => String(n).padStart(2, '0');
+
+    /** いま開いているゲームの公開 URL（? と # は付けない） */
+    CG.pageUrl = () => location.origin + location.pathname;
+
+    /**
+     * 文字列をコピーする。成功なら true。
+     * 新しい方法（clipboard）がだめなら、見えない入力欄を使う昔の方法を試す。prompt() は使わない（アーティファクトで働かない）
+     */
+    CG.copy = async function (text) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        }
+        catch (e) { }
+        const t = document.createElement('textarea');
+        t.value = text;
+        t.setAttribute('readonly', '');
+        t.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+        document.body.append(t);
+        t.select();
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        }
+        catch (e) { }
+        t.remove();
+        return ok;
+    };
+
+    /** ファイルとして保存（ダウンロード）。data は文字列か Blob */
+    CG.download = function (name, data, type = 'application/json') {
+        const blob = data instanceof Blob ? data : new Blob([data], { type });
+        const u = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = u;
+        a.download = name;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(u), 10000);
+    };
+
+    /** ファイルを文字列で読む（Promise） */
+    CG.readText = file => new Promise((ok, ng) => {
+        const r = new FileReader();
+        r.onload = () => ok(String(r.result));
+        r.onerror = () => ng(new Error('ファイルを読み取れませんでした。'));
+        r.readAsText(file);
+    });
+
+    /** 画面の下に短いお知らせを出す（ms ミリ秒で消える） */
+    let toastTimer = 0;
+    CG.toast = function (msg, ms = 2200) {
+        let el = document.getElementById('cg-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'cg-toast';
+            el.setAttribute('role', 'status');
+            el.style.cssText = 'position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;' +
+                'max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:rgba(30,30,30,.92);color:#fff;font-size:14px;' +
+                'line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.3);transition:opacity .2s;pointer-events:none;text-align:center';
+            document.body.append(el);
+        }
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.style.opacity = '0', ms);
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — save.js（セーブデータのファイルとセーブコード）。core.js の後に読む。
+ *
+ * ゲームの自動保存（localStorage）はゲームごとに書く。ここは「端末をまたいで持ち運ぶ」ための部品。
+ * 中身は どちらも同じ「包み」{ game, v, at, data } で、game がちがうデータは読み込めない。
+ *
+ *   const box = CG.save.wrap(state, 2);              // 包み（v はゲームのセーブ形式の版）
+ *   CG.save.toFile(box, 'ちいさなお店_….json');       // ファイルに書き出す
+ *   const box2 = await CG.save.fromFile(file);       // ファイルから読む（だめなら Error。message は日本語）
+ *   const code = await CG.save.toCode(box);          // セーブコード（文字列）にする
+ *   const box3 = await CG.save.fromCode(code);       // セーブコードを読む（だめなら Error）
+ *
+ * セーブコードの形：CK1.<本体>.<チェック値>
+ *   CK1 … 本体は JSON を deflate で縮めて base64url にしたもの
+ *   CK0 … 縮める仕組みが無いブラウザ用（JSON をそのまま base64url）
+ *   チェック値はゲーム名を混ぜたハッシュ。書き換えたコード・別のゲームのコードははじく（共通ルール 7 章）
+ * 読み込み側は、v がゲームの今の版より新しいときは「ゲームを最新にして」とエラーにすること（box.v を見る）。
+ */
+(function () {
+    const CG = window.CG;
+    const err = t => new Error(t);
+
+    /** ハッシュ（FNV-1a。つくれ！おでん横丁の checksum と同じ式。塩はゲーム名） */
+    function checksum(str, game) {
+        let h = 0x811c9dc5;
+        for (const ch of 'chikuwa-' + game + str) {
+            h ^= ch.charCodeAt(0);
+            h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        return h.toString(36);
+    }
+
+    /** バイト列 ⇔ base64url */
+    function b64e(bytes) {
+        let s = '';
+        for (let i = 0; i < bytes.length; i += 0x8000)
+            s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    function b64d(t) {
+        const s = atob(t.replace(/-/g, '+').replace(/_/g, '/'));
+        const b = new Uint8Array(s.length);
+        for (let i = 0; i < s.length; i++)
+            b[i] = s.charCodeAt(i);
+        return b;
+    }
+
+    /** deflate（使えるブラウザだけ） */
+    const canZip = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+    async function pipe(bytes, stream) {
+        const out = new Response(new Blob([bytes]).stream().pipeThrough(stream));
+        return new Uint8Array(await out.arrayBuffer());
+    }
+
+    /** 包みが正しい形か（game が合っているか）。だめなら Error */
+    function check(box) {
+        if (!box || typeof box !== 'object' || typeof box.game !== 'string')
+            throw err('セーブデータの形ではありません。');
+        // 共通部品より前の ちいさなお店（v1.1.x）は中身を state に入れていた。読めるようにそろえる
+        if (!box.data && box.state && typeof box.state === 'object')
+            box.data = box.state;
+        if (box.game !== CG.info.game)
+            throw err('このゲームのセーブデータではありません。');
+        if (typeof box.v !== 'number' || !box.data || typeof box.data !== 'object')
+            throw err('セーブデータが壊れています。');
+        return box;
+    }
+
+    CG.save = {
+        checksum,
+
+        /** 包む（at は保存した日時） */
+        wrap(data, v) {
+            return { game: CG.info.game, v, at: new Date().toISOString(), data };
+        },
+
+        /** ファイルに書き出す */
+        toFile(box, name) {
+            CG.download(name, JSON.stringify(box), 'application/json');
+        },
+
+        /** ファイルから読む */
+        async fromFile(file) {
+            if (!file)
+                throw err('ファイルが選ばれていません。');
+            const t = await CG.readText(file);
+            let box;
+            try {
+                box = JSON.parse(t);
+            }
+            catch (e) {
+                throw err('ファイルを読み取れませんでした（JSONではありません）。');
+            }
+            return check(box);
+        },
+
+        /** セーブコードにする */
+        async toCode(box) {
+            const raw = new TextEncoder().encode(JSON.stringify(box));
+            let head = 'CK0', body = raw;
+            if (canZip) {
+                try {
+                    body = await pipe(raw, new CompressionStream('deflate-raw'));
+                    head = 'CK1';
+                }
+                catch (e) {
+                    body = raw;
+                }
+            }
+            const p = head + '.' + b64e(body);
+            return p + '.' + checksum(p, CG.info.game);
+        },
+
+        /** セーブコードを読む（前後の空白・改行は無視） */
+        async fromCode(code) {
+            const t = String(code || '').replace(/\s+/g, '');
+            const m = t.match(/^(CK[01])\.([A-Za-z0-9_-]+)\.([0-9a-z]+)$/);
+            if (!m)
+                throw err('セーブコードの形ではありません。全部コピーできているか確かめてください。');
+            if (checksum(m[1] + '.' + m[2], CG.info.game) !== m[3])
+                throw err('セーブコードが正しくありません（途中が欠けている・書き換えた・別のゲームのコード）。');
+            let bytes;
+            try {
+                bytes = b64d(m[2]);
+                if (m[1] === 'CK1') {
+                    if (!canZip)
+                        throw err('このブラウザではこのセーブコードを読めません。ブラウザを新しくしてください。');
+                    bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
+                }
+                return check(JSON.parse(new TextDecoder().decode(bytes)));
+            }
+            catch (e) {
+                throw e && /セーブ|ブラウザ/.test(e.message) ? e : err('セーブコードを読み取れませんでした。');
+            }
+        }
+    };
+})();
+</script>
+<script>
+/**
+ * ちくわゲームズ 共通部品 v1 — move.js（セーブの引っ越し）。core.js・save.js の後に読む。
+ *
+ * ゲームの保存（localStorage）は、ページのアドレス（ドメイン）ごとに別になる。
+ * 古いアドレスから新しいアドレスへ・別の端末へ、そのゲームの保存をまるごと運ぶための画面を作る。
+ * 中身は CG.save のセーブコード（CK1.〜）とファイル。包みの data は { move: 1, keys: { 保存キー: 文字列 } }。
+ *
+ *   CG.move.mount(document.getElementById('move'), {
+ *       keys: ['stage-kobo-v1', 'stage-kobo-progress'],   // 運ぶ保存キー（デバッグログなどは入れない）
+ *   });
+ *
+ * 読み込むときは、keys に書いたキーだけを書き込む（コードに別のキーが入っていても書かない）。
+ * コードに無いキーは消さずにそのまま残す。書き込んだらページを読み直す。
+ * 手順の説明はトップの /hikkoshi/（引っ越しの手順）。
+ */
+(function () {
+    const CG = window.CG;
+    const MOVE_VER = 1;
+
+    /** 見た目（ゲームの配色に合わせやすいよう、色は文字色と --cg-accent だけ使う） */
+    const CSS = '.cg-mv{margin:12px 0;text-align:left}' +
+        '.cg-mv>summary{cursor:pointer;font-weight:700}' +
+        '.cg-mv-b{margin-top:8px;font-size:14px;line-height:1.6}' +
+        '.cg-mv-b p{margin:6px 0}' +
+        '.cg-mv-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}' +
+        '.cg-mv button{font:inherit;font-size:14px;padding:7px 12px;border-radius:10px;cursor:pointer;color:inherit;' +
+        'background:transparent;border:1.5px solid var(--cg-accent,#C9772E)}' +
+        '.cg-mv button.cg-mv-go{background:var(--cg-accent,#C9772E);color:#fff;border-color:transparent}' +
+        '.cg-mv textarea{box-sizing:border-box;width:100%;min-height:64px;font:12px/1.4 ui-monospace,monospace;' +
+        'padding:6px;border-radius:8px;border:1px solid rgba(128,128,128,.5);background:rgba(128,128,128,.08);color:inherit;word-break:break-all}' +
+        '.cg-mv-msg{font-size:13px;margin:4px 0;min-height:1em}' +
+        '.cg-mv-msg.ng{color:#d33}' +
+        '.cg-mv-ask{padding:8px;border-radius:10px;border:1.5px dashed var(--cg-accent,#C9772E);margin:6px 0}' +
+        '.cg-mv a{color:inherit}';
+
+    function addCss() {
+        if (document.getElementById('cg-mv-css'))
+            return;
+        const s = document.createElement('style');
+        s.id = 'cg-mv-css';
+        s.textContent = CSS;
+        document.head.append(s);
+    }
+
+    /** いまの保存を集める（無いキーは入れない） */
+    function collect(keys) {
+        const out = {};
+        for (const k of keys) {
+            const v = CG.ls.get(k, null);
+            if (v !== null)
+                out[k] = v;
+        }
+        return out;
+    }
+
+    /** 包みを確かめる（だめなら Error）。形とゲーム名は CG.save が確かめ済み */
+    function checkBox(box, keys) {
+        const d = box.data;
+        if (d.move !== 1 || !d.keys || typeof d.keys !== 'object')
+            throw new Error('引っ越し用のコードではありません。「セーブの引っ越し」で作ったコードを入れてください。');
+        if (box.v > MOVE_VER)
+            throw new Error('新しい版で作られたコードです。ページを読み直して、ゲームを最新にしてください。');
+        const ok = Object.keys(d.keys).filter(k => keys.includes(k) && typeof d.keys[k] === 'string');
+        if (!ok.length)
+            throw new Error('このコードにはセーブデータが入っていません。');
+        return ok;
+    }
+
+    /** 日時を短く（2026/10/27 13:05） */
+    function when(at) {
+        const a = new Date(at);
+        return isNaN(a) ? '' : a.getFullYear() + '/' + (a.getMonth() + 1) + '/' + a.getDate() + ' ' + a.getHours() + ':' + CG.p2(a.getMinutes());
+    }
+
+    CG.move = {
+        collect,
+
+        /** el の中に「セーブの引っ越し」の欄（開け閉めできる）を作る */
+        mount(el, opt) {
+            if (!el)
+                return;
+            addCss();
+            const keys = (opt && opt.keys) || [];
+            const game = CG.info.game, title = CG.info.title || game;
+            const d = document.createElement('details');
+            d.className = 'cg-mv';
+            d.innerHTML =
+                '<summary>💾 セーブの引っ越し（保存・読み込み）</summary>' +
+                '<div class="cg-mv-b">' +
+                '<p>新しいアドレスや別の端末で、続きから遊ぶための機能です。手順は <a href="../hikkoshi/">引っ越しの手順</a> を見てください。</p>' +
+                '<p><b>① 前のアドレス・前の端末で</b>：コードを作って、コピーします。</p>' +
+                '<div class="cg-mv-row"><button type="button" class="cg-mv-go" data-a="make">コードを作ってコピー</button>' +
+                '<button type="button" data-a="file">ファイルに保存</button></div>' +
+                '<textarea class="cg-mv-out" readonly hidden aria-label="セーブの引っ越しコード"></textarea>' +
+                '<p><b>② 新しいアドレス・新しい端末で</b>：コードを貼って、読み込みます。</p>' +
+                '<textarea class="cg-mv-in" placeholder="ここにコード（CK1.〜）を貼る" aria-label="引っ越しコードを貼る欄"></textarea>' +
+                '<div class="cg-mv-row"><button type="button" class="cg-mv-go" data-a="read">コードを読み込む</button>' +
+                '<button type="button" data-a="open">ファイルから読む</button></div>' +
+                '<input type="file" accept=".json,application/json" hidden>' +
+                '<div class="cg-mv-ask" hidden></div>' +
+                '<div class="cg-mv-msg" role="status"></div>' +
+                '</div>';
+            el.append(d);
+
+            const $ = s => d.querySelector(s);
+            const out = $('.cg-mv-out'), inp = $('.cg-mv-in'), file = $('input[type=file]'), ask = $('.cg-mv-ask'), msg = $('.cg-mv-msg');
+            const say = (t, ng) => {
+                msg.textContent = t;
+                msg.classList.toggle('ng', !!ng);
+            };
+
+            /** 運ぶ包みを作る（保存が無ければ null） */
+            const pack = () => {
+                const got = collect(keys);
+                if (!Object.keys(got).length) {
+                    say('このアドレスには、まだ ' + title + ' のセーブデータがありません。', true);
+                    return null;
+                }
+                return Object.assign(CG.save.wrap({ move: 1, keys: got }, MOVE_VER), { from: location.host });
+            };
+
+            /** 読み込んだ包みを、確認してから書き込む */
+            const offer = async (p) => {
+                ask.hidden = true;
+                let box, ok;
+                try {
+                    box = await p;
+                    ok = checkBox(box, keys);
+                }
+                catch (e) {
+                    say(e.message || '読み込めませんでした。', true);
+                    return;
+                }
+                say('');
+                ask.innerHTML = '<p>' + CG.esc(title) + ' のセーブデータ（' + CG.esc(when(box.at)) +
+                    (box.from ? '・' + CG.esc(box.from) : '') + ' で作成）を読み込みます。<br>' +
+                    '<b>このアドレスにある今のセーブデータは上書きされます。</b></p>' +
+                    '<div class="cg-mv-row"><button type="button" class="cg-mv-go" data-a="yes">上書きして読み込む</button>' +
+                    '<button type="button" data-a="no">やめる</button></div>';
+                ask.hidden = false;
+                ask.onclick = e => {
+                    const a = e.target.dataset && e.target.dataset.a;
+                    if (a === 'no') {
+                        ask.hidden = true;
+                        say('読み込みをやめました。');
+                    }
+                    if (a !== 'yes')
+                        return;
+                    const bad = ok.filter(k => !CG.ls.set(k, box.data.keys[k]));
+                    ask.hidden = true;
+                    if (bad.length) {
+                        say('保存できませんでした（プライベートモードでは保存できません）。', true);
+                        return;
+                    }
+                    say('読み込みました。ページを読み直します…');
+                    CG.toast('セーブデータを読み込みました');
+                    setTimeout(() => location.reload(), 900);
+                };
+            };
+
+            d.addEventListener('click', async e => {
+                const a = e.target.dataset && e.target.dataset.a;
+                if (a === 'make') {
+                    const box = pack();
+                    if (!box)
+                        return;
+                    out.value = await CG.save.toCode(box);
+                    out.hidden = false;
+                    out.select();
+                    const c = await CG.copy(out.value);
+                    say(c ? 'コピーしました。新しいアドレスで「② コードを貼る」欄に貼ってください。' : 'コピーできませんでした。上の欄のコードを長押しして全部コピーしてください。', !c);
+                }
+                else if (a === 'file') {
+                    const box = pack();
+                    if (!box)
+                        return;
+                    const t = new Date();
+                    CG.save.toFile(box, title + '_引っ越し_' + t.getFullYear() + CG.p2(t.getMonth() + 1) + CG.p2(t.getDate()) + '.json');
+                    say('ファイルを保存しました。新しいアドレスで「ファイルから読む」を押して選んでください。');
+                }
+                else if (a === 'read') {
+                    if (!inp.value.trim()) {
+                        say('コードを貼ってから押してください。', true);
+                        return;
+                    }
+                    offer(CG.save.fromCode(inp.value));
+                }
+                else if (a === 'open')
+                    file.click();
+            });
+            file.addEventListener('change', () => {
+                if (file.files[0])
+                    offer(CG.save.fromFile(file.files[0]));
+                file.value = '';
+            });
+            return d;
+        }
+    };
+})();
+</script>
+<script>
+CG.init({ game: 'roulette', title: 'まわせ！ちくわルーレット', version: VERSION });
+CG.move.mount(document.getElementById('cgMove'), { keys: ['chikuwa-roulette-v1', 'chikuwa-roulette-name'] });
+</script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>セーブデータの引っ越し｜ちくわゲームズ</title>
+<meta name="description" content="ちくわゲームズは新しいアドレス games.chikuwa-hookah.com に引っ越しました。前のアドレスで遊んでいたセーブデータを、新しいアドレスへ運ぶ手順です。">
+<meta name="theme-color" content="#F4F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1014" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C9772E'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23E9A55B'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23F3DDB2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* トップページ（../index.html）と同じ色・文字。1カラムの読みもの */
+:root{
+  --bg:#F4F5F7; --surface:#FFFFFF; --sunk:#E9EBEF; --ink:#111318; --muted:#5C6270; --line:#DFE2E8;
+  --accent:#C9772E; --accent-soft:#F6E3CF; --accent-ink:#FFFFFF;
+  --f-body:"M PLUS 1","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --shadow:0 1px 2px rgba(17,19,24,.05),0 8px 24px rgba(17,19,24,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1014; --surface:#171A20; --sunk:#1F232B; --ink:#ECEEF2; --muted:#9BA2AF; --line:#2A2F39;
+  --accent:#F0A35A; --accent-soft:#3A2A1B; --accent-ink:#1A1007;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1014; --surface:#171A20; --sunk:#1F232B; --ink:#ECEEF2; --muted:#9BA2AF; --line:#2A2F39;
+  --accent:#F0A35A; --accent-soft:#3A2A1B; --accent-ink:#1A1007;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.8;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{padding-block:20px}
+.back{font-size:14px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--ink)}
+h1{font-size:clamp(26px,5.4vw,38px);font-weight:800;line-height:1.3;margin:12px 0 8px}
+h2{font-size:20px;font-weight:800;margin:36px 0 10px}
+p{margin:10px 0}
+.lead{color:var(--muted)}
+.addr{display:grid;gap:10px;margin:18px 0;padding:0;list-style:none}
+.addr li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:12px 16px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.addr li.new{border-color:var(--accent);background:var(--accent-soft)}
+.addr span{font-size:13px;font-weight:700;color:var(--muted);min-width:7em}
+.addr b,.mono{font-family:var(--f-mono);font-weight:500;word-break:break-all}
+.steps{counter-reset:s;margin:0;padding:0;list-style:none;display:grid;gap:12px}
+.steps li{position:relative;padding:14px 16px 14px 58px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:16px;top:14px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--accent);color:var(--accent-ink)}
+.steps b{display:block}
+.steps small{display:block;color:var(--muted);font-size:14px}
+.btnlike{display:inline-block;font-size:13px;font-weight:700;padding:1px 9px;border-radius:8px;border:1.5px solid var(--accent);white-space:nowrap}
+.games{display:grid;gap:12px}
+.game{padding:14px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.game h3{margin:0 0 4px;font-size:17px}
+.game p{margin:4px 0;font-size:14px;color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.links a{font-size:14px;font-weight:700;text-decoration:none;padding:6px 14px;border-radius:999px;border:1px solid var(--line)}
+.links a.new{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.links a:hover{border-color:var(--accent)}
+ul.notes{padding-left:1.2em;margin:8px 0}
+ul.notes li{margin:6px 0}
+footer{border-top:1px solid var(--line);margin-top:48px;padding-block:22px 32px;color:var(--muted);font-size:13px}
+footer a{text-decoration:none}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap"><a class="back" href="../">← ちくわゲームズ</a></div>
+</header>
+
+<main class="wrap">
+  <h1>セーブデータの引っ越し</h1>
+  <p class="lead">ちくわゲームズは、新しいアドレスに引っ越しました。前のアドレスで遊んでいたゲームの続きは、この手順でセーブデータを運ぶと、新しいアドレスでも遊べます。</p>
+
+  <ul class="addr">
+    <li><span>前のアドレス</span><b>chikuwa-games.chikuwa-hookah.workers.dev</b></li>
+    <li class="new"><span>新しいアドレス</span><b>games.chikuwa-hookah.com</b></li>
+  </ul>
+
+  <h2>なぜ引っ越しが必要なの？</h2>
+  <p>ゲームの記録は、あなたのブラウザの中に<strong>アドレスごとに別々に</strong>保存されています。そのため、新しいアドレスでゲームを開くと、前のアドレスの記録は見えず、最初からになります。記録は消えていないので、下の手順で新しいアドレスへ運べます。前のアドレスも、しばらくはそのまま使えます。</p>
+
+  <h2>引っ越しの手順（ゲームごと）</h2>
+  <ol class="steps">
+    <li><b>前のアドレスで、ゲームを開く</b><small>下の「ゲームごとの場所」にある「前のアドレスで開く」から開けます。いつも遊んでいたのと同じ端末・同じブラウザで開いてください。</small></li>
+    <li><b>「💾 セーブの引っ越し」を開いて、<span class="btnlike">コードを作ってコピー</span> を押す</b><small>「CK1.」で始まる長いコードがコピーされます。コピーできないときは、出てきたコードを長押しして全部選んでコピーしてください。</small></li>
+    <li><b>新しいアドレスで、同じゲームを開く</b><small>「新しいアドレスで開く」から開けます。</small></li>
+    <li><b>「💾 セーブの引っ越し」の下の欄にコードを貼って、<span class="btnlike">コードを読み込む</span> を押す</b><small>中身を確かめる画面が出るので、<span class="btnlike">上書きして読み込む</span> を押すと、ページが読み直されて続きから遊べます。</small></li>
+  </ol>
+  <p>ゲームごとに 1 回ずつ行います。遊んだことのあるゲームだけで大丈夫です。</p>
+
+  <h2>ゲームごとの場所</h2>
+  <div class="games">
+    <div class="game">
+      <h3>ちいさなお店</h3>
+      <p>「設定」タブの「💾 セーブの引っ越し」（新しいアドレスではじめて開いたときは、難易度えらびの画面の下）。お店のセーブと実績をまとめて運びます。</p>
+      <div class="links"><a href="https://chikuwa-games.chikuwa-hookah.workers.dev/shop-sim/">前のアドレスで開く</a><a class="new" href="https://games.chikuwa-hookah.com/shop-sim/">新しいアドレスで開く</a></div>
+    </div>
+    <div class="game">
+      <h3>つくれ！おでん横丁</h3>
+      <p>画面のいちばん下、更新履歴の上。作ったステージと、集めたちくわ・スタンプ（解放したパーツ）を運びます。</p>
+      <div class="links"><a href="https://chikuwa-games.chikuwa-hookah.workers.dev/stage-kobo/">前のアドレスで開く</a><a class="new" href="https://games.chikuwa-hookah.com/stage-kobo/">新しいアドレスで開く</a></div>
+    </div>
+    <div class="game">
+      <h3>まわせ！ちくわルーレット</h3>
+      <p>はじめの画面の下、更新履歴の上。冒険の進み具合と名前を運びます。</p>
+      <div class="links"><a href="https://chikuwa-games.chikuwa-hookah.workers.dev/roulette/">前のアドレスで開く</a><a class="new" href="https://games.chikuwa-hookah.com/roulette/">新しいアドレスで開く</a></div>
+    </div>
+    <div class="game">
+      <h3>バトルオセロ</h3>
+      <p>はじめの画面の下、更新履歴の上。プレイヤー名と盤面の色を運びます。</p>
+      <div class="links"><a href="https://chikuwa-games.chikuwa-hookah.workers.dev/battle-othello/">前のアドレスで開く</a><a class="new" href="https://games.chikuwa-hookah.com/battle-othello/">新しいアドレスで開く</a></div>
+    </div>
+    <div class="game">
+      <h3>早押し！ちくぽん！</h3>
+      <p>はじめの画面の下、更新履歴の上。ベスト記録と名前を運びます。</p>
+      <div class="links"><a href="https://chikuwa-games.chikuwa-hookah.workers.dev/hayaoshi-chikupon/">前のアドレスで開く</a><a class="new" href="https://games.chikuwa-hookah.com/hayaoshi-chikupon/">新しいアドレスで開く</a></div>
+    </div>
+  </div>
+
+  <h2>うまくいかないときは</h2>
+  <ul class="notes">
+    <li><strong>別の端末に運ぶとき</strong>は、コードを LINE やメールで自分に送るか、<span class="btnlike">ファイルに保存</span> で保存したファイルを、新しい端末で <span class="btnlike">ファイルから読む</span> で選んでください。</li>
+    <li>「セーブコードが正しくありません」と出るときは、コードの最後までコピーできていないことが多いです。もう一度コピーしてください。</li>
+    <li>「まだセーブデータがありません」と出るときは、そのアドレス・そのブラウザでは遊んだ記録がありません。いつも遊んでいたブラウザで開いているか確かめてください。</li>
+    <li>プライベートモード（シークレットウィンドウ）では、記録を保存できません。</li>
+    <li>Beta 欄のゲームは別のアドレスで動いているので、引っ越しはいりません。トップページの限定公開のパスワードは、新しいアドレスでもう一度入れてください。</li>
+  </ul>
+</main>
+
+<footer>
+  <div class="wrap">© 2026 ちくわゲームズ ・ <a href="../">トップへ戻る</a></div>
+</footer>
+</body>
+</html>

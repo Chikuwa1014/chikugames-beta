@@ -122,6 +122,16 @@ a{color:inherit}
 .unlock-msg{flex-basis:100%;margin:0;font-size:13px;color:var(--muted);min-height:1.5em}
 .unlock-msg.ng{color:#C2412D}
 
+/* お知らせ（アドレスの引っ越し。2026-10-27） */
+.notice{display:flex;align-items:center;gap:12px;margin-top:4px;padding:12px 16px;border-radius:16px;background:var(--accent-soft);color:var(--ink);text-decoration:none;font-size:14px;line-height:1.55;border:1px solid transparent;transition:border-color .2s ease}
+.notice:hover{border-color:var(--accent)}
+.notice:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.notice-tag{flex:none;font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink)}
+.notice-t{flex:1;min-width:0}
+.notice-t b{font-family:var(--f-mono);font-weight:500;word-break:break-all}
+.notice svg{flex:none;width:16px;height:16px;transition:transform .2s ease}
+.notice:hover svg{transform:translateX(3px)}
+
 footer{border-top:1px solid var(--line);padding-block:26px 34px;color:var(--muted);font-size:13px}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
 footer a{text-decoration:none}
@@ -143,6 +153,14 @@ footer a:hover{color:var(--ink)}
 </header>
 
 <main>
+  <div class="wrap">
+    <a class="notice" href="./hikkoshi/" id="notice">
+      <span class="notice-tag">お知らせ</span>
+      <span class="notice-t" id="notice-t">ちくわゲームズは新しいアドレス <b>games.chikuwa-hookah.com</b> に引っ越しました。前のアドレスで遊んでいたセーブデータの引っ越し方法はこちら</span>
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+
   <section class="hero">
     <div class="wrap">
       <h1>開いたら、<em>すぐ遊べる。</em><br>ちいさなゲームのあつまり。</h1>
@@ -272,6 +290,10 @@ function addCard(g, grid, before) {
     });
   }
 }
+/* お知らせ：前のアドレス（workers.dev）で開いたときは、新しいアドレスへ引っ越すよう案内する */
+if (/\.workers\.dev$/.test(location.hostname))
+  document.getElementById('notice-t').innerHTML = 'ここは前のアドレスです。新しいアドレス <b>games.chikuwa-hookah.com</b> へ、セーブデータを引っ越してください（手順はこちら）';
+
 const grid = document.getElementById('grid');
 GAMES.forEach(g => addCard(g, grid));
 if (BETAS.length) {
