@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.5.0', '2026-10-27', '拠点のレベル（累計集荷数で1〜8。取り場・出荷ヤードが増え、レベル5からヤードに製品指定）。拠点の大きさ別の上限。場合わけピース（開始・おわりの1対、条件はプルダウン）'],
     ['β0.4.1', '2026-10-27', '「お店」の表記を「コンサル」に変えた'],
     ['β0.4.0', '2026-10-27', '🔧 配置がえモード：置いたきかいを選んで、90°回す・移動・撤去。置くときも「↻ 向き」で向きを決めてから置ける'],
     ['β0.3.1', '2026-10-27', 'きかいを置くとき、タップした場所とずれて置かれることがあるのを直した。置いたきかいを1つずつもどせる「取り消し」を足した'],
@@ -55,8 +56,14 @@
     if (name === 'coin') { Snd.coin(); }
     if (name === 'pickup') {
       const bn = G.bases.length > 1 ? d.base.name + '：' : '';
-      if (d.ok) { Snd.ok(); toast(`${bn}集荷OK！ ${d.got}個 +${d.earn}恋ン`); }
-      else { Snd.ng(); toast(`${bn}集荷が足りない… ${d.got}/${d.need}個（精神力ダウン）`); }
+      const yn = d.yard && UC.spots(d.base, 'yard').length > 1 ? `ヤード${d.yard.no}：` : '';
+      if (d.ok) { Snd.ok(); toast(`${bn}${yn}集荷OK！ ${d.got}個 +${d.earn}恋ン`); }
+      else { Snd.ng(); toast(`${bn}${yn}集荷が足りない… ${d.got}/${d.need}個（精神力ダウン）`); }
+    }
+    if (name === 'levelup') {
+      const L = UC.levelOf(d.base);
+      Snd.ok(); toast(`🎉 ${d.base.name}が レベル${d.lv} に！ 取り場${L.src}・ヤード${L.yard}${L.spec === 'all' ? '（製品指定あり）' : L.spec === 'mix' ? '（製品指定あり／なし）' : ''}`);
+      floors[G.bases.indexOf(d.base)] = null;
     }
     if (name === 'take' || name === 'put') Snd.put();
     if (name === 'injured') toast(`${d.name}が怪我をした！ すり身部品でなおそう`);
@@ -120,9 +127,10 @@
     openModal('あそびかた', `
       <p><b>目的：</b>製造ラインの終点（<b>取り場</b>・オレンジの機械）に出てくる製品を、ちくわ君に<b>出荷ヤード</b>（黄色のしまのパレット）まで運ばせよう。<b>かんばん</b>の時刻に個数がそろっていれば売上の恋ンが入り、ちくわ君の精神力（自己肯定感）が回復する。足りないと精神力がへる。</p>
       <p><b>指示書：</b>「BUILD」で指示ピースを並べ、「RUN」で実行。指示書は最後まで行くと止まる（くり返したいところは、くり返しピースではさむ）。「緊急停止」でとまる。</p>
-      <div class="note">⬆ 進む：ものに当たるまで進む ／ ↶↷⟲ 向きをかえる ／ ✋ 持つ：前の取り場などから製品を持つ ／ 📥 置く：前の出荷ヤードなどに置く ／ 🔁 くり返し〜↩ おわり：はさんだピースをくり返す（かならず1対・入れ子もできる） ／ ■ 停止 ／ 🔨 作業する：前の梱包台で梱包 ／ ⏻ 操作する：前のきかいのスイッチ ／ F1〜F3：ファンクションを呼ぶ</div>
+      <div class="note">⬆ 進む：ものに当たるまで進む ／ ↶↷⟲ 向きをかえる ／ ✋ 持つ：前の取り場などから製品を持つ ／ 📥 置く：前の出荷ヤードなどに置く ／ 🔁 くり返し〜↩ おわり：はさんだピースをくり返す（かならず1対・入れ子もできる） ／ ❓ 場合わけ〜❗ おわり：条件（プルダウン）に合うときだけ、はさんだピースを実行 ／ ■ 停止 ／ 🔨 作業する：前の梱包台で梱包 ／ ⏻ 操作する：前のきかいのスイッチ ／ F1〜F3：ファンクションを呼ぶ</div>
       <p><b>恋ン：</b>ちくわ君が工場を歩くと、落ちている恋ン（金色の♥）を拾って社長のポケットマネーにできる。コンサルで、きかい・福利厚生・ちくわ君の能力アップ・拠点・ちくわ君の増設に使える。</p>
       <p><b>時間：</b>1ヶ月は7日、1年は12ヶ月。ちくわ君はシフトの時間だけ働き、勤務のまん中で休けい（1時間＋15分）。休けいは自動で<b>れいぞうこ</b>へ入って体力・精神力が回復する。だれも勤務していないあいだは自動で早送り。</p>
+      <p><b>拠点のレベル：</b>その拠点の累計集荷数でレベルが上がり、取り場と出荷ヤードが増える。レベル5からはヤードに製品指定がつき、その製品しか置けない（場合わけピースやふりわけそうちで分けよう）。拠点の大きさでレベルの上限がある（S：5・M：6・L：8）。</p>
       <p><b>体力・精神力：</b>体力が0になると怪我（すり身部品でなおす）。精神力が0になると心がおれて動かない（有給で回復）。夏は体力、冬は精神力が少しずつへる。</p>
       <p><b>操作：</b>画面をドラッグで移動、ピンチかホイール・＋－で拡大縮小。マスをタップすると、きかいを調べたり回したりできる。</p>`);
   }
@@ -192,10 +200,11 @@
   function refreshHud() {
     const b = G.bases[curBase];
     const next = b.kanban.find(k => k.got == null && k.t >= G.time);
-    const yard = Object.values(b.objs).find(o => o.type === 'yard');
-    const src = Object.values(b.objs).find(o => o.type === 'src');
-    const ff = isFastForward();
-    $('#hudL').innerHTML = `📋 次の集荷 ${next ? UC.fmtTime(next.t) + '・' + next.need + '個' : 'なし'}<br>🟨 出荷ヤード ${yard ? yard.stock.length : 0}個 ／ 取り場 ${src ? src.stock.length : 0}個`;
+    const ys = UC.spots(b, 'yard'), ss = UC.spots(b, 'src');
+    const sum = l => l.reduce((n, o) => n + o.stock.length, 0);
+    const ff = isFastForward(), nx = UC.nextLevel(b);
+    const nextY = next && b.objs[next.yard] && ys.length > 1 ? `（ヤード${b.objs[next.yard].no}）` : '';
+    $('#hudL').innerHTML = `🏭 Lv${b.lv} ${nx ? `累計 ${b.shipped}/${nx.need}個` : '（最大）'}<br>📋 次の集荷 ${next ? UC.fmtTime(next.t) + '・' + next.need + '個' + nextY : 'なし'}<br>🟨 出荷ヤード ${sum(ys)}個 ／ 取り場 ${sum(ss)}個`;
     $('#hudR').innerHTML = ff ? '⏩ はやおくり' : '';
     $('#hudR').style.display = ff ? '' : 'none';
   }
@@ -212,7 +221,7 @@
     const r = robot(); if (!r) return;
     if (!r.prog.main.length) { toast('指示書がからっぽです。BUILD で作ろう'); return; }
     const badList = [['メイン', r.prog.main], ...r.prog.f.map((f, i) => ['F' + (i + 1), f])].find(([, l]) => !UC.loopPairs(l).ok);
-    if (badList) { toast(badList[0] + 'のくり返しの開始と終了が 1 対になっていません'); return; }
+    if (badList) { toast(badList[0] + 'のくり返し・場合わけの開始と終了が 1 対になっていません'); return; }
     UC.run(G, r); Snd.click(); CG.debug.add('run', { r: selRobot, n: r.prog.main.length });
     if (r.mode === 'off') toast('勤務時間になったら動きだします');
     refreshCtrl();
@@ -288,7 +297,8 @@
     const pc = (v, i) => {
       const k = UC.pieceKey(v), P = UC.PIECES[k], n = UC.pieceArg(v);
       const ln = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯'[(lp.no[i] || 1) - 1] || '';
-      const nm = k === 'fwd' ? (n ? `${n}歩進む` : 'ぶつかるまで') : k === 'loop' ? `${ln}${n ? n + '回' : 'ずっと'}` : k === 'end' ? `${ln}おわり` : P.name;
+      const ca = String(v).split(':')[1] || 'hold', cneg = ca[0] === '!', cd = UC.CONDS.find(c => c.id === ca.replace('!', ''));
+      const nm = k === 'fwd' ? (n ? `${n}歩進む` : 'ぶつかるまで') : k === 'loop' ? `${ln}${n ? n + '回' : 'ずっと'}` : k === 'end' || k === 'endif' ? `${ln}おわり` : k === 'if' ? `${ln}${cneg ? '✕' : ''}${cd ? cd.s : '?'}` : P.name;
       return `<button class="piece${k === 'stop' ? ' stop' : ''}${lp.bad[i] ? ' bad' : ''}" data-i="${i}" style="--c:${P.col}"><span class="no">${i + 1}</span><span>${P.icon}</span><small>${nm}</small></button>`;
     };
     const lp = UC.loopPairs(list);
@@ -300,7 +310,10 @@
       <div class="tabs">${tabs.map(([k, n]) => `<button data-t="${k}" class="${bTab === k ? 'on' : ''}">${n}${k !== 'main' && r.prog.f[+k].length ? '・' + r.prog.f[+k].length : ''}</button>`).join('')}</div>
       <div class="cnt">${bTab === 'main' ? 'メイン指示書（最後まで行くと止まる）' : 'ファンクション ' + tabs.find(t => t[0] === bTab)[1] + '（メインから呼び出す）'}　${list.length}/${max}</div>
       <div class="prog" id="bProg">${head}${list.length ? list.map((k, i) => pc(k, i)).join('') : '<span class="empty">下のピースをタップしてつなげよう</span>'}</div>
-      ${lp.ok ? '' : '<div class="steps" style="background:#FBE3E0">⚠ くり返しの開始と終了が 1 対になっていません（赤い枠のピース）。このままでは RUN できません</div>'}
+      ${lp.ok ? '' : '<div class="steps" style="background:#FBE3E0">⚠ くり返し・場合わけの開始と終了が 1 対になっていません（赤い枠のピース）。このままでは RUN できません</div>'}
+      ${selK === 'if' ? (() => { const a = String(list[bSel]).split(':')[1] || 'hold', neg = a[0] === '!', id = a.replace('!', ''); const gs = [...new Set(UC.CONDS.map(c => c.g))];
+        return `<div class="steps" style="flex-wrap:wrap">${bSel + 1}番の場合わけ：<select id="bIf">${gs.map(g => `<optgroup label="${g}">${UC.CONDS.filter(c => c.g === g).map(c => `<option value="${c.id}" ${c.id === id ? 'selected' : ''}>${c.name}</option>`).join('')}</optgroup>`).join('')}</select>
+        <select id="bIfNeg"><option value="">とき</option><option value="!" ${neg ? 'selected' : ''}>じゃないとき</option></select></div>`; })() : ''}
       ${selK === 'loop' ? `<div class="steps">${bSel + 1}番のくり返し：<select id="bLoop">${Array.from({ length: UC.LOOP_MAX }, (_, n) => n === 1 ? '' : `<option value="${n}" ${UC.pieceArg(list[bSel]) === n ? 'selected' : ''}>${n ? n + '回' : 'ずっと'}</option>`).join('')}</select></div>` : ''}
       ${selK === 'fwd' ? `<div class="steps">${bSel + 1}番の進む：<select id="bSteps">${Array.from({ length: UC.FWD_MAX + 1 }, (_, n) => `<option value="${n}" ${UC.pieceArg(list[bSel]) === n ? 'selected' : ''}>${n ? n + '歩' : 'ぶつかるまで'}</option>`).join('')}</select></div>` : ''}
       <div class="edrow"><button id="bL">◀ 前へ</button><button id="bR">後ろへ ▶</button><button id="bDel">けす</button><button id="bClr">ぜんぶけす</button></div>
@@ -313,13 +326,15 @@
     if (st) st.onchange = () => { list[bSel] = +st.value ? 'fwd:' + st.value : 'fwd'; Snd.click(); edited(r); drawBuild(); };
     const lsel = $('#bLoop');
     if (lsel) lsel.onchange = () => { list[bSel] = 'loop:' + lsel.value; Snd.click(); edited(r); drawBuild(); };
+    const isel = $('#bIf'), ineg = $('#bIfNeg');
+    if (isel) isel.onchange = ineg.onchange = () => { list[bSel] = 'if:' + ineg.value + isel.value; Snd.click(); edited(r); drawBuild(); };
     // 停止は右にへこみがないので、いちばん最後にしか置けない（うしろに何もつなげない）
     const stopOk = l => { const i = l.indexOf('stop'); return i < 0 || (i === l.length - 1 && l.lastIndexOf('stop') === i); };
     $('#bPal').querySelectorAll('.piece').forEach(b => b.onclick = () => {
       if (list.length >= max) { toast('これ以上ならべられません'); return; }
       const k = b.dataset.k;
       const at = k === 'stop' ? list.length : (bSel >= 0 ? bSel + 1 : list.length);
-      const v = k === 'loop' ? 'loop:2' : k;   // くり返しは 2 回から
+      const v = k === 'loop' ? 'loop:2' : k === 'if' ? 'if:hold' : k;   // くり返しは 2 回から、場合わけは「持っているとき」から
       const next = list.slice(); next.splice(at, 0, v);
       if (!stopOk(next)) { toast(k === 'stop' ? '停止はひとつだけです' : '停止のうしろにはつなげません'); return; }
       list.splice(at, 0, v); bSel = at;
@@ -383,8 +398,9 @@
       h += row(`ちくわ君ロボの増設（${n}/${UC.ROBOT_MAX}台）`, 'ほんしゃに 1 台ふえる', UC.ROBOT_COST[n] || 0, 'robot', n >= UC.ROBOT_MAX, n >= UC.ROBOT_MAX ? 'MAX' : null);
     }
     if (shopTab === 'base') {
+      h += `<div class="note">拠点のレベルは、その拠点の累計集荷数で上がります（50・100・300・500・1000・1500・2000個）。上がると取り場・出荷ヤードが増え、レベル5からヤードに製品指定がつきます。いまの${esc(G.bases[curBase].name)}：レベル${G.bases[curBase].lv}（最大${UC.maxLv(G.bases[curBase])}）</div>`;
       h += '<div class="note">拠点を増やすと、その拠点の取り場と出荷ヤードはランダムな場所にできます（取り場から離れた所）。ちくわ君は「ちくわ君」タブの配置がえでうつします。</div>';
-      UC.SIZES.forEach((s, i) => { h += row('拠点の追加：' + s.name, `${s.w}×${s.h}マス`, s.cost, 'base:' + i); });
+      UC.SIZES.forEach((s, i) => { h += row('拠点の追加：' + s.name, `${s.w}×${s.h}マス・レベル${s.maxLv}まで`, s.cost, 'base:' + i); });
     }
     $('#sWrap').innerHTML = h;
     $('#sWrap').querySelectorAll('.tabs button').forEach(x => x.onclick = () => { shopTab = x.dataset.t; drawShop(); });
@@ -447,20 +463,29 @@
   /* ---------- かんばん ---------- */
   function openKanban() {
     const b = G.bases[curBase];
-    const yard = Object.values(b.objs).find(o => o.type === 'yard');
+    const ys = UC.spots(b, 'yard'), nx = UC.nextLevel(b), L = UC.levelOf(b);
     const up = b.kanban.filter(k => k.got == null);
-    let h = `<div class="note">コンピュータで受け取った、${esc(b.name)}の集荷の予定です。時刻に出荷ヤードの製品が個数に足りないと、ちくわ君の精神力がへります。梱包ずみの製品は高く売れます。</div>
-      <div class="cnt">いまの出荷ヤード：${yard ? yard.stock.length : 0}個（うち梱包ずみ ${yard ? yard.stock.filter(p => p.packed).length : 0}個）</div>
+    const yname = k => { const y = b.objs[k.yard]; return y && y.type === 'yard' ? yardName(y) : 'ヤード1'; };
+    let h = `<div class="note">コンピュータで受け取った、${esc(b.name)}の集荷の予定です（出荷ヤードごと）。時刻にヤードの製品が個数に足りないと、ちくわ君の精神力がへります。梱包ずみの製品は高く売れます。製品指定のあるヤードには、その製品しか置けません。</div>
+      <div class="cnt">🏭 レベル ${b.lv}（最大 ${UC.maxLv(b)}）：累計集荷 ${b.shipped}個${nx ? `／次のレベルまで あと ${nx.need - b.shipped}個（レベル${nx.lv}：取り場${nx.src}・ヤード${nx.yard}${nx.spec === 'all' ? '・製品指定あり' : nx.spec === 'mix' ? '・製品指定あり／なし' : ''}）` : '（この拠点の最大です）'}</div>
+      <div class="cnt">いまの出荷ヤード：${ys.map(y => `${yardName(y)} ${y.stock.length}個`).join('／')}</div>
       <h3 style="font-size:14px;margin:10px 0 4px">これからの集荷</h3>`;
-    h += up.length ? `<table class="kb"><tr><th>時刻</th><th>個数</th></tr>${up.map(k => { const c = UC.cal(k.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(k.t)}</td><td>${k.need}個</td></tr>`; }).join('')}</table>` : '<div class="cnt">きょうの予定はありません（勤務日の 0:00 に届きます）</div>';
+    h += up.length ? `<table class="kb"><tr><th>時刻</th><th>ヤード</th><th>個数</th></tr>${up.map(k => { const c = UC.cal(k.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(k.t)}</td><td>${esc(yname(k))}</td><td>${k.need}個</td></tr>`; }).join('')}</table>` : '<div class="cnt">きょうの予定はありません（勤務日の 0:00 に届きます）</div>';
     h += '<h3 style="font-size:14px;margin:14px 0 4px">これまでの集荷</h3>';
-    h += b.log.length ? `<table class="kb"><tr><th>時刻</th><th>結果</th><th>売上</th></tr>${b.log.map(l => { const c = UC.cal(l.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(l.t)}</td><td class="${l.got >= l.need ? 'ok' : 'ng'}">${l.got}/${l.need}個</td><td>+${l.earn}</td></tr>`; }).join('')}</table>` : '<div class="cnt">まだありません</div>';
+    h += b.log.length ? `<table class="kb"><tr><th>時刻</th><th>ヤード</th><th>結果</th><th>売上</th></tr>${b.log.map(l => { const c = UC.cal(l.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(l.t)}</td><td>${l.yard || 1}</td><td class="${l.got >= l.need ? 'ok' : 'ng'}">${l.got}/${l.need}個</td><td>+${l.earn}</td></tr>`; }).join('')}</table>` : '<div class="cnt">まだありません</div>';
     h += `<div class="cnt" style="margin-top:10px">これまでの出荷 ${G.stats.shipped}個 ／ 売上 ${G.stats.earned.toLocaleString()}恋ン ／ 拾った恋ン ${G.stats.coins.toLocaleString()}</div>`;
     openModal('📋 かんばん', h);
   }
 
   /* ---------- 調べる（マスをタップ） ---------- */
   const OBJ_NAME = { src: '取り場（製造ラインの終点）', yard: '出荷ヤード', fridge: 'れいぞうこ', pc: 'コンピュータ' };
+  const yardName = y => 'ヤード' + (y.no || 1) + (y.spec != null ? '（' + UC.PRODUCTS[y.spec].name + '指定）' : '');
+  function objName(o) {
+    const b = G.bases[curBase];
+    if (o.type === 'src') return '取り場' + (UC.spots(b, 'src').length > 1 ? o.no : '') + '（製造ラインの終点）';
+    if (o.type === 'yard') return '出荷' + yardName(o);
+    return OBJ_NAME[o.type] || UC.MACHINES[o.type].name;
+  }
   /* ---------- ナビ（オブジェクトまでの最短ルート） ---------- */
   let nav = null;   // { base, x, y, tiles, lines }
   const REL = ['まっすぐ', '右を向いて', 'うしろを向いて', '左を向いて'];
@@ -472,7 +497,7 @@
     const rx = Math.round(r.x), ry = Math.round(r.y);
     const adj = (a, c) => Math.abs(a - x) + Math.abs(c - y) === 1;
     const path = adj(rx, ry) ? [] : UC.findPath(b, rx, ry, adj);
-    const name = OBJ_NAME[o.type] || UC.MACHINES[o.type].name;
+    const name = objName(o);
     if (!path) return { base: curBase, x, y, tiles: [], lines: [name, 'ここからは とどきません'] };
     // 同じ向きに続く歩みをまとめて「〜を向いて N 歩」にする（ちくわ君の向きから見た左右）
     let dir = r.dir, px = rx, py = ry;
@@ -504,11 +529,11 @@
       else { Snd.click(); return; }
     }
     nav = null;
-    const name = OBJ_NAME[o.type] || UC.MACHINES[o.type].name;
+    const name = objName(o);
     const pname = p => p ? (p.packed ? '📦梱包ずみ' : '') + UC.PRODUCTS[p.t].name : 'なし';
     let h = '';
-    if (o.type === 'src') h += `<p>製品が ${o.stock.length}/${CFG.srcMax}個 たまっています。勤務中、${CFG.produceEvery}分ごとに1個できます。前に立って「持つ」で取れます。</p>`;
-    if (o.type === 'yard') h += `<p>製品 ${o.stock.length}個。集荷の時刻にトラックが持っていきます。前に立って「置く」、またはコンベアで運びこめます。</p>`;
+    if (o.type === 'src') h += `<p>製品が ${o.stock.length}/${CFG.srcMax}個 たまっています。勤務中、${Math.round(CFG.produceEvery / UC.levelOf(b).prod)}分ごとに1個できます。前に立って「持つ」で取れます。</p>`;
+    if (o.type === 'yard') h += `<p>製品 ${o.stock.length}個。集荷の時刻にトラックが持っていきます。前に立って「置く」、またはコンベアで運びこめます。${o.spec != null ? `<b>${UC.PRODUCTS[o.spec].name}</b>しか置けません。` : ''}</p>`;
     if (o.type === 'fridge') h += '<p>休けい時間に、ちくわ君が自動で入って体力と精神力を回復します。</p>';
     if (o.type === 'pc') h += '<p>集荷の予定（かんばん）を受け取ります。</p>';
     if (UC.MACHINES[o.type]) h += `<p>${UC.MACHINES[o.type].desc}</p>`;
@@ -799,12 +824,13 @@
     const [sx, sy] = UC.iso(o.x + 0.5, o.y + 0.5);
     if (o.type === 'src') {
       o.stock.slice(0, 3).forEach((p, i) => UC.drawModel(ctx, UC.productModel(p), 0, o.x, o.y, 5 - i, 2.5, 4 + i * 2));
-      if (o.stock.length) label(sx, sy - 34, '取り場 ' + o.stock.length, '#C2551A');
-      else label(sx, sy - 34, '取り場', '#C2551A');
+      const many = UC.spots(b, 'src').length > 1 ? o.no : '';
+      label(sx, sy - 34, '取り場' + many + (o.stock.length ? ' ' + o.stock.length : ''), '#C2551A');
     }
     if (o.type === 'yard') {
       o.stock.slice(0, 8).forEach((p, i) => UC.drawModel(ctx, UC.productModel(p), 0, o.x, o.y, 1 + (i % 2) * 3, 1 + (Math.floor(i / 2) % 2) * 3, 4 + Math.floor(i / 4) * 9));
-      label(sx, sy - 30, '出荷 ' + o.stock.length, '#B38600');
+      const many = UC.spots(b, 'yard').length > 1 ? o.no : '';
+      label(sx, sy - 30, '出荷' + many + (o.spec != null ? ' ' + UC.PRODUCTS[o.spec].name : '') + ' ' + o.stock.length, o.spec != null ? '#8A5A00' : '#B38600');
     }
     if (o.type === 'pool') { if (o.stock.length) UC.drawModel(ctx, UC.productModel(o.stock[o.stock.length - 1]), 0, o.x, o.y, 2, 2, 4); label(sx, sy - 18, o.stock.length + '/' + UC.poolCap(b), '#2E5E8E'); }
     if (o.type === 'pack' && o.item) UC.drawModel(ctx, UC.productModel(o.item), 0, o.x, o.y, 2, 2, 12);

@@ -2,7 +2,7 @@
 (function () {
   const UC = window.UC = window.UC || {};
 
-  UC.VERSION = 'β0.4.1';
+  UC.VERSION = 'β0.5.0';
   UC.KEY = 'ugokase-chikuwa-v1';
 
   /* 向き：0＝東（+x）・1＝南（+y）・2＝西（-x）・3＝北（-y） */
@@ -57,11 +57,25 @@
     sankotai: { name: '3交代', days: 4, slots: [[360, 1080], [840, 1560], [1200, 1920]], monthMp: -5, desc: '6:00〜18:00／14:00〜翌2:00／20:00〜翌8:00・4日出勤・毎月ちがう直' },
   };
 
+  /* 拠点のレベル（その拠点の累計集荷数で上がる。2026-10-27 開発者の指定）
+     src・yard：取り場・出荷ヤードの数、prod：生産量の倍率、spec：ヤードの製品指定（none なし・all あり・mix あり／なし混在）、kb：集荷数を増やす数（仮） */
+  UC.LEVELS = [
+    { lv: 1, need: 0, src: 1, yard: 1, prod: 1, spec: 'none', kb: 0 },
+    { lv: 2, need: 50, src: 1, yard: 2, prod: 1, spec: 'none', kb: 0 },
+    { lv: 3, need: 100, src: 2, yard: 2, prod: 1, spec: 'none', kb: 0 },
+    { lv: 4, need: 300, src: 2, yard: 3, prod: 1, spec: 'none', kb: 0 },
+    { lv: 5, need: 500, src: 3, yard: 3, prod: 1.1, spec: 'all', kb: 1 },
+    { lv: 6, need: 1000, src: 4, yard: 3, prod: 1.1, spec: 'all', kb: 1 },
+    { lv: 7, need: 1500, src: 6, yard: 6, prod: 1.2, spec: 'mix', kb: 2 },
+    { lv: 8, need: 2000, src: 8, yard: 8, prod: 1.2, spec: 'mix', kb: 2 },
+  ];
+  UC.SPOT_GAP = 3;   // 取り場どうし・ヤードどうしは、まわり 3 マス以内に置かない
+
   /* 拠点の大きさ */
   UC.SIZES = [
-    { w: 16, h: 8, cost: 3000, name: 'S（16×8）' },
-    { w: 32, h: 16, cost: 9000, name: 'M（32×16）' },
-    { w: 64, h: 32, cost: 25000, name: 'L（64×32）' },
+    { w: 16, h: 8, cost: 3000, name: 'S（16×8）', maxLv: 5 },
+    { w: 32, h: 16, cost: 9000, name: 'M（32×16）', maxLv: 6 },
+    { w: 64, h: 32, cost: 25000, name: 'L（64×32）', maxLv: 8 },
   ];
 
   /* きかい（お店で買って置くもの） */
@@ -114,6 +128,8 @@
     put: { name: '置く', icon: '📥', col: '#C07020' },
     work: { name: '作業する', icon: '🔨', col: '#4E9A51' },
     op: { name: '操作する', icon: '⏻', col: '#C94A4A' },
+    if: { name: '場合わけ', icon: '❓', col: '#2E9C9C' },          // 'if:hold'＝持っているとき、'if:!hold'＝持っていないとき
+    endif: { name: '場合わけおわり', icon: '❗', col: '#2E9C9C' },
     loop: { name: 'くり返し', icon: '🔁', col: '#B0567E' },     // 'loop:3'＝3 回、'loop:0'＝ずっと
     end: { name: 'くり返しおわり', icon: '↩', col: '#B0567E' },
     stop: { name: '停止', icon: '■', col: '#3B3B3B' },   // 右にへこみがない＝いちばん最後にだけ置ける
@@ -128,18 +144,45 @@
   /* 指示書の 1 つのピースは文字列。進むは 'fwd'（ぶつかるまで）か 'fwd:3'（3 歩） */
   UC.pieceKey = pc => String(pc).split(':')[0];
   UC.pieceArg = pc => +(String(pc).split(':')[1] || 0);
-  /* くり返しの開始と終了の組（かならず 1 対。入れ子できる）。pair[開始]＝終了・pair[終了]＝開始、no[i]＝何組目か、ok＝ぜんぶ 1 対か */
+  /* くり返し・場合わけの開始と終了の組（どちらもかならず 1 対。入れ子できる。くり返しと場合わけが交差するのはだめ）
+     pair[開始]＝終了・pair[終了]＝開始、no[i]＝何組目か、ok＝ぜんぶ 1 対か */
+  const OPEN = { loop: 'end', if: 'endif' }, CLOSE = { end: 'loop', endif: 'if' };
   UC.loopPairs = function (list) {
     const st = [], pair = {}, no = {}, bad = {};
     let n = 0, ok = true;
     list.forEach((pc, i) => {
       const k = UC.pieceKey(pc);
-      if (k === 'loop') { st.push(i); no[i] = ++n; }
-      if (k === 'end') { if (!st.length) { ok = false; bad[i] = 1; return; } const s = st.pop(); pair[s] = i; pair[i] = s; no[i] = no[s]; }
+      if (OPEN[k]) { st.push(i); no[i] = ++n; }
+      if (CLOSE[k]) {
+        const top = st[st.length - 1];
+        if (top == null || UC.pieceKey(list[top]) !== CLOSE[k]) { ok = false; bad[i] = 1; return; }
+        st.pop(); pair[top] = i; pair[i] = top; no[i] = no[top];
+      }
     });
     st.forEach(i => { ok = false; bad[i] = 1; });
     return { pair, no, bad, ok };
   };
+
+  /* 場合わけの条件（プルダウン）。g はグループ、s はピースに書く短い名前 */
+  UC.CONDS = [
+    { id: 'ok', g: '直前のピース', name: '直前のピースがうまくいった', s: '直前OK' },
+    { id: 'fsrc', g: '前のマス', name: '前が取り場', s: '前:取り場' },
+    { id: 'fsrcp', g: '前のマス', name: '前の取り場に製品がある', s: '取り場に製品' },
+    { id: 'fyard', g: '前のマス', name: '前が出荷ヤード', s: '前:ヤード' },
+    { id: 'fyardok', g: '前のマス', name: '前のヤードに、持っている製品を置ける', s: 'ヤードに置ける' },
+    { id: 'fbelt', g: '前のマス', name: '前がコンベア', s: '前:コンベア' },
+    { id: 'fbeltp', g: '前のマス', name: '前のコンベアに製品がある', s: 'コンベアに製品' },
+    { id: 'fpoolp', g: '前のマス', name: '前の製品プールに製品がある', s: 'プールに製品' },
+    { id: 'fpack', g: '前のマス', name: '前が梱包台', s: '前:梱包台' },
+    { id: 'ffree', g: '前のマス', name: '前に進める（なにもない）', s: '前があいてる' },
+    { id: 'hold', g: '持っている製品', name: '製品を持っている', s: '持っている' },
+    { id: 'packed', g: '持っている製品', name: '持っている製品が梱包ずみ', s: '梱包ずみ' },
+    { id: 't0', g: '持っている製品', name: '持っている製品がネジ', s: 'ネジ' },
+    { id: 't1', g: '持っている製品', name: '持っている製品がバネ', s: 'バネ' },
+    { id: 't2', g: '持っている製品', name: '持っている製品が羽車', s: '羽車' },
+    { id: 't3', g: '持っている製品', name: '持っている製品が綺麗な砂', s: '綺麗な砂' },
+    { id: 't4', g: '持っている製品', name: '持っている製品が魚', s: '魚' },
+  ];
 
   UC.WEEK = ['月', '火', '水', '木', '金', '土', '日'];
   UC.season = m => (m >= 3 && m <= 5) ? 'spring' : (m >= 6 && m <= 8) ? 'summer' : (m >= 9 && m <= 11) ? 'autumn' : 'winter';

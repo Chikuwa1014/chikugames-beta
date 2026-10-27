@@ -144,6 +144,54 @@ def run(p, w, h, tag):
     nv = page.evaluate('() => UCT.nav && UCT.nav.lines[0]')
     check(bool(nv) and '取り場' in nv, f'{tag}: 取り場の絵をタップしてナビ（{nv}）')
 
+    # 場合わけ：持っているときだけ右を向く／持っていないときは左
+    st = page.evaluate("""() => {
+      const G = UCT.G, r = G.robots[0];
+      UC.stop(G, r); r.dir = 0; r.hold = null;
+      r.prog.main = ['if:hold', 'right', 'endif', 'if:!hold', 'left', 'endif'];
+      UC.run(G, r); for (let i = 0; i < 40; i++) UC.step(G, 0.25);
+      const d1 = r.dir;
+      r.hold = { t: 0, packed: false }; r.dir = 0; UC.run(G, r); for (let i = 0; i < 40; i++) UC.step(G, 0.25);
+      const d2 = r.dir; r.hold = null;
+      const cross = UC.loopPairs(['loop:2', 'if:hold', 'end', 'endif']).ok;
+      r.prog.main = ['fwd:3', 'stop'];
+      return { d1, d2, cross };
+    }""")
+    check(st['d1'] == 3 and st['d2'] == 1, f'{tag}: 場合わけが条件どおり（{st}）')
+    check(not st['cross'], f'{tag}: くり返しと場合わけの交差は 1 対ではない')
+
+    # 拠点のレベル：S は Lv5 まで、取り場・ヤードが増える、同じものどうしは 3 マス以内に置かない、Lv5 で製品指定
+    st = page.evaluate("""() => {
+      const G = UCT.G, b = UC.newGame().bases[0];
+      const out = [];
+      for (const n of [49, 1, 50, 200, 200, 600]) {
+        b.shipped += n; let nx;
+        while ((nx = UC.nextLevel(b)) && b.shipped >= nx.need) { b.lv++; }
+        out.push(b.lv);
+      }
+      return out;
+    }""")
+    check(st == [1, 2, 3, 4, 5, 5], f'{tag}: 累計集荷数でレベルが上がり、S は 5 で止まる（{st}）')
+    st = page.evaluate("""() => {
+      const G = UCT.G; G.coin = 99999; UC.buyBase(G, 2); const bi = G.bases.length - 1, b = G.bases[bi];
+      UC.moveRobot(G, G.robots[0], bi);
+      const yard = UC.spots(b, 'yard')[0];
+      // 集荷で一気に 2000 個 → Lv8
+      b.shipped = 1999; yard.stock = [{ t: 1, packed: false }];
+      b.kanban = [{ t: G.time - 1, need: 1, got: null, yard: yard.x + ',' + yard.y }];
+      UC.step(G, 0.01);
+      const ss = UC.spots(b, 'src'), ys = UC.spots(b, 'yard');
+      const near = l => l.some((a, i) => l.some((c, j) => i < j && Math.max(Math.abs(a.x - c.x), Math.abs(a.y - c.y)) <= 3));
+      const spec = ys.filter(y => y.spec != null).length;
+      const sy = ys.find(y => y.spec != null);
+      const out = { lv: b.lv, src: ss.length, yard: ys.length, nearS: near(ss), nearY: near(ys), spec, specT: sy ? sy.spec : -1 };
+      UC.moveRobot(G, G.robots[0], 0); G.bases.pop();   // 後のテストのために元へもどす
+      return out;
+    }""")
+    check(st['lv'] == 8 and st['src'] == 8 and st['yard'] == 8, f'{tag}: L 拠点は Lv8 で取り場 8・ヤード 8（{st}）')
+    check(not st['nearS'] and not st['nearY'], f'{tag}: 取り場どうし・ヤードどうしは 3 マス以内にない')
+    check(0 < st['spec'] < 8, f'{tag}: Lv7〜 はヤードの製品指定あり・なしが混在')
+
     # BUILD：起動ピース・停止のうしろにつなげない・歩数のプルダウン
     page.click('#btnBuild'); page.wait_for_timeout(200)
     check(page.locator('#bProg .piece.start').count() == 1, f'{tag}: 指示書の左端に起動ピース')

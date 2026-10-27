@@ -24,21 +24,66 @@
   /* ---------- 新しいゲーム ---------- */
   function newBase(sizeIdx, name) {
     const sz = UC.SIZES[sizeIdx];
-    const b = { name, size: sizeIdx, w: sz.w, h: sz.h, objs: {}, coins: {}, kanban: [], upg: { beltSpd: 0, poolCap: 0 }, prodT: 0, coinT: 0, log: [] };
-    const W = b.w, H = b.h;
+    const b = { name, size: sizeIdx, w: sz.w, h: sz.h, objs: {}, coins: {}, kanban: [], upg: { beltSpd: 0, poolCap: 0 }, prodT: 0, coinT: 0, log: [], lv: 1, shipped: 0 };
     // れいぞうこ・コンピュータは左上のすみ
     put(b, 'fridge', 0, 0, 1);
     put(b, 'pc', 1, 0, 1);
-    // 取り場（製造ラインの終点）は左がわのふち、出荷ヤードは取り場から離れた右がわ（ランダム）
-    const sy = rnd(2, H - 2), sx = 0;
-    put(b, 'src', sx, sy, 0).stock = [];
-    let yx, yy, n = 0;
-    do { yx = rnd(Math.floor(W * 0.6), W - 1); yy = rnd(0, H - 1); n++; }
-    while ((b.objs[key(yx, yy)] || Math.abs(yx - sx) + Math.abs(yy - sy) < Math.floor((W + H) / 2)) && n < 200);
-    put(b, 'yard', yx, yy, 0).stock = [];
+    // 取り場（製造ラインの終点）と出荷ヤードは、離れた場所にランダム
+    addSpot(b, 'src'); addSpot(b, 'yard');
     for (let i = 0; i < 3; i++) dropCoin(b);
     return b;
   }
+  const spots = (b, type) => Object.values(b.objs).filter(o => o.type === type).sort((a, z) => (a.no || 0) - (z.no || 0));
+  UC.spots = spots;
+  /* 取り場・出荷ヤードを 1 つ増やす。同じものどうしはまわり 3 マス以内に置かない（チェビシェフ距離 > 3）。取り場とヤードは離す。
+     置ける所がなければ、条件を少しずつゆるめる */
+  function addSpot(b, type) {
+    const other = type === 'src' ? 'yard' : 'src';
+    const mine = spots(b, type), theirs = spots(b, other);
+    const far0 = Math.max(4, Math.floor((b.w + b.h) / (mine.length + theirs.length ? 3 : 2)));
+    const free = (x, y) => !b.objs[key(x, y)] && !(x <= 2 && y <= 1);   // れいぞうこ・コンピュータの前はあけておく
+    const open = (x, y) => [0, 1, 2, 3].some(d => { const nx = x + DX[d], ny = y + DY[d]; return inB(b, nx, ny) && !b.objs[key(nx, ny)]; });
+    for (const [gap, far] of [[UC.SPOT_GAP, far0], [UC.SPOT_GAP, Math.floor(far0 / 2)], [UC.SPOT_GAP, 2], [2, 2], [1, 1], [0, 0]]) {
+      const cand = [];
+      for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+        if (!free(x, y) || !open(x, y)) continue;
+        if (mine.some(o => Math.max(Math.abs(o.x - x), Math.abs(o.y - y)) <= gap)) continue;
+        if (theirs.some(o => Math.abs(o.x - x) + Math.abs(o.y - y) < far)) continue;
+        cand.push([x, y]);
+      }
+      if (cand.length) {
+        const [x, y] = cand[rnd(0, cand.length - 1)];
+        const o = put(b, type, x, y, 0);
+        o.stock = []; o.no = mine.length + 1;
+        if (type === 'yard') o.spec = null;
+        delete b.coins[key(x, y)];
+        return o;
+      }
+    }
+    return null;
+  }
+  /* レベルに合わせて、取り場・ヤードの数と、ヤードの製品指定をそろえる */
+  function applyLevel(b) {
+    const L = UC.LEVELS[b.lv - 1];
+    while (spots(b, 'src').length < L.src && addSpot(b, 'src'));
+    while (spots(b, 'yard').length < L.yard && addSpot(b, 'yard'));
+    const ys = spots(b, 'yard');
+    const types = [...UC.PRODUCTS.keys()].sort(() => Math.random() - 0.5);
+    ys.forEach((y, i) => {
+      const want = L.spec === 'all' || (L.spec === 'mix' && i % 2 === 0);
+      if (!want) { y.spec = null; return; }
+      if (y.spec == null) y.spec = types[i % types.length];
+      y.stock = y.stock.filter(p => p.t === y.spec);   // 指定に合わないものはトラックが引きとる
+    });
+  }
+  UC.maxLv = b => UC.SIZES[b.size].maxLv;
+  UC.levelOf = b => UC.LEVELS[(b.lv || 1) - 1];
+  UC.nextLevel = b => (b.lv || 1) < UC.maxLv(b) ? UC.LEVELS[b.lv] : null;
+  /* 古いセーブ（β0.4 まで）の拠点に、レベルと番号を足す */
+  UC.fixBase = function (b) {
+    if (!b.lv) { b.lv = 1; b.shipped = 0; }
+    ['src', 'yard'].forEach(t => spots(b, t).forEach((o, i) => { if (!o.no) o.no = i + 1; if (t === 'yard' && o.spec === undefined) o.spec = null; }));
+  };
   function put(b, type, x, y, dir) {
     const o = { type, x, y, dir: dir || 0 };
     if (UC.BELTS.includes(type)) { o.item = null; o.prog = 0; }
@@ -87,6 +132,7 @@
       if (!b || chk(b) !== c) return null;
       const G = JSON.parse(decodeURIComponent(escape(atob(b))));
       if (!G || G.v !== 1 || !Array.isArray(G.bases) || !G.bases.length) return null;
+      G.bases.forEach(UC.fixBase);
       return G;
     } catch (e) { return null; }
   };
@@ -142,7 +188,7 @@
     }
   }
 
-  function bubble(G, r, s, dur = 20) { r.bub = { s, until: G.time + dur }; }
+  function bubble(G, r, s, dur = 20) { r.bub = { s, until: G.time + dur }; if (s === '？') r.lastOk = false; }
   const poolCap = b => CFG.poolCap + b.upg.poolCap * 5;
   UC.poolCap = poolCap;
   const beltMin = b => CFG.beltMin / (1 + b.upg.beltSpd * 0.4);
@@ -183,10 +229,10 @@
       const operating = !travel && staff.some(r => r.mode === 'work' || r.mode === 'break');
       if (operating) {
         b.prodT += dt;
-        while (b.prodT >= CFG.produceEvery) {
-          b.prodT -= CFG.produceEvery;
-          const src = Object.values(b.objs).find(o => o.type === 'src');
-          if (src && src.stock.length < CFG.srcMax) src.stock.push({ t: rnd(0, UC.PRODUCTS.length - 1), packed: false });
+        const every = CFG.produceEvery / UC.levelOf(b).prod;   // レベル 5・7 で生産量が増える
+        while (b.prodT >= every) {
+          b.prodT -= every;
+          for (const src of spots(b, 'src')) if (src.stock.length < CFG.srcMax) src.stock.push({ t: rnd(0, UC.PRODUCTS.length - 1), packed: false });
         }
         b.coinT += dt;
         while (b.coinT >= CFG.coinEvery) { b.coinT -= CFG.coinEvery; if (Math.random() < 0.7) dropCoin(b, c.mi); }
@@ -222,15 +268,20 @@
         for (let t = w.start + CFG.kanbanEvery; t < w.end; t += CFG.kanbanEvery) times.add(t);
         times.add(w.end);
       }
-      const need = () => Math.min(CFG.kanbanMax, CFG.kanbanBase + Math.floor(c.mi / 2) + (Math.random() < 0.3 ? 1 : 0));
-      for (const t of [...times].sort((a, z) => a - z)) if (!b.kanban.some(k => k.t === t) && t > G.time) b.kanban.push({ t, need: need(), got: null });
-      b.kanban.sort((a, z) => a.t - z.t);
+      // かんばんは出荷ヤードごと。レベル 5・7 で集荷数が増える
+      const kb = UC.levelOf(b).kb;
+      const need = () => Math.min(CFG.kanbanMax, CFG.kanbanBase + Math.floor(c.mi / 2) + (Math.random() < 0.3 ? 1 : 0)) + kb;
+      for (const t of [...times].sort((a, z) => a - z)) for (const y of spots(b, 'yard')) {
+        const yk = key(y.x, y.y);
+        if (!b.kanban.some(k => k.t === t && k.yard === yk) && t > G.time) b.kanban.push({ t, need: need(), got: null, yard: yk });
+      }
+      b.kanban.sort((a, z) => a.t - z.t || (b.objs[a.yard] ? b.objs[a.yard].no : 0) - (b.objs[z.yard] ? b.objs[z.yard].no : 0));
     });
     emit('day', c);
   }
 
   function doPickup(G, b, bi, k) {
-    const yard = Object.values(b.objs).find(o => o.type === 'yard');
+    const yard = (k.yard && b.objs[k.yard] && b.objs[k.yard].type === 'yard') ? b.objs[k.yard] : spots(b, 'yard')[0];
     const st = yard ? yard.stock : [];
     // 梱包ずみを先に出す
     st.sort((a, z) => (z.packed ? 1 : 0) - (a.packed ? 1 : 0));
@@ -243,22 +294,26 @@
       r.mp = clamp(r.mp + (ok ? CFG.okMental : CFG.ngMental), 0, 100);
       bubble(G, r, ok ? '✌' : '💦', 40);   // そろったらピース（平和）
     }
-    b.log.unshift({ t: k.t, need: k.need, got: take.length, earn });
+    b.log.unshift({ t: k.t, need: k.need, got: take.length, earn, yard: yard ? yard.no : 1 });
     b.log.length = Math.min(b.log.length, 20);
-    emit('pickup', { base: b, ok, need: k.need, got: take.length, earn });
+    emit('pickup', { base: b, ok, need: k.need, got: take.length, earn, yard });
+    // 累計集荷数でレベルアップ（拠点の大きさで上限がある）
+    b.shipped = (b.shipped || 0) + take.length;
+    let nx;
+    while ((nx = UC.nextLevel(b)) && b.shipped >= nx.need) { b.lv++; applyLevel(b); emit('levelup', { base: b, lv: b.lv }); }
   }
 
   /* ---------- コンベア ---------- */
   function outDir(o) {
     if (o.type === 'wye') return (o.dir + (o.alt ? 1 : 3)) % 4;
-    if (o.type === 'sorter' && o.on && o.item && !o.item.packed && o.item.t === o.target) return (o.dir + 3) % 4;
+    if (o.type === 'sorter' && o.on && o.item && o.item.t === o.target) return (o.dir + 3) % 4;
     return o.dir;
   }
   UC.outDir = outDir;
   function accept(b, o, item) {
     if (!o) return false;
     if (UC.BELTS.includes(o.type)) { if (o.item) return false; o.item = item; o.prog = 0; return true; }
-    if (o.type === 'yard') { o.stock.push(item); return true; }
+    if (o.type === 'yard') { if (o.spec != null && item.t !== o.spec) return false; o.stock.push(item); return true; }   // 製品指定のあるヤードは、その製品だけ
     if (o.type === 'pool') { if (o.stock.length >= poolCap(b)) return false; o.stock.push(item); return true; }
     if (o.type === 'pack') { if (o.item) return false; o.item = item; return true; }
     return false;
@@ -416,6 +471,12 @@
         (fr.loops = fr.loops || []).push({ i: fr.ip - 1, n: UC.pieceArg(pc) });
         r.act = { k: 'wait', left: CFG.callMin }; return true;
       }
+      if (pk === 'if') {     // 場合わけ：条件に合わなければ、場合わけおわりのつぎへとぶ
+        const arg = String(pc).split(':')[1] || 'hold', neg = arg[0] === '!', yes = cond(G, r, neg ? arg.slice(1) : arg) !== neg;
+        if (!yes) { const pr = UC.loopPairs(list).pair[fr.ip - 1]; if (pr != null) fr.ip = pr + 1; }
+        r.act = { k: 'wait', left: CFG.callMin }; return true;
+      }
+      if (pk === 'endif') { r.act = { k: 'wait', left: CFG.callMin }; return true; }
       if (pk === 'end') {    // くり返しおわり：回数が残っていれば開始のつぎへもどる
         const lp = fr.loops && fr.loops[fr.loops.length - 1];
         if (!lp) { bubble(G, r, '？'); r.act = { k: 'wait', left: CFG.bumpMin }; return true; }
@@ -423,11 +484,35 @@
         r.act = { k: 'wait', left: CFG.callMin }; return true;
       }
       if (pc === 'stop') { UC.stop(G, r); bubble(G, r, '■'); emit('stopped', r); return false; }   // 停止：ここで指示書をおえる
+      r.lastOk = true;   // うまくいかなかったピースは「？」を出すときに false にする
       r.act = startPiece(G, r, pc);
       return true;
     }
     return false;
   }
+
+  /* 場合わけの条件 */
+  function cond(G, r, id) {
+    const o = front(G, r), b = G.bases[r.base];
+    const fx = Math.round(r.x) + DX[r.dir], fy = Math.round(r.y) + DY[r.dir];
+    switch (id) {
+      case 'ok': return r.lastOk !== false;
+      case 'fsrc': return !!o && o.type === 'src';
+      case 'fsrcp': return !!o && o.type === 'src' && o.stock.length > 0;
+      case 'fyard': return !!o && o.type === 'yard';
+      case 'fyardok': return !!o && o.type === 'yard' && !!r.hold && (o.spec == null || o.spec === r.hold.t);
+      case 'fbelt': return !!o && UC.BELTS.includes(o.type);
+      case 'fbeltp': return !!o && UC.BELTS.includes(o.type) && !!o.item;
+      case 'fpoolp': return !!o && o.type === 'pool' && o.stock.length > 0;
+      case 'fpack': return !!o && o.type === 'pack';
+      case 'ffree': return !blocked(G, r, fx, fy);
+      case 'hold': return !!r.hold;
+      case 'packed': return !!r.hold && !!r.hold.packed;
+    }
+    if (/^t\d$/.test(id)) return !!r.hold && r.hold.t === +id[1];
+    return false;
+  }
+  UC.cond = cond;
 
   function startPiece(G, r, pc) {
     switch (UC.pieceKey(pc)) {
@@ -463,7 +548,7 @@
       // 進む：歩数のぶんだけ進む（歩数なしはものに当たるまで）。とちゅうで当たったらそこで止まる
       if (a.steps && n >= a.steps) return;
       const nx = r.x + DX[r.dir], ny = r.y + DY[r.dir];
-      if (blocked(G, r, nx, ny)) { if (a.k === 'fwd' || a.steps) { r.act = { k: 'wait', left: CFG.bumpMin }; } return; }
+      if (blocked(G, r, nx, ny)) { if (a.k === 'fwd' && !a.steps) r.lastOk = n > 0; if (a.k === 'fwd' || a.steps) { r.act = { k: 'wait', left: CFG.bumpMin }; } if (a.steps) r.lastOk = false; return; }
       r.act = { k: 'move', tx: nx, ty: ny, left: CFG.moveMin, total: CFG.moveMin, p: 0, steps: a.steps, n };
       return;
     }
