@@ -1,6 +1,6 @@
 # ちくわゲームズβ
 
-βテスト用リポジトリ。リポジトリのルートがそのまま Cloudflare の専用 Worker（`chikuwagames-beta`。https://chikuwagames-beta.chikuwa-hookah.workers.dev/）で公開されます。
+βテスト用リポジトリ。リポジトリのルートがそのまま Cloudflare の専用 Worker（`chikuwagames-beta`）で公開されます。βのアドレスは https://beta-games.chikuwa-hookah.com/ （https://chikuwagames-beta.chikuwa-hookah.workers.dev/ でも開けます）。
 
 ルールは号口（`Chikuwa1014/chikugames`）の `CLAUDE.md` を参照してください。ここにはβ版だけの事実を書いています（`CLAUDE.md`）。
 

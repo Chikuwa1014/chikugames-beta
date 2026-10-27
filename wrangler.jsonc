@@ -5,6 +5,12 @@
   "name": "chikuwagames-beta",
   "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
+  // βの公開アドレス（独自ドメイン。chikuwa-hookah.com は Cloudflare に登録済み）。workers.dev のアドレスも残す
+  // （号口トップが workers.dev の cards.js を読み込み、カードの href・鍵の記録も workers.dev の URL のため）
+  "routes": [
+    { "pattern": "beta-games.chikuwa-hookah.com", "custom_domain": true }
+  ],
+  "workers_dev": true,
   "assets": {
     "directory": ".",
     "binding": "ASSETS"
