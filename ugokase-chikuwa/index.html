@@ -44,7 +44,10 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 #info { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: #FFF8EA; border-bottom: 1px solid var(--line); font-size: 13px; }
 #clock { flex: 1; font-size: 12px; letter-spacing: -.02em; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #coin { font-weight: 800; color: #9A5A20; white-space: nowrap; }
-#speed { display: flex; gap: 2px; }
+#speed { display: flex; gap: 2px; position: relative; }
+#spdTip { position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; width: max-content; max-width: 230px; background: #FFF8EA; color: #3A2A1A; border: 2px solid var(--chikuwa); border-radius: 12px; padding: 7px 10px; font-size: 12px; font-weight: 700; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,.25); animation: tipBob 1.2s ease-in-out infinite; pointer-events: none; }
+#spdTip::before { content: ''; position: absolute; top: -9px; right: 74px; border: 8px solid transparent; border-top: 0; border-bottom-color: var(--chikuwa); }
+@keyframes tipBob { 50% { transform: translateY(3px); } }
 #speed button { background: #EFE3CB; border-radius: 6px; padding: 3px 4px; font-size: 10px; min-width: 24px; }
 #speed button.on { background: var(--chikuwa); color: #fff; }
 #bases { display: flex; gap: 4px; padding: 4px 8px 0; overflow-x: auto; }
@@ -182,6 +185,7 @@ body.mopen #toastBox { top: 12px; bottom: auto; }
     <span id="coin"></span>
     <span id="speed">
       <button data-s="0">⏸</button><button data-s="1" class="on">▶</button><button data-s="2">▶▶</button><button data-s="4">▶▶▶</button>
+      <div id="spdTip" class="hide">いまは時間が止まっています。<br>▶ で時間がすすみ、▶▶・▶▶▶ で速くなるよ</div>
     </span>
   </div>
   <div id="bases" class="hide"></div>
@@ -191,7 +195,7 @@ body.mopen #toastBox { top: 12px; bottom: auto; }
     <div id="hud"><div id="hudL"></div><div id="hudR"></div></div>
     <div id="placeBar" class="hide"><span id="placeTx"></span><button id="placeRot">↻</button><button id="placeUndo">↶ 取り消し</button><button id="placeEnd">おわる</button></div>
     <div id="editBar" class="hide"><span id="editTx"></span><div class="eb"><button id="edRot">↻ 90°</button><button id="edMove">✥ 移動</button><button id="edDel">🗑 撤去</button><button id="edEnd">おわる</button></div></div>
-    <div id="zoom"><button id="btnEdit" title="きかいの移動・撤去・向き">🔧</button><button id="zin">＋</button><button id="zout">－</button></div>
+    <div id="zoom"><button id="btnEdit" title="きかいの移動・撤去・向き">🔧</button><button id="rotL" title="視点を左へ回す">⟲</button><button id="rotR" title="視点を右へ回す">⟳</button><button id="zin">＋</button><button id="zout">－</button></div>
   </div>
   <div id="ctrl">
     <div class="row">

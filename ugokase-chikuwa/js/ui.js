@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.7.0', '2026-10-27', 'ゲームを始めたら時間は止まった状態に（速さのボタンを吹き出しで案内）。集荷の未達の数を次の集荷に上乗せ。⟲⟳ で視点を 90° ずつ回せる'],
     ['β0.6.1', '2026-10-27', '製造ラインに接続できるのを、取り場の上下左右のとなりだけにした（ななめはふくまない）'],
     ['β0.6.0', '2026-10-27', '製造ラインに接続：取り場のとなりにコンベアを置くと、つなぐか聞く。つなぐと製品が自動でコンベアへ流れる'],
     ['β0.5.0', '2026-10-27', '拠点のレベル（累計集荷数で1〜8。取り場・出荷ヤードが増え、レベル5からヤードに製品指定）。拠点の大きさ別の上限。場合わけピース（開始・おわりの1対、条件はプルダウン）'],
@@ -60,12 +61,12 @@
       const bn = G.bases.length > 1 ? d.base.name + '：' : '';
       const yn = d.yard && UC.spots(d.base, 'yard').length > 1 ? `ヤード${d.yard.no}：` : '';
       if (d.ok) { Snd.ok(); toast(`${bn}${yn}集荷OK！ ${d.got}個 +${d.earn}恋ン`); }
-      else { Snd.ng(); toast(`${bn}${yn}集荷が足りない… ${d.got}/${d.need}個（精神力ダウン）`); }
+      else { Snd.ng(); toast(`${bn}${yn}集荷が足りない… ${d.got}/${d.need}個（精神力ダウン・足りない${d.short}個は次の集荷に上乗せ）`); }
     }
     if (name === 'levelup') {
       const L = UC.levelOf(d.base);
       Snd.ok(); toast(`🎉 ${d.base.name}が レベル${d.lv} に！ 取り場${L.src}・ヤード${L.yard}${L.spec === 'all' ? '（製品指定あり）' : L.spec === 'mix' ? '（製品指定あり／なし）' : ''}`);
-      floors[G.bases.indexOf(d.base)] = null;
+      for (const k in floors) if (k.startsWith(G.bases.indexOf(d.base) + ':')) delete floors[k];
     }
     if (name === 'take' || name === 'put') Snd.put();
     if (name === 'injured') toast(`${d.name}が怪我をした！ すり身部品でなおそう`);
@@ -105,6 +106,8 @@
     $('#title').classList.add('hide'); $('#game').classList.remove('hide');
     resize(); refreshAll();
     UC.step(G, 0);
+    // はじめは時間を止めておき、速さのボタンを吹き出しで知らせる
+    setSpeed(0); $('#spdTip').classList.remove('hide');
     if (first) howTo();
   }
   $('#btnNew').onclick = () => {
@@ -135,7 +138,7 @@
       <p><b>時間：</b>1ヶ月は7日、1年は12ヶ月。ちくわ君はシフトの時間だけ働き、勤務のまん中で休けい（1時間＋15分）。休けいは自動で<b>れいぞうこ</b>へ入って体力・精神力が回復する。だれも勤務していないあいだは自動で早送り。</p>
       <p><b>拠点のレベル：</b>その拠点の累計集荷数でレベルが上がり、取り場と出荷ヤードが増える。レベル5からはヤードに製品指定がつき、その製品しか置けない（場合わけピースやふりわけそうちで分けよう）。拠点の大きさでレベルの上限がある（S：5・M：6・L：8）。</p>
       <p><b>体力・精神力：</b>体力が0になると怪我（すり身部品でなおす）。精神力が0になると心がおれて動かない（有給で回復）。夏は体力、冬は精神力が少しずつへる。</p>
-      <p><b>操作：</b>画面をドラッグで移動、ピンチかホイール・＋－で拡大縮小。マスをタップすると、きかいを調べたり回したりできる。</p>`);
+      <p><b>操作：</b>画面をドラッグで移動、ピンチかホイール・＋－で拡大縮小、⟲⟳ で視点を 90° ずつ回す（4 回で 1 周）。時間は ⏸▶▶▶▶▶▶ で止めたり速くしたりできる（はじめは止まっている）。マスをタップすると、きかいを調べたり回したりできる。</p>`);
   }
 
   /* ---------- 上の表示 ---------- */
@@ -189,12 +192,12 @@
     $('#btnFridge').classList.toggle('hot', !!canF);
     $('#placeBar').classList.toggle('hide', !placing);
     if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}（${UC.MACHINES[placing].cost}恋ン）をタップで置く`;
-    $('#placeRot').textContent = '↻ 向き ' + ARROW[lastDir];
+    $('#placeRot').textContent = '↻ 向き ' + ARROW[(lastDir + viewRot) % 4];
     $('#editBar').classList.toggle('hide', !edit);
     $('#btnEdit').classList.toggle('on', !!edit);
     if (edit) {
       const o = edit.sel;
-      $('#editTx').textContent = !o ? '🔧 動かしたいきかいをタップ' : edit.moving ? `${UC.MACHINES[o.type].name}：うつす先のマスをタップ` : `${UC.MACHINES[o.type].name}（向き ${ARROW[o.dir]}）`;
+      $('#editTx').textContent = !o ? '🔧 動かしたいきかいをタップ' : edit.moving ? `${UC.MACHINES[o.type].name}：うつす先のマスをタップ` : `${UC.MACHINES[o.type].name}（向き ${ARROW[(o.dir + viewRot) % 4]}）`;
       ['#edRot', '#edMove', '#edDel'].forEach(k => $(k).disabled = !o);
       $('#edMove').classList.toggle('on', !!edit.moving);
     }
@@ -208,15 +211,18 @@
     const ff = isFastForward(), nx = UC.nextLevel(b);
     const nextY = next && b.objs[next.yard] && ys.length > 1 ? `（ヤード${b.objs[next.yard].no}）` : '';
     $('#hudL').innerHTML = `🏭 Lv${b.lv} ${nx ? `累計 ${b.shipped}/${nx.need}個` : '（最大）'}<br>📋 次の集荷 ${next ? UC.fmtTime(next.t) + '・' + next.need + '個' + nextY : 'なし'}<br>🟨 出荷ヤード ${sum(ys)}個 ／ 取り場 ${sum(ss)}個`;
-    $('#hudR').innerHTML = ff ? '⏩ はやおくり' : '';
-    $('#hudR').style.display = ff ? '' : 'none';
+    const hs = speed === 0 ? '⏸ 時間停止中' : ff ? '⏩ はやおくり' : '';
+    $('#hudR').innerHTML = hs;
+    $('#hudR').style.display = hs ? '' : 'none';
   }
   function refreshAll() { refreshTop(); refreshBases(); refreshRobots(); refreshCtrl(); refreshHud(); }
 
   /* ---------- スピード ---------- */
-  document.querySelectorAll('#speed button').forEach(b => b.onclick = () => {
-    speed = +b.dataset.s; document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', x === b));
-  });
+  function setSpeed(s) {
+    speed = s; document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', +x.dataset.s === s));
+    if (s > 0) $('#spdTip').classList.add('hide');
+  }
+  document.querySelectorAll('#speed button').forEach(b => b.onclick = () => setSpeed(+b.dataset.s));
   const isFastForward = () => G && G.robots.every(r => r.mode === 'off');
 
   /* ---------- 操作ボタン ---------- */
@@ -470,11 +476,11 @@
     const ys = UC.spots(b, 'yard'), nx = UC.nextLevel(b), L = UC.levelOf(b);
     const up = b.kanban.filter(k => k.got == null);
     const yname = k => { const y = b.objs[k.yard]; return y && y.type === 'yard' ? yardName(y) : 'ヤード1'; };
-    let h = `<div class="note">コンピュータで受け取った、${esc(b.name)}の集荷の予定です（出荷ヤードごと）。時刻にヤードの製品が個数に足りないと、ちくわ君の精神力がへります。梱包ずみの製品は高く売れます。製品指定のあるヤードには、その製品しか置けません。</div>
+    let h = `<div class="note">コンピュータで受け取った、${esc(b.name)}の集荷の予定です（出荷ヤードごと）。時刻にヤードの製品が個数に足りないと、ちくわ君の精神力がへり、足りなかった数は次の集荷に上乗せされます。梱包ずみの製品は高く売れます。製品指定のあるヤードには、その製品しか置けません。</div>
       <div class="cnt">🏭 レベル ${b.lv}（最大 ${UC.maxLv(b)}）：累計集荷 ${b.shipped}個${nx ? `／次のレベルまで あと ${nx.need - b.shipped}個（レベル${nx.lv}：取り場${nx.src}・ヤード${nx.yard}${nx.spec === 'all' ? '・製品指定あり' : nx.spec === 'mix' ? '・製品指定あり／なし' : ''}）` : '（この拠点の最大です）'}</div>
       <div class="cnt">いまの出荷ヤード：${ys.map(y => `${yardName(y)} ${y.stock.length}個`).join('／')}</div>
       <h3 style="font-size:14px;margin:10px 0 4px">これからの集荷</h3>`;
-    h += up.length ? `<table class="kb"><tr><th>時刻</th><th>ヤード</th><th>個数</th></tr>${up.map(k => { const c = UC.cal(k.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(k.t)}</td><td>${esc(yname(k))}</td><td>${k.need}個</td></tr>`; }).join('')}</table>` : '<div class="cnt">きょうの予定はありません（勤務日の 0:00 に届きます）</div>';
+    h += up.length ? `<table class="kb"><tr><th>時刻</th><th>ヤード</th><th>個数</th></tr>${up.map(k => { const c = UC.cal(k.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(k.t)}</td><td>${esc(yname(k))}</td><td>${k.need}個${k.carry ? `<small>（上乗せ${k.carry}）</small>` : ''}</td></tr>`; }).join('')}</table>` : '<div class="cnt">きょうの予定はありません（勤務日の 0:00 に届きます）</div>';
     h += '<h3 style="font-size:14px;margin:14px 0 4px">これまでの集荷</h3>';
     h += b.log.length ? `<table class="kb"><tr><th>時刻</th><th>ヤード</th><th>結果</th><th>売上</th></tr>${b.log.map(l => { const c = UC.cal(l.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(l.t)}</td><td>${l.yard || 1}</td><td class="${l.got >= l.need ? 'ok' : 'ng'}">${l.got}/${l.need}個</td><td>+${l.earn}</td></tr>`; }).join('')}</table>` : '<div class="cnt">まだありません</div>';
     h += `<div class="cnt" style="margin-top:10px">これまでの出荷 ${G.stats.shipped}個 ／ 売上 ${G.stats.earned.toLocaleString()}恋ン ／ 拾った恋ン ${G.stats.coins.toLocaleString()}</div>`;
@@ -645,10 +651,26 @@
     return [(sx - VW / 2) / c.z + c.x, (sy - VH / 2) / c.z + c.y];
   }
   function toTile(sx, sy) {
+    setView();
     const [wx, wy] = toWorld(sx, sy);
     const a = wx / (UC.TW / 2), b = wy / (UC.TH / 2);
-    return [Math.floor((a + b) / 2), Math.floor((b - a) / 2)];
+    return UC.unrt(Math.floor((a + b) / 2), Math.floor((b - a) / 2));
   }
+  /* 視点の回転（90° ずつ。4 回で 1 周）。画面のまん中に見えている所はそのまま */
+  let viewRot = 0;
+  function setView() { const b = G && G.bases[curBase]; UC.view.rot = viewRot; if (b) { UC.view.W = b.w; UC.view.H = b.h; } }
+  function rotateView(k) {
+    setView();
+    const c = cam(), a = c.x / (UC.TW / 2), d = c.y / (UC.TH / 2);
+    const u = (a + d) / 2, v = (d - a) / 2;
+    // 回した座標 (u, v) → 世界の点（UC.rp の逆）
+    const { W, H } = UC.view, p = viewRot === 0 ? [u, v] : viewRot === 1 ? [v, H - u] : viewRot === 2 ? [W - u, H - v] : [W - v, u];
+    viewRot = (viewRot + k + 4) % 4; setView();
+    const [nx, ny] = UC.iso(...p); c.x = nx; c.y = ny;
+    Snd.click(); refreshCtrl();
+  }
+  $('#rotL').onclick = () => rotateView(3);
+  $('#rotR').onclick = () => rotateView(1);
 
   /* 入力：ドラッグで移動・ピンチで拡大・タップで調べる／置く */
   const ptrs = new Map(); let drag = null, pinch = null, moved = false;
@@ -694,21 +716,22 @@
     G.robots.forEach(r => { if (r.base === curBase && !UC.inFridge(r)) { const [rx, ry] = robotPos(r); cand.push([rx, ry, 'robot', Math.round(r.x), Math.round(r.y)]); } });
     let best = null;
     for (const [x, y, m, tx, ty] of cand) {
-      const sp = UC.sprite(m, 0), [ix, iy] = UC.iso(x, y);
-      const l = ix - sp.ox, t = iy - sp.oy - (m === 'robot' ? 4 : 0);
-      if (wx >= l && wx <= l + sp.cv.width && wy >= t && wy <= t + sp.cv.height && (!best || x + y > best[2])) best = [tx, ty, x + y];
+      const [l, t0, w, h] = UC.spriteBox(m, 0, x, y), t = t0 - (m === 'robot' ? 4 : 0), [ru, rv] = UC.rt(x, y);
+      if (wx >= l && wx <= l + w && wy >= t && wy <= t + h && (!best || ru + rv > best[2])) best = [tx, ty, ru + rv];
     }
     return best;
   }
 
   function floorOf(bi) {
     const b = G.bases[bi];
-    if (!floors[bi]) floors[bi] = UC.paintFloor(b);
-    return floors[bi];
+    const k = bi + ':' + viewRot;
+    if (!floors[k]) floors[k] = UC.paintFloor(b);
+    return floors[k];
   }
 
   function draw(tr) {
     const b = G.bases[curBase], c = cam();
+    setView();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // 背景（絵）：工場の外の夕方の空と、遠くの屋根
     const cl = UC.cal(G.time), hr = cl.hh + cl.mm / 60, night = hr < 5 || hr >= 19, eve = hr >= 16 && hr < 19;
@@ -761,12 +784,13 @@
     const sr = robot();
     // 奥から手前へ描く
     const list = [];
-    objs.forEach(o => list.push({ d: o.x + o.y, z: 0, f: () => drawObj(o, tr) }));
-    for (const k in b.coins) { const [x, y] = k.split(',').map(Number); list.push({ d: x + y - 0.1, z: 0, f: () => UC.drawCoin(ctx, x, y, tr) }); }
+    const dep = (x, y) => { const [u, v] = UC.rt(x, y); return u + v; };   // 回した向きでの奥行き
+    objs.forEach(o => list.push({ d: dep(o.x, o.y), z: 0, f: () => drawObj(o, tr) }));
+    for (const k in b.coins) { const [x, y] = k.split(',').map(Number); list.push({ d: dep(x, y) - 0.1, z: 0, f: () => UC.drawCoin(ctx, x, y, tr) }); }
     G.robots.forEach((r, i) => {
       if (r.base !== curBase || UC.inFridge(r)) return;
       const [rx, ry] = robotPos(r);
-      list.push({ d: rx + ry + 0.05, z: 1, f: () => drawRobot(r, i, rx, ry, tr, r === sr) });
+      list.push({ d: dep(rx, ry) + 0.05, z: 1, f: () => drawRobot(r, i, rx, ry, tr, r === sr) });
     });
     list.sort((a, z) => a.d - z.d || a.z - z.z);
     list.forEach(o => o.f());
@@ -885,7 +909,7 @@
   /* テスト用（dev/test.py から使う） */
   window.UCT = { get edit() { return edit; }, setDir(d) { lastDir = d; }, get nav() { return nav; }, clearNav() { nav = null; },
     /* マスの中の点を、ページの上の座標に（lift は上へずらす px） */
-    screenOf(x, y, lift = 0) { const c = cam(), [wx, wy] = UC.iso(x, y), rc = cv.getBoundingClientRect(); return [rc.left + (wx - c.x) * c.z + VW / 2, rc.top + (wy - lift - c.y) * c.z + VH / 2]; }, get G() { return G; }, set G(v) { G = v; }, startGame, setSpeed: s => { speed = s; }, inspect, robot, get curBase() { return curBase; } };
+    screenOf(x, y, lift = 0) { setView(); const c = cam(), [wx, wy] = UC.iso(x, y), rc = cv.getBoundingClientRect(); return [rc.left + (wx - c.x) * c.z + VW / 2, rc.top + (wy - lift - c.y) * c.z + VH / 2]; }, get G() { return G; }, set G(v) { G = v; }, startGame, setSpeed, inspect, robot, get curBase() { return curBase; }, rotateView, get viewRot() { return viewRot; } };
 
   showTitle();
 })();

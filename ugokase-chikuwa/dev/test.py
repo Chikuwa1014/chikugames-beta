@@ -36,6 +36,11 @@ def run(p, w, h, tag):
     page.click('#mClose')
     page.wait_for_timeout(300)
     shot(page, tag + '-03-game')
+    # はじめは時間が止まっていて、速さのボタンを吹き出しで知らせる
+    t0 = page.evaluate('() => UCT.G.time'); page.wait_for_timeout(500); t1 = page.evaluate('() => UCT.G.time')
+    check(t0 == t1 and page.is_visible('#spdTip'), f'{tag}: はじめは時間が止まり、速さボタンの吹き出しが出る')
+    page.click('#speed button[data-s="1"]'); page.wait_for_timeout(300)
+    check(not page.is_visible('#spdTip') and page.evaluate('() => UCT.G.time') > t1, f'{tag}: ▶ を押すと時間がすすみ、吹き出しが消える')
 
     # 決まった配置にして、指示書で取り場 → 出荷ヤードを往復させる
     page.evaluate('''() => {
@@ -214,6 +219,8 @@ def run(p, w, h, tag):
     page.evaluate('() => { UCT.G.coin = 99999; UC.buyBase(UCT.G, 2); UC.buyRobot(UCT.G); }')
     page.reload(); page.wait_for_timeout(400)
     page.click('#btnCont'); page.wait_for_timeout(400)
+    check(page.is_visible('#spdTip'), f'{tag}: つづきからでも時間は止まっている')
+    page.click('#speed button[data-s="1"]')
     nb = page.evaluate('() => UCT.G.bases.length')
     check(nb == 2, f'{tag}: 保存して、つづきから読める（拠点 2 つ）')
     page.click('#bases button[data-i="1"]'); page.wait_for_timeout(300)
@@ -291,6 +298,38 @@ def run(p, w, h, tag):
     print(tag, st)
     check(st['items'][2] == 1, f'{tag}: 接続すると取り場の製品が自動でコンベアを流れる')
     shot(page, tag + '-18-flow')
+
+    # 集荷の未達は、同じヤードの次の集荷に上乗せ（きょうの予定が無ければ、次の日の最初の集荷へ）
+    st = page.evaluate('''() => { const G = UCT.G, b = G.bases[0], y = UC.spots(b, 'yard')[0], yk = UC.key(y.x, y.y);
+      y.stock = [{ t: 0, packed: false }];
+      b.kanban = [{ t: G.time + 0.5, need: 3, got: null, yard: yk }, { t: G.time + 300, need: 2, got: null, yard: yk }];
+      UC.step(G, 1);
+      const a = { got: b.kanban[0].got, next: b.kanban[1].need, carry: b.kanban[1].carry };
+      b.kanban = [{ t: G.time + 0.5, need: 2, got: null, yard: yk }]; y.stock = [];
+      UC.step(G, 1);
+      a.left = (b.carry || {})[yk]; b.carry = {}; b.kanban = [];
+      return a; }''')
+    check(st['got'] == 1 and st['next'] == 4 and st['carry'] == 2 and st['left'] == 2, f'{tag}: 集荷の未達の数を次の集荷に上乗せする {st}')
+
+    # 視点の回転：90° ずつ 4 回で 1 周。回してもタップしたマスに置ける
+    page.click('#rotR'); page.wait_for_timeout(200)
+    shot(page, tag + '-19-rot1')
+    page.evaluate("() => { UCT.G.coin = 5000; for (const k of ['6,2', '12,6']) delete UCT.G.bases[0].objs[k]; }")
+    page.click('#btnShop'); page.wait_for_timeout(200)
+    page.click('button[data-a="place:pool"]'); page.wait_for_timeout(200)
+    xy = page.evaluate("() => UCT.screenOf(6 + 0.5, 2 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(150)
+    page.click('#rotR'); page.click('#rotR'); page.wait_for_timeout(200)
+    xy = page.evaluate("() => UCT.screenOf(12 + 0.5, 6 + 0.5)"); page.mouse.click(*xy); page.wait_for_timeout(150)
+    shot(page, tag + '-20-rot3')
+    page.click('#placeEnd')
+    st = page.evaluate("() => ({ a: (UCT.G.bases[0].objs['6,2'] || {}).type, b: (UCT.G.bases[0].objs['12,6'] || {}).type, r: UCT.viewRot })")
+    check(st['a'] == 'pool' and st['b'] == 'pool' and st['r'] == 3, f'{tag}: 視点を回しても、タップしたマスに置ける {st}')
+    page.evaluate("() => UCT.clearNav()")
+    xy = page.evaluate("() => UCT.screenOf(12 + 0.5, 6 + 0.5, 6)"); page.mouse.click(*xy); page.wait_for_timeout(150)
+    st = page.evaluate("() => UCT.nav && [UCT.nav.x, UCT.nav.y]")
+    check(st == [12, 6], f'{tag}: 視点を回しても、絵をタップして選べる {st}')
+    page.click('#rotR'); page.wait_for_timeout(100)
+    check(page.evaluate('() => UCT.viewRot') == 0, f'{tag}: 4 回で 1 周する')
     b.close()
 
 
