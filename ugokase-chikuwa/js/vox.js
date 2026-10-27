@@ -86,20 +86,27 @@
 
   const MODELS = {
     /* ちくわ君ロボ：立ったちくわに車輪と腕。前（+x）に顔 */
-    robot: [8, 8, 12, (i, j, k) => {
-      const r = cyl(i, j, 4, 4);
-      if (k <= 1) { if (r < 3.0) return k === 0 ? '#3A3A44' : '#77808C'; return null; }   // 車輪の台
-      if ((j === 0 || j === 7) && i >= 3 && i <= 4 && k >= 4 && k <= 6) return k === 4 ? '#5A626C' : '#9AA4AE';  // 腕
-      if (r > 3.6) return null;
-      if (r < 1.5) return k <= 2 ? '#B9652A' : null;                                       // まん中の穴
-      if (i >= 6 && k === 8 && (j === 2 || j === 5)) return '#FFFFFF';                      // 目
-      if (i >= 6 && k === 7 && (j === 2 || j === 5)) return '#2A1A10';
-      if (i >= 6 && k === 5 && (j === 3 || j === 4)) return '#2A1A10';                      // 口
-      if (i >= 6 && k === 6 && (j === 1 || j === 6)) return '#F2A0A0';                      // ほっぺ
-      if (k === 4 && r > 3) return '#9AA4AE';                                               // 金属のたが
-      if (k >= 10 || k === 2) return h3(i, j, k) > 0.5 ? '#B9652A' : '#C9772E';             // こげ目
-      if (k === 11) return '#F3DDB2';
-      return h3(i, j, k) > 0.86 ? '#E9A55B' : '#F3DDB2';
+    /* ちくわ君ロボ：ずんぐりした立ったちくわ。上に穴、大きな目とほっぺ、♥のアンテナ、ちょこんとした足 */
+    robot: [8, 8, 13, (i, j, k) => {
+      // 角の丸い四角のちくわ（前の面が平らなので、目と口がよく見える）
+      const dx = Math.abs(i + 0.5 - 4), dy = Math.abs(j + 0.5 - 4), sq = dx ** 4 + dy ** 4, r = cyl(i, j, 4, 4);
+      if (k === 0) return (i >= 3 && i <= 5 && (j === 2 || j === 5)) ? '#5B4636' : null;   // 足
+      if (k === 12) return (i === 2 && j >= 3 && j <= 4) ? '#FF6F91' : null;               // アンテナの♥
+      if (k === 11) return (i <= 2 && i >= 1 && (j === 3 || j === 4)) ? (i === 2 ? '#FF8FAB' : '#FF6F91') : null;
+      if (k === 10) return (i === 2 && j === 4) ? '#9AA4AE' : null;                       // アンテナの棒
+      if (sq > 3.55 ** 4) return null;
+      if (r < 1.6) return k <= 2 ? '#8A4A1E' : null;                                       // まん中の穴
+      if (i === 7) {                                                                     // 顔
+        if ((j === 2 || j === 5) && k >= 5 && k <= 7) return k === 7 ? '#FFFFFF' : '#2A1A10';   // 大きな目（上に光）
+        if ((j === 1 || j === 6) && k === 4) return '#FF9EAF';                            // ほっぺ
+        if ((j === 3 || j === 4) && k === 4) return '#D9595F';                            // 口
+        if ((j === 2 || j === 5) && k === 4) return null;
+      }
+      if (k === 9) return h3(i, j, k) > 0.5 ? '#B5622A' : '#C47234';                      // 上のこげ目
+      if (k === 8) return h3(i, j, k) > 0.6 ? '#D88A45' : '#E9A55B';
+      if (k === 1) return '#C47234';                                                     // 下のこげ目
+      if (k === 2) return '#7FC8F0';                                                     // 腰のベルト（ロボっぽさ）
+      return h3(i, j, k) > 0.9 ? '#F0CC93' : '#F8E7C4';
     }],
     /* コンベアの台（矢印は別に描く） */
     belt: [8, 8, 3, (i, j, k) => {
