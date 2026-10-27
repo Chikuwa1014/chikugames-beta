@@ -115,6 +115,12 @@ table.kb .ok { color: var(--run); font-weight: 800; } table.kb .ng { color: var(
 .piece small { font-size: 8.5px; margin-top: 3px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
 .piece .no { position: absolute; left: 7px; top: 2px; font-size: 9px; opacity: .8; }
 .piece .pz { position: absolute; right: 2px; bottom: 1px; font-size: 9px; opacity: .55; }
+.piece.start { cursor: default; border-radius: 14px 8px 8px 14px; }
+.piece.start::before { display: none; }
+.piece.stop::after { display: none; }
+.piece.stop { margin-right: 0; }
+.steps { display: flex; align-items: center; gap: 6px; background: #E3F0FA; border-radius: 10px; padding: 6px 10px; margin: 8px 0; font-weight: 800; font-size: 13px; }
+.steps select { font: inherit; padding: 4px 6px; border-radius: 8px; border: 2px solid #3E8ED0; background: #fff; }
 .piece.sel { outline: 3px solid #3B2A1C; outline-offset: 1px; }
 .piece.now { box-shadow: 0 0 0 4px #FFE066, 0 3px 0 rgba(0,0,0,.25); }
 .prog .empty { color: var(--sub); font-size: 12.5px; align-self: center; padding: 0 6px; }
@@ -130,6 +136,7 @@ table.kb .ok { color: var(--run); font-weight: 800; } table.kb .ng { color: var(
 #toastBox { position: fixed; left: 50%; bottom: calc(130px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; max-width: 94vw; }
 #toastBox div { white-space: normal !important; text-align: center; }
 #toastBox div { background: rgba(30,40,36,.9); color: #fff; border-radius: 999px; padding: 6px 14px; font-size: 13px; white-space: nowrap; animation: tin .25s; }
+body.mopen #toastBox { top: 12px; bottom: auto; }
 @keyframes tin { from { opacity: 0; transform: translateY(-6px); } }
 </style>
 </head>

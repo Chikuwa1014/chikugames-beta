@@ -106,6 +106,38 @@ def run(p, w, h, tag):
     page.wait_for_timeout(300)
     shot(page, tag + '-11-later')
 
+    # 進むの歩数・停止ピース
+    st = page.evaluate("""() => {
+      const G = UCT.G, b = G.bases[0], r = G.robots[0];
+      UC.stop(G, r); r.brk = null; r.path = null; r.walk = null; r.x = 3; r.y = 2; r.dir = 0; r.injured = false; r.sulk = false; r.hp = 100; r.mp = 100;
+      for (const k in b.objs) { const o = b.objs[k]; if (o.y === 2 && o.x > 3) delete b.objs[k]; }
+      r.prog.main = ['fwd:3', 'stop'];
+      G.time = (Math.floor(G.time / 1440 / 7) + 1) * 7 * 1440 + 9 * 60 + 5;   // 次の月曜 9:05
+      UC.step(G, 0.1); UC.run(G, r);
+      for (let i = 0; i < 60; i++) UC.step(G, 0.25);
+      return { x: r.x, run: r.running, mode: r.mode };
+    }""")
+    print(tag, st)
+    check(st['x'] == 6, f'{tag}: 「3歩進む」で 3 マスだけ進む')
+    check(not st['run'], f'{tag}: 停止ピースで止まる')
+    # BUILD：起動ピース・停止のうしろにつなげない・歩数のプルダウン
+    page.click('#btnBuild'); page.wait_for_timeout(200)
+    check(page.locator('#bProg .piece.start').count() == 1, f'{tag}: 指示書の左端に起動ピース')
+    page.click('#bProg .piece[data-i="1"]'); page.click('#bPal .piece[data-k="left"]')
+    n = page.evaluate('() => UCT.G.robots[0].prog.main.join(",")')
+    check(n == 'fwd:3,stop', f'{tag}: 停止のうしろにはつなげない（{n}）')
+    page.click('#bProg .piece[data-i="0"]'); page.wait_for_timeout(100)
+    page.select_option('#bSteps', '5'); page.wait_for_timeout(100)
+    n = page.evaluate('() => UCT.G.robots[0].prog.main[0]')
+    check(n == 'fwd:5', f'{tag}: プルダウンで歩数を変えられる（{n}）')
+    shot(page, tag + '-13-build-steps')
+    page.click('#mClose')
+    # ナビ：取り場をタップ → ルートと吹き出し
+    nv = page.evaluate("""() => { const b = UCT.G.bases[0], o = Object.values(b.objs).find(o => o.type === 'src'); UCT.inspect(o.x, o.y); return UCT.nav; }""")
+    check(nv is not None and len(nv['lines']) >= 2, f'{tag}: オブジェクトをタップすると最短ルートとナビ（{nv and nv["lines"]}）')
+    page.wait_for_timeout(300)
+    shot(page, tag + '-14-nav')
+
     # 拠点を追加（L）
     page.evaluate('() => { UCT.G.coin = 99999; UC.buyBase(UCT.G, 2); UC.buyRobot(UCT.G); }')
     page.reload(); page.wait_for_timeout(400)

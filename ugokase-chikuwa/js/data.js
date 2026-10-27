@@ -2,7 +2,7 @@
 (function () {
   const UC = window.UC = window.UC || {};
 
-  UC.VERSION = 'β0.1.1';
+  UC.VERSION = 'β0.2.0';
   UC.KEY = 'ugokase-chikuwa-v1';
 
   /* 向き：0＝東（+x）・1＝南（+y）・2＝西（-x）・3＝北（-y） */
@@ -112,12 +112,17 @@
     hold: { name: '持つ／置く', icon: '✋', col: '#D98A2B' },
     work: { name: '作業する', icon: '🔨', col: '#4E9A51' },
     op: { name: '操作する', icon: '⏻', col: '#C94A4A' },
+    stop: { name: '停止', icon: '■', col: '#3B3B3B' },   // 右にへこみがない＝いちばん最後にだけ置ける
     f1: { name: 'F1', icon: 'F1', col: '#7A7A7A' },
     f2: { name: 'F2', icon: 'F2', col: '#7A7A7A' },
     f3: { name: 'F3', icon: 'F3', col: '#7A7A7A' },
   };
   UC.MAIN_MAX = 16;   // メイン指示書のピース数（仮）
   UC.FUNC_MAX = 8;    // ファンクションのピース数（仮）
+  UC.FWD_MAX = 20;    // 進むピースの歩数の上限（0 は「ぶつかるまで」）
+  /* 指示書の 1 つのピースは文字列。進むは 'fwd'（ぶつかるまで）か 'fwd:3'（3 歩） */
+  UC.pieceKey = pc => String(pc).split(':')[0];
+  UC.pieceArg = pc => +(String(pc).split(':')[1] || 0);
 
   UC.WEEK = ['月', '火', '水', '木', '金', '土', '日'];
   UC.season = m => (m >= 3 && m <= 5) ? 'spring' : (m >= 6 && m <= 8) ? 'summer' : (m >= 9 && m <= 11) ? 'autumn' : 'winter';
