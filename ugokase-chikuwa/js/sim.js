@@ -96,12 +96,12 @@
     return o;
   }
   UC.put = put;
-  /* 製造ラインに接続：取り場のまわり 1 マス（ななめもふくむ）のコンベアに、取り場の製品が自動で流れる。
+  /* 製造ラインに接続：取り場の上下左右 1 マス（ななめはふくまない）のコンベアに、取り場の製品が自動で流れる。
      コンベアの feed に取り場のマス（"x,y"）を持つ。コンベアを動かしたら、つなぎ直すまで切れる */
-  UC.srcNear = (b, x, y) => spots(b, 'src').find(s => Math.max(Math.abs(s.x - x), Math.abs(s.y - y)) === 1) || null;
+  UC.srcNear = (b, x, y) => spots(b, 'src').find(s => Math.abs(s.x - x) + Math.abs(s.y - y) === 1) || null;
   UC.feedOf = (b, o) => {
     const s = o && o.feed ? b.objs[o.feed] : null;
-    return s && s.type === 'src' && Math.max(Math.abs(s.x - o.x), Math.abs(s.y - o.y)) === 1 ? s : null;
+    return s && s.type === 'src' && Math.abs(s.x - o.x) + Math.abs(s.y - o.y) === 1 ? s : null;
   };
   function stepFeed(b) {
     for (const o of Object.values(b.objs)) {
