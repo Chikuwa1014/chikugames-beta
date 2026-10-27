@@ -13,6 +13,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['β0.2.0', '2026-10-27', '指示書の左端に「起動」ピース。「停止」ピース（最後にだけ置ける）。進むピースを指示書でタップして歩数を決められる。オブジェクトをタップすると、選んでいるちくわ君からの最短ルートとナビを表示'],
     ['β0.1.1', '2026-10-27', '指示ピースをパズルのピースの形にした（となりのピースとはまる）。集荷がそろうと、ちくわ君がピース✌'],
     ['β0.1.0', '2026-10-27', '最初の試作版。ほんしゃ・指示書（BUILD／RUN／緊急停止・F1〜F3）・きかい・シフト・かんばん・れいぞうこ・福利厚生・拠点の追加'],
   ];
@@ -58,6 +59,7 @@
     if (name === 'sulk') toast(`${d.name}の心がおれた… 有給で休ませよう`);
     if (name === 'month') { const c = d; toast(`${c.month}月になりました ${UC.SEASON_NAME[c.season]}`); }
     if (name === 'packed') Snd.ok();
+    if (name === 'stopped') toast(d.name + 'は停止ピースで止まりました');
   });
 
   /* ---------- タイトル ---------- */
@@ -102,10 +104,10 @@
   let modalOnClose = null;
   function openModal(title, html, onClose) {
     $('#mTitle').textContent = title; $('#mBody').innerHTML = html;
-    $('#modal').classList.remove('hide'); modalOnClose = onClose || null;
+    $('#modal').classList.remove('hide'); document.body.classList.add('mopen'); modalOnClose = onClose || null;
     return $('#mBody');
   }
-  function closeModal() { $('#modal').classList.add('hide'); const f = modalOnClose; modalOnClose = null; buildOpen = false; if (f) f(); }
+  function closeModal() { $('#modal').classList.add('hide'); document.body.classList.remove('mopen'); const f = modalOnClose; modalOnClose = null; buildOpen = false; if (f) f(); }
   $('#mClose').onclick = closeModal;
   $('#modal').addEventListener('pointerdown', e => { if (e.target.id === 'modal') closeModal(); });
 
@@ -144,7 +146,7 @@
       el.innerHTML = list.map(o => `<button class="rchip" data-i="${o.i}"><div class="nm"><span style="color:${UC.ROBOT_COLORS[o.i]}">●</span><span class="n"></span><span class="st"></span></div>
         <div class="bar"><i>体力</i><span><b class="hp" style="background:var(--hp)"></b></span><em class="hpv"></em></div>
         <div class="bar"><i>精神力</i><span><b class="mp" style="background:var(--mp)"></b></span><em class="mpv"></em></div></button>`).join('') || '<div class="note">この拠点にはちくわ君がいません（お店の「ちくわ君」から配置がえ）</div>';
-      el.querySelectorAll('.rchip').forEach(b => b.onclick = () => { selRobot = +b.dataset.i; Snd.click(); refreshRobots(); refreshCtrl(); });
+      el.querySelectorAll('.rchip').forEach(b => b.onclick = () => { selRobot = +b.dataset.i; Snd.click(); if (nav) nav = navCalc(nav.x, nav.y); refreshRobots(); refreshCtrl(); });
     }
     el.querySelectorAll('.rchip').forEach(b => {
       const r = G.robots[+b.dataset.i];
@@ -159,7 +161,7 @@
     const el = $('#bases');
     el.classList.toggle('hide', G.bases.length < 2);
     el.innerHTML = G.bases.map((b, i) => `<button data-i="${i}" class="${i === curBase ? 'on' : ''}">${esc(b.name)}（${b.w}×${b.h}）</button>`).join('');
-    el.querySelectorAll('button').forEach(b => b.onclick = () => { curBase = +b.dataset.i; placing = null; refreshAll(); });
+    el.querySelectorAll('button').forEach(b => b.onclick = () => { curBase = +b.dataset.i; placing = null; nav = null; refreshAll(); });
   }
   function robot() { const r = G.robots[selRobot]; return r && r.base === curBase ? r : null; }
   function refreshCtrl() {
@@ -224,26 +226,42 @@
   function drawBuild() {
     const r = robot(); if (!r) return;
     const list = progList(r), max = bTab === 'main' ? UC.MAIN_MAX : UC.FUNC_MAX;
-    const pc = (k, i) => { const P = UC.PIECES[k]; return `<button class="piece" data-i="${i}" style="--c:${P.col}">${i != null ? `<span class="no">${i + 1}</span>` : ''}<span>${P.icon}</span><small>${P.name}</small></button>`; };
+    const pc = (v, i) => {
+      const k = UC.pieceKey(v), P = UC.PIECES[k], n = UC.pieceArg(v);
+      const nm = k === 'fwd' ? (n ? `${n}歩進む` : 'ぶつかるまで') : P.name;
+      return `<button class="piece${k === 'stop' ? ' stop' : ''}" data-i="${i}" style="--c:${P.col}"><span class="no">${i + 1}</span><span>${P.icon}</span><small>${nm}</small></button>`;
+    };
+    const selK = bSel >= 0 ? UC.pieceKey(list[bSel]) : '';
+    // ピースがはまる場所の左端は「起動」（右に出っぱり）。ファンクションは呼ばれたところから始まる
+    const head = `<div class="piece start" style="--c:#2E8B57"><span>▶</span><small>${bTab === 'main' ? '起動' : 'F' + (+bTab + 1) + ' はじめ'}</small></div>`;
     const tabs = [['main', 'メイン'], ['0', 'F1'], ['1', 'F2'], ['2', 'F3']];
     $('#bWrap').innerHTML = `
       <div class="tabs">${tabs.map(([k, n]) => `<button data-t="${k}" class="${bTab === k ? 'on' : ''}">${n}${k !== 'main' && r.prog.f[+k].length ? '・' + r.prog.f[+k].length : ''}</button>`).join('')}</div>
       <div class="cnt">${bTab === 'main' ? 'メイン指示書（最後まで行くと最初にもどる）' : 'ファンクション ' + tabs.find(t => t[0] === bTab)[1] + '（メインから呼び出す）'}　${list.length}/${max}</div>
-      <div class="prog" id="bProg">${list.length ? list.map((k, i) => pc(k, i)).join('') : '<span class="empty">下のピースをタップして並べよう</span>'}</div>
+      <div class="prog" id="bProg">${head}${list.length ? list.map((k, i) => pc(k, i)).join('') : '<span class="empty">下のピースをタップしてつなげよう</span>'}</div>
+      ${selK === 'fwd' ? `<div class="steps">${bSel + 1}番の進む：<select id="bSteps">${Array.from({ length: UC.FWD_MAX + 1 }, (_, n) => `<option value="${n}" ${UC.pieceArg(list[bSel]) === n ? 'selected' : ''}>${n ? n + '歩' : 'ぶつかるまで'}</option>`).join('')}</select></div>` : ''}
       <div class="edrow"><button id="bL">◀ 前へ</button><button id="bR">後ろへ ▶</button><button id="bDel">けす</button><button id="bClr">ぜんぶけす</button></div>
-      <div class="cnt">✌ 指示ピース（タップで${bSel >= 0 ? (bSel + 1) + '番のうしろに' : '最後に'}追加）</div>
+      <div class="cnt">✌ 指示ピース（タップで${bSel >= 0 ? (bSel + 1) + '番のうしろに' : '最後に'}つなぐ。■停止は右にへこみがないので最後だけ）</div>
       <div class="palette" id="bPal">${Object.keys(UC.PIECES).filter(k => bTab === 'main' || !k.startsWith('f') || true).map(k => `<button class="piece" data-k="${k}" style="--c:${UC.PIECES[k].col}"><span>${UC.PIECES[k].icon}</span><small>${UC.PIECES[k].name}</small><span class="pz">✌</span></button>`).join('')}</div>
       <div class="row" style="margin-top:14px"><button class="cbtn run" id="bRun">RUN してとじる</button></div>`;
     $('#bWrap').querySelectorAll('.tabs button').forEach(b => b.onclick = () => { bTab = b.dataset.t; bSel = -1; drawBuild(); });
-    $('#bProg').querySelectorAll('.piece').forEach(b => b.onclick = () => { const i = +b.dataset.i; bSel = bSel === i ? -1 : i; drawBuild(); });
+    $('#bProg').querySelectorAll('.piece[data-i]').forEach(b => b.onclick = () => { const i = +b.dataset.i; bSel = bSel === i ? -1 : i; drawBuild(); });
+    const st = $('#bSteps');
+    if (st) st.onchange = () => { list[bSel] = +st.value ? 'fwd:' + st.value : 'fwd'; Snd.click(); edited(r); drawBuild(); };
+    // 停止は右にへこみがないので、いちばん最後にしか置けない（うしろに何もつなげない）
+    const stopOk = l => { const i = l.indexOf('stop'); return i < 0 || (i === l.length - 1 && l.lastIndexOf('stop') === i); };
     $('#bPal').querySelectorAll('.piece').forEach(b => b.onclick = () => {
       if (list.length >= max) { toast('これ以上ならべられません'); return; }
-      const at = bSel >= 0 ? bSel + 1 : list.length;
-      list.splice(at, 0, b.dataset.k); if (bSel >= 0) bSel = at;
+      const k = b.dataset.k;
+      const at = k === 'stop' ? list.length : (bSel >= 0 ? bSel + 1 : list.length);
+      const next = list.slice(); next.splice(at, 0, k);
+      if (!stopOk(next)) { toast(k === 'stop' ? '停止はひとつだけです' : '停止のうしろにはつなげません'); return; }
+      list.splice(at, 0, k); bSel = at;
       Snd.click(); edited(r); drawBuild();
     });
-    $('#bL').onclick = () => { if (bSel > 0) { [list[bSel - 1], list[bSel]] = [list[bSel], list[bSel - 1]]; bSel--; edited(r); drawBuild(); } };
-    $('#bR').onclick = () => { if (bSel >= 0 && bSel < list.length - 1) { [list[bSel + 1], list[bSel]] = [list[bSel], list[bSel + 1]]; bSel++; edited(r); drawBuild(); } };
+    const swap = (i, j) => { const next = list.slice(); [next[i], next[j]] = [next[j], next[i]]; if (!stopOk(next)) { toast('停止は最後から動かせません'); return false; } [list[i], list[j]] = [list[j], list[i]]; return true; };
+    $('#bL').onclick = () => { if (bSel > 0 && swap(bSel - 1, bSel)) { bSel--; edited(r); drawBuild(); } };
+    $('#bR').onclick = () => { if (bSel >= 0 && bSel < list.length - 1 && swap(bSel + 1, bSel)) { bSel++; edited(r); drawBuild(); } };
     $('#bDel').onclick = () => { if (bSel >= 0) { list.splice(bSel, 1); bSel = Math.min(bSel, list.length - 1); edited(r); drawBuild(); } };
     $('#bClr').onclick = () => { if (list.length && confirm('このタブのピースをぜんぶけしますか？')) { list.length = 0; bSel = -1; edited(r); drawBuild(); } };
     $('#bRun').onclick = () => { closeModal(); $('#btnRun').onclick(); };
@@ -377,11 +395,49 @@
 
   /* ---------- 調べる（マスをタップ） ---------- */
   const OBJ_NAME = { src: '取り場（製造ラインの終点）', yard: '出荷ヤード', fridge: 'れいぞうこ', pc: 'コンピュータ' };
+  /* ---------- ナビ（オブジェクトまでの最短ルート） ---------- */
+  let nav = null;   // { base, x, y, tiles, lines }
+  const REL = ['まっすぐ', '右を向いて', 'うしろを向いて', '左を向いて'];
+  const REL_END = ['', '右を向く', 'うしろを向く', '左を向く'];
+  const REL_PIECE = ['', '↷', '⟲', '↶'];
+  function navCalc(x, y) {
+    const b = G.bases[curBase], r = robot(), o = b.objs[UC.key(x, y)];
+    if (!r || !o) return null;
+    const rx = Math.round(r.x), ry = Math.round(r.y);
+    const adj = (a, c) => Math.abs(a - x) + Math.abs(c - y) === 1;
+    const path = adj(rx, ry) ? [] : UC.findPath(b, rx, ry, adj);
+    const name = OBJ_NAME[o.type] || UC.MACHINES[o.type].name;
+    if (!path) return { base: curBase, x, y, tiles: [], lines: [name, 'ここからは とどきません'] };
+    // 同じ向きに続く歩みをまとめて「〜を向いて N 歩」にする（ちくわ君の向きから見た左右）
+    let dir = r.dir, px = rx, py = ry;
+    const segs = [];
+    for (const [nx, ny] of path) {
+      const d = UC.DX.findIndex((dx, k) => dx === nx - px && UC.DY[k] === ny - py);
+      if (segs.length && segs[segs.length - 1].d === d) segs[segs.length - 1].n++;
+      else segs.push({ d, n: 1, rel: (d - dir + 4) % 4 });
+      dir = d; px = nx; py = ny;
+    }
+    const fd = UC.DX.findIndex((dx, k) => dx === x - px && UC.DY[k] === y - py), fr = (fd - dir + 4) % 4;
+    const lines = [name + 'まで ' + path.length + '歩'];
+    segs.forEach(sg => lines.push(`${REL[sg.rel]} ${sg.n}歩`));
+    if (fr) lines.push(REL_END[fr]);
+    if (!path.length && !fr) lines.push('もう目の前です');
+    const pcs = segs.map(sg => (REL_PIECE[sg.rel] || '') + '⬆' + sg.n).join(' ') + (fr ? ' ' + REL_PIECE[fr] : '');
+    if (pcs.trim()) lines.push('ピース：' + pcs.trim());
+    return { base: curBase, x, y, tiles: path, lines };
+  }
   function inspect(x, y) {
     const b = G.bases[curBase], o = b.objs[UC.key(x, y)];
     const rb = G.robots.findIndex(r => r.base === curBase && Math.round(r.x) === x && Math.round(r.y) === y && !UC.inFridge(r));
-    if (rb >= 0) { selRobot = rb; refreshRobots(); refreshCtrl(); Snd.click(); return; }
-    if (!o) return;
+    if (rb >= 0) { selRobot = rb; nav = null; refreshRobots(); refreshCtrl(); Snd.click(); return; }
+    if (!o) { nav = null; return; }
+    // 1 回目のタップはルートとナビ。同じものをもう一度タップすると、くわしく調べる
+    if (!nav || nav.x !== x || nav.y !== y || nav.base !== curBase) {
+      nav = navCalc(x, y);
+      if (!nav) { if (!robot()) toast('ちくわ君を選ぶと、そこまでの道順を出します'); else return; }
+      else { Snd.click(); return; }
+    }
+    nav = null;
     const name = OBJ_NAME[o.type] || UC.MACHINES[o.type].name;
     const pname = p => p ? (p.packed ? '📦梱包ずみ' : '') + UC.PRODUCTS[p.t].name : 'なし';
     let h = '';
@@ -544,6 +600,17 @@
         ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([a, d], n) => { const p = UC.iso(hx + a, hy + d); n ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.fill();
       }
     }
+    // ナビのルート（最短ルートのマス）
+    if (nav && nav.base === curBase) {
+      nav.tiles.forEach(([tx, ty], n) => {
+        ctx.fillStyle = 'rgba(70,170,255,.38)';
+        ctx.beginPath(); [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]].forEach(([a, d], m) => { const p = UC.iso(tx + a, ty + d); m ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.fill();
+        const [sx, sy] = UC.iso(tx + 0.5, ty + 0.5);
+        ctx.fillStyle = '#0B4F8A'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(n + 1, sx, sy);
+      });
+      ctx.strokeStyle = '#FFE066'; ctx.lineWidth = 2;
+      ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([a, d], m) => { const p = UC.iso(nav.x + a, nav.y + d); m ? ctx.lineTo(...p) : ctx.moveTo(...p); }); ctx.closePath(); ctx.stroke();
+    }
     // 選んでいるちくわ君の足もと
     const sr = robot();
     // 奥から手前へ描く
@@ -568,6 +635,23 @@
       let s = r.bub ? r.bub.s : (r.mode === 'off' ? '💤' : r.brk && r.brk.phase === 'vent' ? '💨' : null);
       if (s) label(sx + 10, sy - 38, s, '#fff', '#3B2A1C');
     });
+    if (nav && nav.base === curBase) navBubble(c);
+  }
+  /* ナビの吹き出し（画面の大きさのまま描く。オブジェクトの上） */
+  function navBubble(c) {
+    const [wx, wy] = UC.iso(nav.x + 0.5, nav.y + 0.5);
+    let sx = (wx - c.x) * c.z + VW / 2, sy = (wy - c.y) * c.z + VH / 2 - 34 * c.z;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.font = 'bold 12px sans-serif';
+    const lh = 16, w = Math.max(...nav.lines.map(l => ctx.measureText(l).width)) + 18, h = nav.lines.length * lh + 22;
+    let bx = Math.max(6, Math.min(VW - w - 6, sx - w / 2)), by = sy - h - 8;
+    if (by < 50) by = 50;
+    ctx.fillStyle = 'rgba(255,253,247,.96)'; ctx.strokeStyle = '#3E8ED0'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 10) : ctx.rect(bx, by, w, h); ctx.fill(); ctx.stroke();
+    if (sy - 8 > by + h) { ctx.beginPath(); ctx.moveTo(Math.min(Math.max(sx, bx + 12), bx + w - 12) - 6, by + h); ctx.lineTo(Math.min(Math.max(sx, bx + 12), bx + w - 12), Math.min(sy, by + h + 10)); ctx.lineTo(Math.min(Math.max(sx, bx + 12), bx + w - 12) + 6, by + h); ctx.fillStyle = '#3E8ED0'; ctx.fill(); }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    nav.lines.forEach((l, i) => { ctx.fillStyle = i === 0 ? '#0B4F8A' : '#3B2A1C'; ctx.fillText(l, bx + 9, by + 6 + i * lh); });
+    ctx.fillStyle = '#7A6450'; ctx.font = '10px sans-serif'; ctx.fillText('もう一度タップで くわしく', bx + 9, by + 6 + nav.lines.length * lh);
   }
   function label(x, y, s, bg, fg) {
     ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -643,7 +727,7 @@
       while (mins > 0) { const s = Math.min(0.25, mins); UC.step(G, s); mins -= s; }
     }
     draw(t);
-    uiT += dt; if (uiT > 0.15) { uiT = 0; refreshTop(); refreshRobots(); refreshCtrl(); refreshHud(); markNow(); }
+    uiT += dt; if (uiT > 0.15) { uiT = 0; if (nav) { const n = nav.base === curBase && G.bases[curBase].objs[UC.key(nav.x, nav.y)] ? navCalc(nav.x, nav.y) : null; nav = n; } refreshTop(); refreshRobots(); refreshCtrl(); refreshHud(); markNow(); }
     saveT += dt; if (saveT > 5) { saveT = 0; UC.save(G); }
   }
   requestAnimationFrame(loop);
@@ -651,7 +735,7 @@
   window.addEventListener('pagehide', () => { if (G) UC.save(G); });
 
   /* テスト用（dev/test.py から使う） */
-  window.UCT = { get G() { return G; }, set G(v) { G = v; }, startGame, setSpeed: s => { speed = s; }, inspect, robot, get curBase() { return curBase; } };
+  window.UCT = { get nav() { return nav; }, get G() { return G; }, set G(v) { G = v; }, startGame, setSpeed: s => { speed = s; }, inspect, robot, get curBase() { return curBase; } };
 
   showTitle();
 })();

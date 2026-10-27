@@ -166,6 +166,7 @@
     return null;
   }
   const nextTo = (b, type) => (x, y) => { for (let d = 0; d < 4; d++) { const o = b.objs[key(x + DX[d], y + DY[d])]; if (o && o.type === type) return true; } return false; };
+  UC.findPath = findPath;
   const hasObj = (b, type, on) => Object.values(b.objs).some(o => o.type === type && (on === undefined || o.on === on));
   UC.hasObj = hasObj;
 
@@ -321,7 +322,10 @@
     if (mode === 'break') {
       // 休けい：いまの動きを終わらせて、れいぞうこへ。休けいのあと元の場所へ戻る
       if (r.act && r.act.k === 'work' && r.act.o) r.act.o.busy = false;
-      if (r.act && r.act.k === 'move') { r.x = r.act.tx; r.y = r.act.ty; r.act = { k: 'fwd', left: 0 }; }   // 進むの続きは戻ってから
+      if (r.act && r.act.k === 'move') {   // 進むの続きは戻ってから
+        const a = r.act; r.x = a.tx; r.y = a.ty;
+        r.act = a.steps && a.n + 1 >= a.steps ? null : { k: 'fwd', left: 0, steps: a.steps, n: a.n + 1 };
+      }
       else r.act = null;
       r.brk = { sx: r.x, sy: r.y, sd: r.dir, phase: 'go', vent: false, vend: false };
       const vent = Object.values(b.objs).find(o => o.type === 'vent');
@@ -407,6 +411,7 @@
         r.stack.push({ w: fi, ip: 0 });
         r.act = { k: 'wait', left: CFG.callMin }; return true;
       }
+      if (pc === 'stop') { UC.stop(G, r); bubble(G, r, '■'); emit('stopped', r); return false; }   // 停止：ここで指示書をおえる
       r.act = startPiece(G, r, pc);
       return true;
     }
@@ -414,8 +419,8 @@
   }
 
   function startPiece(G, r, pc) {
-    switch (pc) {
-      case 'fwd': return { k: 'fwd', left: 0 };
+    switch (UC.pieceKey(pc)) {
+      case 'fwd': return { k: 'fwd', left: 0, steps: UC.pieceArg(pc), n: 0 };   // steps 0＝ぶつかるまで
       case 'left': r.dir = (r.dir + 3) % 4; return { k: 'wait', left: CFG.turnMin };
       case 'right': r.dir = (r.dir + 1) % 4; return { k: 'wait', left: CFG.turnMin };
       case 'back': r.dir = (r.dir + 2) % 4; return { k: 'wait', left: CFG.turnMin * 2 };
@@ -440,11 +445,13 @@
     const a = r.act;
     r.act = null;
     if (a.k === 'fwd' || a.k === 'move') {
-      if (a.k === 'move') { r.x = a.tx; r.y = a.ty; pickCoin(G, r); }
-      // 進む：ものに当たるまで進む
+      let n = a.n || 0;
+      if (a.k === 'move') { r.x = a.tx; r.y = a.ty; pickCoin(G, r); n++; }
+      // 進む：歩数のぶんだけ進む（歩数なしはものに当たるまで）。とちゅうで当たったらそこで止まる
+      if (a.steps && n >= a.steps) return;
       const nx = r.x + DX[r.dir], ny = r.y + DY[r.dir];
-      if (blocked(G, r, nx, ny)) { if (a.k === 'fwd') { r.act = { k: 'wait', left: CFG.bumpMin }; } return; }
-      r.act = { k: 'move', tx: nx, ty: ny, left: CFG.moveMin, total: CFG.moveMin, p: 0 };
+      if (blocked(G, r, nx, ny)) { if (a.k === 'fwd' || a.steps) { r.act = { k: 'wait', left: CFG.bumpMin }; } return; }
+      r.act = { k: 'move', tx: nx, ty: ny, left: CFG.moveMin, total: CFG.moveMin, p: 0, steps: a.steps, n };
       return;
     }
     if (a.k === 'hold') return doHold(G, r, b);
