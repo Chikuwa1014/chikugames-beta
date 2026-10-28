@@ -119,7 +119,7 @@
     return {
       id, name: UC.ROBOT_NAMES[id] || ('ちくわ' + (id + 1) + '号'), base, x, y, dir: 0,
       hp: 100, mp: 40, hold: null,
-      prog: { main: [], f: [[], [], []] },
+      prog: { main: [], f: Array.from({ length: UC.FUNC_N }, () => []) },
       running: false, stack: [], act: null,
       shift: { type: 'teiji', slot: 0 },
       injured: false, sulk: false, mode: 'off', brk: null, path: null, bub: null,
@@ -154,6 +154,7 @@
       if (!G || G.v !== 1 || !Array.isArray(G.bases) || !G.bases.length) return null;
       G.bases.forEach(UC.fixBase);
       if (!G.demand) G.demand = { v: 100, hist: [] };   // 1.1 までのセーブ
+      G.robots.forEach(r => { while (r.prog.f.length < UC.FUNC_N) r.prog.f.push([]); });   // F4・F5 の置き場所
       if (!G.lib) {   // 1.2 までのセーブ：F1〜F3 が使えていたので、使っているファンクションまでは買ったことにする
         let used = 0;
         G.robots.forEach(r => [0, 1, 2].forEach(i => { if (r.prog.f[i].length || r.prog.main.includes('f' + (i + 1))) used = Math.max(used, i); }));
@@ -552,7 +553,7 @@
       }
       const pc = list[fr.ip++];
       r.cur = { w: fr.w, ip: fr.ip - 1 };
-      if (pc === 'f1' || pc === 'f2' || pc === 'f3') {
+      if (/^f\d$/.test(pc)) {
         const fi = +pc[1] - 1;
         if (r.stack.length >= 8 || fi >= UC.funcCount(G) || !r.prog.f[fi].length) { bubble(G, r, '？'); r.act = { k: 'wait', left: CFG.bumpMin }; return true; }
         r.stack.push({ w: fi, ip: 0 });
