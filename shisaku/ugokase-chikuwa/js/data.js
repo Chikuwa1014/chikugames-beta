@@ -152,7 +152,7 @@
   /* 指示書のライブラリ（コンサルで買う。全員の指示書に効く。値段・増え方は仮） */
   UC.LIB = {
     mainCap: { name: '指示書容量', costs: [300, 800, 2000], desc: 'メイン指示書に置けるピース +4' },
-    funcs: { name: 'ファンクション購入', costs: [500, 1500], desc: 'ファンクションが 1 つふえる（はじめは F1 だけ。F3 まで）' },
+    funcs: { name: 'ファンクション購入', costs: [500, 1000, 2000, 3000], desc: 'ファンクションが 1 つふえる（はじめは F1 だけ。F5 まで）' },
     funcCap: { name: 'ファンクション容量', costs: [300, 800, 2000], desc: 'ファンクションに置けるピース +4' },
   };
   UC.ROBOT_COST = [0, 1500, 4000];   // 2 台目・3 台目
@@ -177,9 +177,12 @@
     f1: { name: 'F1', icon: 'F1', col: '#7A7A7A' },
     f2: { name: 'F2', icon: 'F2', col: '#7A7A7A' },
     f3: { name: 'F3', icon: 'F3', col: '#7A7A7A' },
+    f4: { name: 'F4', icon: 'F4', col: '#7A7A7A' },
+    f5: { name: 'F5', icon: 'F5', col: '#7A7A7A' },
   };
   UC.MAIN_MAX = 16;   // メイン指示書のピース数（はじめ。仮）
   UC.FUNC_MAX = 8;    // ファンクションのピース数（はじめ。仮）
+  UC.FUNC_N = 5;      // ファンクションの数の上限（F1〜F5。2026-10-28 開発者の指定）
   UC.LIB_STEP = 4;    // 容量を買うと増えるピース数
   UC.mainMax = G => UC.MAIN_MAX + UC.LIB_STEP * G.lib.mainCap;
   UC.funcMax = G => UC.FUNC_MAX + UC.LIB_STEP * G.lib.funcCap;
