@@ -412,13 +412,68 @@ details.shop:not([open]) + .spd {
   flex:none;
   position:relative;
   z-index:30;
-  display:flex;
-  gap:4px;
   margin:0 -12px;
   padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));
   background:var(--card);
   border-top:1px solid var(--line);
   box-shadow:0 -6px 18px -10px rgba(31,58,53,.3);
+  /* 取っ手で隠す・出すときに、せり下がる・せり上がる（v2.0.0〜。下へのずらし量は js/ui.js の tabBar） */
+  transition:margin-bottom .28s cubic-bezier(.3,.8,.3,1);
+}
+
+#tabs.noanim {
+  transition:none;
+}
+
+#tabr {
+  display:flex;
+  gap:4px;
+}
+
+/* タブバーの上のふちの真ん中の取っ手（隠すと、これだけが画面の下に残る） */
+#tabs button.tbh {
+  position:absolute;
+  left:50%;
+  bottom:100%;
+  transform:translateX(-50%);
+  width:64px;
+  height:20px;
+  padding:0;
+  border:1px solid var(--line);
+  border-bottom:0;
+  border-radius:12px 12px 0 0;
+  background:var(--card);
+  color:var(--mint2);
+  font-size:10px;
+  line-height:1;
+  box-shadow:0 -4px 10px -6px rgba(31,58,53,.35);
+}
+
+#tabs button.tbh:active:not(:disabled) {
+  transform:translateX(-50%);
+  box-shadow:0 -4px 10px -6px rgba(31,58,53,.35);
+}
+
+#tabs.off {
+  box-shadow:none;
+}
+
+/* 隠したときは、いちばん下の中身が取っ手に隠れないよう余白を足す */
+body:has(#tabs.off) #scr {
+  padding-bottom:40px;
+}
+
+#tabs.off button.tbh {
+  width:72px;
+  height:24px;
+  font-size:12px;
+  background:var(--mint);
+  border-color:var(--mint);
+  color:#fff;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  #tabs { transition:none; }
 }
 
 #tabs button.tab {
@@ -2542,7 +2597,7 @@ const VERSION = '2.0.0';
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
-    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
+    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
     ['1.5.4', '2026-10-27', 'セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように（お店のセーブと実績をまとめて運ぶ。今までのバックアップはそのまま）'],
     ['1.5.3', '2026-10-26', '最初に作った「空が赤い理由」の左下ラベルを廃止し、悪いイベントの表示は「お知らせ」に統一。店の絵の左下に「月末の支払い予想」（テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。黒背景・透過60%・白字。「？」で、月末に近づくほど増える説明）を常に表示。幸福度ゲージの下の情報（状態・テナント料・返済・月末まで・ノルマ内訳）をプルダウンに（閉じている間は状態の一言か「月末まであと◯日」）'],
     ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
@@ -5546,7 +5601,7 @@ function render() {
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
         // 画面の下のタブバー（v2.0.0〜）。一時停止と倍速は店の絵の右下 #spd（倍速は押すたび×1→×2→×4→×8）
-        byId('tabs').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定']].map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
+        byId('tabr').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定']].map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
         byId('spd').innerHTML = '<button class="' + (state.paused ? 'on' : '') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? 'on' : '') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button>';
         [0, 1, 2, 3].forEach(i => {
             const e = byId('p' + i);
@@ -5627,6 +5682,12 @@ document.addEventListener('click', e => {
         buy(b.dataset.k, b.dataset.id === '' ? null : +b.dataset.id);
     if (a === 'diff')
         newGame(b.dataset.v);
+    if (a === 'tbar') {
+        const off = !byId('tabs').classList.contains('off');
+        tabBar(off);
+        CG.ls.set(TBAR_KEY, off ? '1' : '0');
+        return;
+    }
     if (a === 'tab') {
         state.tab = +b.dataset.v;
         render();
@@ -5797,6 +5858,27 @@ document.addEventListener('change', e => {
 });
 
 /** 画面の組み替え（固定の上部・タブ・スクロール領域）。起動時に1回だけ呼ぶ */
+/** タブバーを隠したかどうかの保存キー（端末ごと。ゲームのセーブには入れない。v2.0.0〜） */
+const TBAR_KEY = 'shop-sim-tabbar';
+
+/** タブバーを隠す（off=true）・出す。隠すときは取っ手だけ残して下へせり下げ、タブの中身を広げる */
+function tabBar(off, init) {
+    const tb = byId('tabs'), h = byId('tbh');
+    if (!tb)
+        return;
+    tb.classList.toggle('off', off);
+    if (init)
+        tb.classList.add('noanim');
+    // タブバーの高さ（＋PC の下の余白）だけ下へずらし、画面の外へ出す。取っ手はバーの上に付いているので残る
+    const pad = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    tb.style.marginBottom = off ? -((tb.offsetHeight || 64) + pad) + 'px' : '';
+    h.textContent = off ? '▲' : '▼';
+    h.setAttribute('aria-label', off ? 'タブを出す' : 'タブを隠す');
+    h.setAttribute('aria-expanded', String(!off));
+    if (init)
+        requestAnimationFrame(() => requestAnimationFrame(() => tb.classList.remove('noanim')));
+}
+
 function initLayout() {
     const tp = document.createElement('div');
     tp.id = 'top';
@@ -5824,7 +5906,8 @@ function initLayout() {
     byId('sd').remove();
     const tb = document.createElement('div');
     tb.id = 'tabs';
-    tb.setAttribute('role', 'tablist');
+    // タブの並び（#tabr。render が描き直す）と、タブバーを隠す・出す取っ手（#tbh。v2.0.0〜）
+    tb.innerHTML = '<button type="button" class="tbh" id="tbh" data-a="tbar"></button><div id="tabr" role="tablist"></div>';
     const mk = i => {
         const d = document.createElement('div');
         d.id = 'p' + i;
@@ -5842,6 +5925,10 @@ function initLayout() {
     sc.append(P0, P1, P2, P3);
     tp.after(sc);
     sc.after(tb);
+    // 前に隠していたら、隠したまま始める（DOM に入れてから高さを測る）
+    tabBar(CG.ls.get(TBAR_KEY) === '1', true);
+    // 画面の向きや大きさが変わったら、隠す量（タブバーの高さ）を測り直す
+    addEventListener('resize', () => byId('tabs').classList.contains('off') && tabBar(true, true));
     // 横画面・PC（2列のとき）は、現在時刻とゲージを左の列（店の絵の下）に移して、どのタブでも見えるようにする（v2.0.0〜）
     const wide = matchMedia('(orientation:landscape) and (max-height:560px), (min-width:900px)');
     const gc = byId('gl').closest('.card'), ck = byId('clk');
