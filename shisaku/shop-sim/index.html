@@ -117,8 +117,8 @@ body {
 .awning {
   flex:none;
   position:relative;
-  height:12px;
-  margin:0 -12px 10px;
+  height:10px;
+  margin:0 -12px 9px;
   background:repeating-linear-gradient(90deg,var(--coral) 0 24px,#fff 24px 48px);
 }
 
@@ -148,8 +148,9 @@ body {
   z-index:30;
   background:var(--bg);
   margin:0 -12px;
-  padding:2px 12px 8px;
+  padding:2px 12px 0;
   border-radius:0 0 22px 22px;
+  overflow:hidden;
   box-shadow:0 6px 16px -8px rgba(31,58,53,.25);
 }
 
@@ -167,8 +168,8 @@ body {
   align-items:center;
   justify-content:space-between;
   gap:8px;
-  padding:8px 10px 8px 14px;
-  border-radius:18px;
+  padding:5px 8px 5px 14px;
+  border-radius:16px;
   background:linear-gradient(135deg,var(--mint),var(--mint2));
   color:#fff;
   box-shadow:var(--shadow);
@@ -179,7 +180,7 @@ body {
   padding:0;
   min-width:0;
   flex:none;
-  font-size:26px;
+  font-size:24px;
   font-weight:900;
   font-variant-numeric:tabular-nums;
   letter-spacing:-.3px;
@@ -221,7 +222,7 @@ button.achb, button.alt.achb {
   flex-wrap:wrap;
   justify-content:flex-end;
   gap:4px;
-  margin-top:6px;
+  margin-top:5px;
 }
 
 .chip {
@@ -254,74 +255,137 @@ button.achb, button.alt.achb {
   .chip { padding:1px 6px; font-size:11px; }
 }
 
-/* ---- 店の様子（ドット絵） ---- */
+/* ---- 店の様子（ドット絵）。v2.0.0〜 画面の端まで広げ、見出しの行は絵の上に重ねる ---- */
 details.shop {
-  margin:6px 0 0;
-  padding:6px 8px 8px;
-  border-radius:18px;
+  position:relative;
+  margin:8px -12px 0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
 }
 
 details.shop > summary {
+  position:absolute;
+  z-index:2;
+  top:6px;
+  left:8px;
+  right:8px;
   margin:0;
   display:flex;
   align-items:center;
   gap:4px;
   list-style:none;
   font-weight:700;
+  font-size:12px;
 }
 
 details.shop > summary::-webkit-details-marker {
   display:none;
 }
 
-details.shop > summary::before {
-  content:"▸";
-  display:inline-block;
-  color:var(--mint);
-  transition:transform .2s;
+/* 見出しの文字は半透明の黒いラベルに白字（どの空の色でも読めるように） */
+.shn, .pw {
+  display:inline-flex;
+  align-items:center;
+  padding:0 9px;
+  border-radius:999px;
+  background:rgba(0,0,0,.45);
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  line-height:22px;
+  white-space:nowrap;
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
 }
 
-details.shop[open] > summary::before {
-  transform:rotate(90deg);
+.shn::before {
+  content:"▾";
+  margin-right:4px;
+  opacity:.8;
 }
 
 #ph {
   display:inline-block;
-  margin-left:6px;
   padding:0 9px;
   border-radius:999px;
-  background:var(--mintl);
+  background:#fff;
   color:var(--mint2);
   font-size:12px;
   font-weight:800;
-  line-height:1.7;
+  line-height:22px;
+  box-shadow:0 1px 3px rgba(0,0,0,.15);
+}
+
+details.shop > summary button.hp {
+  background:rgba(0,0,0,.45);
+  color:#fff;
 }
 
 .pw {
   margin-left:auto;
-  font-size:12px;
-  font-weight:700;
-  color:var(--sub);
-  line-height:22px;
+}
+
+.pw:empty {
+  display:none;
+}
+
+/* 見出しは看板（絵の中央の上）にかからないよう、左右に寄せて小さく */
+@media (max-width:389px) {
+  .shn, .pw, #ph { font-size:11px; padding:0 7px; }
+}
+
+/* 絵を閉じたとき：見出しは普通の行に戻し、「店の様子」の文字も出す */
+details.shop:not([open]) .shn::after {
+  content:" 店の様子";
+}
+
+details.shop:not([open]) {
+  padding:6px 12px;
+}
+
+details.shop:not([open]) > summary {
+  position:static;
+}
+
+details.shop:not([open]) .shn::before {
+  content:"▸";
 }
 
 #px {
   width:100%;
   image-rendering:pixelated;
   display:block;
-  border-radius:12px;
-  margin-top:6px;
+  margin:0;
 }
 
 .pxw {
   position:relative;
 }
 
-/* 一時停止・倍速（v2.0.0〜 店の絵の右下。#top の中で絵の右下に重ねる。絵を閉じたときは下に並べる） */
+/* スクロールで縮んだとき（v2.0.0〜）：店の絵を細い帯にして、店のまわりだけ見せる */
+body.mini #px {
+  height:76px;
+  object-fit:cover;
+  object-position:50% 62%;
+}
+
+body.mini .chips {
+  display:none;
+}
+
+body.mini .secn, body.mini .payf {
+  display:none;
+}
+
+/* 一時停止・倍速（v2.0.0〜 店の絵の右下に重ねる。絵を閉じたときは下に並べる） */
 .spd {
   position:absolute;
-  right:20px;
-  bottom:22px;
+  z-index:3;
+  right:6px;
+  bottom:6px;
   display:flex;
   gap:4px;
 }
@@ -329,7 +393,7 @@ details.shop[open] > summary::before {
 details.shop:not([open]) + .spd {
   position:static;
   justify-content:flex-end;
-  margin-top:6px;
+  margin:0 0 8px;
 }
 
 .spd button, .spd button.alt {
@@ -705,8 +769,20 @@ button:focus-visible {
 /* ---- 陳列棚 ---- */
 .grid {
   display:grid;
-  grid-template-columns:1fr 1fr;
+  /* 幅に余裕があれば3列以上（v2.0.0〜） */
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:10px;
+}
+
+/* 投資の行も、幅に余裕があれば2列（v2.0.0〜） */
+#up {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+  column-gap:10px;
+}
+
+#up > .ivb {
+  grid-column:1 / -1;
 }
 
 .shelf {
@@ -1495,7 +1571,7 @@ button.achr {
 /* セキュリティのストック残数（右上） */
 .secn {
   position:absolute;
-  top:12px;
+  top:34px;
   right:6px;
   padding:1px 8px;
   border-radius:999px;
@@ -1577,14 +1653,14 @@ button.achr {
   display:none;
 }
 
-/* ---- 横画面（横向きで高さ 560px 以下）：左に上の部分、右にタブの中身とタブバー ---- */
-@media (orientation:landscape) and (max-height:560px) {
+/* ---- 横画面（横向きで高さ 560px 以下）と PC・タブレット（幅 900px 以上）：左に上の部分、右にタブの中身とタブバー ---- */
+@media (orientation:landscape) and (max-height:560px), (min-width:900px) {
   body {
-    max-width:none;
+    max-width:1280px;
     display:grid;
     grid-template-columns:minmax(260px,42%) minmax(0,1fr);
     grid-template-rows:auto minmax(0,1fr) auto;
-    column-gap:14px;
+    column-gap:18px;
     padding-left:max(12px,env(safe-area-inset-left,0px));
     padding-right:max(12px,env(safe-area-inset-right,0px));
   }
@@ -1603,6 +1679,18 @@ button.achr {
     border-radius:0;
     overflow-y:auto;
     min-height:0;
+  }
+
+  details.shop {
+    margin:8px 0 0;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+
+  details.shop:not([open]) {
+    box-shadow:none;
+    overflow:visible;
   }
 
   #scr {
@@ -1634,12 +1722,39 @@ button.achr {
   .spd {
     position:static;
     justify-content:flex-end;
-    margin-top:6px;
+    margin:8px 0;
   }
+}
 
+@media (orientation:landscape) and (max-height:560px) {
   #px {
     max-height:42vh;
     object-fit:contain;
+  }
+}
+
+/* PC では文字とタブを少し大きく */
+@media (min-width:900px) {
+  body {
+    padding-bottom:12px;
+  }
+
+  #tabs {
+    border-bottom:1px solid var(--line);
+    border-radius:18px;
+  }
+
+  #tabs button.tab {
+    font-size:14px;
+    padding:8px 0;
+  }
+
+  #tabs button.tab .ti {
+    font-size:18px;
+  }
+
+  .money {
+    font-size:30px;
   }
 }
 </style>
@@ -1649,7 +1764,7 @@ button.achr {
 <div class="awning"></div>
 <div class="money" id="m"></div>
 <div class="meta" id="dt"></div>
-<details open class="card shop"><summary>🏪 店の様子 <span id="ph"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="384" height="184"></canvas></details>
+<details open class="card shop"><summary><span class="shn" title="店の様子（タップで開け閉め）">🏪</span><span id="ph"></span><button type="button" class="hp" data-a="help" data-k="phase" aria-label="説明">?</button><span id="pw" class="pw"></span></summary><canvas id="px" width="384" height="184"></canvas></details>
 <div id="sp" style="display:none"></div>
 <div class="sd" id="sd"></div>
 <div class="card"><div class="gr"><b>購買欲<button type="button" class="hp" data-a="help" data-k="gauge" aria-label="説明">?</button></b><div class="bar g"><i id="gb"></i></div><span id="gl"></span></div><div class="gr"><b>ノルマ<button type="button" class="hp" data-a="help" data-k="quota" aria-label="説明">?</button></b><div class="bar" id="qb"><i id="qi"></i></div><span id="ql"></span></div><div class="gr"><b>幸福度<button type="button" class="hp" data-a="help" data-k="happy" aria-label="説明">?</button></b><div class="bar"><i id="hb"></i></div><span id="hp"></span></div><details class="dtl" id="dtl"><summary id="dsum"></summary><div class="meta" id="hs"></div><div class="meta"><span id="fe"></span> / <span id="qd"></span></div><div class="meta" id="qx"></div></details></div>
@@ -2442,7 +2557,7 @@ const VERSION = '2.0.0';
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
-    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブ（営業・投資・お金・設定）は画面の下に固定、一時停止・倍速は店の絵の右下へ。ゲージを太く色分け、難易度えらびは難易度ごとの色とアイコンのカードに。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
+    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定、一時停止・倍速は店の絵の右下へ。下へスクロールすると店の絵が細い帯に縮む。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
     ['1.5.4', '2026-10-27', 'セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように（お店のセーブと実績をまとめて運ぶ。今までのバックアップはそのまま）'],
     ['1.5.3', '2026-10-26', '最初に作った「空が赤い理由」の左下ラベルを廃止し、悪いイベントの表示は「お知らせ」に統一。店の絵の左下に「月末の支払い予想」（テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。黒背景・透過60%・白字。「？」で、月末に近づくほど増える説明）を常に表示。幸福度ゲージの下の情報（状態・テナント料・返済・月末まで・ノルマ内訳）をプルダウンに（閉じている間は状態の一言か「月末まであと◯日」）'],
     ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
@@ -3944,8 +4059,8 @@ function pp(x, y, b, o) {
 function pxLights(op, night) {
     const lit = op || night;
     [[52, 0], [108, 6]].forEach(([fx, s0]) => {
-        Rc(fx, 41, 32, 19, '#3f332b');
-        Rc(fx + 1, 42, 30, 17, lit ? '#fff3c4' : '#8fbfd9');
+        Rr(fx, 41, 32, 19, '#2c6e5f', 1);
+        Rc(fx + 1, 42, 30, 17, lit ? '#fff3c4' : '#a9dcf2');
         // 棚板
         Rc(fx + 1, 58, 30, 1, '#8a6a45');
         Rp(fx * 2 + 2, 116, 60, 1, '#b08a5a');
@@ -3969,15 +4084,15 @@ function pxLights(op, night) {
         Rp(fx * 2 + 8, 86, 2, 12, 'rgba(255,255,255,.5)');
         Rp(fx * 2 + 12, 86, 1, 6, 'rgba(255,255,255,.4)');
     });
-    Rc(88, 38, 16, 24, '#3f332b');
-    Rc(90, 40, 12, 22, lit ? '#ffe9a8' : '#6b8296');
-    Rc(95, 40, 2, 22, '#3f332b');
+    Rr(88, 38, 16, 24, '#2c6e5f', 1);
+    Rc(90, 40, 12, 22, lit ? '#ffe9a8' : '#86b9cf');
+    Rc(95, 40, 2, 22, '#2c6e5f');
     Rc(99, 52, 1, 3, '#ddd');
     if (op)
-        pp(92, 45, '#ffd23f', { apron: true, mood: 'happy' });
+        pp(92, 45, '#2fbf97', { apron: true, mood: 'happy' });
     // 札：営業中は OPEN、そのほかは CLOSE
-    Rp(181, 82, 22, 8, op ? '#2a9d8f' : '#e63946');
-    Rp(181, 82, 22, 1, shade(op ? '#2a9d8f' : '#e63946', .35));
+    Rp(181, 82, 22, 8, op ? '#2fbf97' : '#ff7a68');
+    Rp(181, 82, 22, 1, shade(op ? '#2fbf97' : '#ff7a68', .35));
     pxTextP(op ? 184 : 182, 84, op ? 'OPEN' : 'CLOSE', '#fff');
 }
 
@@ -4047,100 +4162,162 @@ function pxCrows(W) {
     }
 }
 
+/** 角を丸めた四角形（論理座標。r＝角を削る段数。ドットの味を残した丸み。v2.0.0〜） */
+function Rr(x, y, w, h, c, r) {
+    r = Math.min(r == null ? 1 : r, Math.floor(w / 2), Math.floor(h / 2));
+    for (let i = 0; i < r; i++) {
+        const k = r - i;
+        Rc(x + k, y + i, w - k * 2, 1, c);
+        Rc(x + k, y + h - 1 - i, w - k * 2, 1, c);
+    }
+    Rc(x, y + r, w, h - r * 2, c);
+}
+
+/** 丸い木（v2.0.0〜。季節で色が変わる。冬は枝に雪） */
+function pxTree(x, se) {
+    Rc(x + 7, 44, 3, 18, '#7a5a44');
+    Rc(x + 8, 44, 1, 18, '#93705a');
+    if (se === 3) {
+        Rc(x + 2, 38, 13, 2, '#7a5a44');
+        Rc(x + 8, 30, 2, 10, '#7a5a44');
+        Rc(x + 4, 33, 2, 6, '#7a5a44');
+        Rc(x + 12, 33, 2, 6, '#7a5a44');
+        Rr(x + 1, 36, 16, 3, '#ffffff', 1);
+        Rr(x + 6, 29, 6, 2, '#ffffff', 1);
+        return;
+    }
+    const c = [['#ffb8d2', '#f48fb5', '#ffe0ec'], ['#5fcf86', '#3fae69', '#a6efbf'], ['#ffa25c', '#ee7d3b', '#ffd0a6']][se];
+    Rr(x, 28, 18, 18, c[0], 4);
+    Rr(x + 3, 37, 15, 9, c[1], 3);
+    Rr(x + 3, 30, 6, 4, c[2], 1);
+}
+
+/** 背景（空・雲・街並み・地面・道路・車・木・街灯・お店の建物）を描く（v2.0.0〜 ミント×コーラルの色で描き直し。位置は v1.x と同じ） */
+function pxScene(W, se, wt, night, bad) {
+    // 空：なめらかなグラデーション（マイナスのイベントの日は閉店まで赤い空。v1.4.1〜）
+    const sk = bad ? ['#8e1b2c', '#d8463e', '#f7a072'] : [['#4fb3f0', '#8fd3f7', '#e3f6ff'], ['#9fb4c4', '#c6d4de', '#eef2f5'], ['#6c7a88', '#8d9aa6', '#b9c2ca'], ['#b8c7d4', '#d6e0e8', '#f5f8fb']][wt];
+    const g = cx.createLinearGradient(0, 0, 0, 124);
+    g.addColorStop(0, sk[0]);
+    g.addColorStop(.55, sk[1]);
+    g.addColorStop(1, sk[2]);
+    cx.fillStyle = g;
+    cx.fillRect(0, 0, PXW, 124);
+    if (wt === 0 && !bad) {
+        if (night) {
+            Rr(158, 6, 8, 8, '#fff4c8', 2);
+            Rr(161, 6, 5, 6, sk[0], 2);
+        }
+        else {
+            // 太陽：やわらかい光の輪
+            const sg = cx.createRadialGradient(326, 22, 4, 326, 22, 30);
+            sg.addColorStop(0, 'rgba(255,236,150,.9)');
+            sg.addColorStop(1, 'rgba(255,236,150,0)');
+            cx.fillStyle = sg;
+            cx.fillRect(290, 0, 72, 56);
+            Rr(158, 6, 10, 10, se === 1 ? '#ffb43a' : '#ffd95a', 3);
+            Rr(160, 7, 4, 3, '#fff3b8', 1);
+        }
+    }
+    // 雲：丸みのある形（晴れの日も2つだけ浮かべる）
+    {
+        const n = wt > 0 ? 4 : 2, cc = wt === 2 ? '#7d8a96' : '#ffffff', cs = wt === 2 ? '#6a7682' : '#e2eef6';
+        for (let k = 0; k < n; k++) {
+            const x = ((fr * 0.25 + k * (wt > 0 ? 60 : 110)) % (W + 40)) - 24, y = 6 + k * (wt > 0 ? 7 : 9);
+            Rr(x, y, 24, 6, cc, 2);
+            Rr(x + 5, y - 3, 11, 6, cc, 2);
+            Rr(x + 12, y - 1, 8, 5, cc, 2);
+            Rc(x + 3, y + 5, 18, 1, cs);
+        }
+    }
+    if (bad)
+        pxCrows(W);
+    // 遠くの丘と街並み（パステルの色）
+    Rr(-10, 46, 70, 24, bad ? '#c76a5e' : '#bfe8d6', 8);
+    Rr(130, 44, 80, 26, bad ? '#b95c52' : '#a9dfc8', 8);
+    [[0, 14, 10, '#9ec7e0'], [12, 22, 14, '#b8b2e3'], [28, 16, 10, '#9fd8cc'], [150, 18, 12, '#b8b2e3'], [164, 26, 16, '#9ec7e0'], [182, 14, 10, '#9fd8cc']].forEach(([x, h, w, c]) => {
+        Rr(x, 62 - h, w, h + 2, c, 1);
+        Rc(x + 1, 62 - h, w - 2, 1, shade(c, .3));
+        for (let j = 0; j < h - 5; j += 4)
+            for (let i = 2; i < w - 2; i += 4)
+                Rc(x + i, 62 - h + 3 + j, 2, 2, night ? '#ffe9a8' : shade(c, .45));
+    });
+    // 植え込み・歩道・道路
+    const gr = [['#8fde8a', '#6cc56c'], ['#4fc46e', '#38a656'], ['#d6b25a', '#bf9646'], ['#f4f8fb', '#dde7ee']][se];
+    Rr(0, 54, 48, 9, gr[0], 2);
+    Rr(146, 54, 46, 9, gr[0], 2);
+    Rc(0, 60, 48, 2, gr[1]);
+    Rc(146, 60, 46, 2, gr[1]);
+    Rc(0, 62, W, 6, '#efe4d2');
+    Rc(0, 62, W, 1, '#fff6e6');
+    for (let x = 0; x < W; x += 8)
+        Rc(x, 63, 1, 5, '#dccdb6');
+    Rc(0, 67, W, 1, '#cbb99e');
+    Rc(0, 68, W, 24, '#4b5662');
+    Rc(0, 68, W, 2, '#5c6875');
+    for (let x = 0; x < W; x += 32)
+        Rr(x, 79.5, 16, 1.5, '#f6e7b8', 0);
+    {
+        // 車（丸みのあるパステルの車）
+        const cxp = ((fr * 1.6) % 260) - 40, ci = Math.floor(fr * 1.6 / 260) % 3, cc = ['#ff7a68', '#2fbf97', '#ffc94d'][ci];
+        Rr(cxp, 74, 21, 6, cc, 1);
+        Rr(cxp + 4, 70.5, 12, 5, cc, 1);
+        Rc(cxp + 5.5, 71.5, 4, 3, '#d6f1ff');
+        Rc(cxp + 10.5, 71.5, 4, 3, '#d6f1ff');
+        Rc(cxp + 1, 75, 19, 1, shade(cc, .3));
+        Rc(cxp + 19, 75.5, 2, 1.5, '#fff6c8');
+        Rr(cxp + 2.5, 78.5, 5, 4, '#2a2f36', 1);
+        Rr(cxp + 13.5, 78.5, 5, 4, '#2a2f36', 1);
+        Rc(cxp + 4.5, 80, 1, 1, '#9aa4ae');
+        Rc(cxp + 15.5, 80, 1, 1, '#9aa4ae');
+    }
+    pxTree(4, se);
+    pxTree(172, se);
+    if (se === 0 || se === 2)
+        for (let i = 0; i < 8; i++)
+            Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#ffa25c' : '#ffc4da');
+    // 街灯（ミントの柱と丸い明かり）
+    Rc(40, 38, 2, 24, '#2c6e5f');
+    Rc(36, 36, 10, 2, '#2c6e5f');
+    Rr(35, 37, 4, 3, night ? '#fff1b0' : '#e8f7f1', 1);
+    // お店の建物：ミントの屋根・クリームの壁・腰板
+    Rr(45, 19, 102, 7, '#23806a', 1);
+    Rc(46, 19, 100, 1, '#3fb596');
+    Rc(48, 26, 96, 36, '#fff4e3');
+    for (let x = 52; x < 144; x += 6)
+        Rc(x, 40, 1, 16, '#f5e6cf');
+    Rc(48, 56, 96, 6, '#2fbf97');
+    Rc(48, 56, 96, 1, '#5fd9b5');
+    for (let x = 50; x < 144; x += 4)
+        Rc(x, 58, 2, 1, '#28a888');
+    Rc(140, 26, 4, 36, 'rgba(31,58,53,.08)');
+    // 看板：コーラルの丸い看板に白い文字
+    Rr(75, 9, 42, 13, '#c9443a', 2);
+    Rr(76, 9, 40, 12, '#ff7a68', 2);
+    Rc(78, 10, 36, 1, '#ffab9e');
+    pxText(88, 13, 'SHOP', '#ffffff');
+    // 日よけ：コーラルと白のしましま、すそは波形
+    for (let i = 0; i < 16; i++) {
+        const c = i % 2 ? '#fffaf2' : '#ff7a68';
+        Rc(48 + i * 6, 29, 6, 7, c);
+        Rc(48.5 + i * 6, 36, 5, 1, c);
+        Rc(49.5 + i * 6, 37, 3, 1, c);
+    }
+    Rc(48, 29, 96, 1, 'rgba(255,255,255,.55)');
+    Rc(48, 38, 96, 2, 'rgba(31,58,53,.18)');
+    // 入口のわきの植木鉢
+    [[46, 56], [141, 56]].forEach(([x, y]) => {
+        Rr(x, y + 2, 5, 4, '#e0855f', 1);
+        Rr(x - 0.5, y - 2, 6, 5, se === 3 ? '#f4f8fb' : '#3fae69', 2);
+        Rc(x + 1.5, y - 1, 1, 1, '#ffb8d2');
+    });
+}
+
 /** ドット絵の描画（1フレーム） */
 function drawPx() {
     const W = 192, H = 92, se = seaOf(Math.max(state.day, 1)), wt = state.weather, op = state.phase === 'open';
     const hr = op ? state.openH + Math.floor(state.t / 5) : (state.phase === 'prep' ? state.openH : 21), night = hr >= 19 || hr < 6;
     const bad = badDay();
-    // マイナスのイベントがあった日は、閉店（翌日）まで空を赤く（v1.4.1〜）
-    (bad ? '#7a1010,#a01818,#c42a22,#d8462e,#e4643c,#ee8a5a' : ['#5aa9f0,#8cc6f7,#b6dcfb,#d4ecfd,#e6f4fe,#f2faff', '#9aa6b0,#b0bac2,#c3cbd2,#d1d7dc,#dde2e6,#e8ebee', '#69737d,#7a858f,#8a949d,#99a2aa,#a8b0b7,#b5bcc2', '#c8d3dc,#d3dce4,#dde5ec,#e6ecf1,#eef2f6,#f4f7fa'][wt]).split(',').forEach((c, i) => Rc(0, i * 10, W, 10, c));
-    if (wt === 0 && !bad) {
-        if (night)
-            Rc(160, 8, 6, 6, '#f5f0c8');
-        else {
-            Rc(158, 6, 10, 10, se === 1 ? '#ffb300' : '#ffd54a');
-            Rc(155, 10, 16, 2, 'rgba(255,230,120,.4)');
-            Rc(162, 3, 2, 16, 'rgba(255,230,120,.4)');
-        }
-    }
-    if (wt > 0) {
-        const cc = wt === 2 ? '#6f7b87' : '#fff';
-        for (let k = 0; k < 4; k++) {
-            const x = ((fr * 0.25 + k * 60) % (W + 40)) - 24, y = 6 + k * 7;
-            Rc(x, y, 22, 5, cc);
-            Rc(x + 5, y - 3, 12, 4, cc);
-            Rc(x + 2, y + 4, 18, 1, 'rgba(0,0,0,.08)');
-        }
-    }
-    if (bad)
-        pxCrows(W);
-    [[0, 14, 10], [12, 22, 14], [28, 16, 10], [150, 18, 12], [164, 26, 16], [182, 14, 10]].forEach(([x, h, w]) => {
-        Rc(x, 62 - h, w, h, '#8ea4b8');
-        for (let j = 0; j < h - 4; j += 4)
-            Rc(x + 2, 62 - h + 3 + j, 2, 2, '#aebfcf');
-    });
-    const gr = ['#8fd16a', '#4fae4a', '#c9a14a', '#f4f8fb'][se];
-    Rc(0, 54, 48, 8, gr);
-    Rc(146, 54, 46, 8, gr);
-    Rc(0, 62, W, 6, '#cfcab9');
-    for (let x = 0; x < W; x += 12)
-        Rc(x, 62, 1, 6, '#b8b3a1');
-    Rc(0, 68, W, 24, '#5d636b');
-    Rc(0, 68, W, 1, '#8a8f98');
-    for (let x = 0; x < W; x += 32)
-        Rc(x, 80, 16, 1, '#e9e2b4');
-    {
-        const cxp = ((fr * 1.6) % 260) - 40, ci = Math.floor(fr * 1.6 / 260) % 3, cc = ['#d62828', '#2a6fdb', '#e9c46a'][ci];
-        Rc(cxp, 74, 20, 6, cc);
-        Rc(cxp + 4, 71, 11, 4, cc);
-        Rc(cxp + 5, 72, 4, 3, '#bfe3f5');
-        Rc(cxp + 10, 72, 4, 3, '#bfe3f5');
-        Rc(cxp + 3, 79, 4, 3, '#222');
-        Rc(cxp + 13, 79, 4, 3, '#222');
-    }
-    [4, 172].forEach(x => {
-        Rc(x + 7, 46, 3, 16, '#5b3f28');
-        Rc(x + 8, 46, 1, 16, '#74513a');
-        if (se === 3) {
-            Rc(x + 1, 40, 16, 2, '#5b3f28');
-            Rc(x + 8, 32, 2, 10, '#5b3f28');
-            Rc(x + 3, 34, 2, 6, '#5b3f28');
-            Rc(x + 13, 34, 2, 6, '#5b3f28');
-            Rc(x + 1, 39, 16, 1, '#fff');
-        }
-        else {
-            const c = [['#f4a6c6', '#e58bb0'], ['#3f9e44', '#2f7d34'], ['#e07b2d', '#c45e1a']][se];
-            Rc(x, 32, 18, 14, c[0]);
-            Rc(x + 2, 28, 14, 5, c[0]);
-            Rc(x + 2, 40, 16, 6, c[1]);
-            Rc(x + 10, 32, 6, 8, c[1]);
-        }
-    });
-    if (se === 0 || se === 2)
-        for (let i = 0; i < 8; i++)
-            Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#e07b2d' : '#f7b6d2');
-    Rc(40, 38, 2, 24, '#2f2f2f');
-    Rc(36, 36, 10, 3, '#2f2f2f');
-    Rc(46, 20, 100, 6, '#5b4a3f');
-    Rc(46, 20, 100, 1, '#7a6657');
-    Rc(48, 26, 96, 36, '#b95c3e');
-    for (let y = 28, r = 0; y < 62; y += 3, r++) {
-        Rc(48, y, 96, 1, '#9c4a31');
-        for (let x = 48 + (r % 2) * 4; x < 144; x += 8)
-            Rc(x, y + 1, 1, 2, '#9c4a31');
-    }
-    Rc(140, 26, 4, 36, 'rgba(0,0,0,.12)');
-    Rc(76, 10, 40, 12, '#1f3a5f');
-    Rc(76, 10, 40, 1, '#e9c46a');
-    Rc(76, 21, 40, 1, '#e9c46a');
-    pxText(88, 13, 'SHOP', '#ffd23f');
-    for (let i = 0; i < 16; i++) {
-        const c = i % 2 ? '#f4f1de' : '#d62828';
-        Rc(48 + i * 6, 30, 6, 6, c);
-        Rc(48 + i * 6, 36, 6, 1, c);
-        Rc(49 + i * 6, 37, 4, 1, c);
-    }
-    Rc(48, 38, 96, 2, 'rgba(0,0,0,.25)');
+    pxScene(W, se, wt, night, bad);
     pxLights(op, night);
     pxSec();
     if (state.kama)
@@ -4183,10 +4360,13 @@ function drawPx() {
         for (let i = 0; i < 70; i++)
             Rp((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W * 2, (i * 17 + fr) % H * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(0, 62, W, 2, '#f4f8fb');
-        Rc(46, 18, 100, 2, '#fff');
+        // 屋根の雪（看板の部分はよける）
+        Rc(46, 18, 29, 2, '#fff');
+        Rc(117, 18, 29, 2, '#fff');
+        Rr(76, 8, 40, 2, '#fff', 1);
     }
     if (night) {
-        cx.fillStyle = 'rgba(8,16,48,0.5)';
+        cx.fillStyle = 'rgba(18,20,70,0.48)';
         cx.fillRect(0, 0, PXW, PXH);
         if (wt === 0)
             for (let i = 0; i < 14; i++)
@@ -4194,6 +4374,9 @@ function drawPx() {
         Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
         Rc(37, 37, 8, 2, '#ffe9a8');
         pxLights(op, true);
+        // 夜は看板に明かりをともす（v2.0.0〜）
+        Rr(76, 9, 40, 12, 'rgba(255,122,104,.55)', 2);
+        pxText(88, 13, 'SHOP', '#fff6e0');
         pxDk = true;
         pxPeople(op);
         // 窓・ドアの描き直しで隠れた、イベントの人物（行列・泥棒など）を手前に描き直す。窓のステッカーも描き直す（v1.5.1）
@@ -5674,6 +5857,21 @@ function initLayout() {
     sc.append(P0, P1, P2, P3);
     tp.after(sc);
     sc.after(tb);
+    // 横画面・PC（2列のとき）は、現在時刻とゲージを左の列（店の絵の下）に移して、どのタブでも見えるようにする（v2.0.0〜）
+    const wide = matchMedia('(orientation:landscape) and (max-height:560px), (min-width:900px)');
+    const gc = byId('gl').closest('.card'), ck = byId('clk');
+    const place = () => wide.matches ? tp.append(ck, gc) : P0.prepend(ck, gc);
+    place();
+    wide.addEventListener('change', place);
+    // タブの中身を下へスクロールすると、店の絵を細い帯に縮める（v2.0.0〜。縦画面のスマホだけ。戻すと元の大きさ）
+    sc.addEventListener('scroll', () => {
+        const b = document.body, y = sc.scrollTop;
+        // 中身が短いときは縮めない（縮めると中身が全部見えてスクロールが戻り、行ったり来たりするため）
+        if (wide.matches || y < 8)
+            b.classList.remove('mini');
+        else if (y > 60 && sc.scrollHeight - sc.clientHeight > 240)
+            b.classList.add('mini');
+    }, { passive: true });
 }
 </script>
 <script>
