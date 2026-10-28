@@ -365,15 +365,13 @@ details.shop:not([open]) .shn::before {
   position:relative;
 }
 
-/* スクロールで縮んだとき（v2.0.0〜）：店の絵を細い帯にして、店のまわりだけ見せる */
+/* スクロールで縮んだとき（v2.0.0〜）：空の上と道路の下を切って、看板から歩道までのお店がまるごと見える高さにする
+   （上下を切るだけなので、お店の位置は動かない。幅に合わせて高さも変わる） */
 body.mini #px {
-  height:76px;
+  aspect-ratio:384 / 124;
+  height:auto;
   object-fit:cover;
-  object-position:50% 62%;
-}
-
-body.mini .chips {
-  display:none;
+  object-position:50% 25%;
 }
 
 body.mini .secn, body.mini .payf {
