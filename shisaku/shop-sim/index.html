@@ -1797,6 +1797,109 @@ button.achr {
     font-size:30px;
   }
 }
+
+/* ---- 遊び方（チュートリアル。v2.0.0〜 js/tutorial.js）：画面を暗くして説明する場所だけ光らせ、ちくわくんの吹き出しで案内 ---- */
+#tut {
+  position:fixed;
+  inset:0;
+  z-index:60;
+}
+
+#tut[hidden] {
+  display:none;
+}
+
+/* 光らせる枠（まわりを大きな影で暗くする。枠がないときは全体を暗く） */
+.tuth {
+  position:fixed;
+  border-radius:16px;
+  box-shadow:0 0 0 3px var(--coral), 0 0 0 9999px rgba(10,24,20,.62);
+  transition:left .25s, top .25s, width .25s, height .25s;
+  pointer-events:none;
+}
+
+.tuth[hidden] {
+  display:block;
+  width:0;
+  height:0;
+  left:50%;
+  top:50%;
+  box-shadow:0 0 0 9999px rgba(10,24,20,.62);
+}
+
+.tutb {
+  position:fixed;
+  width:calc(100vw - 24px);
+  padding:12px 14px;
+  border-radius:20px;
+  background:var(--card);
+  color:var(--ink);
+  box-shadow:0 14px 40px rgba(0,0,0,.35);
+  border-top:5px solid var(--mint);
+  transition:left .25s, top .25s;
+  animation:ovpop .3s cubic-bezier(.2,1.4,.4,1);
+}
+
+.tutb.mid {
+  left:50% !important;
+  top:50% !important;
+  transform:translate(-50%,-50%);
+  animation:none;
+}
+
+.tuthd {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.tuthd canvas {
+  flex:none;
+  width:36px;
+  height:36px;
+  image-rendering:pixelated;
+  border-radius:12px;
+  background:var(--mintl);
+  padding:2px;
+}
+
+.tuthd b {
+  flex:1;
+  font-size:16px;
+  font-weight:900;
+}
+
+.tutn {
+  font-size:12px;
+  font-weight:700;
+  color:var(--sub);
+  font-variant-numeric:tabular-nums;
+}
+
+.tutm {
+  margin:8px 0 10px;
+  font-size:14px;
+  line-height:1.65;
+  white-space:pre-line;
+}
+
+.tutbt {
+  display:flex;
+  gap:8px;
+}
+
+.tutbt button.alt {
+  flex:0 0 96px;
+}
+
+.tutc button {
+  width:100%;
+  margin-top:10px;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .tuth, .tutb { transition:none; animation:none; }
+}
 </style>
 </head>
 <body>
@@ -1817,6 +1920,7 @@ button.achr {
 <div class="grid" id="sh"></div>
 <h2>投資</h2>
 <div id="up"></div>
+<div class="card tutc" id="tutc"><b>📖 遊び方</b><div class="meta">ちくわくんが、画面のどこで何をするのかを順に案内します。</div><button class="alt" data-a="tutorial">📖 遊び方を見る</button></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="cgMove"></div>
 <div class="card" id="dbg"></div>
@@ -2597,7 +2701,7 @@ const VERSION = '2.0.0';
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
-    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
+    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが9場面で案内（最初に難易度を選んだ直後に1回だけ。スキップできる。設定タブの「📖 遊び方を見る」で見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
     ['1.5.4', '2026-10-27', 'セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように（お店のセーブと実績をまとめて運ぶ。今までのバックアップはそのまま）'],
     ['1.5.3', '2026-10-26', '最初に作った「空が赤い理由」の左下ラベルを廃止し、悪いイベントの表示は「お知らせ」に統一。店の絵の左下に「月末の支払い予想」（テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。黒背景・透過60%・白字。「？」で、月末に近づくほど増える説明）を常に表示。幸福度ゲージの下の情報（状態・テナント料・返済・月末まで・ノルマ内訳）をプルダウンに（閉じている間は状態の一言か「月末まであと◯日」）'],
     ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
@@ -5919,7 +6023,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('tutc'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     sc.append(P0, P1, P2, P3);
@@ -6243,6 +6347,179 @@ document.addEventListener('click', e => {
     if (b && !b.disabled)
         dbgSend();
 });
+</script>
+<script>
+/**
+ * tutorial.js — 遊び方（チュートリアル。v2.0.0〜）。
+ * 画面を暗くして説明する場所だけを光らせ、ちくわくんの吹き出しで順に案内する。タブは自動で切り替える。
+ * ・最初に難易度を選んだ直後に1回だけ出す（`newGame` を包む）。今遊んでいる人（セーブがある人）には自動では出さない
+ * ・どの場面でも「スキップ」で飛ばせる。最後まで見るか飛ばしたら、端末に `TUT_KEY` を保存して次からは出さない（ゲームのセーブには入れない）
+ * ・設定タブの「📖 遊び方を見る」（data-a="tutorial"）でいつでも見直せる。営業中に開いたら、その間は一時停止する
+ * ui.js の後、main.js の前に読む。
+ */
+
+/** チュートリアルを見終わった（飛ばした）かの保存キー（'1'＝見た） */
+const TUT_KEY = 'shop-sim-tutorial';
+
+/**
+ * 場面の一覧。q：光らせる場所（関数。null なら画面の真ん中に吹き出しだけ）、tab：先に開くタブ、t：見出し、m：説明（関数でもよい）
+ */
+const TUT_STEPS = [
+    { q: null, tab: 0, t: 'ようこそ、ちいさなお店へ！', m: 'ぼくはちくわくん。お店のやり方を案内するよ。\n商品を仕入れて売って、稼いだお金でお店を大きくしよう。お金が足りなくなると倒産だから気をつけてね。' },
+    { q: () => document.querySelector('.mrow'), tab: 0, t: '所持金', m: 'いま使えるお金だよ。仕入れ・投資・月末の支払いはここから出ていくよ。\n右の🏅は実績。条件を満たすと増えていくよ。' },
+    { q: () => document.querySelector('details.shop'), tab: 0, t: 'お店の様子と1日の流れ', m: '1日は「① 開店準備 → ② 開店 → ③ 閉店後」の順に進むよ。\n季節や天気、お客さんの様子もこの絵でわかるよ。左下は月末に払うお金の予想だよ。' },
+    { q: () => byId('gl').closest('.card'), tab: 0, t: '3つのゲージ', m: '購買欲：高いほどお客さんが来る。100になると来店ブースト！\nノルマ：月末までにこの売上を目指そう。\n幸福度：働きすぎると下がるよ。ときどき店休日で休もう。' },
+    { q: () => byId('sh'), tab: 0, t: '陳列棚', m: '「+N」や「満タン」で商品を補充するよ。補充には原価がかかるから、売れる分だけ並べよう。\n在庫が0の棚は売れないよ。' },
+    { q: () => byId('act'), tab: 0, t: '開業・開店', m: 'このボタンで1日を進めるよ。開店すると、お客さんが来て自動で売れていくよ。\n営業中は店の絵の右下で一時停止（⏸）と倍速（×1〜×8）ができるよ。' },
+    { q: () => document.querySelector('#tabs [data-v="1"]'), tab: 1, t: '投資タブ', m: '閉店後に、棚を増やす・容量アップ・広告・店員・セキュリティなどにお金を使えるよ。\n棚を増やすと新しい商品も並べられるよ。' },
+    { q: () => document.querySelector('#tabs [data-v="2"]'), tab: 2, t: 'お金タブ', m: () => difficulty().full ? '融資（お金を借りる）・預金・粗利率・自分の月収を決めるよ。借りたお金は毎月返していくよ。' : '預金や自分の月収を決めるよ。\n融資と粗利率の調整は、ハード・インフェルノで使えるよ。' },
+    { q: () => document.querySelector('#tabs [data-v="3"]'), tab: 3, t: '設定タブと「？」', m: 'セーブの書き出し・読み込みや、最初からやり直すのはここ。\n分からないところは小さな「？」を押すと説明が出るよ。遊び方は設定の「📖 遊び方を見る」から見直せるよ。\nそれじゃあ、がんばってね！' }
+];
+
+/** いまの場面（-1＝出していない）と、始める前の状態（一時停止・タブ・タブバー） */
+let tutI = -1, tutPrev = null;
+
+/** ちくわくん（吹き出しのアイコン。16×16 のドット絵を 2 倍で描く） */
+function tutFace(c) {
+    const g = c.getContext('2d'), R = (x, y, w, h, k) => {
+        g.fillStyle = k;
+        g.fillRect(x * 2, y * 2, w * 2, h * 2);
+    };
+    R(1, 5, 14, 7, '#E9A55B');
+    R(2, 4, 12, 1, '#E9A55B');
+    R(2, 12, 12, 1, '#E9A55B');
+    R(3, 5, 3, 1, '#C9772E');
+    R(9, 11, 4, 1, '#C9772E');
+    R(11, 5, 2, 1, '#C9772E');
+    R(1, 5, 2, 7, '#F3DDB2');
+    R(1, 7, 1, 3, '#8a5a2e');
+    R(6, 7, 1, 2, '#2a1a10');
+    R(10, 7, 1, 2, '#2a1a10');
+    R(7, 10, 3, 1, '#8a3a2a');
+    R(5, 9, 1, 1, '#f4a6a0');
+    R(11, 9, 1, 1, '#f4a6a0');
+}
+
+/** チュートリアルを始める */
+function tutStart() {
+    if (tutI >= 0)
+        return;
+    hideHelp();
+    tutPrev = { paused: state.paused, tab: state.tab || 0, bar: byId('tabs').classList.contains('off') };
+    if (state.phase === 'open')
+        state.paused = true;
+    if (tutPrev.bar)
+        tabBar(false, true);
+    let o = byId('tut');
+    if (!o) {
+        o = document.createElement('div');
+        o.id = 'tut';
+        o.innerHTML = '<div class="tuth" id="tuth"></div><div class="tutb" id="tutb" role="dialog" aria-modal="true" aria-labelledby="tutt"><div class="tuthd"><canvas id="tutf" width="32" height="32" aria-hidden="true"></canvas><b id="tutt"></b><span class="tutn" id="tutn"></span></div><div class="tutm" id="tutm"></div><div class="tutbt"><button type="button" class="alt" data-a="tutskip">スキップ</button><button type="button" data-a="tutnext" id="tutgo"></button></div></div>';
+        document.body.append(o);
+        tutFace(byId('tutf'));
+    }
+    o.hidden = false;
+    tutI = 0;
+    tutShow();
+}
+
+/** いまの場面を出す（タブを切り替え、光らせる場所へスクロールしてから位置を合わせる） */
+function tutShow() {
+    const s = TUT_STEPS[tutI];
+    if ((state.tab || 0) !== s.tab) {
+        state.tab = s.tab;
+        render();
+    }
+    byId('tutt').textContent = s.t;
+    byId('tutm').textContent = typeof s.m === 'function' ? s.m() : s.m;
+    byId('tutn').textContent = (tutI + 1) + ' / ' + TUT_STEPS.length;
+    byId('tutgo').textContent = tutI === TUT_STEPS.length - 1 ? 'はじめる！' : '次へ ▶';
+    const el = s.q && s.q();
+    if (el && byId('scr').contains(el))
+        el.scrollIntoView({ block: 'center' });
+    tutPlace();
+    byId('tutgo').focus({ preventScroll: true });
+}
+
+/** 光らせる枠と吹き出しの位置を合わせる（画面の向きが変わったときも） */
+function tutPlace() {
+    if (tutI < 0)
+        return;
+    const s = TUT_STEPS[tutI], el = s.q && s.q(), h = byId('tuth'), b = byId('tutb'), W = innerWidth, H = innerHeight, M = 12;
+    b.style.maxWidth = Math.min(380, W - M * 2) + 'px';
+    if (!el) {
+        h.hidden = true;
+        b.classList.add('mid');
+        b.style.left = b.style.top = '';
+        return;
+    }
+    b.classList.remove('mid');
+    const r = el.getBoundingClientRect(), p = 6;
+    // 光らせる枠は画面の中に収める（大きな棚の一覧などは、見えている部分だけ）
+    const x = Math.max(4, r.left - p), y = Math.max(4, r.top - p), x2 = Math.min(W - 4, r.right + p), y2 = Math.min(H - 4, r.bottom + p);
+    h.hidden = false;
+    Object.assign(h.style, { left: x + 'px', top: y + 'px', width: (x2 - x) + 'px', height: (y2 - y) + 'px' });
+    // 吹き出しは、枠の下に入ればその下、入らなければ上、どちらも入らなければ枠の中の下の方
+    const bh = b.offsetHeight, bw = b.offsetWidth;
+    let top = y2 + 10;
+    if (top + bh > H - M)
+        top = y - 10 - bh >= M ? y - 10 - bh : Math.max(M, H - M - bh);
+    const left = Math.min(Math.max(M, (x + x2) / 2 - bw / 2), W - M - bw);
+    b.style.left = left + 'px';
+    b.style.top = top + 'px';
+}
+
+/** チュートリアルを終える（最後まで見た・飛ばした）。次からは自動で出さない */
+function tutEnd() {
+    if (tutI < 0)
+        return;
+    tutI = -1;
+    byId('tut').hidden = true;
+    CG.ls.set(TUT_KEY, '1');
+    state.tab = tutPrev.tab;
+    if (state.phase === 'open')
+        state.paused = tutPrev.paused;
+    if (tutPrev.bar)
+        tabBar(true, true);
+    render();
+    save();
+    byId('scr').scrollTop = 0;
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b)
+        return;
+    const a = b.dataset.a;
+    if (a === 'tutorial')
+        tutStart();
+    if (a === 'tutskip')
+        tutEnd();
+    if (a === 'tutnext') {
+        if (tutI >= TUT_STEPS.length - 1)
+            tutEnd();
+        else {
+            tutI++;
+            tutShow();
+        }
+    }
+});
+
+addEventListener('resize', () => requestAnimationFrame(tutPlace));
+document.addEventListener('keydown', e => {
+    if (tutI >= 0 && e.key === 'Escape')
+        tutEnd();
+});
+
+// 最初に難易度を選んだ直後に1回だけ出す（まだ見ていない端末だけ）
+{
+    const ng = newGame;
+    newGame = function (v) {
+        ng(v);
+        if (state.diff && CG.ls.get(TUT_KEY) !== '1')
+            setTimeout(tutStart, 250);
+    };
+}
 </script>
 <script>
 /**
