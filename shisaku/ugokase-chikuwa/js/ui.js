@@ -14,6 +14,7 @@
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['1.2.0', '2026-10-28', '集荷の個数が、日経平均株価のように毎日動く「製品の需要」と、月・曜日で変わるように（かんばんにグラフ）。ちくわ君の体力・精神力をへりやすくした（勤務中は精神力もへる）'],
     ['1.1.0', '2026-10-28', '置いた直後に「↻ 向き」を押すと、そのきかいも回るように。90°曲線は買うときに右曲がり・左曲がりを選ぶ。置いたきかいの移動（恋ンがかかる）を調べる画面にも。Tコンベアを集約（2→1）・発散（1→2）で切りかえ、1本側の口も選べる'],
     ['1.0.0', '2026-10-28', 'ちくわゲームズに公開（β版から昇格）。設定に「💾 セーブの引っ越し」を足した'],
     ['β0.7.2', '2026-10-27', 'ファンクション（F1〜F3）の中では、停止のピースが「ファンクション終了」になる（呼んだところへもどる）'],
@@ -142,7 +143,8 @@
       <p><b>恋ン：</b>ちくわ君が工場を歩くと、落ちている恋ン（金色の♥）を拾って社長のポケットマネーにできる。コンサルで、きかい・福利厚生・ちくわ君の能力アップ・拠点・ちくわ君の増設に使える。</p>
       <p><b>時間：</b>1ヶ月は7日、1年は12ヶ月。ちくわ君はシフトの時間だけ働き、勤務のまん中で休けい（1時間＋15分）。休けいは自動で<b>れいぞうこ</b>へ入って体力・精神力が回復する。だれも勤務していないあいだは自動で早送り。</p>
       <p><b>拠点のレベル：</b>その拠点の累計集荷数でレベルが上がり、取り場と出荷ヤードが増える。レベル5からはヤードに製品指定がつき、その製品しか置けない（場合わけピースやふりわけそうちで分けよう）。拠点の大きさでレベルの上限がある（S：5・M：6・L：8）。</p>
-      <p><b>体力・精神力：</b>体力が0になると怪我（すり身部品でなおす）。精神力が0になると心がおれて動かない（有給で回復）。夏は体力、冬は精神力が少しずつへる。</p>
+      <p><b>製品の需要：</b>集荷の個数は、日経平均株価のように毎日動く「需要」と、月（年末・年度末は多め、お盆は少なめ）・曜日（金曜は多め、土日は少なめ）で変わる。かんばんの画面でグラフが見られる。</p>
+      <p><b>体力・精神力：</b>体力が0になると怪我（すり身部品でなおす）。精神力が0になると心がおれて動かない（有給で回復）。勤務中は体力も精神力も少しずつへり、夏は体力、冬は精神力がさらにへる。れいぞうこでの回復は体力のほうが大きい。</p>
       <p><b>操作：</b>画面をドラッグで移動、ピンチかホイール・＋－で拡大縮小、⟲⟳ で視点を 90° ずつ回す（4 回で 1 周）。時間は ⏸▶▶▶▶▶▶ で止めたり速くしたりできる（はじめは止まっている）。マスをタップすると、きかいを調べたり回したりできる。</p>`);
   }
 
@@ -216,7 +218,7 @@
     const sum = l => l.reduce((n, o) => n + o.stock.length, 0);
     const ff = isFastForward(), nx = UC.nextLevel(b);
     const nextY = next && b.objs[next.yard] && ys.length > 1 ? `（ヤード${b.objs[next.yard].no}）` : '';
-    $('#hudL').innerHTML = `🏭 Lv${b.lv} ${nx ? `累計 ${b.shipped}/${nx.need}個` : '（最大）'}<br>📋 次の集荷 ${next ? UC.fmtTime(next.t) + '・' + next.need + '個' + nextY : 'なし'}<br>🟨 出荷ヤード ${sum(ys)}個 ／ 取り場 ${sum(ss)}個`;
+    $('#hudL').innerHTML = `🏭 Lv${b.lv} ${nx ? `累計 ${b.shipped}/${nx.need}個` : '（最大）'}<br>📋 次の集荷 ${next ? UC.fmtTime(next.t) + '・' + next.need + '個' + nextY : 'なし'}<br>🟨 出荷ヤード ${sum(ys)}個 ／ 取り場 ${sum(ss)}個<br>${demandTx()}`;
     const hs = speed === 0 ? '⏸ 時間停止中' : ff ? '⏩ はやおくり' : '';
     $('#hudR').innerHTML = hs;
     $('#hudR').style.display = hs ? '' : 'none';
@@ -492,6 +494,24 @@
     });
   }
 
+  /* ---------- 製品の需要（日経平均株価のような動き） ---------- */
+  const MONTH_NOTE = { 3: '年度末', 8: 'お盆', 11: '年末前', 12: '年末の繁忙期', 1: '年明け' };
+  const WEEK_NAME = ['月', '火', '水', '木', '金', '土', '日'];
+  function demandTx() {
+    const dm = G.demand || { v: 100 }, d = dm.prev ? (dm.v / dm.prev - 1) * 100 : 0;
+    return `📈 需要 ${dm.v.toFixed(1)}（${d >= 0 ? '+' : ''}${d.toFixed(1)}%）`;
+  }
+  /* 需要の折れ線（直近 28 日） */
+  function demandChart(h) {
+    if (!h || h.length < 2) return '<div class="cnt">（グラフは明日から出ます）</div>';
+    const W = 300, H = 70, lo = Math.min(...h) - 2, hi = Math.max(...h) + 2;
+    const pt = (v, i) => `${(i / (h.length - 1) * W).toFixed(1)},${(H - (v - lo) / (hi - lo) * H).toFixed(1)}`;
+    const y100 = H - (100 - lo) / (hi - lo) * H, up = h[h.length - 1] >= h[0];
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:80px;background:#FFF8EA;border-radius:8px">
+      ${y100 > 0 && y100 < H ? `<line x1="0" x2="${W}" y1="${y100}" y2="${y100}" stroke="#C9B48F" stroke-dasharray="4 3"/>` : ''}
+      <polyline fill="none" stroke="${up ? '#D9534F' : '#2E7D5B'}" stroke-width="2" points="${h.map(pt).join(' ')}"/></svg>`;
+  }
+
   /* ---------- かんばん ---------- */
   function openKanban() {
     const b = G.bases[curBase];
@@ -501,6 +521,9 @@
     let h = `<div class="note">コンピュータで受け取った、${esc(b.name)}の集荷の予定です（出荷ヤードごと）。時刻にヤードの製品が個数に足りないと、ちくわ君の精神力がへり、足りなかった数は次の集荷に上乗せされます。梱包ずみの製品は高く売れます。製品指定のあるヤードには、その製品しか置けません。</div>
       <div class="cnt">🏭 レベル ${b.lv}（最大 ${UC.maxLv(b)}）：累計集荷 ${b.shipped}個${nx ? `／次のレベルまで あと ${nx.need - b.shipped}個（レベル${nx.lv}：取り場${nx.src}・ヤード${nx.yard}${nx.spec === 'all' ? '・製品指定あり' : nx.spec === 'mix' ? '・製品指定あり／なし' : ''}）` : '（この拠点の最大です）'}</div>
       <div class="cnt">いまの出荷ヤード：${ys.map(y => `${yardName(y)} ${y.stock.length}個`).join('／')}</div>
+      <h3 style="font-size:14px;margin:10px 0 4px">${demandTx()}</h3>
+      ${demandChart(G.demand && G.demand.hist)}
+      ${(() => { const c = UC.cal(G.time), D = UC.CFG.demand; return `<div class="cnt">集荷の個数 ＝ もとの個数 × 需要 ${(G.demand.v / 100).toFixed(2)} × ${c.month}月 ${D.month[c.month - 1]}${MONTH_NOTE[c.month] ? '（' + MONTH_NOTE[c.month] + '）' : ''} × ${WEEK_NAME[c.wd]}曜 ${D.week[c.wd]}。需要は日経平均株価のように毎日動きます（点線が 100＝平年なみ）。</div>`; })()}
       <h3 style="font-size:14px;margin:10px 0 4px">これからの集荷</h3>`;
     h += up.length ? `<table class="kb"><tr><th>時刻</th><th>ヤード</th><th>個数</th></tr>${up.map(k => { const c = UC.cal(k.t); return `<tr><td>${c.month}/${c.date} ${UC.fmtTime(k.t)}</td><td>${esc(yname(k))}</td><td>${k.need}個${k.carry ? `<small>（上乗せ${k.carry}）</small>` : ''}</td></tr>`; }).join('')}</table>` : '<div class="cnt">きょうの予定はありません（勤務日の 0:00 に届きます）</div>';
     h += '<h3 style="font-size:14px;margin:14px 0 4px">これまでの集荷</h3>';

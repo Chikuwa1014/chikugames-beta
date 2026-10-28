@@ -129,6 +129,7 @@
     const G = {
       v: 1, time: 8 * 60, coin: CFG.startCoin, bases: [], robots: [], abil: { spd: 0, tough: 0 },
       travelUntil: 0, lastDay: -1, stats: { shipped: 0, earned: 0, coins: 0 }, started: Date.now(),
+      demand: { v: 100, hist: [] },
     };
     G.bases.push(newBase(0, 'ほんしゃ'));
     G.robots.push(newRobot(0, 0, 4, 4));
@@ -150,6 +151,7 @@
       const G = JSON.parse(decodeURIComponent(escape(atob(b))));
       if (!G || G.v !== 1 || !Array.isArray(G.bases) || !G.bases.length) return null;
       G.bases.forEach(UC.fixBase);
+      if (!G.demand) G.demand = { v: 100, hist: [] };   // 1.1 までのセーブ
       return G;
     } catch (e) { return null; }
   };
@@ -263,9 +265,24 @@
     for (const r of G.robots) stepRobot(G, r, dt, c, travel);
   };
 
+  /* 製品の需要：日経平均株価のように、毎日ゆらゆら動く（平年なみへゆっくりもどり、少しずつ右肩上がり。ときどきニュースで大きく動く） */
+  const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  function stepDemand(G, c) {
+    const D = CFG.demand, dm = G.demand || (G.demand = { v: 100, hist: [] });
+    const base = 100 * Math.exp(D.grow * c.day);
+    let x = Math.log(dm.v) + D.revert * (Math.log(base) - Math.log(dm.v)) + D.vol * gauss();
+    if (Math.random() < D.shock) x += (Math.random() < 0.5 ? -1 : 1) * D.shockSize;
+    dm.prev = dm.v;
+    dm.v = clamp(Math.exp(x), D.min, D.max);
+    dm.hist.push(Math.round(dm.v * 10) / 10);
+    if (dm.hist.length > 28) dm.hist.shift();
+  }
+  /* その日の集荷の個数にかける倍率（需要 × 月 × 曜日） */
+  UC.demandRate = (G, c) => (G.demand ? G.demand.v : 100) / 100 * CFG.demand.month[c.month - 1] * CFG.demand.week[c.wd];
   function newDay(G, c, prevDay) {
     const first = G.lastDay < 0;
     G.lastDay = c.day;
+    if (!first) stepDemand(G, c);
     // 月がかわった：シフトによる精神力の減り
     if (!first && c.day % 7 === 0) {
       for (const r of G.robots) {
@@ -288,7 +305,9 @@
       }
       // かんばんは出荷ヤードごと。レベル 5・7 で集荷数が増える
       const kb = UC.levelOf(b).kb;
-      const need = () => Math.min(CFG.kanbanMax, CFG.kanbanBase + Math.floor(c.mi / 2) + (Math.random() < 0.3 ? 1 : 0)) + kb;
+      // 個数のもと（月ごとに増える）に、需要・月・曜日の倍率をかける
+      const rate = UC.demandRate(G, c);
+      const need = () => clamp(Math.round((CFG.kanbanBase + Math.floor(c.mi / 2) + (Math.random() < 0.3 ? 1 : 0)) * rate), 1, CFG.kanbanMax) + kb;
       for (const t of [...times].sort((a, z) => a - z)) for (const y of spots(b, 'yard')) {
         const yk = key(y.x, y.y);
         if (!b.kanban.some(k => k.t === t && k.yard === yk) && t > G.time) b.kanban.push({ t, need: need(), got: null, yard: yk });
@@ -298,12 +317,17 @@
       for (const yk in b.carry || {}) {
         const nk = b.kanban.find(k => k.got == null && k.yard === yk);
         if (!nk) continue;
-        nk.need += b.carry[yk]; nk.carry = (nk.carry || 0) + b.carry[yk]; delete b.carry[yk];
+        addCarry(nk, b.carry[yk]); delete b.carry[yk];
       }
     });
     emit('day', c);
   }
 
+  /* 上乗せ（1 回の集荷に上乗せするのは carryMax 個まで。それより多い分は取引先があきらめる） */
+  function addCarry(k, n) {
+    const add = Math.min(n, CFG.carryMax - (k.carry || 0));
+    if (add > 0) { k.need += add; k.carry = (k.carry || 0) + add; }
+  }
   function doPickup(G, b, bi, k) {
     const yard = (k.yard && b.objs[k.yard] && b.objs[k.yard].type === 'yard') ? b.objs[k.yard] : spots(b, 'yard')[0];
     const st = yard ? yard.stock : [];
@@ -322,8 +346,8 @@
     const short = k.need - take.length;
     if (short > 0) {
       const nk = b.kanban.find(q => q !== k && q.got == null && q.t > k.t && q.yard === k.yard);
-      if (nk) { nk.need += short; nk.carry = (nk.carry || 0) + short; }
-      else { b.carry = b.carry || {}; b.carry[k.yard] = (b.carry[k.yard] || 0) + short; }
+      if (nk) addCarry(nk, short);
+      else { b.carry = b.carry || {}; b.carry[k.yard] = Math.min(CFG.carryMax, (b.carry[k.yard] || 0) + short); }
     }
     b.log.unshift({ t: k.t, need: k.need, got: take.length, earn, yard: yard ? yard.no : 1 });
     b.log.length = Math.min(b.log.length, 20);
@@ -403,6 +427,7 @@
 
     // 勤務中・実行中の体力の減り
     r.hp = clamp(r.hp + CFG.workHp * (1 - G.abil.tough * 0.2) * dt / 60, 0, 100);
+    r.mp = clamp(r.mp + CFG.workMp * dt / 60, 0, 100);
     if (r.hp <= 0) { r.injured = true; r.act = null; bubble(G, r, '🩹', 99999); emit('injured', r); return; }
     if (r.mp <= 0) { r.sulk = true; r.act = null; bubble(G, r, '😞', 99999); emit('sulk', r); return; }
 
@@ -476,7 +501,7 @@
     }
     if (br.phase === 'in') {
       r.hp = clamp(r.hp + CFG.fridgeHeal * dt / 60, 0, 100);
-      r.mp = clamp(r.mp + CFG.fridgeHeal * dt / 60, 0, 100);
+      r.mp = clamp(r.mp + CFG.fridgeMp * dt / 60, 0, 100);
       if (r.sulk && r.mp >= 20) { r.sulk = false; r.bub = null; }
     }
   }
