@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<!-- 試作環境（号口のゲームの写し。1ファイルに埋め込み）。確認用 -->
+<!-- 試作環境：ちいさなお店 v2.0.0（号口へ出す前の確認用） -->
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1889,7 +1889,8 @@ button.achr {
 }
 
 .tutbt button.alt {
-  flex:0 0 96px;
+  flex:0 0 118px;
+  font-size:13px;
 }
 
 .tutc button {
@@ -1946,10 +1947,30 @@ button.achr {
 .tutbt button[hidden] {
   display:none;
 }
+
+/* 難易度えらびの「遊び方を表示しない」（v2.0.0〜） */
+.dftut {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin:-6px 0 14px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--sub);
+  cursor:pointer;
+}
+
+.dftut input {
+  width:18px;
+  height:18px;
+  margin:0;
+  accent-color:var(--mint);
+}
 </style>
 </head>
 <body>
-<div id="dfc" style="display:none"><div class="dfin"><div class="dfhd"><div class="dflogo">🏪</div><h1>ちいさなお店</h1><h2>難易度を選んでください</h2></div><button class="big df" data-a="diff" data-v="easy"><span class="dfi">🌱</span>イージー<div class="meta">病気なし・月収不要。資金に余裕あり、イベントも少なめ。融資・粗利率の調整はできません。</div></button><button class="big df" data-a="diff" data-v="normal"><span class="dfi">☀️</span>ノーマル<div class="meta">病気あり・自分の月収あり。やや優しめ。融資・粗利率の調整はできません。</div></button><button class="big df" data-a="diff" data-v="hard"><span class="dfi">🔥</span>ハード<div class="meta">全機能解放（融資・粗利率の調整も可）。標準の難しさ。</div></button><button class="big df" data-a="diff" data-v="inferno"><span class="dfi">👹</span>インフェルノ<div class="meta">全機能解放。より厳しく、イベント発生率が約15倍。融資の利子も高め。</div></button><div class="card" id="cgMoveD" style="margin-top:16px"><div class="meta">前のアドレス・別の端末で遊んでいたお店は、ここから引っ越せます。</div></div></div></div>
+<div id="dfc" style="display:none"><div class="dfin"><div class="dfhd"><div class="dflogo">🏪</div><h1>ちいさなお店</h1><h2>難易度を選んでください</h2></div><label class="dftut"><input type="checkbox" id="tutoff"><span>遊び方（チュートリアル）を表示しない</span></label><button class="big df" data-a="diff" data-v="easy"><span class="dfi">🌱</span>イージー<div class="meta">病気なし・月収不要。資金に余裕あり、イベントも少なめ。融資・粗利率の調整はできません。</div></button><button class="big df" data-a="diff" data-v="normal"><span class="dfi">☀️</span>ノーマル<div class="meta">病気あり・自分の月収あり。やや優しめ。融資・粗利率の調整はできません。</div></button><button class="big df" data-a="diff" data-v="hard"><span class="dfi">🔥</span>ハード<div class="meta">全機能解放（融資・粗利率の調整も可）。標準の難しさ。</div></button><button class="big df" data-a="diff" data-v="inferno"><span class="dfi">👹</span>インフェルノ<div class="meta">全機能解放。より厳しく、イベント発生率が約15倍。融資の利子も高め。</div></button><div class="card" id="cgMoveD" style="margin-top:16px"><div class="meta">前のアドレス・別の端末で遊んでいたお店は、ここから引っ越せます。</div></div></div></div>
 <div class="awning"></div>
 <div class="money" id="m"></div>
 <div class="meta" id="dt"></div>
@@ -2747,7 +2768,7 @@ const VERSION = '2.0.0';
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
-    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが10場面で案内し、初めての人は続けて1日目（開業→補充→開店→営業→閉店後）を実際にいっしょに進める（最初に難易度を選んだ直後に1回だけ。スキップできる。設定タブの「📖 遊び方を見る」で説明だけ見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
+    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが10場面で案内し、初めての人は続けて1日目（開業→補充→開店→営業→閉店後）を実際にいっしょに進める（最初に難易度を選んだ直後に1回だけ。「すべてスキップ」で飛ばせ、難易度えらびの画面のチェックで表示しないこともできる。設定タブの「📖 遊び方を見る」で説明だけ見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
     ['1.5.4', '2026-10-27', 'セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように（お店のセーブと実績をまとめて運ぶ。今までのバックアップはそのまま）'],
     ['1.5.3', '2026-10-26', '最初に作った「空が赤い理由」の左下ラベルを廃止し、悪いイベントの表示は「お知らせ」に統一。店の絵の左下に「月末の支払い予想」（テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。黒背景・透過60%・白字。「？」で、月末に近づくほど増える説明）を常に表示。幸福度ゲージの下の情報（状態・テナント料・返済・月末まで・ノルマ内訳）をプルダウンに（閉じている間は状態の一言か「月末まであと◯日」）'],
     ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
@@ -6399,7 +6420,7 @@ document.addEventListener('click', e => {
  * tutorial.js — 遊び方（チュートリアル。v2.0.0〜）。
  * 画面を暗くして説明する場所だけを光らせ、ちくわくんの吹き出しで順に案内する。タブは自動で切り替える。
  * ・最初に難易度を選んだ直後に1回だけ出す（`newGame` を包む）。今遊んでいる人（セーブがある人）には自動では出さない
- * ・どの場面でも「スキップ」で飛ばせる。最後まで見るか飛ばしたら、端末に `TUT_KEY` を保存して次からは出さない（ゲームのセーブには入れない）
+ * ・どの場面でも「すべてスキップ」で、そこから先の説明と練習をまとめて飛ばせる。難易度えらびの画面のチェック（#tutoff）で、最初から出さないこともできる。最後まで見るか飛ばしたら、端末に `TUT_KEY` を保存して次からは出さない（ゲームのセーブには入れない）
  * ・設定タブの「📖 遊び方を見る」（data-a="tutorial"）でいつでも見直せる。営業中に開いたら、その間は一時停止する
  * ・初めての人（難易度えらびの直後）だけ、説明のあとに1日目を実際にいっしょに進める（`TUT_PRACTICE`。開業→補充→開店→営業→閉店後）。
  *   見直しのときは説明だけ（実際のお金と日付が進むため）
@@ -6489,7 +6510,7 @@ function tutStart(practice) {
     if (!o) {
         o = document.createElement('div');
         o.id = 'tut';
-        o.innerHTML = '<div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tuth" id="tuth"></div><div class="tutb" id="tutb" role="dialog" aria-modal="true" aria-labelledby="tutt"><div class="tuthd"><canvas id="tutf" width="32" height="32" aria-hidden="true"></canvas><b id="tutt"></b><span class="tutn" id="tutn"></span></div><div class="tutm" id="tutm"></div><div class="tutbt"><button type="button" class="alt" data-a="tutskip">スキップ</button><button type="button" data-a="tutnext" id="tutgo"></button></div></div>';
+        o.innerHTML = '<div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tuth" id="tuth"></div><div class="tutb" id="tutb" role="dialog" aria-modal="true" aria-labelledby="tutt"><div class="tuthd"><canvas id="tutf" width="32" height="32" aria-hidden="true"></canvas><b id="tutt"></b><span class="tutn" id="tutn"></span></div><div class="tutm" id="tutm"></div><div class="tutbt"><button type="button" class="alt" data-a="tutskip">すべてスキップ</button><button type="button" data-a="tutnext" id="tutgo"></button></div></div>';
         document.body.append(o);
         tutFace(byId('tutf'));
     }
@@ -6604,6 +6625,7 @@ function tutEnd() {
     clearInterval(tutTimer);
     byId('tut').hidden = true;
     CG.ls.set(TUT_KEY, '1');
+    tutSyncOff();
     state.tab = tutPrev.tab;
     if (state.phase === 'open')
         state.paused = tutPrev.paused;
@@ -6626,6 +6648,17 @@ document.addEventListener('click', e => {
     if (a === 'tutnext')
         tutNext();
 });
+
+/** 難易度えらびの画面の「遊び方を表示しない」のチェックを、保存した状態にそろえる（見た・飛ばした端末はチェック済み） */
+function tutSyncOff() {
+    const c = byId('tutoff');
+    if (c)
+        c.checked = CG.ls.get(TUT_KEY) === '1';
+}
+
+// チェックを入れると次の難易度えらびのあとに出さない。外すと、次に難易度を選んだときにもう一度出す
+byId('tutoff').addEventListener('change', e => CG.ls.set(TUT_KEY, e.target.checked ? '1' : '0'));
+tutSyncOff();
 
 addEventListener('resize', () => requestAnimationFrame(tutPlace));
 document.addEventListener('keydown', e => {
