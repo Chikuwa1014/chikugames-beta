@@ -1900,6 +1900,52 @@ button.achr {
 @media (prefers-reduced-motion:reduce) {
   .tuth, .tutb { transition:none; animation:none; }
 }
+
+/* 1日目の練習（v2.0.0〜）：'do'＝光っている所だけ押せる（まわりは .tutk でふさぐ）／'watch'＝暗くせず、吹き出しだけ */
+#tut.do, #tut.watch {
+  pointer-events:none;
+}
+
+#tut.do .tutb, #tut.watch .tutb, #tut .tutk {
+  pointer-events:auto;
+}
+
+.tutk {
+  position:fixed;
+}
+
+.tutk[hidden], #tut.watch .tuth {
+  display:none;
+}
+
+#tut.watch .tutb {
+  border-top-color:var(--coral);
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
+}
+
+#tut.watch .tutb {
+  padding:8px 12px;
+}
+
+#tut.watch .tutm {
+  font-size:12.5px;
+  line-height:1.5;
+  margin:4px 0 6px;
+}
+
+#tut.watch .tuthd canvas {
+  width:28px;
+  height:28px;
+}
+
+#tut.watch .tutbt button {
+  padding:5px 8px;
+  font-size:13px;
+}
+
+.tutbt button[hidden] {
+  display:none;
+}
 </style>
 </head>
 <body>
@@ -2701,7 +2747,7 @@ const VERSION = '2.0.0';
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
-    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが9場面で案内（最初に難易度を選んだ直後に1回だけ。スキップできる。設定タブの「📖 遊び方を見る」で見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
+    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲と木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが10場面で案内し、初めての人は続けて1日目（開業→補充→開店→営業→閉店後）を実際にいっしょに進める（最初に難易度を選んだ直後に1回だけ。スキップできる。設定タブの「📖 遊び方を見る」で説明だけ見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
     ['1.5.4', '2026-10-27', 'セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように（お店のセーブと実績をまとめて運ぶ。今までのバックアップはそのまま）'],
     ['1.5.3', '2026-10-26', '最初に作った「空が赤い理由」の左下ラベルを廃止し、悪いイベントの表示は「お知らせ」に統一。店の絵の左下に「月末の支払い予想」（テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。黒背景・透過60%・白字。「？」で、月末に近づくほど増える説明）を常に表示。幸福度ゲージの下の情報（状態・テナント料・返済・月末まで・ノルマ内訳）をプルダウンに（閉じている間は状態の一言か「月末まであと◯日」）'],
     ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
@@ -6355,6 +6401,10 @@ document.addEventListener('click', e => {
  * ・最初に難易度を選んだ直後に1回だけ出す（`newGame` を包む）。今遊んでいる人（セーブがある人）には自動では出さない
  * ・どの場面でも「スキップ」で飛ばせる。最後まで見るか飛ばしたら、端末に `TUT_KEY` を保存して次からは出さない（ゲームのセーブには入れない）
  * ・設定タブの「📖 遊び方を見る」（data-a="tutorial"）でいつでも見直せる。営業中に開いたら、その間は一時停止する
+ * ・初めての人（難易度えらびの直後）だけ、説明のあとに1日目を実際にいっしょに進める（`TUT_PRACTICE`。開業→補充→開店→営業→閉店後）。
+ *   見直しのときは説明だけ（実際のお金と日付が進むため）
+ * 場面の種類（kind）：なし＝説明（全体を止めて、次へで進む）／'do'＝光っている所だけ押せる（done() を満たすと次へ）／
+ *   'watch'＝画面を暗くせず、小さな吹き出しだけ出してゲームを動かしたまま待つ（done() を満たすと次へ）
  * ui.js の後、main.js の前に読む。
  */
 
@@ -6373,8 +6423,30 @@ const TUT_STEPS = [
     { q: () => byId('act'), tab: 0, t: '開業・開店', m: 'このボタンで1日を進めるよ。開店すると、お客さんが来て自動で売れていくよ。\n営業中は店の絵の右下で一時停止（⏸）と倍速（×1〜×8）ができるよ。' },
     { q: () => document.querySelector('#tabs [data-v="1"]'), tab: 1, t: '投資タブ', m: '閉店後に、棚を増やす・容量アップ・広告・店員・セキュリティなどにお金を使えるよ。\n棚を増やすと新しい商品も並べられるよ。' },
     { q: () => document.querySelector('#tabs [data-v="2"]'), tab: 2, t: 'お金タブ', m: () => difficulty().full ? '融資（お金を借りる）・預金・粗利率・自分の月収を決めるよ。借りたお金は毎月返していくよ。' : '預金や自分の月収を決めるよ。\n融資と粗利率の調整は、ハード・インフェルノで使えるよ。' },
-    { q: () => document.querySelector('#tabs [data-v="3"]'), tab: 3, t: '設定タブと「？」', m: 'セーブの書き出し・読み込みや、最初からやり直すのはここ。\n分からないところは小さな「？」を押すと説明が出るよ。遊び方は設定の「📖 遊び方を見る」から見直せるよ。\nそれじゃあ、がんばってね！' }
+    { q: () => document.querySelector('#tabs [data-v="3"]'), tab: 3, t: '設定タブ', m: 'セーブの書き出し・読み込みや、最初からやり直すのはここ。\n分からないところは小さな「？」を押すと説明が出るよ。遊び方は設定の「📖 遊び方を見る」から見直せるよ。' },
+    { q: () => document.querySelector('[data-a="oh"]').closest('.card'), tab: 3, t: '営業時間', m: '開店と閉店の時間を決めるよ。長く開けるほどたくさん売れるけど、幸福度が下がりやすいよ（9時間なら増えも減りもしない）。\n7時前と22時以降は、店員さんの時給が125%になるよ。', end: 'それじゃあ、がんばってね！' }
 ];
+
+/** 今日の「本日の結果」のカード（閉店後に出る） */
+const tutResult = () => [...byId('pn').children].find(e => e.textContent.startsWith('本日の結果'));
+
+/** 棚の在庫の合計（補充したかを見る） */
+const tutStock = () => state.shelf.reduce((n, s) => n + (s ? s.st : 0), 0);
+
+/** 1日目をいっしょに進める場面（初めての人だけ。説明のあとに続ける） */
+const TUT_PRACTICE = [
+    { kind: 'do', q: () => document.querySelector('#act [data-a="next"]'), tab: 0, t: '実際にやってみよう！', m: '「開業する」を押して、お店を開けよう。', done: () => state.day >= 1 },
+    { kind: 'do', q: () => byId('sh'), tab: 0, t: '開店準備', m: '棚の「満タン」を押して、商品を並べよう（どの棚でもいいよ）。\n補充すると「次へ」が押せるようになるよ。', start: () => (tutBase = tutStock()), done: () => tutStock() > tutBase, manual: true },
+    { kind: 'do', q: () => document.querySelector('#act [data-a="open"]'), tab: 0, t: '開店！', m: '準備ができたら「開店する」を押そう！', done: () => state.phase === 'open' },
+    { kind: 'watch', q: () => byId('spd'), tab: 0, t: '営業中', m: 'お客さんが来て売れていくよ。売り切れそうな棚は補充しよう。\n右下の「×1」を押すと速くなるよ。閉店までようすを見てね。', done: () => state.phase === 'closed' },
+    { q: () => tutResult(), tab: 0, t: '1日おつかれさま！', m: '今日の売上や来店した人数はここで見られるよ。\n閉店後は、投資やお金の管理ができるよ。「翌日へ進む」で次の日へ。\nそれじゃあ、がんばってね！' }
+];
+
+/** 1日目にお店を開けられなかったとき（病気・大雪・店休日など）の終わりの場面 */
+const TUT_REST = { q: () => byId('act'), tab: 0, t: '今日はお休み…', m: '今日はお店を開けられない日みたい。お休みのあいだも、閉店後には投資やお金の管理ができるよ。\nそれじゃあ、がんばってね！' };
+
+/** いま案内している場面の並び（説明だけ／説明＋1日目の練習） */
+let tutList = TUT_STEPS, tutBase = 0, tutTimer = 0;
 
 /** いまの場面（-1＝出していない）と、始める前の状態（一時停止・タブ・タブバー） */
 let tutI = -1, tutPrev = null;
@@ -6400,10 +6472,13 @@ function tutFace(c) {
     R(11, 9, 1, 1, '#f4a6a0');
 }
 
-/** チュートリアルを始める */
-function tutStart() {
+/** チュートリアルを始める（practice：説明のあとに1日目をいっしょに進める） */
+function tutStart(practice) {
     if (tutI >= 0)
         return;
+    // 練習は、開業前（0日目の閉店後）で倒産していないときだけ。最後の説明の「がんばってね」は練習の最後に回す
+    practice = practice === true && state.day === 0 && state.phase === 'closed' && !state.over;
+    tutList = practice ? TUT_STEPS.map((s, i) => i === TUT_STEPS.length - 1 ? Object.assign({}, s, { end: 'じゃあ次は、実際にお店を開けてみよう！' }) : s).concat(TUT_PRACTICE) : TUT_STEPS;
     hideHelp();
     tutPrev = { paused: state.paused, tab: state.tab || 0, bar: byId('tabs').classList.contains('off') };
     if (state.phase === 'open')
@@ -6414,26 +6489,62 @@ function tutStart() {
     if (!o) {
         o = document.createElement('div');
         o.id = 'tut';
-        o.innerHTML = '<div class="tuth" id="tuth"></div><div class="tutb" id="tutb" role="dialog" aria-modal="true" aria-labelledby="tutt"><div class="tuthd"><canvas id="tutf" width="32" height="32" aria-hidden="true"></canvas><b id="tutt"></b><span class="tutn" id="tutn"></span></div><div class="tutm" id="tutm"></div><div class="tutbt"><button type="button" class="alt" data-a="tutskip">スキップ</button><button type="button" data-a="tutnext" id="tutgo"></button></div></div>';
+        o.innerHTML = '<div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tutk"></div><div class="tuth" id="tuth"></div><div class="tutb" id="tutb" role="dialog" aria-modal="true" aria-labelledby="tutt"><div class="tuthd"><canvas id="tutf" width="32" height="32" aria-hidden="true"></canvas><b id="tutt"></b><span class="tutn" id="tutn"></span></div><div class="tutm" id="tutm"></div><div class="tutbt"><button type="button" class="alt" data-a="tutskip">スキップ</button><button type="button" data-a="tutnext" id="tutgo"></button></div></div>';
         document.body.append(o);
         tutFace(byId('tutf'));
     }
     o.hidden = false;
     tutI = 0;
     tutShow();
+    clearInterval(tutTimer);
+    tutTimer = setInterval(tutTick, 250);
+}
+
+/** 操作を待つ場面：条件を満たしたか見る。光らせる位置も合わせ直す（ボタンは描き直されるため） */
+function tutTick() {
+    if (tutI < 0)
+        return;
+    const s = tutList[tutI];
+    if (s.done) {
+        const ok = s.done();
+        if (ok && !s.manual)
+            return tutNext();
+        byId('tutgo').disabled = !ok;
+    }
+    tutPlace();
+}
+
+/** 次の場面へ（1日目に開業したのにお店を開けられなかったときは、お休みの場面で終える） */
+function tutNext() {
+    if (tutI >= tutList.length - 1)
+        return tutEnd();
+    tutI++;
+    if (tutList === TUT_STEPS || tutList[tutI] === TUT_REST)
+        return tutShow();
+    if (tutList[tutI] === TUT_PRACTICE[1] && (state.phase !== 'prep' || ill())) {
+        tutList = tutList.slice(0, tutI).concat([TUT_REST]);
+    }
+    tutShow();
 }
 
 /** いまの場面を出す（タブを切り替え、光らせる場所へスクロールしてから位置を合わせる） */
 function tutShow() {
-    const s = TUT_STEPS[tutI];
+    const s = tutList[tutI];
     if ((state.tab || 0) !== s.tab) {
         state.tab = s.tab;
         render();
     }
     byId('tutt').textContent = s.t;
-    byId('tutm').textContent = typeof s.m === 'function' ? s.m() : s.m;
-    byId('tutn').textContent = (tutI + 1) + ' / ' + TUT_STEPS.length;
-    byId('tutgo').textContent = tutI === TUT_STEPS.length - 1 ? 'はじめる！' : '次へ ▶';
+    const last = tutI === tutList.length - 1;
+    byId('tutm').textContent = (typeof s.m === 'function' ? s.m() : s.m) + (s.end && (last || tutList !== TUT_STEPS) ? '\n' + s.end : '');
+    byId('tutn').textContent = (tutI + 1) + ' / ' + tutList.length;
+    byId('tutgo').textContent = last ? 'はじめる！' : '次へ ▶';
+    // 操作を待つ場面は、操作するまで「次へ」を出さない（補充の場面だけは、補充すると押せる）
+    byId('tutgo').hidden = !!s.done && !s.manual;
+    byId('tutgo').disabled = !!s.done;
+    byId('tut').className = s.kind || '';
+    if (s.start)
+        s.start();
     const el = s.q && s.q();
     if (el && byId('scr').contains(el))
         el.scrollIntoView({ block: 'center' });
@@ -6445,8 +6556,18 @@ function tutShow() {
 function tutPlace() {
     if (tutI < 0)
         return;
-    const s = TUT_STEPS[tutI], el = s.q && s.q(), h = byId('tuth'), b = byId('tutb'), W = innerWidth, H = innerHeight, M = 12;
+    const s = tutList[tutI], el = s.q && s.q(), h = byId('tuth'), b = byId('tutb'), W = innerWidth, H = innerHeight, M = 12, K = byId('tut').querySelectorAll('.tutk');
     b.style.maxWidth = Math.min(380, W - M * 2) + 'px';
+    K.forEach(k => k.hidden = true);
+    if (s.kind === 'watch') {
+        // 営業中：暗くせず、店の絵のすぐ下に小さな吹き出しだけ（下の陳列棚は見えたまま、補充もできる）
+        h.hidden = true;
+        b.classList.remove('mid');
+        const tp = byId('top').getBoundingClientRect(), sc = byId('scr').getBoundingClientRect(), bw = b.offsetWidth;
+        b.style.left = Math.max(M, Math.min(sc.left + (sc.width - bw) / 2, W - M - bw)) + 'px';
+        b.style.top = Math.min(Math.max(M, sc.top + 8), H - M - b.offsetHeight) + 'px';
+        return;
+    }
     if (!el) {
         h.hidden = true;
         b.classList.add('mid');
@@ -6459,6 +6580,12 @@ function tutPlace() {
     const x = Math.max(4, r.left - p), y = Math.max(4, r.top - p), x2 = Math.min(W - 4, r.right + p), y2 = Math.min(H - 4, r.bottom + p);
     h.hidden = false;
     Object.assign(h.style, { left: x + 'px', top: y + 'px', width: (x2 - x) + 'px', height: (y2 - y) + 'px' });
+    // 操作を待つ場面：光っている所だけ押せるよう、まわりの4か所をふさぐ
+    if (s.kind === 'do')
+        [[0, 0, W, y], [0, y2, W, H - y2], [0, y, x, y2 - y], [x2, y, W - x2, y2 - y]].forEach(([l, t, w, hh], i) => {
+            K[i].hidden = false;
+            Object.assign(K[i].style, { left: l + 'px', top: t + 'px', width: w + 'px', height: hh + 'px' });
+        });
     // 吹き出しは、枠の下に入ればその下、入らなければ上、どちらも入らなければ枠の中の下の方
     const bh = b.offsetHeight, bw = b.offsetWidth;
     let top = y2 + 10;
@@ -6474,6 +6601,7 @@ function tutEnd() {
     if (tutI < 0)
         return;
     tutI = -1;
+    clearInterval(tutTimer);
     byId('tut').hidden = true;
     CG.ls.set(TUT_KEY, '1');
     state.tab = tutPrev.tab;
@@ -6495,14 +6623,8 @@ document.addEventListener('click', e => {
         tutStart();
     if (a === 'tutskip')
         tutEnd();
-    if (a === 'tutnext') {
-        if (tutI >= TUT_STEPS.length - 1)
-            tutEnd();
-        else {
-            tutI++;
-            tutShow();
-        }
-    }
+    if (a === 'tutnext')
+        tutNext();
 });
 
 addEventListener('resize', () => requestAnimationFrame(tutPlace));
@@ -6517,7 +6639,7 @@ document.addEventListener('keydown', e => {
     newGame = function (v) {
         ng(v);
         if (state.diff && CG.ls.get(TUT_KEY) !== '1')
-            setTimeout(tutStart, 250);
+            setTimeout(() => tutStart(true), 250);
     };
 }
 </script>
