@@ -48,6 +48,22 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 #spdTip { position: absolute; top: calc(100% + 10px); right: 0; z-index: 30; width: max-content; max-width: 230px; background: #FFF8EA; color: #3A2A1A; border: 2px solid var(--chikuwa); border-radius: 12px; padding: 7px 10px; font-size: 12px; font-weight: 700; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,.25); animation: tipBob 1.2s ease-in-out infinite; pointer-events: none; }
 #spdTip::before { content: ''; position: absolute; top: -9px; right: 74px; border: 8px solid transparent; border-top: 0; border-bottom-color: var(--chikuwa); }
 body.mopen #spdTip { display: none; }
+/* 好景気・不景気のカットイン */
+#cutin { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: auto; animation: ciBg 2.8s ease forwards; }
+#cutin.up { background: radial-gradient(circle, rgba(255,214,90,.55), rgba(214,60,40,.55)); }
+#cutin.down { background: radial-gradient(circle, rgba(70,90,120,.6), rgba(20,25,40,.75)); }
+#cutin .band { width: 140%; transform: rotate(-8deg); padding: 18px 0; text-align: center; color: #fff; animation: ciIn 2.8s cubic-bezier(.2,.9,.2,1) forwards; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+#cutin.up .band { background: linear-gradient(90deg, #C62828, #F9A825, #C62828); }
+#cutin.down .band { background: linear-gradient(90deg, #1E2A3A, #4A5D78, #1E2A3A); }
+#cutin .ci-ic { font-size: 40px; line-height: 1; }
+#cutin .ci-big { font-size: 34px; font-weight: 800; letter-spacing: .08em; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
+#cutin .ci-sm { font-size: 13px; font-weight: 700; margin-top: 4px; opacity: .95; }
+#cutin.down::before { content: ''; position: absolute; inset: -20%; background: repeating-linear-gradient(105deg, transparent 0 14px, rgba(200,220,255,.25) 14px 16px); animation: ciRain .6s linear infinite; }
+#cutin.up::before { content: ''; position: absolute; inset: -50%; background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.18) 0 8deg, transparent 8deg 20deg); animation: ciSpin 6s linear infinite; }
+@keyframes ciIn { 0% { transform: translateX(110%) rotate(-8deg); } 15%, 80% { transform: translateX(0) rotate(-8deg); } 100% { transform: translateX(-110%) rotate(-8deg); } }
+@keyframes ciBg { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ciRain { to { transform: translateY(16px); } }
+@keyframes ciSpin { to { transform: rotate(360deg); } }
 @keyframes tipBob { 50% { transform: translateY(3px); } }
 #speed button { background: #EFE3CB; border-radius: 6px; padding: 3px 4px; font-size: 10px; min-width: 24px; }
 #speed button.on { background: var(--chikuwa); color: #fff; }
@@ -215,6 +231,7 @@ body.mopen #toastBox { top: 12px; bottom: auto; }
 </section>
 
 <div id="modal" class="hide"><div class="box"><div class="hd"><h2 id="mTitle"></h2><button id="mClose">とじる</button></div><div class="bd" id="mBody"></div></div></div>
+<div id="cutin" class="hide"><div class="band"><div class="ci-ic"></div><div class="ci-big"></div><div class="ci-sm"></div></div></div>
 <div id="toastBox"></div>
 
 <script src="../../common/v1/core.js"></script>

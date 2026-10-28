@@ -129,7 +129,7 @@
     const G = {
       v: 1, time: 8 * 60, coin: CFG.startCoin, bases: [], robots: [], abil: { spd: 0, tough: 0 },
       travelUntil: 0, lastDay: -1, stats: { shipped: 0, earned: 0, coins: 0 }, started: Date.now(),
-      demand: { v: 100, hist: [] },
+      demand: { v: 100, hist: [], phase: 'avg' },
     };
     G.bases.push(newBase(0, 'ほんしゃ'));
     G.robots.push(newRobot(0, 0, 4, 4));
@@ -265,11 +265,26 @@
     for (const r of G.robots) stepRobot(G, r, dt, c, travel);
   };
 
-  /* 製品の需要：日経平均株価のように、毎日ゆらゆら動く（平年なみへゆっくりもどり、少しずつ右肩上がり。ときどきニュースで大きく動く） */
+  /* 製品の需要：景気の周期（10 年で 1 周：平均→上昇→下落）の線のまわりを、日経平均株価のように毎日ゆらゆら動く（ときどきニュースで大きく動く） */
   const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const YEAR_DAYS = 84;
+  /* d 日目の景気：いまの周期と、周期の線（100 から）・その周期の残り日数 */
+  UC.economy = function (d) {
+    const cy = CFG.demand.cycle, len = cy.reduce((n, p) => n + p.years, 0) * YEAR_DAYS;
+    let t = ((d % len) + len) % len, lg = 0, at = 0;
+    for (const p of cy) {
+      const n = p.years * YEAR_DAYS, k = Math.min(Math.max(t - at, 0), n);
+      lg += k / YEAR_DAYS * Math.log(1 + p.rate);
+      if (t < at + n) return { phase: p.id, base: 100 * Math.exp(lg), left: at + n - t };
+      at += n;
+    }
+    return { phase: cy[0].id, base: 100, left: 0 };
+  };
   function stepDemand(G, c) {
     const D = CFG.demand, dm = G.demand || (G.demand = { v: 100, hist: [] });
-    const base = 100 * Math.exp(D.grow * c.day);
+    const eco = UC.economy(c.day), base = eco.base;
+    if (dm.phase && dm.phase !== eco.phase) emit('phase', { phase: eco.phase, from: dm.phase });   // 好景気・不景気のカットイン
+    dm.phase = eco.phase;
     let x = Math.log(dm.v) + D.revert * (Math.log(base) - Math.log(dm.v)) + D.vol * gauss();
     if (Math.random() < D.shock) x += (Math.random() < 0.5 ? -1 : 1) * D.shockSize;
     dm.prev = dm.v;
