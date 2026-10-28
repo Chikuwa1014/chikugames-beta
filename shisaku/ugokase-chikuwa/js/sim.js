@@ -91,6 +91,7 @@
     if (UC.BELTS.includes(type)) { o.item = null; o.prog = 0; }
     if (type === 'pool') o.stock = [];
     if (type === 'pack') o.item = null;
+    if (type === 'note') { o.cnt = 0; o.down = !!(opt && opt.hand === 'down'); }   // きろく：数と、カウントダウンか
     if (type === 'sorter') { o.on = true; o.target = 0; }
     if (type === 'wye') o.alt = 0;
     if (type === 'heater' || type === 'cooler') o.on = false;
@@ -130,6 +131,7 @@
       v: 1, time: 8 * 60, coin: CFG.startCoin, bases: [], robots: [], abil: { spd: 0, tough: 0 },
       travelUntil: 0, lastDay: -1, stats: { shipped: 0, earned: 0, coins: 0 }, started: Date.now(),
       demand: { v: 100, hist: [], phase: 'avg' },
+      lib: { mainCap: 0, funcs: 0, funcCap: 0 },
     };
     G.bases.push(newBase(0, 'ほんしゃ'));
     G.robots.push(newRobot(0, 0, 4, 4));
@@ -152,6 +154,11 @@
       if (!G || G.v !== 1 || !Array.isArray(G.bases) || !G.bases.length) return null;
       G.bases.forEach(UC.fixBase);
       if (!G.demand) G.demand = { v: 100, hist: [] };   // 1.1 までのセーブ
+      if (!G.lib) {   // 1.2 までのセーブ：F1〜F3 が使えていたので、使っているファンクションまでは買ったことにする
+        let used = 0;
+        G.robots.forEach(r => [0, 1, 2].forEach(i => { if (r.prog.f[i].length || r.prog.main.includes('f' + (i + 1))) used = Math.max(used, i); }));
+        G.lib = { mainCap: 0, funcs: used, funcCap: 0 };
+      }
       return G;
     } catch (e) { return null; }
   };
@@ -547,7 +554,7 @@
       r.cur = { w: fr.w, ip: fr.ip - 1 };
       if (pc === 'f1' || pc === 'f2' || pc === 'f3') {
         const fi = +pc[1] - 1;
-        if (r.stack.length >= 8 || !r.prog.f[fi].length) { bubble(G, r, '？'); r.act = { k: 'wait', left: CFG.bumpMin }; return true; }
+        if (r.stack.length >= 8 || fi >= UC.funcCount(G) || !r.prog.f[fi].length) { bubble(G, r, '？'); r.act = { k: 'wait', left: CFG.bumpMin }; return true; }
         r.stack.push({ w: fi, ip: 0 });
         r.act = { k: 'wait', left: CFG.callMin }; return true;
       }
@@ -612,6 +619,7 @@
       case 'work': {
         const o = front(G, r);
         if (o && o.type === 'pack' && o.item && !o.item.packed) { o.busy = true; return { k: 'work', left: CFG.workMin, o }; }
+        if (o && o.type === 'note' && !(o.down && o.cnt <= 0)) return { k: 'work', left: CFG.noteMin, o };   // きろく（カウントダウンは 0 で「？」）
         bubble(G, r, '？'); return { k: 'wait', left: CFG.bumpMin };
       }
       case 'op': return { k: 'op', left: CFG.opMin };
@@ -640,6 +648,7 @@
     }
     if (a.k === 'take') return doTake(G, r);
     if (a.k === 'put') return doPut(G, r, b);
+    if (a.k === 'work' && a.o && a.o.type === 'note') { a.o.cnt = Math.max(0, Math.min(9999, a.o.cnt + (a.o.down ? -1 : 1))); emit('note', a.o); return; }
     if (a.k === 'work') { if (a.o && a.o.item) { a.o.item.packed = true; a.o.busy = false; emit('packed', r); } return; }
     if (a.k === 'op') {
       const o = front(G, r);

@@ -2,7 +2,7 @@
 (function () {
   const UC = window.UC = window.UC || {};
 
-  UC.VERSION = '1.2.0';
+  UC.VERSION = '1.3.0';
   UC.KEY = 'ugokase-chikuwa-v1';
 
   /* 向き：0＝東（+x）・1＝南（+y）・2＝西（-x）・3＝北（-y） */
@@ -16,7 +16,7 @@
     startCoin: 300,         // はじめの恋ン
     // ちくわ君の動き（ゲーム内の分）
     moveMin: 1,             // 1 マス進むのにかかる分
-    turnMin: 0.5, holdMin: 1, workMin: 8, opMin: 1, bumpMin: 0.5, callMin: 0.2,
+    turnMin: 0.5, holdMin: 1, workMin: 8, noteMin: 2, opMin: 1, bumpMin: 0.5, callMin: 0.2,
     // 工場
     produceEvery: 20,       // 取り場に製品が出てくる間隔（分。勤務中だけ）
     srcMax: 5,              // 取り場にたまる最大数
@@ -121,6 +121,7 @@
     sorter: { name: 'ふりわけそうち', cost: 120, desc: '決めた製品だけ左へ、ほかはまっすぐ。「操作する」でオン／オフ' },
     pack: { name: '梱包台', cost: 200, desc: '製品を置いて「作業する」と梱包。集荷で高く売れる' },
     pool: { name: '製品プール', cost: 150, desc: '製品をためておける（はじめは 5 個）' },
+    note: { name: 'きろく（デスクとノート）', cost: 80, desc: '前に立って「作業する」と、ノートの数が 1 つ変わる。カウントアップ・ダウンは置くときに選ぶ（あとからタップで変えられる）。カウントダウンは 0 になると「？」' },
     heater: { name: '暖房', cost: 300, desc: '冬の減りを防ぐ。「操作する」でスイッチオン', welfare: true },
     cooler: { name: 'スポットクーラー', cost: 300, desc: '夏の減りを防ぐ。「操作する」でスイッチオン', welfare: true },
     vend: { name: '無料自販機', cost: 250, desc: '休けいのたびに体力 +10', welfare: true },
@@ -148,6 +149,12 @@
     beltSpd: { name: 'コンベアの速さ', costs: [200, 600, 1500], desc: 'その拠点のコンベアが速くなる' },
     poolCap: { name: '製品プールの容量', costs: [150, 400, 1000], desc: '+5 個ずつ' },
   };
+  /* 指示書のライブラリ（コンサルで買う。全員の指示書に効く。値段・増え方は仮） */
+  UC.LIB = {
+    mainCap: { name: '指示書容量', costs: [300, 800, 2000], desc: 'メイン指示書に置けるピース +4' },
+    funcs: { name: 'ファンクション購入', costs: [500, 1500], desc: 'ファンクションが 1 つふえる（はじめは F1 だけ。F3 まで）' },
+    funcCap: { name: 'ファンクション容量', costs: [300, 800, 2000], desc: 'ファンクションに置けるピース +4' },
+  };
   UC.ROBOT_COST = [0, 1500, 4000];   // 2 台目・3 台目
   UC.ROBOT_MAX = 3;
 
@@ -171,8 +178,12 @@
     f2: { name: 'F2', icon: 'F2', col: '#7A7A7A' },
     f3: { name: 'F3', icon: 'F3', col: '#7A7A7A' },
   };
-  UC.MAIN_MAX = 16;   // メイン指示書のピース数（仮）
-  UC.FUNC_MAX = 8;    // ファンクションのピース数（仮）
+  UC.MAIN_MAX = 16;   // メイン指示書のピース数（はじめ。仮）
+  UC.FUNC_MAX = 8;    // ファンクションのピース数（はじめ。仮）
+  UC.LIB_STEP = 4;    // 容量を買うと増えるピース数
+  UC.mainMax = G => UC.MAIN_MAX + UC.LIB_STEP * G.lib.mainCap;
+  UC.funcMax = G => UC.FUNC_MAX + UC.LIB_STEP * G.lib.funcCap;
+  UC.funcCount = G => 1 + G.lib.funcs;   // 使えるファンクションの数（F1〜）
   UC.LOOP_MAX = 20;   // くり返しの回数の上限（0 は「ずっと」）
   UC.FWD_MAX = 20;    // 進むピースの歩数の上限（0 は「ぶつかるまで」）
   /* 指示書の 1 つのピースは文字列。進むは 'fwd'（ぶつかるまで）か 'fwd:3'（3 歩） */

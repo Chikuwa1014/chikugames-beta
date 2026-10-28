@@ -9,11 +9,12 @@
   let G = null;               // ゲームの状態（sim.js）
   let curBase = 0, selRobot = 0, speed = 1;
   let placing = null;         // お店で選んだ、置くきかい
-  let placeHand = 'R';        // 90° 曲線を買うときの右曲がり・左曲がり
+  let placeHand = 'R';        // 90° 曲線を買うときの右曲がり・左曲がり（きろくはカウントアップ 'up'・ダウン 'down'）
   const cams = {};            // 拠点ごとのカメラ { x, y, z }
   const floors = {};          // 拠点ごとの床の絵
 
   const HIST = [
+    ['1.3.0', '2026-10-28', '指示書に「📥 ファンクションに登録」（メインのピースをファンクションへ。容量より多いとエラー）。コンサルに「指示書」（指示書容量・ファンクション購入・ファンクション容量。ファンクションははじめ F1 だけ）。きかいに「きろく」（デスクのノートに向かって作業すると数える。カウントアップ／ダウン）'],
     ['1.2.0', '2026-10-28', '集荷の個数が、日経平均株価のように毎日動く「製品の需要」と、月・曜日で変わるように（かんばんにグラフ）。景気は 10 年で 1 周（平均→好景気→不景気）し、好景気・不景気のカットインが出る。ちくわ君の体力・精神力をへりやすくした（勤務中は精神力もへる）'],
     ['1.1.0', '2026-10-28', '置いた直後に「↻ 向き」を押すと、そのきかいも回るように。90°曲線は買うときに右曲がり・左曲がりを選ぶ。置いたきかいの移動（恋ンがかかる）を調べる画面にも。Tコンベアを集約（2→1）・発散（1→2）で切りかえ、1本側の口も選べる'],
     ['1.0.0', '2026-10-28', 'ちくわゲームズに公開（β版から昇格）。設定に「💾 セーブの引っ越し」を足した'],
@@ -80,6 +81,7 @@
     if (name === 'sulk') toast(`${d.name}の心がおれた… 有給で休ませよう`);
     if (name === 'month') { const c = d; toast(`${c.month}月になりました ${UC.SEASON_NAME[c.season]}`); }
     if (name === 'packed') Snd.ok();
+    if (name === 'note') Snd.click();
     if (name === 'done') toast(d.name + 'は指示書を最後まで実行しました');
     if (name === 'stopped') toast(d.name + 'は停止ピースで止まりました');
   });
@@ -139,7 +141,7 @@
     openModal('あそびかた', `
       <p><b>目的：</b>製造ラインの終点（<b>取り場</b>・オレンジの機械）に出てくる製品を、ちくわ君に<b>出荷ヤード</b>（黄色のしまのパレット）まで運ばせよう。<b>かんばん</b>の時刻に個数がそろっていれば売上の恋ンが入り、ちくわ君の精神力（自己肯定感）が回復する。足りないと精神力がへる。</p>
       <p><b>指示書：</b>「BUILD」で指示ピースを並べ、「RUN」で実行。指示書は最後まで行くと止まる（くり返したいところは、くり返しピースではさむ）。「緊急停止」でとまる。</p>
-      <div class="note">⬆ 進む：ものに当たるまで進む ／ ↶↷⟲ 向きをかえる ／ ✋ 持つ：前の取り場などから製品を持つ ／ 📥 置く：前の出荷ヤードなどに置く ／ 🔁 くり返し〜↩ おわり：はさんだピースをくり返す（かならず1対・入れ子もできる） ／ ❓ 場合わけ〜❗ おわり：条件（プルダウン）に合うときだけ、はさんだピースを実行 ／ ■ 停止（ファンクションの中では ⏎ ファンクション終了：呼んだところへもどる） ／ 🔨 作業する：前の梱包台で梱包 ／ ⏻ 操作する：前のきかいのスイッチ ／ F1〜F3：ファンクションを呼ぶ</div>
+      <div class="note">⬆ 進む：ものに当たるまで進む ／ ↶↷⟲ 向きをかえる ／ ✋ 持つ：前の取り場などから製品を持つ ／ 📥 置く：前の出荷ヤードなどに置く ／ 🔁 くり返し〜↩ おわり：はさんだピースをくり返す（かならず1対・入れ子もできる） ／ ❓ 場合わけ〜❗ おわり：条件（プルダウン）に合うときだけ、はさんだピースを実行 ／ ■ 停止（ファンクションの中では ⏎ ファンクション終了：呼んだところへもどる） ／ 🔨 作業する：前の梱包台で梱包・前のきろくで数をかぞえる ／ ⏻ 操作する：前のきかいのスイッチ ／ F1〜F3：ファンクションを呼ぶ（はじめは F1 だけ。指示書の「📥 ファンクションに登録」で、メインのピースをファンクションへ写せる。コンサルの「指示書」でピースの数・ファンクションの数をふやせる）</div>
       <p><b>製造ライン：</b>取り場の上下左右のとなり（ななめはだめ）にコンベアを置くと「製造ラインに接続」できる。つなぐと、取り場の製品が自動でコンベアへ流れていく。</p>
       <p><b>恋ン：</b>ちくわ君が工場を歩くと、落ちている恋ン（金色の♥）を拾って社長のポケットマネーにできる。コンサルで、きかい・福利厚生・ちくわ君の能力アップ・拠点・ちくわ君の増設に使える。</p>
       <p><b>時間：</b>1ヶ月は7日、1年は12ヶ月。ちくわ君はシフトの時間だけ働き、勤務のまん中で休けい（1時間＋15分）。休けいは自動で<b>れいぞうこ</b>へ入って体力・精神力が回復する。だれも勤務していないあいだは自動で早送り。</p>
@@ -199,7 +201,7 @@
     $('#btnFridge').textContent = canF ? (r.brk.phase === 'in' ? '🧊 出す' : '🧊 入る') : '🧊 れいぞうこ';
     $('#btnFridge').classList.toggle('hot', !!canF);
     $('#placeBar').classList.toggle('hide', !placing);
-    if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}${placing === 'curve' ? (placeHand === 'L' ? '・左曲がり' : '・右曲がり') : ''}（${UC.MACHINES[placing].cost}恋ン）をタップで置く`;
+    if (placing) $('#placeTx').textContent = `${UC.MACHINES[placing].name}${placing === 'curve' ? (placeHand === 'L' ? '・左曲がり' : '・右曲がり') : placing === 'note' ? (placeHand === 'down' ? '・カウントダウン' : '・カウントアップ') : ''}（${UC.MACHINES[placing].cost}恋ン）をタップで置く`;
     $('#placeRot').textContent = '↻ 向き ' + ARROW[(lastDir + viewRot) % 4];
     $('#editBar').classList.toggle('hide', !edit);
     $('#btnEdit').classList.toggle('on', !!edit);
@@ -312,18 +314,19 @@
   };
 
   /* ---------- 指示書（BUILD） ---------- */
-  let buildOpen = false, bTab = 'main', bSel = -1;
+  let buildOpen = false, bTab = 'main', bSel = -1, bReg = null;   // bReg：ファンクションに登録する画面（範囲・登録先・おきかえ・エラー）
   function progList(r) { return bTab === 'main' ? r.prog.main : r.prog.f[+bTab]; }
   function openBuild() {
     const r = robot();
     if (!r) { toast('ちくわ君を選んでください'); return; }
-    buildOpen = true; bSel = -1;
+    buildOpen = true; bSel = -1; bReg = null;
+    if (bTab !== 'main' && +bTab >= UC.funcCount(G)) bTab = 'main';
     openModal('指示書をつくる：' + r.name, '<div id="bWrap"></div>');
     drawBuild();
   }
   function drawBuild() {
     const r = robot(); if (!r) return;
-    const list = progList(r), max = bTab === 'main' ? UC.MAIN_MAX : UC.FUNC_MAX;
+    const list = progList(r), max = bTab === 'main' ? UC.mainMax(G) : UC.funcMax(G), nf = UC.funcCount(G);
     // ファンクションのタブでは、停止のピースは「ファンクション終了」（呼んだところへもどる）
     const fend = bTab !== 'main', stopIcon = fend ? '⏎' : UC.PIECES.stop.icon, stopName = fend ? 'F' + (+bTab + 1) + ' 終了' : UC.PIECES.stop.name;
     const pc = (v, i) => {
@@ -339,7 +342,7 @@
     const head = `<div class="piece start" style="--c:#2E8B57"><span>▶</span><small>${bTab === 'main' ? '起動' : 'F' + (+bTab + 1) + ' はじめ'}</small></div>`;
     const tabs = [['main', 'メイン'], ['0', 'F1'], ['1', 'F2'], ['2', 'F3']];
     $('#bWrap').innerHTML = `
-      <div class="tabs">${tabs.map(([k, n]) => `<button data-t="${k}" class="${bTab === k ? 'on' : ''}">${n}${k !== 'main' && r.prog.f[+k].length ? '・' + r.prog.f[+k].length : ''}</button>`).join('')}</div>
+      <div class="tabs">${tabs.map(([k, n]) => k !== 'main' && +k >= nf ? `<button data-t="${k}" class="lock">🔒${n}</button>` : `<button data-t="${k}" class="${bTab === k ? 'on' : ''}">${n}${k !== 'main' && r.prog.f[+k].length ? '・' + r.prog.f[+k].length : ''}</button>`).join('')}</div>
       <div class="cnt">${bTab === 'main' ? 'メイン指示書（最後まで行くと止まる）' : 'ファンクション ' + tabs.find(t => t[0] === bTab)[1] + '（メインから呼び出す）'}　${list.length}/${max}</div>
       <div class="prog" id="bProg">${head}${list.length ? list.map((k, i) => pc(k, i)).join('') : '<span class="empty">下のピースをタップしてつなげよう</span>'}</div>
       ${lp.ok ? '' : '<div class="steps" style="background:#FBE3E0">⚠ くり返し・場合わけの開始と終了が 1 対になっていません（赤い枠のピース）。このままでは RUN できません</div>'}
@@ -348,11 +351,27 @@
         <select id="bIfNeg"><option value="">とき</option><option value="!" ${neg ? 'selected' : ''}>じゃないとき</option></select></div>`; })() : ''}
       ${selK === 'loop' ? `<div class="steps">${bSel + 1}番のくり返し：<select id="bLoop">${Array.from({ length: UC.LOOP_MAX }, (_, n) => n === 1 ? '' : `<option value="${n}" ${UC.pieceArg(list[bSel]) === n ? 'selected' : ''}>${n ? n + '回' : 'ずっと'}</option>`).join('')}</select></div>` : ''}
       ${selK === 'fwd' ? `<div class="steps">${bSel + 1}番の進む：<select id="bSteps">${Array.from({ length: UC.FWD_MAX + 1 }, (_, n) => `<option value="${n}" ${UC.pieceArg(list[bSel]) === n ? 'selected' : ''}>${n ? n + '歩' : 'ぶつかるまで'}</option>`).join('')}</select></div>` : ''}
-      <div class="edrow"><button id="bL">◀ 前へ</button><button id="bR">後ろへ ▶</button><button id="bDel">けす</button><button id="bClr">ぜんぶけす</button></div>
+      <div class="edrow"><button id="bL">◀ 前へ</button><button id="bR">後ろへ ▶</button><button id="bDel">けす</button><button id="bClr">ぜんぶけす</button>${bTab === 'main' ? '<button id="bReg">📥 ファンクションに登録</button>' : ''}</div>
+      ${bTab === 'main' && bReg ? regHtml(list, nf) : ''}
       <div class="cnt">✌ 指示ピース（タップで${bSel >= 0 ? (bSel + 1) + '番のうしろに' : '最後に'}つなぐ。${fend ? '⏎ ファンクション終了は、呼んだところへもどる。右にへこみがないので最後だけ' : '■停止は右にへこみがないので最後だけ'}）</div>
-      <div class="palette" id="bPal">${Object.keys(UC.PIECES).filter(k => !UC.PIECES[k].old).map(k => `<button class="piece${k === 'stop' ? ' stop' : ''}" data-k="${k}" style="--c:${UC.PIECES[k].col}"><span>${k === 'stop' ? stopIcon : UC.PIECES[k].icon}</span><small>${k === 'stop' ? stopName : UC.PIECES[k].name}</small><span class="pz">✌</span></button>`).join('')}</div>
+      <div class="palette" id="bPal">${Object.keys(UC.PIECES).filter(k => !UC.PIECES[k].old && !(/^f\d$/.test(k) && +k[1] > nf)).map(k => `<button class="piece${k === 'stop' ? ' stop' : ''}" data-k="${k}" style="--c:${UC.PIECES[k].col}"><span>${k === 'stop' ? stopIcon : UC.PIECES[k].icon}</span><small>${k === 'stop' ? stopName : UC.PIECES[k].name}</small><span class="pz">✌</span></button>`).join('')}</div>
       <div class="row" style="margin-top:14px"><button class="cbtn run" id="bRun">RUN してとじる</button></div>`;
-    $('#bWrap').querySelectorAll('.tabs button').forEach(b => b.onclick = () => { bTab = b.dataset.t; bSel = -1; drawBuild(); });
+    $('#bWrap').querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+      if (b.classList.contains('lock')) { toast('コンサルの「ファンクション購入」でふえます'); return; }
+      bTab = b.dataset.t; bSel = -1; bReg = null; drawBuild();
+    });
+    if ($('#bReg')) $('#bReg').onclick = () => {
+      if (bReg) { bReg = null; drawBuild(); return; }
+      const end = list.length - 1 - (list[list.length - 1] === 'stop' ? 1 : 0);
+      bReg = { from: bSel >= 0 ? Math.min(bSel, Math.max(0, end)) : 0, to: Math.max(0, end), dst: 0, rep: false, err: '' };
+      Snd.click(); drawBuild();
+    };
+    if (bReg && $('#rGo')) {
+      const rd = () => { bReg.from = +$('#rFrom').value; bReg.to = +$('#rTo').value; bReg.dst = +$('#rDst').value; bReg.rep = $('#rRep').checked; bReg.err = ''; };
+      ['#rFrom', '#rTo', '#rDst', '#rRep'].forEach(q => $(q).onchange = () => { rd(); drawBuild(); });
+      $('#rNo').onclick = () => { bReg = null; drawBuild(); };
+      $('#rGo').onclick = () => { rd(); const e = regFunc(r, bReg); if (e === false) return; if (e) { bReg.err = e; Snd.ng(); drawBuild(); return; } bReg = null; Snd.ok(); drawBuild(); };
+    }
     $('#bProg').querySelectorAll('.piece[data-i]').forEach(b => b.onclick = () => { const i = +b.dataset.i; bSel = bSel === i ? -1 : i; drawBuild(); });
     const st = $('#bSteps');
     if (st) st.onchange = () => { list[bSel] = +st.value ? 'fwd:' + st.value : 'fwd'; Snd.click(); edited(r); drawBuild(); };
@@ -380,6 +399,35 @@
     $('#bRun').onclick = () => { closeModal(); $('#btnRun').onclick(); };
     markNow();
   }
+  /* ファンクションに登録：メイン指示書の範囲のピースを、ファンクションに写す（停止は登録しない）。
+     ファンクションの容量より多いとエラー。「おきかえる」なら、メインのその範囲を F○ の呼び出し 1 つにする */
+  function regHtml(list, nf) {
+    const R = bReg, opt = (v, cur) => list.map((pc, i) => `<option value="${i}" ${i === cur ? 'selected' : ''}>${i + 1}番</option>`).join('');
+    return `<div class="steps reg">
+      <b>ファンクションに登録</b>
+      <span><select id="rFrom">${opt(0, R.from)}</select> 〜 <select id="rTo">${opt(0, R.to)}</select> のピースを</span>
+      <span><select id="rDst">${Array.from({ length: nf }, (_, i) => `<option value="${i}" ${i === R.dst ? 'selected' : ''}>F${i + 1}（${UC.funcMax(G)}個まで）</option>`).join('')}</select> へ</span>
+      <label><input type="checkbox" id="rRep" ${R.rep ? 'checked' : ''}> メインのその所を F${R.dst + 1} の呼び出しにおきかえる</label>
+      <span><button id="rGo" class="pbtn">登録する</button> <button id="rNo">やめる</button></span>
+    </div>${R.err ? `<div class="steps err">⚠ エラー：${esc(R.err)}</div>` : ''}`;
+  }
+  function regFunc(r, R) {
+    const main = r.prog.main, fn = 'f' + (R.dst + 1), max = UC.funcMax(G);
+    if (!main.length) return 'メイン指示書にピースがありません';
+    if (R.from > R.to) return '範囲の始めと終わりが逆です';
+    const seg = main.slice(R.from, R.to + 1).filter(v => v !== 'stop');
+    if (!seg.length) return '登録するピースがありません（停止は登録しません）';
+    if (seg.length > max) return `F${R.dst + 1} に登録できるのは ${max} 個までです（いま ${seg.length} 個）。コンサルの「ファンクション容量」でふやせます`;
+    if (!UC.loopPairs(seg).ok) return 'くり返し・場合わけの開始と終了が、範囲の中で 1 対になっていません';
+    if (seg.includes(fn)) return `F${R.dst + 1} の中で F${R.dst + 1} は呼べません`;
+    const old = r.prog.f[R.dst];
+    if (old.length && old.join() !== seg.join() && !confirm(`F${R.dst + 1} のピース（${old.length}個）を上書きしますか？`)) return false;
+    r.prog.f[R.dst] = seg;
+    if (R.rep) { const keepStop = main.slice(R.from, R.to + 1).includes('stop'); main.splice(R.from, R.to - R.from + 1, fn, ...(keepStop ? ['stop'] : [])); bSel = R.from; }
+    edited(r); UC.save(G);
+    toast(`F${R.dst + 1} に ${seg.length}個 登録しました${R.rep ? '（メインは F' + (R.dst + 1) + ' の呼び出しに）' : ''}`);
+    return '';
+  }
   /* 指示書を変えたら、実行中のものはとめる（読みかけの番号がずれるため） */
   function edited(r) { if (r.running) { UC.stop(G, r); toast('指示書を変えたので停止しました'); refreshCtrl(); } }
   function markNow() {
@@ -398,7 +446,7 @@
     drawShop();
   }
   function drawShop() {
-    const tabs = [['machine', 'きかい'], ['welfare', '福利厚生'], ['robot', 'ちくわ君'], ['base', '拠点']];
+    const tabs = [['machine', 'きかい'], ['lib', '指示書'], ['welfare', '福利厚生'], ['robot', 'ちくわ君'], ['base', '拠点']];
     const c = UC.cal(G.time), weekday = c.wd < 5;
     const row = (name, desc, cost, act, dis, label) => `<div class="item"><div class="tx"><b>${name}</b><small>${desc}</small></div><button data-a="${act}" ${dis || G.coin < cost ? 'disabled' : ''}>${label || cost.toLocaleString() + '恋ン'}</button></div>`;
     let h = `<div class="cnt">💰 ${Math.floor(G.coin).toLocaleString()}恋ン ／ ${esc(G.bases[curBase].name)}</div><div class="tabs">${tabs.map(([k, n]) => `<button data-t="${k}" class="${shopTab === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
@@ -406,11 +454,17 @@
     if (shopTab === 'machine') {
       h += '<div class="note">買うと、工場のマスをタップして置けます（続けて置ける）。置いたきかいはタップで回す・撤去・アップグレード。</div>';
       for (const k in UC.MACHINES) if (!UC.MACHINES[k].welfare) {
+        if (k === 'note') { const m = UC.MACHINES[k]; h += `<div class="item"><div class="tx"><b>${m.name}</b><small>${m.desc}</small></div><div class="bb"><button data-a="place:note-up" ${G.coin < m.cost ? 'disabled' : ''}>カウントアップ ${m.cost}恋ン</button><button data-a="place:note-down" ${G.coin < m.cost ? 'disabled' : ''}>カウントダウン ${m.cost}恋ン</button></div></div>`; continue; }
         if (k === 'curve') { const m = UC.MACHINES[k]; h += `<div class="item"><div class="tx"><b>${m.name}</b><small>${m.desc}</small></div><div class="bb"><button data-a="place:curve-R" ${G.coin < m.cost ? 'disabled' : ''}>右曲がり ${m.cost}恋ン</button><button data-a="place:curve-L" ${G.coin < m.cost ? 'disabled' : ''}>左曲がり ${m.cost}恋ン</button></div></div>`; continue; }
         h += row(UC.MACHINES[k].name, UC.MACHINES[k].desc, UC.MACHINES[k].cost, 'place:' + k, false, '置く ' + UC.MACHINES[k].cost + '恋ン');
       }
       h += '<h3 style="font-size:14px;margin:14px 0 2px">アップグレード（' + esc(b.name) + '）</h3>';
       for (const k in UC.UPG) { const lv = b.upg[k], cost = UC.UPG[k].costs[lv]; h += row(`${UC.UPG[k].name} Lv${lv}`, UC.UPG[k].desc, cost || 0, 'upg:' + k, cost == null, cost == null ? 'MAX' : null); }
+    }
+    if (shopTab === 'lib') {
+      h += `<div class="note">全員の指示書に効きます。いま：メイン ${UC.mainMax(G)}個・ファンクション F1${UC.funcCount(G) > 1 ? '〜F' + UC.funcCount(G) : ''}・ファンクション ${UC.funcMax(G)}個まで</div>`;
+      const add = { mainCap: n => `メイン ${UC.MAIN_MAX + UC.LIB_STEP * n}個`, funcs: n => `F${n + 1}まで`, funcCap: n => `ファンクション ${UC.FUNC_MAX + UC.LIB_STEP * n}個` };
+      for (const k in UC.LIB) { const lv = G.lib[k], cost = UC.LIB[k].costs[lv]; h += row(`${UC.LIB[k].name}（${add[k](lv)}）`, UC.LIB[k].desc + (cost != null ? `。買うと ${add[k](lv + 1)}` : ''), cost || 0, 'lib:' + k, cost == null, cost == null ? 'MAX' : null); }
     }
     if (shopTab === 'welfare') {
       h += '<div class="note">継続するものは工場に置きます。暖房・クーラーはちくわ君の「操作する」でスイッチオン。換気扇ルームは休けいのとき入室します。</div>';
@@ -450,6 +504,7 @@
     if (k === 'place') { const [m, hd] = v.split('-'); placing = m; placeHand = hd || 'R'; edit = null; closeModal(); refreshCtrl(); return; }
     if (k === 'upg') { const c = UC.UPG[v].costs[b.upg[v]]; if (c != null && pay(c)) b.upg[v]++; }
     if (k === 'abil') { const c = UC.ABIL[v].costs[G.abil[v]]; if (c != null && pay(c)) G.abil[v]++; }
+    if (k === 'lib') { const c = UC.LIB[v].costs[G.lib[v]]; if (c != null && pay(c)) { G.lib[v]++; toast(UC.LIB[v].name + 'を買いました'); } }
     if (k === 'care' && r) {
       if (v === 'yukyu' && pay(UC.CARE.yukyu.cost)) { r.mp = Math.min(100, r.mp + 35); if (r.sulk && r.mp >= 20) { r.sulk = false; r.bub = null; } toast(r.name + 'が有給でリフレッシュ！'); }
       if (v === 'surimi' && r.injured && pay(UC.CARE.surimi.cost)) { r.injured = false; r.hp = 60; r.bub = null; toast(r.name + 'の怪我がなおった！'); }
@@ -627,6 +682,9 @@
         <div class="cnt">しくみ</div><div class="seg"><button data-tm="merge" class="${o.mode !== 'split' ? 'on' : ''}">集約 2→1</button><button data-tm="split" class="${o.mode === 'split' ? 'on' : ''}">発散 1→2</button></div>
         <div class="cnt">1本側の口</div><div class="seg">${PN.map((n, i) => `<button data-to="${i}" class="${one === i ? 'on' : ''}">${n}</button>`).join('')}</div>`;
     }
+    if (o.type === 'note') h += `<p>ノートの数：<b style="font-size:20px">${o.cnt}</b>（${o.down ? 'カウントダウン：作業するたびに −1。0 のときは「？」' : 'カウントアップ：作業するたびに +1'}）</p>
+        <div class="cnt">数え方</div><div class="seg"><button data-nd="0" class="${!o.down ? 'on' : ''}">カウントアップ</button><button data-nd="1" class="${o.down ? 'on' : ''}">カウントダウン</button></div>
+        <div class="cnt">数をなおす</div><div class="seg"><button data-nc="-10">−10</button><button data-nc="-1">−1</button><button data-nc="1">＋1</button><button data-nc="10">＋10</button><button data-nc="0">0 にもどす</button></div>`;
     if (o.type === 'sorter') h += `<div class="cnt">左へよける製品</div><div class="seg">${UC.PRODUCTS.map((p, i) => `<button data-tg="${i}" class="${o.target === i ? 'on' : ''}">${p.name}</button>`).join('')}</div>`;
     const movable = !!UC.MACHINES[o.type];
     if (movable) h += `<div class="cnt" style="margin-top:12px">向き：<b>${ARROW[(o.dir + viewRot) % 4]}</b></div><div class="edrow"><button id="iRot">↻ 回す</button><button id="iMove">✥ 移動（${moveCost(o)}恋ン）</button><button id="iDel" class="pbtn red">撤去（${Math.floor(UC.MACHINES[o.type].cost / 2)}恋ン もどる）</button></div>`;
@@ -634,6 +692,8 @@
     const body = $('#mBody');
     const x0 = x, y0 = y;
     body.querySelectorAll('button[data-tg]').forEach(v => v.onclick = () => { o.target = +v.dataset.tg; Snd.click(); UC.save(G); panel(x0, y0); });
+    body.querySelectorAll('button[data-nd]').forEach(v => v.onclick = () => { o.down = v.dataset.nd === '1'; Snd.click(); UC.save(G); panel(x0, y0); });
+    body.querySelectorAll('button[data-nc]').forEach(v => v.onclick = () => { const n = +v.dataset.nc; o.cnt = n ? Math.max(0, Math.min(9999, o.cnt + n)) : 0; Snd.click(); UC.save(G); panel(x0, y0); });
     body.querySelectorAll('button[data-tm]').forEach(v => v.onclick = () => { o.mode = v.dataset.tm; o.alt = 0; Snd.click(); UC.save(G); panel(x0, y0); });
     body.querySelectorAll('button[data-to]').forEach(v => v.onclick = () => { o.one = +v.dataset.to; o.alt = 0; Snd.click(); UC.save(G); panel(x0, y0); });
     if (lsrc) $('#iLine').onclick = () => { o.feed = lon ? null : UC.key(lsrc.x, lsrc.y); Snd.click(); UC.save(G); closeModal(); toast(lon ? '製造ラインからはずしました' : '製造ラインに接続しました'); };
@@ -960,6 +1020,7 @@
       label(sx, sy - 30, '出荷' + many + (o.spec != null ? ' ' + UC.PRODUCTS[o.spec].name : '') + ' ' + o.stock.length, o.spec != null ? '#8A5A00' : '#B38600');
     }
     if (o.type === 'pool') { if (o.stock.length) UC.drawModel(ctx, UC.productModel(o.stock[o.stock.length - 1]), 0, o.x, o.y, 2, 2, 4); label(sx, sy - 18, o.stock.length + '/' + UC.poolCap(b), '#2E5E8E'); }
+    if (o.type === 'note') label(sx, sy - 22, '📒' + o.cnt + (o.down ? '▼' : '▲'), o.down ? '#B0567E' : '#3E6FB0');
     if (o.type === 'pack' && o.item) UC.drawModel(ctx, UC.productModel(o.item), 0, o.x, o.y, 2, 2, 12);
     if ((o.type === 'heater' || o.type === 'cooler')) label(sx, sy - 26, o.on ? 'ON' : 'OFF', o.on ? '#2E8B57' : '#777');
     if (o.type === 'vent') {
