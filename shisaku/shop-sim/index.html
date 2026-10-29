@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<!-- 試作環境：ちいさなお店 v2.0.0（号口へ出す前の確認用） -->
+<!-- 試作環境：ちいさなお店 v2.1.0（号口へ出す前の確認用） -->
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1197,7 +1197,7 @@ button.big.rstb.arm {
 }
 
 /* ---- ポップアップ（倒産・甘酒・実績） ---- */
-#ovm, #ama, #achm {
+#ovm, #ama, #achm, #costm {
   position:fixed;
   inset:0;
   z-index:40;
@@ -1215,7 +1215,7 @@ button.big.rstb.arm {
   z-index:45;
 }
 
-#ovm[hidden], #ama[hidden], #achm[hidden] {
+#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden] {
   display:none;
 }
 
@@ -2006,6 +2006,252 @@ button.ths.on {
   border-color:var(--mint);
   background:var(--mintl);
 }
+
+/* 前の画面（ver.1）へのリンク（設定タブ。v2.0.0〜） */
+a.v1l {
+  display:block;
+  margin-top:10px;
+  padding:11px 12px;
+  border:2px solid var(--line);
+  border-radius:999px;
+  color:var(--mint2);
+  font-weight:800;
+  text-align:center;
+  text-decoration:none;
+}
+
+a.v1l:active {
+  background:var(--mintl);
+}
+
+/* ---- 店長・会社・複数のお店（v2.1.0〜） ---- */
+.card.up.mgr {
+  border:2px solid var(--coral);
+  background:var(--corall);
+}
+
+.chip.sto {
+  background:var(--mint);
+  color:#fff;
+  font-weight:800;
+}
+
+.co1 .row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.co1 .row button {
+  flex:none;
+  width:auto;
+  padding:8px 12px;
+  font-size:13px;
+}
+
+.cokv {
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:4px 12px;
+  margin-top:8px;
+  font-size:13px;
+}
+
+.cokv span {
+  color:var(--sub);
+}
+
+.cokv b {
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+.cof {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin:10px 0 4px;
+  font-size:13px;
+  font-weight:700;
+}
+
+.cof input, .cof select, select.cosel {
+  width:100%;
+  padding:10px 12px;
+  border:2px solid var(--line);
+  border-radius:12px;
+  background:var(--card);
+  color:var(--ink);
+  font:inherit;
+  font-size:15px;
+}
+
+select.cosel {
+  margin:8px 0 4px;
+  font-size:13px;
+}
+
+.stl {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:8px;
+}
+
+.sti {
+  padding:10px;
+  border:2px solid var(--line);
+  border-radius:14px;
+}
+
+.sti.here {
+  border-color:var(--mint);
+  background:var(--mintl);
+}
+
+.stn {
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.ste {
+  font-size:26px;
+  line-height:1;
+}
+
+.sti .btns {
+  margin-top:8px;
+}
+
+.locl {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:6px;
+  margin:8px 0 10px;
+}
+
+@media (min-width:600px) {
+  .locl {
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+label.loc {
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  padding:9px 10px;
+  border:2px solid var(--line);
+  border-radius:14px;
+  cursor:pointer;
+}
+
+label.loc:has(input:checked) {
+  border-color:var(--coral);
+  background:var(--corall);
+}
+
+label.loc input {
+  margin-top:4px;
+  accent-color:var(--coral);
+}
+
+.le {
+  font-size:24px;
+  line-height:1.1;
+}
+
+.lt {
+  display:flex;
+  flex-direction:column;
+  font-size:12px;
+  color:var(--sub);
+}
+
+.lt b {
+  font-size:14px;
+  color:var(--ink);
+}
+
+.ovbox.cobox {
+  display:flex;
+  flex-direction:column;
+  height:min(680px, 100%);
+  padding:14px 16px;
+  border-top-color:var(--mint);
+  overflow:hidden;
+}
+
+.cobox h3 {
+  margin:14px 0 6px;
+  font-size:14px;
+}
+
+.cobars {
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+  height:110px;
+  padding:4px 0 16px;
+  border-bottom:1px solid var(--line);
+}
+
+.cob {
+  position:relative;
+  flex:1;
+  max-width:48px;
+  height:100%;
+  display:flex;
+  align-items:flex-end;
+}
+
+.cob i {
+  display:block;
+  width:100%;
+  border-radius:4px 4px 0 0;
+  background:var(--mint);
+}
+
+.cob span {
+  position:absolute;
+  bottom:-16px;
+  left:0;
+  right:0;
+  font-size:10px;
+  text-align:center;
+  color:var(--sub);
+}
+
+svg.coeco {
+  display:block;
+  width:100%;
+  height:64px;
+  background:var(--bg2);
+  border-radius:10px;
+}
+
+table.cotb {
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+
+table.cotb th, table.cotb td {
+  padding:5px 4px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+}
+
+table.cotb td:nth-child(3), table.cotb th:nth-child(3) {
+  text-align:right;
+}
+
+.cobox .achx {
+  margin-left:auto;
+}
 </style>
 </head>
 <body>
@@ -2026,8 +2272,10 @@ button.ths.on {
 <div class="grid" id="sh"></div>
 <h2>投資</h2>
 <div id="up"></div>
+<div id="co"></div>
 <div class="card thc" id="thc"></div>
 <div class="card tutc" id="tutc"><b>📖 遊び方</b><div class="meta">ちくわくんが、画面のどこで何をするのかを順に案内します。</div><button class="alt" data-a="tutorial">📖 遊び方を見る</button></div>
+<div class="card v1c" id="v1c"><b>🕰 前の画面（ver.1）で遊ぶ</b><div class="meta">v1.5.4 までの見た目で遊べます。セーブは同じなので、どちらの画面でも続きから遊べます（同じ端末・同じアドレスのとき）。</div><a class="v1l" href="./v1/">ver.1 の画面を開く</a></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="cgMove"></div>
 <div class="card" id="dbg"></div>
@@ -2801,14 +3049,15 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
-    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲・🌲の形の木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。店の絵は解像度を2倍にして描き込みを増やし（屋根がわら・壁の板・れんがの腰板・窓わくと光の筋・ドアの取っ手・看板のびょう・植木鉢の花・道路のアスファルト）、人の顔を大きくして表情を9種類に（ふつう〈まばたき〉・にっこり・大よろこび・がっかり・かなしい・おどろき・ねむい・おこり・にやり）。設定タブで「イメージカラー」を6色（ミント×コーラル・さくら・そら・ちくわ色・ぶどう・モノクロ）から選べる（画面とお店の屋根・看板の色が変わる。端末ごとに保存）。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが10場面で案内し、初めての人は続けて1日目（開業→補充→開店→営業→閉店後）を実際にいっしょに進める（最初に難易度を選んだ直後に1回だけ。「すべてスキップ」で飛ばせ、難易度えらびの画面のチェックで表示しないこともできる。設定タブの「📖 遊び方を見る」で説明だけ見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）'],
+    ['2.1.0', '2026-10-29', '店長・会社・複数のお店を追加。1号店が棚10台・広告Lv18・店員1人以上になり、お金がそろうと、投資タブに「👔 店長を雇う」（店長を雇ってオーナーになる）が出る。雇うと「🏢 会社」タブが出て、屋号と資本金を決めて会社を設立できる。会社では資本金の増資（店舗数と全店の売上で解放。資本金が大きいほど取引先が飲食店・小売店・製造業・金融業と上がり、取引の額が増える）、会社方針（安定経営・攻めの営業・大口狙い・地域密着で取引収入の入り方が変わる）、店舗管理（店の名前・店へ行く）、新しいお店を出す（出店場所は郊外・繁華街・高級住宅街・デパート・駅ナカ、すべてに出すとシーシャ屋が解放）、会社のステータス（売上の推移・景気・経営指標のダッシュボード）ができる。会社を設立すると景気の波が来る（株価の動きをもとにした景気循環で、お客さんの数が増減）。出店場所ごとに、来店数・治安・テナント料・災害・売れやすい品と、店の絵（ネオンのビル街・お屋敷・デパートの中・改札口と電車・むらさきの看板と少し煙っぽい店内）が変わる'],
+    ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲・🌲の形の木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。店の絵は解像度を2倍にして描き込みを増やし（屋根がわら・壁の板・れんがの腰板・窓わくと光の筋・ドアの取っ手・看板のびょう・植木鉢の花・道路のアスファルト）、人の顔を大きくして表情を9種類に（ふつう〈まばたき〉・にっこり・大よろこび・がっかり・かなしい・おどろき・ねむい・おこり・にやり）。設定タブで「イメージカラー」を6色（ミント×コーラル・さくら・そら・ちくわ色・ぶどう・モノクロ）から選べる（画面とお店の屋根・看板の色が変わる。端末ごとに保存）。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが10場面で案内し、初めての人は続けて1日目（開業→補充→開店→営業→閉店後）を実際にいっしょに進める（最初に難易度を選んだ直後に1回だけ。「すべてスキップ」で飛ばせ、難易度えらびの画面のチェックで表示しないこともできる。設定タブの「📖 遊び方を見る」で説明だけ見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）。前の見た目で遊びたい人のために、ver.1 の画面を残した（設定タブの「🕰 前の画面（ver.1）で遊ぶ」）'],
     ['1.5.4', '2026-10-27', 'セーブの引っ越し（コード・ファイルで保存と読み込み）を追加。新しいアドレスや別の端末へ、続きを持っていけるように（お店のセーブと実績をまとめて運ぶ。今までのバックアップはそのまま）'],
     ['1.5.3', '2026-10-26', '最初に作った「空が赤い理由」の左下ラベルを廃止し、悪いイベントの表示は「お知らせ」に統一。店の絵の左下に「月末の支払い予想」（テナント料・決済手数料・融資返済・自分の月収・店員の給料の合計。黒背景・透過60%・白字。「？」で、月末に近づくほど増える説明）を常に表示。幸福度ゲージの下の情報（状態・テナント料・返済・月末まで・ノルマ内訳）をプルダウンに（閉じている間は状態の一言か「月末まであと◯日」）'],
     ['1.5.2', '2026-10-26', '営業タブのログ（翌日へ進むボタンの下）で、1行に収まらない長い行を「...」で切らずに折り返し、2行目以降を1文字分下げて表示。悪いイベントが起きたときのお知らせを店の絵の上に出す（0.8秒表示してフェードアウト。複数あるときは前のお知らせが消えてから順に表示）'],
@@ -3293,7 +3542,7 @@ const save = () => {
 const pwr = d => SEA[seaOf(d)].p * WE[d === state.day ? state.weather : state.next].p * (state.flame > 0 ? difficulty().fl : 1);
 
 /** 月のテナント料（棚数で指数的に増加） */
-const tenantFee = (n = state.slots) => r100(4000 * Math.pow(1.6, n - 2) * state.feeMul * difficulty().fee);
+const tenantFee = (n = state.slots) => r100(4000 * Math.pow(1.6, n - 2) * state.feeMul * difficulty().fee * locF('fee'));
 
 /** 現在の売値（原価÷(1-粗利率)） */
 const priceOf = p => Math.max(p.c + 1, Math.round(p.c / (1 - state.margin / 100)));
@@ -3305,7 +3554,7 @@ const demandFactor = () => Math.min(1.6, Math.max(0.5, 1 - (state.margin - 40) *
 const loanPay = () => state.loans.reduce((a, l) => a + l.pay, 0);
 
 /** 月末の支払い予想（v1.5.3〜）：月末の閉店処理（engine.js）と同じ式。テナント料＋決済手数料（今月の売上×3.75%×決済数）＋融資返済＋自分の月収＋店員の給料（ここまでの未払い分） */
-const payForecast = () => tenantFee() + Math.round(state.mSales * 0.0375 * state.pays.length) + loanPay() + (state.sal || 0) + Math.round(state.mWage || 0);
+const payForecast = () => tenantFee() + Math.round(state.mSales * 0.0375 * state.pays.length) + loanPay() + (state.sal || 0) + Math.round(state.mWage || 0) + mgrPay();
 
 /** 1日の営業ティック数 */
 const dayTicks = () => (state.closeH - state.openH) * 5;
@@ -3320,14 +3569,14 @@ const wageDay = () => {
 
 /** 今月のノルマの内訳（b：損益分岐点、g：前月比、q：ノルマ＝高い方） */
 function quotaParts() {
-    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
+    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD + mgrPay()) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
     const g = state.prev == null ? 0 : state.prev * difficulty().gr;
     return { b: r100(b), g: r100(g), q: r100(state.prev == null ? b : Math.max(b, g)) };
 }
 
 /** 今月の売上ノルマ（損益分岐点＋前月比） */
 function quota() {
-    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
+    const b = (tenantFee() + loanPay() + state.sal + wageDay() * MD + mgrPay()) / Math.max(0.05, state.margin / 100 - 0.0375 * state.pays.length);
     return r100(state.prev == null ? b : Math.max(b, state.prev * difficulty().gr));
 }
 
@@ -3363,14 +3612,14 @@ const sickP = h => h >= 80 ? 0 : h >= 50 ? 0.05 : h >= 35 ? 0.1 : h >= 15 ? 0.15
 const upCost = (id, L) => r100(PRODUCTS[id].b * 15 * Math.pow(1.8, L));
 
 /** 客の性別による商品の買いやすさ */
-const gf = (id, g) => (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
+const gf = (id, g) => isShisha() ? 1 : (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
 
 /** アップグレードと原価変動を商品へ反映 */
 function applyUp() {
     PRODUCTS.forEach((p, i) => {
         const L = state.up[i] || 0;
         p.c = Math.round(p.b * (1 + 0.4 * L) * (state.cm ? state.cm[i] : 1));
-        p.n = L > 0 ? NM[i][L - 1] : p.n0;
+        p.n = L > 0 ? upName(i, L) : p.n0;
     });
 }
 
@@ -3467,6 +3716,8 @@ function sellUnit(s, q, m) {
 
 /** 開店時のイベント（超セレブ・パパ活） */
 function openEv() {
+    if (isShisha())
+        return;
     const on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id), sh = state.shelf.filter(Boolean);
     if (on(5) && Math.random() < 0.05) {
         let t = 0;
@@ -3492,6 +3743,8 @@ function openEv() {
 
 /** 最終段階の商品によるイベント抽選 */
 function rollProd() {
+    if (isShisha())
+        return;
     const R = Math.random, on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id);
     if (on(0) && R() < 0.02) {
         resetInv(1);
@@ -3644,12 +3897,12 @@ function rollEvents() {
         state.feeMul = Math.round(state.feeMul * f * 100) / 100;
         addEvent('📢 テナント料の改定：' + (f >= 1 ? '+' : '') + Math.round((f - 1) * 100) + '%（月¥' + fmt(tenantFee()) + 'に）', f > 1);
     }
-    if (r() < 0.0001) {
+    if (r() < 0.0001 * locF('dis')) {
         resetInv(2);
         state.happy = clamp100(state.happy - 20);
         addEvent('🌋 大地震！投資がすべてリセットされました', 1);
     }
-    if (r() < 0.01) {
+    if (r() < 0.01 * locF('dis') && !locF('indoor')) {
         const lost = lose();
         state.money -= 10000;
         state.happy = clamp100(state.happy - 5);
@@ -3658,7 +3911,7 @@ function rollEvents() {
     const pr = state.prep || {}, ok = () => Math.random() < 0.55;
     let typ = false, sn = false;
     state.prep = { typ: false, snow: false };
-    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05) && (typ = true) && pr.typ && ok()) {
+    if ((se === 1 || se === 2) && (state.pre ? state.pre.typ : r() < 0.05 * locF('dis')) && (typ = true) && pr.typ && ok()) {
         state.happy = clamp100(state.happy + 25);
         state.mbDay = state.day + 1;
         addEvent('🧱 土嚢で台風に耐えました！被害なし（幸福度+25、明日は店員の士気アップ）');
@@ -3674,7 +3927,7 @@ function rollEvents() {
         });
         addEvent('🌀 台風で浸水。棚が減り、在庫がすべて0に', 1);
     }
-    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1) && (sn = true) && pr.snow && ok()) {
+    if (se === 3 && (state.pre ? state.pre.snow : r() < 0.1 * locF('dis')) && (sn = true) && pr.snow && ok()) {
         state.kama = 1;
         state.hol = false;
         state.weather = 3;
@@ -3705,6 +3958,581 @@ function rollEvents() {
     rollProd();
     return snow;
 }
+</script>
+<script>
+/**
+ * company.js — 店長・会社・複数のお店（v2.1.0〜）。
+ * 1号店が「天井」（棚10台・広告Lv18・店員1人以上）に来て、2店舗分の固定費3ヶ月＋出店費のお金があると、
+ * 投資タブに「店長を雇ってオーナーになる」が出る。雇うと会社タブが出て、会社を設立できる。
+ *
+ * 店の持ち方：いま店主がいる店は、今までどおり state の中（STK のキー）。ほかの店は state.stores[i] に同じキーで入っている。
+ * 店を切り替えると、state の店のキーを stores[cur] へしまい、行き先の店のキーを state へ出す（coSwitch）。
+ * 店主がいない店は、閉店のたびに簡単な計算で1日分を進める（coBgDay。店長か店員がいれば営業）。
+ * お金（所持金）・日付・天気と予報・幸福度・病気・融資・預金・自分の月収は会社（店主）でひとつ。
+ */
+
+/** 店ごとに持つ状態のキー（切り替えのとき、出し入れする） */
+const STK = ['sname', 'loc', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay'];
+
+/** 店長の採用費と月給 */
+const MGR_HIRE = 500000, MGR_SAL = 300000;
+
+/** 会社の設立費用 */
+const CO_FEE = 250000;
+
+/** お店の数の上限 */
+const MAX_STORES = 10;
+
+/**
+ * 出店場所。cust：来店数・crime：強盗と窃盗の起きやすさ・fee：テナント料・dis：災害（車・台風・大雪・地震）の起きやすさ・
+ * cost：出店費・pref：商品ごとの売れやすさ（無いときは同じ）・indoor：屋内（雨や雪が降らない・車が走らない）・kind：扱う品
+ */
+const LOCS = {
+    suburb: { n: '郊外', e: '🏡', d: '治安ふつう・まんべんなく売れる・テナント料が安い', cust: 1, crime: 1, fee: 0.8, dis: 1, cost: 3000000 },
+    downtown: { n: '繁華街', e: '🌃', d: '治安は悪いが来店数が多い・テナント料ふつう', cust: 1.45, crime: 2.2, fee: 1, dis: 1, cost: 5000000 },
+    uptown: { n: '高級住宅街', e: '🏰', d: '治安がよい・高級な品が売れる・テナント料が高い', cust: 0.9, crime: 0.5, fee: 1.6, dis: 1, cost: 8000000, pref: id => id >= 5 ? 2.5 : id <= 2 ? 0.6 : 1 },
+    dept: { n: 'デパート', e: '🏬', d: '治安最高・まんべんなく売れる・テナント料が高い・災害の被害なし', cust: 1.15, crime: 0.15, fee: 1.8, dis: 0, cost: 12000000, indoor: 1 },
+    station: { n: '駅ナカ', e: '🚉', d: '治安ふつう・飲食物と雑誌が売れやすい・テナント料ふつう・災害の被害が少し多い', cust: 1.25, crime: 1, fee: 1.1, dis: 1.3, cost: 6000000, indoor: 1, pref: id => [0, 1, 2, 4].includes(id) ? 2 : 1 },
+    shisha: { n: 'シーシャ屋', e: '💨', d: '治安ふつう・フレーバーを売る・テナント料ふつう・災害ふつう（ほかの出店場所すべてに出すと解放）', cust: 1, crime: 1, fee: 1, dis: 1, cost: 5000000, kind: 'shisha' }
+};
+
+/** シーシャ屋のフレーバー（商品0〜6の代わりに並ぶ。c＝原価） */
+const FLAV = [
+    { n: 'Wアップル', e: '🍏', c: 900, u: 0 },
+    { n: 'レモン', e: '🍋', c: 1000, u: 0 },
+    { n: 'ミント', e: '🌿', c: 1100, u: 0 },
+    { n: 'オレンジ', e: '🍊', c: 1250, u: 0 },
+    { n: 'カルダモン', e: '🌰', c: 1400, u: 0 },
+    { n: 'コーラ', e: '🥤', c: 1600, u: 0 },
+    { n: 'ライチ', e: '🍈', c: 1900, u: 0 }
+];
+
+/** フレーバーのアップグレード名（7段階） */
+const FLUP = ['ミックス', 'クール', 'ダブル', 'プレミアム', 'ハーブ配合', 'スペシャル', '極'];
+
+/**
+ * 会社の方針（取引先からの収入の入り方）。p＝毎日その取引が来る確率（0＝毎月末に必ず）、r＝1回の額（資本金に対する割合）。
+ * どれも、ならすと月に資本金の2%前後（取引先の業種・景気で増減）
+ */
+const POLS = [
+    { k: 'steady', n: '安定経営', d: '定期的なビジネスで小さい額（毎月末）', p: 0, r: 0.02, t: '定期契約' },
+    { k: 'spot', n: '攻めの営業', d: '頻度まちまちで大きい額', p: 0.12, r: 0.025, t: 'スポット取引' },
+    { k: 'big', n: '大口狙い', d: '頻度は少ないが、とても大きい額', p: 0.02, r: 0.15, t: '大型案件' },
+    { k: 'daily', n: '地域密着', d: 'ほぼ毎日だが小さい額', p: 0.85, r: 0.0032, t: '日々の取引' }
+];
+
+/** 取引先の業種（資本金と店舗数で解放。m＝取引額の倍率） */
+const PARTNERS = [
+    { n: '近所の商店', cap: 0, st: 1, m: 0.6 },
+    { n: '飲食店', cap: 10000000, st: 3, m: 1 },
+    { n: '小売店', cap: 50000000, st: 5, m: 1.3 },
+    { n: '製造業', cap: 80000000, st: 8, m: 1.6 },
+    { n: '金融業', cap: 100000000, st: 10, m: 2 }
+];
+
+/** 資本金の段階。st＝必要な店舗数、s＝必要な全店の月の売上（直近3ヶ月の平均） */
+const CAPT = [
+    { v: 1000000, st: 1, s: 0 },
+    { v: 3000000, st: 1, s: 0 },
+    { v: 5000000, st: 1, s: 0 },
+    { v: 10000000, st: 3, s: 5000000 },
+    { v: 30000000, st: 3, s: 15000000 },
+    { v: 50000000, st: 5, s: 25000000 },
+    { v: 80000000, st: 8, s: 40000000 },
+    { v: 100000000, st: 10, s: 50000000 }
+];
+
+/**
+ * 景気の元にする株価（日経平均のおおよその年末終値、1985〜2024年。記憶からの概算で、正確な値ではない）。
+ * 1年を12ヶ月に直線でつなぎ、ゲームの1ヶ月に1つずつ進む。会社を設立した月に、どこから始めるかを抽選する
+ */
+const NK = [13113, 18701, 21564, 30159, 38916, 23849, 22984, 16925, 17417, 19723, 19868, 19361, 15259, 13842, 18934, 13786, 10543, 8579, 10677, 11489, 16111, 17226, 15308, 8860, 10546, 10229, 8455, 10395, 16291, 17451, 19034, 19114, 22765, 20015, 23657, 27444, 28792, 26095, 33464, 39895];
+
+/** 株価の月ごとの値（k＝月の番号。少しだけ揺らす） */
+const nkAt = k => {
+    const n = (NK.length - 1) * 12;
+    k = ((k % n) + n) % n;
+    const y = Math.floor(k / 12), f = (k % 12) / 12, a = NK[y], b = NK[y + 1];
+    return a * Math.pow(b / a, f) * (1 + 0.025 * Math.sin(k * 2.3));
+};
+
+/** 景気の倍率（会社を設立したあとだけ。株価が2年平均より高いほど客が増える。0.75〜1.25） */
+const econ = () => {
+    const c = state.co;
+    if (!c || !c.est)
+        return 1;
+    let s = 0;
+    for (let i = 0; i < 24; i++)
+        s += nkAt(c.ek - i);
+    return Math.max(0.75, Math.min(1.25, 1 + (nkAt(c.ek) / (s / 24) - 1) * 0.7));
+};
+
+/** 景気のことば */
+const econName = v => v >= 1.08 ? '📈 好景気' : v <= 0.92 ? '📉 不景気' : '➡️ ふつう';
+
+/** いまの店の出店場所 */
+const locOf = (s = state) => LOCS[s.loc] || LOCS.suburb;
+
+/** 出店場所の倍率（来店数には景気もかける） */
+const locF = k => locOf()[k];
+const coCust = () => locF('cust') * econ();
+
+/** 商品の売れやすさ（出店場所） */
+const locPref = id => {
+    const f = locOf().pref;
+    return f ? f(id) : 1;
+};
+
+/** シーシャ屋か */
+const isShisha = (s = state) => locOf(s).kind === 'shisha';
+
+/** 扱える商品の数（シーシャ屋はフレーバー7種） */
+const kindN = () => isShisha() ? FLAV.length : PRODUCTS.length;
+
+/** アップグレード後の名前（L＝1〜7） */
+const upName = (i, L) => isShisha() && i < FLAV.length ? FLAV[i].n + '・' + FLUP[L - 1] : NM[i][L - 1];
+
+/** 元の商品の定義（シーシャ屋から戻すときに使う） */
+let PDEF = null;
+
+/** いまの店の扱う品を PRODUCTS に反映する（シーシャ屋はフレーバー） */
+function applyKind() {
+    if (!PDEF)
+        PDEF = PRODUCTS.map(p => ({ n0: p.n0 || p.n, e: p.e, b: p.b || p.c, p: p.p, u: p.u }));
+    PRODUCTS.forEach((p, i) => {
+        const d = isShisha() && i < FLAV.length ? { n0: FLAV[i].n, e: FLAV[i].e, b: FLAV[i].c, p: Math.round(FLAV[i].c * 1.7), u: FLAV[i].u } : PDEF[i];
+        Object.assign(p, d);
+    });
+    applyUp();
+}
+
+/** 店長の月給（いまの店） */
+const mgrPay = () => state.mgr ? MGR_SAL : 0;
+
+/** いまの店の月の固定費（テナント料・返済・自分の月収・店員の給料・店長の月給） */
+const fixedNow = () => tenantFee() + loanPay() + state.sal + wageDay() * MD + mgrPay();
+
+/** いまの店が「天井」に来ているか（棚10台以上・広告Lv18以上・店員1人以上） */
+const atCeil = (s = state) => s.slots >= 10 && s.ad >= 18 && s.clerk >= 1;
+
+/** 店長を雇うのに必要なお金（2店舗分の固定費3ヶ月＋いちばん安い出店費＋採用費） */
+const mgrNeed = () => fixedNow() * 2 * 3 + LOCS.suburb.cost + MGR_HIRE;
+
+/** 投資タブに「店長を雇う」を出すか（まとめの3つの条件：天井・店員・お金） */
+const mgrShow = () => !state.co && atCeil() && state.money >= mgrNeed();
+
+/** 全部の店（いまの店は state そのもの） */
+const allStores = () => (state.stores || [state]).map((s, i) => i === (state.cur || 0) ? state : s);
+
+/** 出店枠（天井に来た店の数 − すでに出した店の数） */
+const storeSlots = () => {
+    const A = allStores();
+    return Math.max(0, Math.min(MAX_STORES - A.length, A.filter(s => s.qual).length - (A.length - 1)));
+};
+
+/** 全店の月の売上（直近3ヶ月の平均） */
+const coAvg = () => {
+    const h = (state.co && state.co.hist) || [];
+    const a = h.slice(-3);
+    return a.length ? a.reduce((p, q) => p + q.s, 0) / a.length : 0;
+};
+
+/** いまの取引先（資本金と店舗数で決まる、いちばん上の業種） */
+const partner = () => {
+    const c = state.co, n = allStores().length;
+    let P = PARTNERS[0];
+    PARTNERS.forEach(p => {
+        if (c && c.cap >= p.cap && n >= p.st)
+            P = p;
+    });
+    return P;
+};
+
+/** 店のキーだけを取り出す（深いコピー） */
+const pickStore = s => JSON.parse(JSON.stringify(STK.reduce((o, k) => (o[k] = s[k], o), {})));
+
+/** 新しいお店（ちいさなお店の初期状態。店長つき） */
+function newStore(name, loc) {
+    const f = fresh(), s = pickStore(f);
+    Object.assign(s, { sname: name, loc, mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
+    return s;
+}
+
+/** 店長を雇ってオーナーになる */
+function hireMgr() {
+    if (state.phase !== 'closed' || state.over || ill() || !mgrShow())
+        return;
+    state.money -= MGR_HIRE;
+    state.mgr = true;
+    state.qual = true;
+    state.sname = state.sname || '1号店';
+    state.loc = state.loc || 'suburb';
+    state.co = { est: false, name: '', cap: 0, pol: 'steady', ek: 0, hist: [], tr: 0, trTot: 0, since: 0, seen: ['suburb'] };
+    state.stores = [pickStore(state)];
+    state.cur = 0;
+    state.tab = 4;
+    addEvent('👔 店長を雇ってオーナーになりました！「会社」タブから会社を設立できます');
+    render();
+    save();
+}
+
+/** 会社を設立する */
+function coFound(name, cap) {
+    const c = state.co;
+    if (!c || c.est || state.phase !== 'closed' || state.over)
+        return;
+    name = String(name || '').trim().slice(0, 16);
+    if (!name)
+        return CG.toast('屋号を入れてください', 2000);
+    if (!CAPT.slice(0, 3).some(t => t.v === cap) || state.money < cap + CO_FEE)
+        return CG.toast('お金が足りません', 2000);
+    state.money -= cap + CO_FEE;
+    Object.assign(c, { est: true, name, cap, since: state.day, ek: 24 + Math.floor(Math.random() * ((NK.length - 1) * 12 - 24)) });
+    addEvent('🏢 「' + name + '」を設立しました（資本金¥' + fmt(cap) + '）。景気の波が来るようになります');
+    render();
+    save();
+}
+
+/** 次の資本金の段階と、まだ足りない条件（なければ空） */
+function capNext() {
+    const c = state.co, i = CAPT.findIndex(t => t.v > c.cap);
+    if (i < 0)
+        return null;
+    const t = CAPT[i], n = allStores().length, why = [];
+    if (n < t.st)
+        why.push('お店' + t.st + '店舗以上（いま' + n + '店舗）');
+    if (coAvg() < t.s)
+        why.push('全店の月の売上（3ヶ月平均）¥' + fmt(t.s) + '以上（いま¥' + fmt(Math.round(coAvg())) + '）');
+    if (state.money < t.v - c.cap)
+        why.push('払い込むお金¥' + fmt(t.v - c.cap));
+    return { t, why };
+}
+
+/** 資本金を増やす（増資） */
+function capUp() {
+    const N = capNext();
+    if (!N || N.why.length || state.phase !== 'closed' || state.over)
+        return;
+    state.money -= N.t.v - state.co.cap;
+    state.co.cap = N.t.v;
+    addEvent('🏦 増資しました。資本金¥' + fmt(N.t.v) + '（取引先：' + partner().n + '）');
+    render();
+    save();
+}
+
+/** シーシャ屋が解放されているか（ほかの出店場所すべてに出した） */
+const shishaOpen = () => ['suburb', 'downtown', 'uptown', 'dept', 'station'].every(k => (state.co.seen || []).includes(k));
+
+/** 新しいお店を出す */
+function coOpen(name, loc) {
+    const c = state.co, L = LOCS[loc];
+    if (!c || !c.est || !L || state.phase !== 'closed' || state.over || storeSlots() < 1)
+        return;
+    if (loc === 'shisha' && !shishaOpen())
+        return;
+    name = String(name || '').trim().slice(0, 16) || (allStores().length + 1) + '号店';
+    if (state.money < L.cost)
+        return CG.toast('出店費が足りません', 2000);
+    state.money -= L.cost;
+    state.stores[state.cur] = pickStore(state);
+    state.stores.push(newStore(name, loc));
+    if (!c.seen.includes(loc))
+        c.seen.push(loc);
+    addEvent('🎉 ' + L.e + ' ' + L.n + 'に「' + name + '」を出店しました（出店費¥' + fmt(L.cost) + '）。店舗管理から行けます');
+    render();
+    save();
+}
+
+/** 店を切り替える（閉店後だけ） */
+function coSwitch(i) {
+    const S = state.stores;
+    if (!S || i === state.cur || !S[i] || state.phase !== 'closed' || state.over)
+        return;
+    S[state.cur] = pickStore(state);
+    Object.assign(state, JSON.parse(JSON.stringify(S[i])));
+    state.cur = i;
+    applyKind();
+    fill();
+    addLog('🚶 「' + state.sname + '」（' + locOf().n + '）に来ました。');
+    state.tab = 0;
+    render();
+    save();
+}
+
+/** 店の名前を変える */
+function coRename(i, name) {
+    name = String(name || '').trim().slice(0, 16);
+    if (!name || !state.stores)
+        return;
+    if (i === state.cur)
+        state.sname = name;
+    else
+        state.stores[i].sname = name;
+    render();
+    save();
+}
+
+/** 店主がいない店の1日（閉店のたびに呼ぶ）。店長か店員がいれば営業し、在庫は自動で補充される */
+function coBgDay(s) {
+    const L = locOf(s), sh = (s.shelf || []).filter(Boolean), R = Math.random, ev = difficulty().ev;
+    s.dRev = 0;
+    if (!(s.mgr || s.clerk > 0) || !sh.length || (s.clean || 0) > 0) {
+        if (s.clean > 0)
+            s.clean--;
+        return;
+    }
+    // 商品の原価と売値（シーシャ屋はフレーバー。アップグレードも反映）
+    const shi = isShisha(s);
+    const pc = id => {
+        const b = shi && id < FLAV.length ? FLAV[id].c : (PDEF ? PDEF[id].b : PRODUCTS[id].b);
+        return Math.round(b * (1 + 0.4 * (s.up[id] || 0)) * (s.cm ? s.cm[id] : 1));
+    };
+    const pp = id => Math.max(pc(id) + 1, Math.round(pc(id) / (1 - s.margin / 100)));
+    const tk = (s.closeH - s.openH) * 5;
+    const df = Math.min(1.6, Math.max(0.5, 1 - (s.margin - 40) * 0.015));
+    const rate = (0.35 + 0.18 * s.ad + 0.08 * sh.length) * pwr(state.day) * econ() * L.cust * df * Math.pow(1.2, (s.pays || []).length) * difficulty().cust;
+    const cust = rate * tk * (0.85 + 0.3 * R());
+    const wt = sh.map(t => Math.pow(80 / pc(t.id), 0.6) * (L.pref ? L.pref(t.id) : 1)), W = wt.reduce((a, b) => a + b, 0);
+    const e = Math.max(0, (s.sk || 0) - (s.dn || 0)), amt = e >= 10 ? 1e9 : 5 * Math.pow(2, e);
+    const sold = Math.round(Math.min(cust * (1.25 + 0.05 * s.ad), sh.length * s.cap + Math.max(1, s.clerk) * amt * tk * 0.3));
+    let rev = 0, cg = 0;
+    sh.forEach((t, i) => {
+        const q = Math.round(sold * wt[i] / W);
+        rev += q * pp(t.id);
+        cg += q * pc(t.id);
+        s.sd[t.id] = (s.sd[t.id] || 0) + q;
+    });
+    state.money += rev - cg;
+    s.mSales = (s.mSales || 0) + rev;
+    s.tot = (s.tot || 0) + rev;
+    s.dRev = rev;
+    // 店員の給料（今の店と同じ時給。月末にまとめて払う）
+    if (s.clerk > 0) {
+        let w = 0;
+        for (let h = s.openH; h < s.closeH; h++)
+            w += WAGE * (h < 7 || h >= 22 ? 1.25 : 1);
+        s.mWage = (s.mWage || 0) + w * s.clerk;
+    }
+    const tag = '🏬「' + s.sname + '」';
+    // ほかの店のできごと：お知らせとログには出すが、いまの店の空は赤くしない（店の絵の演出もしない）
+    const bgEv = t => {
+        state.evs.push(t);
+        addLog(t);
+        noticeBad(t);
+    };
+    if (R() < 0.01 * ev * L.crime) {
+        state.money -= rev;
+        bgEv(tag + 'で強盗被害！本日の売上金¥' + fmt(rev) + 'を奪われました');
+    }
+    if (s.clerk > 0 && R() < 0.03 * ev * L.crime) {
+        const a = Math.round(rev * (0.05 + R() * 0.2));
+        state.money -= a;
+        s.clerk--;
+        bgEv(tag + 'で従業員の窃盗！¥' + fmt(a) + 'が盗まれ、解雇しました');
+    }
+    if (R() < 0.01 * ev * L.dis && !L.indoor && s.slots > 1) {
+        s.shelf.splice(Math.floor(R() * s.shelf.length), 1);
+        s.slots--;
+        state.money -= 10000;
+        bgEv(tag + 'に車が突っ込みました。棚が減り、修繕費¥10,000');
+    }
+    if (!s.qual && atCeil(s))
+        s.qual = true;
+}
+
+/** 店主がいない店の月末（テナント料・店員の給料・店長の月給） */
+function coBgMonth(s) {
+    const L = locOf(s), f = r100(4000 * Math.pow(1.6, s.slots - 2) * (s.feeMul || 1) * difficulty().fee * L.fee), w = Math.round(s.mWage || 0), m = s.mgr ? MGR_SAL : 0;
+    state.money -= f + w + m;
+    s.mWage = 0;
+    s.prev = s.mSales;
+    (s.msl = s.msl || []).push(s.mSales);
+    s.mSales = 0;
+    return f + w + m;
+}
+
+/** 閉店のたびに呼ぶ（engine.js の endDay の最後）。店主がいない店を進め、会社の取引と月末の記録をする */
+function coDaily() {
+    if (!state.co)
+        return;
+    if (!state.qual && atCeil())
+        state.qual = true;
+    const S = state.stores || [];
+    let bgCost = 0;
+    S.forEach((s, i) => {
+        if (i === state.cur)
+            return;
+        coBgDay(s);
+        if (state.day > 0 && state.day % MD === 0)
+            bgCost += coBgMonth(s);
+    });
+    const c = state.co;
+    if (!c.est)
+        return;
+    // 取引先からの収入（方針で入り方が変わる。資本金・業種・景気で額が変わる）
+    const P = POLS.find(p => p.k === c.pol) || POLS[0], pt = partner();
+    const pay = () => {
+        const a = r100(c.cap * P.r * pt.m * econ() * (0.8 + Math.random() * 0.4));
+        if (a <= 0)
+            return;
+        state.money += a;
+        c.tr = (c.tr || 0) + a;
+        c.trTot = (c.trTot || 0) + a;
+        addLog('🤝 ' + pt.n + 'との' + P.t + ' +¥' + fmt(a));
+    };
+    if (P.p > 0 && Math.random() < P.p)
+        pay();
+    if (state.day > 0 && state.day % MD === 0) {
+        if (P.p === 0)
+            pay();
+        // 会社の月の記録（全店の売上・取引収入・景気）
+        const s = allStores().reduce((a, x) => a + (x === state ? (state.prev || 0) : (x.prev || 0)), 0);
+        c.hist.push({ m: state.day / MD, s, tr: c.tr || 0, e: Math.round(econ() * 1000) / 1000, n: allStores().length, money: Math.round(state.money) });
+        if (c.hist.length > 60)
+            c.hist.shift();
+        c.tr = 0;
+        c.ek++;
+        if (bgCost)
+            addLog('🏢 ほかのお店の月末の支払い ¥' + fmt(bgCost));
+    }
+}
+
+/** 会社タブを描く */
+function coRender() {
+    const el = byId('co');
+    if (!el)
+        return;
+    const c = state.co;
+    if (!c) {
+        el.innerHTML = coHtml = '';
+        return;
+    }
+    const ok = state.phase === 'closed' && !state.over;
+    const dis = b => (b && ok) ? '' : ' disabled';
+    if (!c.est) {
+        const f = '<div class="card co1"><b>🏢 会社を設立する</b><div class="meta">屋号（会社の名前）と資本金を決めます。設立費用¥' + fmt(CO_FEE) + 'と資本金を払い込みます。設立すると景気の波が来るようになり、取引先からの収入と、新しいお店を出せるようになります。</div>'
+            + '<label class="cof">屋号<input id="coname" maxlength="16" placeholder="例：ちくわ商店" value="' + esc(c.draft || '') + '"></label>'
+            + '<label class="cof">資本金<select id="cocap">' + CAPT.slice(0, 3).map(t => '<option value="' + t.v + '"' + (state.money < t.v + CO_FEE ? ' disabled' : '') + '>¥' + fmt(t.v) + '</option>').join('') + '</select></label>'
+            + '<button class="big" data-a="cofound"' + dis(state.money >= CAPT[0].v + CO_FEE) + '>会社を設立する</button>' + (ok ? '' : '<div class="meta svwarn">閉店後に設立できます。</div>') + '</div>';
+        if (f !== coHtml)
+            el.innerHTML = coHtml = f;
+        return;
+    }
+    const e = econ(), A = allStores(), n = A.length, P = POLS.find(p => p.k === c.pol) || POLS[0], pt = partner(), N = capNext(), sl = storeSlots();
+    let h = '<div class="card co1"><div class="row"><b>🏢 ' + esc(c.name) + '</b><button class="alt cost" data-a="costat">📊 会社のステータス</button></div>'
+        + '<div class="cokv"><span>資本金</span><b>¥' + fmt(c.cap) + '</b><span>景気</span><b>' + econName(e) + '（×' + e.toFixed(2) + '）</b><span>店舗</span><b>' + n + ' / ' + MAX_STORES + '</b><span>取引先</span><b>' + pt.n + '</b></div></div>';
+    // 資本金（増資）
+    h += '<div class="card"><b>🏦 資本金</b><div class="meta">資本金が大きいほど、取引先の業種が上がり、取引の額が増えます（飲食店：¥1,000万・3店舗／小売店：¥5,000万・5店舗／製造業：¥8,000万・8店舗／金融業：¥1億・10店舗）。</div>'
+        + (N ? '<div class="meta">次：¥' + fmt(N.t.v) + (N.why.length ? '（足りない条件：' + N.why.join('・') + '）' : '（払い込み¥' + fmt(N.t.v - c.cap) + '）') + '</div><button data-a="capup"' + dis(!N.why.length) + '>¥' + fmt(N.t.v) + 'に増資する</button>' : '<div class="meta">資本金は最大です。</div>') + '</div>';
+    // 会社方針
+    h += '<div class="card"><b>🧭 会社方針</b><div class="meta">方針によって取引先と、収入の入り方が変わります。</div><select data-a="copol" class="cosel"' + (ok ? '' : ' disabled') + '>' + POLS.map(p => '<option value="' + p.k + '"' + (p.k === c.pol ? ' selected' : '') + '>' + p.n + '：' + p.d + '</option>').join('') + '</select><div class="meta">今月の取引収入 ¥' + fmt(c.tr || 0) + '（累計¥' + fmt(c.trTot || 0) + '）</div></div>';
+    // 店舗管理
+    h += '<div class="card"><b>🏪 店舗管理</b><div class="meta">店主（あなた）がいる店は、今までどおり遊べます。ほかの店は店長が営業します（店員の補充・投資は、その店へ行って行います）。店へ行けるのは閉店後です。</div><div class="stl">'
+        + A.map((s, i) => {
+            const L = locOf(s), here = i === (state.cur || 0), st = here ? '🙋 ここにいます' : (s.mgr || s.clerk > 0) ? '👔 店長が営業中' : '💤 休業中（店員なし）';
+            return '<div class="sti' + (here ? ' here' : '') + '"><div class="stn"><span class="ste">' + L.e + '</span><div><b>' + esc(s.sname || (i + 1) + '号店') + '</b><div class="meta">' + L.n + '・棚' + s.slots + '・広告Lv' + s.ad + '・店員' + s.clerk + '人・先月¥' + fmt(s.prev || 0) + '</div><div class="meta">' + st + '</div></div></div><div class="btns"><button class="alt" data-a="coren" data-i="' + i + '">名前</button>' + (here ? '' : '<button data-a="cogo" data-i="' + i + '"' + dis(true) + '>この店へ行く</button>') + '</div></div>';
+        }).join('') + '</div></div>';
+    // 新しいお店を出す
+    const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
+    h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は¥' + fmt(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
+        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店"></label>'
+        + '<div class="locl">' + locs.map(k => {
+            const L = LOCS[k];
+            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ¥' + fmt(L.cost) + '</span></span></label>';
+        }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>'
+        + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>';
+    if (h !== coHtml)
+        el.innerHTML = coHtml = h;
+}
+
+/** 前に描いた会社タブ（同じなら描き直さない。入力中の文字や選択を消さないため） */
+let coHtml = '';
+
+/** 会社のステータス（ダッシュボード） */
+let coStatOpen = false;
+function coStat(on) {
+    coStatOpen = on;
+    let el = byId('costm');
+    if (!on) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'costm';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                coStat(false);
+        });
+        document.body.appendChild(el);
+    }
+    el.hidden = false;
+    const c = state.co, A = allStores(), H = c.hist.slice(-12), last = c.hist.at(-1) || { s: 0, tr: 0 };
+    const now = A.reduce((a, s) => a + (s.mSales || 0), 0), debt = (state.loans || []).reduce((a, l) => a + l.pay * l.left, 0);
+    const fixedAll = A.reduce((a, s) => a + r100(4000 * Math.pow(1.6, s.slots - 2) * (s.feeMul || 1) * difficulty().fee * locOf(s).fee) + (s.mgr ? MGR_SAL : 0), 0);
+    const mx = Math.max(1, ...H.map(x => x.s));
+    const bars = H.length ? '<div class="cobars">' + H.map(x => '<div class="cob" title="' + x.m + 'ヶ月目 ¥' + fmt(x.s) + '"><i style="height:' + Math.max(2, x.s / mx * 100) + '%"></i><span>' + x.m + '</span></div>').join('') + '</div>' : '<div class="meta">月末が来ると、ここに売上の推移が出ます。</div>';
+    // 景気の推移（株価の過去24ヶ月と今後は見せない）
+    const pts = [];
+    for (let i = 23; i >= 0; i--)
+        pts.push(nkAt(c.ek - i));
+    const pm = Math.min(...pts), pM = Math.max(...pts), poly = pts.map((v, i) => (i * 300 / 23).toFixed(1) + ',' + (56 - (v - pm) / Math.max(1, pM - pm) * 50).toFixed(1)).join(' ');
+    const kv = (k, v) => '<span>' + k + '</span><b>' + v + '</b>';
+    el.innerHTML = '<div class="ovbox cobox"><div class="achtop"><b>📊 ' + esc(c.name) + '</b><button class="alt achx" data-a="costclose" aria-label="閉じる">✕</button></div><div class="achbody">'
+        + '<div class="cokv">' + kv('今月の全店売上（途中）', '¥' + fmt(now)) + kv('先月の全店売上', '¥' + fmt(last.s)) + kv('先月の取引収入', '¥' + fmt(last.tr)) + kv('取引収入の累計', '¥' + fmt(c.trTot || 0)) + kv('所持金', '¥' + fmt(Math.round(state.money))) + kv('資本金', '¥' + fmt(c.cap)) + kv('借入の残り', '¥' + fmt(debt)) + kv('純資産（所持金＋預金＋資本金−借入）', '¥' + fmt(Math.round(state.money + (state.sv || 0) + c.cap - debt))) + kv('全店の固定費（テナント料＋店長）', '月¥' + fmt(fixedAll)) + kv('店舗数', A.length + '店舗') + kv('設立した月', '通算' + (c.since ? Math.floor((c.since - 1) / MD) + 1 : 1) + 'ヶ月目') + '</div>'
+        + '<h3>全店の月の売上（直近12ヶ月）</h3>' + bars
+        + '<h3>景気（株価の動き・直近24ヶ月）　' + econName(econ()) + '</h3><svg class="coeco" viewBox="0 0 300 60" preserveAspectRatio="none"><polyline points="' + poly + '" fill="none" stroke="var(--mint)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
+        + '<h3>店舗ごと（先月）</h3><table class="cotb"><tr><th>店</th><th>場所</th><th>売上</th><th>棚</th><th>店員</th></tr>' + A.map(s => '<tr><td>' + esc(s.sname || '') + '</td><td>' + locOf(s).e + locOf(s).n + '</td><td>¥' + fmt(s.prev || 0) + '</td><td>' + s.slots + '</td><td>' + s.clerk + '</td></tr>').join('') + '</table>'
+        + '</div></div>';
+}
+
+/** HTML に入れる文字を逃がす */
+function esc(t) {
+    return String(t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'hiremgr')
+        hireMgr();
+    if (a === 'cofound')
+        coFound(byId('coname').value, +byId('cocap').value);
+    if (a === 'capup')
+        capUp();
+    if (a === 'cogo')
+        coSwitch(+b.dataset.i);
+    if (a === 'coren') {
+        const i = +b.dataset.i, s = allStores()[i], v = prompt('お店の名前（16文字まで）', s.sname || '');
+        if (v !== null)
+            coRename(i, v);
+    }
+    if (a === 'coopen') {
+        const r = document.querySelector('input[name="loc"]:checked');
+        coOpen(byId('sname').value, r ? r.value : 'suburb');
+    }
+    if (a === 'costat')
+        coStat(true);
+    if (a === 'costclose')
+        coStat(false);
+});
+document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset && t.dataset.a === 'copol' && state.co) {
+        state.co.pol = t.value;
+        addLog('🧭 会社方針を「' + (POLS.find(p => p.k === t.value) || POLS[0]).n + '」にしました。');
+        save();
+    }
+    if (t.name === 'loc' && state.co)
+        state.co.lsel = t.value;
+});
+document.addEventListener('input', e => {
+    if (e.target.id === 'coname' && state.co)
+        state.co.draft = e.target.value;
+});
 </script>
 <script>
 /**
@@ -3805,7 +4633,7 @@ function buy(k, id) {
 function addSlot() {
     state.slots++;
     state.shelf.push(null);
-    if (state.own.length < state.slots && state.own.length < PRODUCTS.length) {
+    if (state.own.length < state.slots && state.own.length < kindN()) {
         state.own.push(state.own.length);
         const q = PRODUCTS[state.own.length - 1];
         addLog(q.e + ' ' + q.n + 'が解放されました。');
@@ -3927,7 +4755,7 @@ let lastSale = '';
 function endDay() {
     LIMIT = -Math.floor(quota() * difficulty().bank / 1000) * 1000;
     state.gu = false;
-    if (state.dSold > 0 && Math.random() < 0.01 * difficulty().ev) {
+    if (state.dSold > 0 && Math.random() < 0.01 * difficulty().ev * locF('crime')) {
         state.happy = clamp100(state.happy - 5);
         const s0 = state.ss || 0, L0 = guard(state.dRev), ac = (state.ss || 0) < s0;
         state.money -= L0;
@@ -3935,7 +4763,7 @@ function endDay() {
             state.mSales = 0;
         addEvent('🦹 強盗被害！本日の売上金¥' + fmt(state.dRev) + 'を狙われ、被害¥' + fmt(L0) + (!ac ? '。ノルマゲージも0に' : ''), 1);
     }
-    if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev) {
+    if (state.clerk > 0 && state.dSold > 0 && Math.random() < 0.03 * difficulty().ev * locF('crime')) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
         state.clerk--;
@@ -3985,7 +4813,7 @@ function endDay() {
         state.dn--;
     state.next = roll(state.day + 1);
     {
-        const sn = seaOf(state.day + 1), pe = b => Math.min(0.5, b * difficulty().ev), fa = p => Math.random() < 0.25 * p / (1 - p);
+        const sn = seaOf(state.day + 1), pe = b => Math.min(0.5, b * difficulty().ev * locF('dis')), fa = p => Math.random() < 0.25 * p / (1 - p);
         state.pre = { snow: false, typ: false };
         state.warn = { snow: false, typ: false };
         state.prep = { typ: false, snow: false };
@@ -4002,15 +4830,15 @@ function endDay() {
     }
     if (state.day > 0 && state.day % MD === 0) {
         const f = tenantFee(), q = quota(), ok = state.mSales >= q, cf = Math.round(state.mSales * 0.0375 * state.pays.length), lp = loanPay();
-        const wg = Math.round(state.mWage || 0);
-        state.money -= f + cf + lp + state.sal + wg;
+        const wg = Math.round(state.mWage || 0), mp = mgrPay();
+        state.money -= f + cf + lp + state.sal + wg + mp;
         state.mWage = 0;
         state.prev = state.mSales;
         (state.msl = state.msl || []).push(state.mSales);
         state.happy = clamp100(state.happy + (difficulty().sal ? (state.sal - 330000) / 330000 * 8 : 0) + (ok ? 3 : -3));
         state.loans.forEach(l => l.left--);
         state.loans = state.loans.filter(l => l.left > 0);
-        state.rep = '月末: テナント料¥' + fmt(f) + (cf ? '・決済手数料¥' + fmt(cf) : '') + (lp ? '・融資返済¥' + fmt(lp) : '') + (state.sal ? '・自分の給料¥' + fmt(state.sal) : '') + (wg ? '・店員の給料¥' + fmt(wg) : '') + 'を支払い。売上¥' + fmt(state.mSales) + ' / ノルマ¥' + fmt(q) + ' → ' + (ok ? '達成' : '未達');
+        state.rep = '月末: テナント料¥' + fmt(f) + (cf ? '・決済手数料¥' + fmt(cf) : '') + (lp ? '・融資返済¥' + fmt(lp) : '') + (state.sal ? '・自分の給料¥' + fmt(state.sal) : '') + (wg ? '・店員の給料¥' + fmt(wg) : '') + (mp ? '・店長の給料¥' + fmt(mp) : '') + 'を支払い。売上¥' + fmt(state.mSales) + ' / ノルマ¥' + fmt(q) + ' → ' + (ok ? '達成' : '未達');
         addLog(state.rep);
         state.mSales = 0;
         if (state.money < 0 && (state.sv || 0) > 0) {
@@ -4036,6 +4864,7 @@ function endDay() {
         }
     }
     state.phase = 'closed';
+    coDaily();
 }
 
 /** 翌日へ（イベント・病気・休業の判定） */
@@ -4150,7 +4979,7 @@ function tick() {
     }
     else
         state.gauge = Math.max(0, state.gauge + (pw - 1) * 4 - 0.6);
-    const rate = (0.35 + 0.18 * state.ad + 0.08 * sh.length) * pw * (0.8 + state.gauge / 250) * (state.boost > 0 ? 2 : 1) * demandFactor() * Math.pow(1.2, state.pays.length) * difficulty().cust;
+    const rate = (0.35 + 0.18 * state.ad + 0.08 * sh.length) * pw * (0.8 + state.gauge / 250) * (state.boost > 0 ? 2 : 1) * demandFactor() * Math.pow(1.2, state.pays.length) * difficulty().cust * coCust();
     const cnt = x => Math.floor(x) + (Math.random() < x % 1 ? 1 : 0), gs = [];
     for (let i = cnt(rate / 2); i > 0; i--)
         gs.push(0);
@@ -4163,7 +4992,7 @@ function tick() {
             state.dF = (state.dF || 0) + 1;
         else
             state.dM = (state.dM || 0) + 1;
-        const wt = sh.map(t => Math.pow(80 / PRODUCTS[t.id].c, 0.6) * gf(t.id, g) * (state.rb > 0 && t.id === 0 ? 1.8 : 1));
+        const wt = sh.map(t => Math.pow(80 / PRODUCTS[t.id].c, 0.6) * gf(t.id, g) * locPref(t.id) * (state.rb > 0 && t.id === 0 ? 1.8 : 1));
         let x = Math.random() * wt.reduce((a, b) => a + b, 0), s = sh[sh.length - 1];
         for (let i = 0; i < sh.length; i++) {
             if ((x -= wt[i]) < 0) {
@@ -4759,6 +5588,11 @@ function pxTree(x, se) {
 
 /** 背景（空・雲・街並み・地面・道路・車・木・街灯・お店の建物）を描く（v2.0.0〜 ミント×コーラルの色で描き直し。位置は v1.x と同じ） */
 function pxScene(W, se, wt, night, bad) {
+    // 出店場所ごとの背景（v2.1.0〜）。デパート・駅ナカは屋内（空・道路・車・木なし）
+    const lk = state.loc || 'suburb';
+    if (locF('indoor'))
+        pxIndoor(W, night, bad, lk === 'station');
+    else {
     // 空：なめらかなグラデーション（マイナスのイベントの日は閉店まで赤い空。v1.4.1〜）
     const sk = bad ? ['#8e1b2c', '#d8463e', '#f7a072'] : [['#4fb3f0', '#8fd3f7', '#e3f6ff'], ['#9fb4c4', '#c6d4de', '#eef2f5'], ['#6c7a88', '#8d9aa6', '#b9c2ca'], ['#b8c7d4', '#d6e0e8', '#f5f8fb']][wt];
     const g = cx.createLinearGradient(0, 0, 0, 124);
@@ -4806,6 +5640,10 @@ function pxScene(W, se, wt, night, bad) {
             for (let i = 2; i < w - 2; i += 4)
                 Rc(x + i, 62 - h + 3 + j, 2, 2, night ? '#ffe9a8' : shade(c, .45));
     });
+    if (lk === 'downtown')
+        pxDowntown(night, bad);
+    if (lk === 'uptown')
+        pxUptown(se, night, bad);
     // 植え込み・歩道・道路
     const gr = [['#8fde8a', '#6cc56c'], ['#4fc46e', '#38a656'], ['#d6b25a', '#bf9646'], ['#f4f8fb', '#dde7ee']][se];
     Rr(0, 54, 48, 9, gr[0], 2);
@@ -4836,8 +5674,10 @@ function pxScene(W, se, wt, night, bad) {
         Rc(cxp + 4.5, 80, 1, 1, '#9aa4ae');
         Rc(cxp + 15.5, 80, 1, 1, '#9aa4ae');
     }
-    pxTree(4, se);
-    pxTree(172, se);
+    if (lk !== 'downtown') {
+        pxTree(4, se);
+        pxTree(172, se);
+    }
     if (se === 0 || se === 2)
         for (let i = 0; i < 8; i++)
             Rp((i * 27 + fr * 0.5) % W * 2, (i * 13 + fr * 0.8) % 66 * 2, 2, 2, se ? '#ffa25c' : '#ffc4da');
@@ -4849,6 +5689,7 @@ function pxScene(W, se, wt, night, bad) {
     Rq(158, 240, 12, 8, lp);
     Rq(158, 240, 12, 1, shade(lp, .4));
     Rr(35, 37, 4, 3, night ? '#fff1b0' : '#e8f7f1', 1);
+    }
     // お店の建物：ミントの屋根・クリームの壁・腰板
     const rf = shade(PXT.r, -.25);
     Rr(45, 19, 102, 7, rf, 1);
@@ -4861,15 +5702,16 @@ function pxScene(W, se, wt, night, bad) {
     pxFine(rf);
     Rc(140, 26, 4, 36, 'rgba(31,58,53,.08)');
     // 看板：コーラルの丸い看板に白い文字
-    Rr(75, 9, 42, 13, shade(PXT.c, -.25), 2);
-    Rr(76, 9, 40, 12, PXT.c, 2);
-    Rc(78, 10, 36, 1, shade(PXT.c, .35));
-    Rq(310, 78, 148, 1, shade(PXT.c, -.12));
+    const SC = signC();
+    Rr(75, 9, 42, 13, shade(SC, -.25), 2);
+    Rr(76, 9, 40, 12, SC, 2);
+    Rc(78, 10, 36, 1, shade(SC, .35));
+    Rq(310, 78, 148, 1, shade(SC, -.12));
     [[310, 44], [454, 44], [310, 72], [454, 72]].forEach(([x, y]) => {
-        Rq(x, y, 3, 3, shade(PXT.c, -.3));
-        Rq(x, y, 2, 2, shade(PXT.c, .5));
+        Rq(x, y, 3, 3, shade(SC, -.3));
+        Rq(x, y, 2, 2, shade(SC, .5));
     });
-    pxText(88.5, 13.5, 'SHOP', shade(PXT.c, -.35));
+    pxText(88.5, 13.5, 'SHOP', shade(SC, -.35));
     pxText(88, 13, 'SHOP', '#ffffff');
     // 日よけ：コーラルと白のしましま、すそは波形
     for (let i = 0; i < 16; i++) {
@@ -4902,6 +5744,134 @@ function pxScene(W, se, wt, night, bad) {
             });
         }
     });
+}
+
+/** 看板の色（シーシャ屋はむらさき。v2.1.0〜） */
+const signC = () => isShisha() ? '#9a6ad6' : PXT.c;
+
+/** 繁華街：背の高いビルとネオンの看板（遠くの丘の代わり。v2.1.0〜） */
+function pxDowntown(night, bad) {
+    const neon = ['#ff4fa3', '#3ee0ff', '#ffd23f', '#9b6bff'];
+    [[0, 52, 16, '#5a5f8a'], [14, 40, 14, '#6e6a9a'], [28, 46, 18, '#4f5a7e'], [146, 44, 16, '#4f5a7e'], [160, 54, 14, '#6e6a9a'], [173, 38, 19, '#5a5f8a']].forEach(([x, h, w, c], k) => {
+        c = bad ? shade(c, -.2) : c;
+        Rc(x, 62 - h, w, h, c);
+        Rc(x, 62 - h, w, 1, shade(c, .25));
+        for (let j = 0; j < h - 6; j += 4)
+            for (let i = 2; i < w - 2; i += 3)
+                Rc(x + i, 62 - h + 3 + j, 1.5, 2, night ? ((i * 7 + j * 3 + k) % 5 ? '#ffe9a8' : '#3a3f5c') : shade(c, .4));
+        // ネオンの縦看板（夜は点滅）
+        const nc = neon[k % 4], on = !night || ((fr >> 2) + k) % 6;
+        Rr(x + (k % 2 ? 1 : w - 4), 62 - h + 5, 3, 12, on ? nc : shade(nc, -.5), 1);
+        if (night && on) {
+            cx.globalAlpha = .25;
+            Rr(x + (k % 2 ? 0 : w - 5), 62 - h + 4, 5, 14, nc, 2);
+            cx.globalAlpha = 1;
+        }
+    });
+}
+
+/** 高級住宅街：三角屋根のお屋敷と生け垣（遠くの丘の代わり。v2.1.0〜） */
+function pxUptown(se, night, bad) {
+    [[2, 40, '#f6efe4', '#7a5c8e'], [150, 40, '#eef3f7', '#3f6e8c']].forEach(([x, w, wc, rc]) => {
+        wc = bad ? shade(wc, -.15) : wc;
+        Rc(x, 40, w, 22, wc);
+        for (let r = 0; r < 10; r++)
+            Rc(x - 2 + r * 1.2, 40 - r, w + 4 - r * 2.4, 1, r ? rc : shade(rc, -.2));
+        Rc(x + w - 10, 26, 4, 8, shade(wc, -.25));
+        for (let i = 0; i < 3; i++) {
+            Rc(x + 4 + i * 12, 45, 7, 7, night ? '#ffe9a8' : '#bfe3f5');
+            Rc(x + 7 + i * 12, 45, 1, 7, wc);
+            Rc(x + 4 + i * 12, 48, 7, 1, wc);
+        }
+        Rc(x + w / 2 - 3, 54, 6, 8, '#8a5a3c');
+        Rc(x + w / 2 + 1.5, 58, 1, 1, '#ffd23f');
+    });
+    // 生け垣（ふちを丸く）
+    Rr(0, 56, 46, 6, se === 3 ? '#e8eef2' : '#3f9a5c', 3);
+    Rr(146, 56, 46, 6, se === 3 ? '#e8eef2' : '#3f9a5c', 3);
+}
+
+/** 屋内（デパート・駅ナカ）：壁・天井の明かり・床。駅ナカは改札口と、窓の向こうを電車が走る（v2.1.0〜） */
+function pxIndoor(W, night, bad, st) {
+    const g = cx.createLinearGradient(0, 0, 0, 124);
+    g.addColorStop(0, st ? '#d9dde2' : '#f6efe3');
+    g.addColorStop(1, st ? '#eef0f2' : '#fbf6ee');
+    cx.fillStyle = g;
+    cx.fillRect(0, 0, PXW, 124);
+    // 天井と明かり
+    Rc(0, 0, W, 5, st ? '#9aa3ad' : '#e8dcc8');
+    for (let x = 8; x < W; x += 24)
+        Rr(x, 4, 10, 2, '#fffbe6', 1);
+    if (st) {
+        // ホームが見える窓と、走る電車
+        Rc(0, 9, W, 24, '#2e3a48');
+        Rc(0, 9, W, 1, '#56677a');
+        const tx = ((fr * 3) % (W + 260)) - 130;
+        for (let k = 0; k < 3; k++) {
+            const x = tx + k * 44;
+            Rr(x, 14, 42, 16, '#e7ecf0', 2);
+            Rc(x + 1, 24, 40, 2, PXT.r);
+            for (let i = 0; i < 4; i++)
+                Rc(x + 3 + i * 10, 16, 7, 6, night ? '#ffe9a8' : '#9fd3f2');
+        }
+        Rc(0, 32, W, 2, '#56677a');
+        // 発車の案内板
+        Rr(84, 2, 24, 6, '#1d2733', 1);
+        Rc(86, 4, 9, 1, '#ffb43a');
+        Rc(97, 4, 8, 1, '#5ee38a');
+        Rc(86, 6, 14, 1, '#ffb43a');
+        // 改札口（左右）
+        [[2, 1], [150, -1]].forEach(([x0]) => {
+            for (let i = 0; i < 3; i++) {
+                const x = x0 + i * 14;
+                Rr(x, 46, 4, 16, '#b9c2cc', 1);
+                Rc(x, 46, 4, 1, '#e3e8ee');
+                Rc(x + 1, 48, 2, 2, (fr >> 3) % 3 === i ? '#5ee38a' : '#3ea3ff');
+                Rc(x + 4, 52, 6, 1.5, (fr >> 2) % 4 < 2 ? '#ffd23f' : '#f0a53a');
+            }
+            Rr(x0 + 2, 38, 36, 5, '#2a6fd6', 1);
+            Rc(x0 + 5, 40, 30, 1, '#ffffff');
+        });
+    }
+    else {
+        // デパート：柱・つり下げの飾り・エスカレーター
+        [[8, '#e9dcc6'], [176, '#e9dcc6']].forEach(([x, c]) => {
+            Rc(x, 5, 8, 57, c);
+            Rc(x, 5, 1, 57, '#fffaf0');
+            Rc(x + 7, 5, 1, 57, shade(c, -.12));
+        });
+        for (let i = 0; i < 6; i++)
+            Rr(22 + i * 26, 6, 8, 10, [PXT.c, '#ffd23f', PXT.r][i % 3], 1);
+        for (let r = 0; r < 14; r++)
+            Rc(150 + r * 1.6, 44 - r * 2, 6, 2, r % 2 ? '#c9ced6' : '#aab1bb');
+        Rc(148, 44, 10, 18, '#d8dde3');
+    }
+    if (bad) {
+        cx.fillStyle = 'rgba(200,40,40,.22)';
+        cx.fillRect(0, 0, PXW, 124);
+    }
+    // 床（タイル）
+    Rc(0, 62, W, 30, st ? '#c9ccd0' : '#efe6d6');
+    Rc(0, 62, W, 1, '#ffffff');
+    for (let x = 0; x < W; x += 12)
+        Rc(x, 62, 0.5, 30, st ? '#b4b8bd' : '#e0d4be');
+    for (let y = 70; y < 92; y += 8)
+        Rc(0, y, W, 0.5, st ? '#b4b8bd' : '#e0d4be');
+    if (st)
+        Rc(0, 66, W, 2, '#ffd23f');
+}
+
+/** シーシャ屋：店の中がうっすら煙っぽい（むらさきの明かりと、ただようもや。喫煙の様子は描かない。v2.1.0〜） */
+function pxHaze() {
+    cx.fillStyle = 'rgba(150,90,200,.16)';
+    cx.fillRect(106, 84, 60, 34);
+    cx.fillRect(218, 84, 60, 34);
+    cx.globalAlpha = .3;
+    for (let i = 0; i < 8; i++) {
+        const fx = i % 2 ? 109 : 53, x = fx + ((i * 9 + fr * 0.3) % 22), y = 43 + (i * 5) % 11 + Math.sin((fr + i * 11) / 14) * 1.5;
+        Rr(x, y, 8, 3, '#f2e8ff', 1.5);
+    }
+    cx.globalAlpha = 1;
 }
 
 /** お店と道の細かい模様（細ピクセル。v2.0.0〜）：屋根がわら・壁の板・腰板のれんが・歩道・道路 */
@@ -4981,10 +5951,11 @@ function drawPx() {
     pxPeople(op);
     pxFxTop();
     cv.classList.toggle('quake', fxList().includes('quake'));
-    if (wt === 2)
+    const ind = locF('indoor');
+    if (wt === 2 && !ind)
         for (let i = 0; i < 70; i++)
             Rp((i * 37 + fr * 2) % W * 2, (i * 23 + fr * 6) % H * 2, 1, 5, '#7ab8ea');
-    if (wt === 3) {
+    if (wt === 3 && !ind) {
         for (let i = 0; i < 70; i++)
             Rp((i * 29 + Math.sin((fr + i * 9) / 9) * 3 + W) % W * 2, (i * 17 + fr) % H * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
         Rc(0, 62, W, 2, '#f4f8fb');
@@ -4994,17 +5965,20 @@ function drawPx() {
         Rr(76, 8, 40, 2, '#fff', 1);
     }
     if (night) {
-        cx.fillStyle = 'rgba(18,20,70,0.48)';
+        // 屋内（デパート・駅ナカ）は照明があるので、暗くするのは少しだけ。星と街灯の明かりもなし
+        cx.fillStyle = ind ? 'rgba(18,20,70,0.2)' : 'rgba(18,20,70,0.48)';
         cx.fillRect(0, 0, PXW, PXH);
-        if (wt === 0)
+        if (wt === 0 && !ind)
             for (let i = 0; i < 14; i++)
                 Rp((i * 47) % W * 2, (i * 13) % 24 * 2, i % 3 ? 1 : 2, i % 3 ? 1 : 2, '#fff');
-        Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
-        Rc(37, 37, 8, 2, '#ffe9a8');
+        if (!ind) {
+            Rc(30, 38, 18, 24, 'rgba(255,233,168,.2)');
+            Rc(37, 37, 8, 2, '#ffe9a8');
+        }
         pxLights(op, true);
         // 夜は看板に明かりをともす（v2.0.0〜）
         cx.globalAlpha = .55;
-        Rr(76, 9, 40, 12, PXT.c, 2);
+        Rr(76, 9, 40, 12, signC(), 2);
         cx.globalAlpha = 1;
         pxText(88, 13, 'SHOP', '#fff6e0');
         pxDk = true;
@@ -5016,6 +5990,8 @@ function drawPx() {
         pxDk = false;
         pxFxPay();
     }
+    if (isShisha())
+        pxHaze();
 }
 
 /** かまくらボーナスの日：店の前のかまくらと甘酒の鍋 */
@@ -6061,6 +7037,12 @@ function syncLog() {
 const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g, 'class="card off"').replace(/<(input|select)/g, '<$1 disabled').replace(/<button data-a="sv/g, '<button disabled data-a="sv').replace(/<button class="alt" data-a="sv/g, '<button class="alt" disabled data-a="sv');
 
 function render() {
+    // 店を切り替えた・読み込んだときは、扱う品（シーシャ屋はフレーバー）を入れ替える（v2.1.0〜）
+    if (kindOf !== state || kindLoc !== state.loc) {
+        kindOf = state;
+        kindLoc = state.loc;
+        applyKind();
+    }
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
     byId('m').innerHTML = '<small>¥</small>' + (state.money < 0 ? '-' : '') + fmt(Math.abs(state.money));
     byId('m').className = 'money' + (state.money < 0 ? ' neg' : '');
@@ -6167,7 +7149,7 @@ function render() {
             if (e && !v)
                 e.closest('.card').style.display = 'none';
         });
-        byId('dt').insertAdjacentHTML('afterbegin', '<span class="chip df-' + state.diff + '">' + dd.n + '</span>');
+        byId('dt').insertAdjacentHTML('afterbegin', '<span class="chip df-' + state.diff + '">' + dd.n + '</span>' + (state.co ? '<span class="chip sto">' + locOf().e + ' ' + esc(state.sname || '1号店') + '</span>' : ''));
         byId('dfc').style.display = state.diff ? 'none' : 'block';
     }
     {
@@ -6192,9 +7174,11 @@ function render() {
         byId('mny').style.display = (A.children.length + B.children.length) ? '' : 'none';
         byId('ph').textContent = PHN[state.phase] || '';
         // 画面の下のタブバー（v2.0.0〜）。一時停止と倍速は店の絵の右下 #spd（倍速は押すたび×1→×2→×4→×8）
-        byId('tabr').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定']].map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
+        byId('tabr').innerHTML = [['🏪', '営業'], ['🛒', '投資'], ['💰', 'お金'], ['⚙️', '設定'], ['🏢', '会社']].slice(0, state.co ? 5 : 4).map((t, i) => '<button class="tab' + ((state.tab || 0) === i ? ' on' : '') + '" data-a="tab" data-v="' + i + '"><span class="ti">' + t[0] + '</span>' + t[1] + '</button>').join('');
         byId('spd').innerHTML = '<button class="' + (state.paused ? 'on' : '') + '" data-a="pause"' + (state.phase === 'open' ? '' : ' disabled') + ' aria-label="' + (state.paused ? '再開' : '一時停止') + '">' + (state.paused ? '▶' : '⏸') + '</button><button class="' + ((state.spd || 1) > 1 ? 'on' : '') + '" data-a="spdc" aria-label="倍速">×' + (state.spd || 1) + '</button>';
-        [0, 1, 2, 3].forEach(i => {
+        if (!state.co && state.tab === 4)
+            state.tab = 0;
+        [0, 1, 2, 3, 4].forEach(i => {
             const e = byId('p' + i);
             if (e)
                 e.style.display = (state.tab || 0) === i ? '' : 'none';
@@ -6214,7 +7198,7 @@ function render() {
     const ok = state.phase === 'closed' && !state.over && !ill();
     const row = (k, id, t, dsc, price, done) => '<div class="card up"><div class="tx"><div class="nm">' + t + '</div><div class="d">' + dsc + '</div></div><button data-a="b" data-k="' + k + '" data-id="' + id + '"' + (done || !ok || state.money < price ? ' disabled' : '') + '>' + (done === 1 ? '未解放' : done ? '最大' : '¥' + fmt(price)) + '</button></div>';
     const R = [];
-    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < PRODUCTS.length ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月¥' + fmt(tenantFee()) + ' → <b>月¥' + fmt(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
+    R.push(row('slot', '', '🪜 棚を増やす（' + state.slots + '/' + MAX.slot + '）', '次の解放: ' + (state.own.length < kindN() ? PRODUCTS[state.own.length].e + ' ' + PRODUCTS[state.own.length].n : 'なし') + (state.slots < MAX.slot ? '。テナント料 月¥' + fmt(tenantFee()) + ' → <b>月¥' + fmt(tenantFee(state.slots + 1)) + '</b>' : ''), cost.slot(), state.slots >= MAX.slot));
     R.push(row('cap', '', '📦 棚の容量アップ（' + state.cap + '個）', '次の容量: ' + (CAPS[CAPS.indexOf(state.cap) + 1] || '最大') + '個', cost.cap(), state.cap >= MAX.cap));
     R.push(row('ad', '', '📣 広告（Lv.' + state.ad + '）', '来店数とまとめ買いが増える', cost.ad(), state.ad >= MAX.ad));
     R.push(row('clerk', '', '🧑‍🍳 店員（' + state.clerk + '人）', '営業中、毎秒ランダムな棚へ自動補充（補充量は能力で上がる）。時給¥' + fmt(WAGE) + '（〜7時・22時〜は125%）・給料は月末払い', cost.clerk(), state.clerk >= MAX.clerk));
@@ -6227,6 +7211,9 @@ function render() {
     SECR.push(row('secbuy', '', '🛡 ストックを買う（' + (state.ss || 0) + '/5）', (state.sl > 0 ? SECN[state.sl - 1] + '：' + SECX[state.sl - 1] + '。破損まで' + ((state.ss || 0) > 0 ? Math.max(0, (state.sb || 0) - state.day) + '日' : (SECD[state.sl - 1] / 7) + 'ヶ月') + '（盗難1回ごとに1つ消費）' : 'まずレベルを上げてください'), cost.secbuy(), !(state.sl > 0) ? 1 : (state.ss || 0) >= 5));
     R.push(row('skill', '', '🧠 店員の能力（Lv.' + eff() + '/10）' + ((state.dn || 0) > 0 ? '<div class="meta">本来Lv.' + (state.sk || 0) + '・士気低下-' + state.dn + '（休業で回復）</div>' : ''), '1回の補充量: ' + (eff() >= 10 ? '満タン' : eff() < 0 ? '0（盗難中）' : 5 * Math.pow(2, eff()) + '個') + '。投資ごとに2倍、Lv10で満タン', cost.skill(), (state.sk || 0) >= 10));
     R.push(...SECR);
+    // 店長を雇う（v2.1.0〜）。条件（天井・店員・お金）を満たすまでは出さない
+    if (mgrShow())
+        R.unshift('<div class="card up mgr"><div class="tx"><div class="nm">👔 店長を雇う</div><div class="d">店長を雇ってオーナーになる。「会社」タブが出て、会社を設立し、新しいお店を出せるようになります。採用費¥' + fmt(MGR_HIRE) + '・月給¥' + fmt(MGR_SAL) + '（月末払い）</div></div><button data-a="hiremgr"' + (!ok || state.money < MGR_HIRE ? ' disabled' : '') + '>¥' + fmt(MGR_HIRE) + '</button></div>');
     PRODUCTS.forEach((p, i) => {
         if (!state.own.includes(i))
             return;
@@ -6237,18 +7224,22 @@ function render() {
             dn = true;
         }
         else if (state.sd[i] < TH[L]) {
-            d = '解放まであと' + (TH[L] - state.sd[i]) + '個販売 → ' + NM[i][L];
+            d = '解放まであと' + (TH[L] - state.sd[i]) + '個販売 → ' + upName(i, L + 1);
             dn = 1;
         }
         else {
             pc = upCost(i, L);
-            d = '→ ' + NM[i][L] + '（原価・売価アップ）';
+            d = '→ ' + upName(i, L + 1) + '（原価・売価アップ）';
         }
         R.push(row('upg', i, '⬆ ' + p.e + ' ' + p.n + ' Lv.' + L + '/7', d, pc, dn));
     });
     const ib = investBlock();
     byId('up').innerHTML = (ib ? '<div class="meta svwarn ivb">⚠ ' + ib + '</div>' : '') + R.join('');
+    coRender();
 }
+
+/** いまの扱う品がどの店のものか（render が見て、変わったら applyKind する） */
+let kindOf = null, kindLoc = null;
 
 document.addEventListener('click', e => {
     if (!e.target.closest('[data-a="help"]'))
@@ -6503,17 +7494,18 @@ function initLayout() {
         const d = document.createElement('div');
         d.id = 'p' + i;
         return d;
-    }, P0 = mk(0), P1 = mk(1), P2 = mk(2), P3 = mk(3);
+    }, P0 = mk(0), P1 = mk(1), P2 = mk(2), P3 = mk(3), P4 = mk(4);
     P0.insertAdjacentHTML('afterbegin', '<div class="clk" id="clk" hidden></div>');
     [byId('gl').closest('.card'), byId('act'), byId('lg'), byId('pn'), byId('sh').previousElementSibling, byId('sh')].forEach(e => P0.append(e));
     P1.append(byId('up').previousElementSibling, byId('up'));
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('thc'), byId('tutc'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('thc'), byId('tutc'), byId('v1c'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
-    sc.append(P0, P1, P2, P3);
+    P4.append(byId('co'));
+    sc.append(P0, P1, P2, P3, P4);
     tp.after(sc);
     sc.after(tb);
     // 前に隠していたら、隠したまま始める（DOM に入れてから高さを測る）
