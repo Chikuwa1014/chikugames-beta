@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<!-- 試作環境：ちいさなお店 v2.3.2（号口へ出す前の確認用） -->
+<!-- 試作環境：ちいさなお店 v2.3.3（号口へ出す前の確認用） -->
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
@@ -2528,6 +2528,34 @@ button.dbc.here {
 .clrend .row { margin-bottom:8px; }
 .clrend .row button { flex:1; }
 @media (prefers-reduced-motion:reduce) { .clrband, .clrt, .clrs, .clrsl, .clrpx canvas, .clrpx span, .clrsay, .clrfin b, .clrmsg p { animation:none; } .clrbox { transition:none; } }
+
+/* ---- 文字を入力している間（キーボードが出ている間）は、上の部分とタブバーをたたんで入力欄の周りを広くする（v2.3.3〜） ----
+   html.kb は js/ui.js の kbSet が付け外しする。所持金のカードだけ小さく残す。2列（横画面・PC）のときは付けない */
+html.kb .awning,
+html.kb #top details.shop,
+html.kb #top #dt,
+html.kb #top #spd,
+html.kb #tabs {
+  display:none !important;
+}
+
+html.kb .mrow {
+  padding:2px 8px 2px 12px;
+  margin-top:4px;
+}
+
+html.kb .money {
+  font-size:17px;
+}
+
+html.kb .money small {
+  font-size:12px;
+}
+
+html.kb button.achb {
+  padding:2px 9px;
+  font-size:11px;
+}
 </style>
 </head>
 <body>
@@ -3433,13 +3461,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '2.3.2';
+const VERSION = '2.3.3';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['2.3.3', '2026-10-30', 'お店の名前などを入力している間（キーボードが出ている間）は、お店の絵・日付・タブバーをたたみ、所持金を小さく表示して、入力欄の周りを広く使えるように（入力が終わると元に戻る。iPhone の Chrome で入力欄の周りがとても狭くなっていたため）'],
     ['2.3.2', '2026-10-30', 'iPhone の Chrome で、お店の名前などを入力しようとしてキーボードが出ると、横画面の2列の表示に切り替わってくずれる不具合を修正'],
     ['2.3.1', '2026-10-30', 'クリア演出のあとに「お店を見る ▶」：出したお店を1店ずつ紹介（お店のドット絵・場所・スタイル・開店日・営業した日数・累計売上・ちくわくんのひとこと。4.5秒かタップで次へ、スキップあり）し、最後に「おしまい」の画面（ちくわくんからのありがとうと、前向きになれる言葉）を出して終わるように。お店ごとに開店日を記録（v2.3.1 より前に出したお店は「記録なし」）'],
     ['2.3.0', '2026-10-30', 'お店のスタイルを追加（12種類）。会社タブで新しいお店を出すときに「お店のスタイル」を選べる：いつものお店やさん・しょくりょうひん店・おもちゃ屋さん・靴屋さん・高級ブティック・アジアンざっかやさん・あんぐらショップ・かわいいやさん・高級ブランドショップ・くるまやさん・トレカショップ・しあわせやさん。スタイルごとに棚に並ぶ12個の商品とアップグレードの名前、よく買うお客さん、来店数、お店の屋根と看板の色が変わる（値段が高いスタイルほどお客さんが少なく、1日の売上はどれも同じくらい）。はじめから選べるのは4つ（いつもの・しょくりょうひん店・おもちゃ屋さん・靴屋さん）。今あるお店（1号店も）は、閉店中に店舗管理の「🎨 スタイル」から改装できる（改装費は出店費の半分。棚の在庫は原価で引き取り、解放した棚とアップグレードの段階は引きつぐ）。熱ばくだんおにぎりなどの商品のイベントは、いつものお店やさんだけ。クリアを追加：全店の累計売上1兆円・5店舗・預金1,000億円・営業50年をそろえると、クリア専用のカットイン（紙吹雪と花火）でお祝い。クリアしたあとも遊び続けられ、設定タブから演出を見直せる。実績に「🏆 クリア」を追加'],
@@ -8359,6 +8388,29 @@ document.addEventListener('change', e => {
 const TBAR_KEY = 'shop-sim-tabbar';
 
 /**
+ * 文字を入力している間は、上の部分（屋根・店の絵・日付のチップ・倍速）とタブバーをたたむ（v2.3.3〜）。
+ * iOS の Chrome などはキーボードが出ると画面の高さが縮み、上の固定部分だけで画面が埋まって入力欄の周りが狭くなるため。
+ * ブラウザの種類では分けず、文字の入力欄（text・textarea など）に触れたら付け、離れたら外す。2列（横画面・PC）のときは付けない。
+ * 自分で店の絵を閉じていたかどうかは変えない（CSS で見えなくするだけ）
+ */
+/** 2列（横画面・PC）になる条件。css/style.css の @media と同じ */
+const WIDE_Q = '(orientation:landscape) and (max-height:560px) and (min-width:560px), (min-width:900px)';
+const kbIn = el => el && el.matches && el.matches('input:not([type]), input[type="text"], input[type="search"], input[type="number"], input[type="password"], textarea');
+const kbSet = on => {
+    on = on && !matchMedia(WIDE_Q).matches;
+    if (document.documentElement.classList.contains('kb') === on)
+        return;
+    document.documentElement.classList.toggle('kb', on);
+    const el = document.activeElement;
+    // たたんだあとで、入力欄が見える位置へ動かす
+    if (on && kbIn(el))
+        requestAnimationFrame(() => el.scrollIntoView({ block: 'center' }));
+};
+document.addEventListener('focusin', e => kbIn(e.target) && kbSet(true));
+// 別の入力欄へ移るときは focusout のあとに focusin が来るので、少し待ってから外す
+document.addEventListener('focusout', () => setTimeout(() => kbSet(kbIn(document.activeElement)), 120));
+
+/**
  * 月末の支払い予想の縮小（v2.2.0〜）。タップで💵だけの丸に縮め、縮めた💵をタップすると吹き出しで正確な額を出す。
  * 吹き出しの「ひらく」で元に戻す。縮めたかどうかは端末が覚える（localStorage shop-sim-payf。見た目の好みだけなのでセーブには入れない）
  */
@@ -8458,7 +8510,7 @@ function initLayout() {
     // 画面の向きや大きさが変わったら、隠す量（タブバーの高さ）を測り直す
     addEventListener('resize', () => byId('tabs').classList.contains('off') && tabBar(true, true));
     // 横画面・PC（2列のとき）は、現在時刻とゲージを左の列（店の絵の下）に移して、どのタブでも見えるようにする（v2.0.0〜）
-    const wide = matchMedia('(orientation:landscape) and (max-height:560px) and (min-width:560px), (min-width:900px)');
+    const wide = matchMedia(WIDE_Q);
     const gc = byId('gl').closest('.card'), ck = byId('clk');
     const place = () => wide.matches ? tp.append(ck, gc) : P0.prepend(ck, gc);
     place();
