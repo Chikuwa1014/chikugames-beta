@@ -44,6 +44,7 @@ CG.room.lobby(document.getElementById('lobby'), room, { nameKey: 'my-game-name',
 | `v1/share.js` | `CG.share`：`text`・`links`・`open`・`x`・`copy` |
 | `v1/save.js` | `CG.save`：`wrap`・`toFile`・`fromFile`・`toCode`・`fromCode`・`checksum` |
 | `v1/debug.js` | `CG.debug`：`init`・`add`・`wrap`・`send`・`mount`・`clear`・`log` |
+| `v1/ad.js` | `CG.ad`：リワード広告。`on`（いまは false＝出さない）・`client`・`ready()`・`kinds()`・`reward({ kind, name })`。URL に `?ad=test` で仮の広告（2026-10-30） |
 | `v1/room.js` | `CG.room`：`create`・`lobby`・`lobbyName`・`codeFromUrl` |
 | `v1/common.css` | ロビー画面と送信欄の見た目 |
 | `dev/room-test.html`・`dev/test-room.py` | ルームの見本と通しテスト（公開されない） |
