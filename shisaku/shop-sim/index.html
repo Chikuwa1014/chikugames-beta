@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<!-- 試作環境：ちいさなお店 v2.3.0（号口へ出す前の確認用） -->
+<!-- 試作環境：ちいさなお店 v2.3.1（号口へ出す前の確認用） -->
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
@@ -2498,7 +2498,31 @@ button.dbc.here {
 .clrst small { display:block; font-weight:500; color:var(--sub); }
 .clrbox .row { margin-bottom:8px; }
 .clrbox .row button { flex:1; }
-@media (prefers-reduced-motion:reduce) { .clrband, .clrt, .clrs { animation:none; } .clrbox { transition:none; } }
+/* お店紹介とおしまい（v2.3.1〜） */
+#clrm.s3 .clrbox, #clrm.s3 .clrband { display:none; }
+.clrtour { position:relative; z-index:3; width:100%; max-width:400px; max-height:100%; overflow:auto; padding:12px; box-sizing:border-box; cursor:pointer; touch-action:pan-y; }
+.clrsl { background:var(--card); color:var(--ink); border-radius:20px; border-top:5px solid var(--gold); padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); animation:clrin .45s cubic-bezier(.2,.9,.3,1.1) both; }
+@keyframes clrin { from { transform:translateX(60px) rotate(2deg); opacity:0; } to { transform:none; opacity:1; } }
+.clrno { font-size:13px; font-weight:900; color:var(--coral2); display:flex; justify-content:space-between; }
+.clrno small { color:var(--sub); font-weight:700; }
+.clrpx { position:relative; margin:8px 0 10px; border-radius:12px; overflow:hidden; }
+.clrpx canvas { display:block; width:100%; height:auto; image-rendering:pixelated; animation:clrzoom 4.5s ease-out both; }
+@keyframes clrzoom { from { transform:scale(1.12); } to { transform:scale(1); } }
+.clrpx span { position:absolute; left:50%; top:11.5%; transform:translateX(-50%); font-size:clamp(16px, 5vw, 24px); line-height:1; animation:clrpop .6s .3s cubic-bezier(.2,1.6,.4,1) both; }
+.clrnm { font-size:22px; font-weight:900; text-align:center; margin-bottom:4px; }
+.clrsay { display:flex; gap:10px; align-items:center; background:var(--bg); border-radius:14px; padding:8px 10px; margin-top:8px; animation:clrup .5s .6s ease-out both; }
+.clrsay p { margin:0; font-size:13px; font-weight:700; }
+.clrsay .clrface { width:40px; height:40px; }
+.clrnav { display:flex; justify-content:space-between; align-items:center; margin-top:10px; color:#fff; font-size:12px; opacity:.85; }
+.clrtour .clrnav button { flex:none; width:auto; min-width:0; margin:0; padding:6px 14px; font-size:13px; }
+.clrend { text-align:center; }
+.clrend .clrface.big { width:72px; height:72px; margin:4px auto 6px; display:block; }
+.clrfin { font-size:16px; font-weight:800; color:var(--sub); line-height:1.3; }
+.clrfin b { display:block; font-size:clamp(36px, 11vw, 52px); font-weight:900; color:var(--coral2); letter-spacing:.08em; animation:clrpop .7s .2s cubic-bezier(.2,1.6,.4,1) both; }
+.clrend p { font-size:14px; font-weight:700; margin:10px 0 14px; }
+.clrend .row { margin-bottom:8px; }
+.clrend .row button { flex:1; }
+@media (prefers-reduced-motion:reduce) { .clrband, .clrt, .clrs, .clrsl, .clrpx canvas, .clrpx span, .clrsay, .clrfin b { animation:none; } .clrbox { transition:none; } }
 </style>
 </head>
 <body>
@@ -3404,13 +3428,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '2.3.0';
+const VERSION = '2.3.1';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['2.3.1', '2026-10-30', 'クリア演出のあとに「お店を見る ▶」：出したお店を1店ずつ紹介（お店のドット絵・場所・スタイル・開店日・営業した日数・累計売上・ちくわくんのひとこと。4.5秒かタップで次へ、スキップあり）し、最後に「おしまい」の画面を出して終わるように。お店ごとに開店日を記録（v2.3.1 より前に出したお店は「記録なし」）'],
     ['2.3.0', '2026-10-30', 'お店のスタイルを追加（12種類）。会社タブで新しいお店を出すときに「お店のスタイル」を選べる：いつものお店やさん・しょくりょうひん店・おもちゃ屋さん・靴屋さん・高級ブティック・アジアンざっかやさん・あんぐらショップ・かわいいやさん・高級ブランドショップ・くるまやさん・トレカショップ・しあわせやさん。スタイルごとに棚に並ぶ12個の商品とアップグレードの名前、よく買うお客さん、来店数、お店の屋根と看板の色が変わる（値段が高いスタイルほどお客さんが少なく、1日の売上はどれも同じくらい）。はじめから選べるのは4つ（いつもの・しょくりょうひん店・おもちゃ屋さん・靴屋さん）。今あるお店（1号店も）は、閉店中に店舗管理の「🎨 スタイル」から改装できる（改装費は出店費の半分。棚の在庫は原価で引き取り、解放した棚とアップグレードの段階は引きつぐ）。熱ばくだんおにぎりなどの商品のイベントは、いつものお店やさんだけ。クリアを追加：全店の累計売上1兆円・5店舗・預金1,000億円・営業50年をそろえると、クリア専用のカットイン（紙吹雪と花火）でお祝い。クリアしたあとも遊び続けられ、設定タブから演出を見直せる。実績に「🏆 クリア」を追加'],
     ['2.2.0', '2026-10-29', 'お店を切り替えても、営業タブのログに前のお店の履歴が残っていた不具合を修正（ログはお店ごとに）。日付の通算を「46ヶ月目（320日）」の表示に。1,000万円以上の金額は千円単位（例：13,964千円）で表示。月末の支払い予想はタップで💵だけに縮められる（縮めた💵をタップすると吹き出しで正確な額、「ひらく」で元に戻す）。会社タブに「🏪 お店のダッシュボード」（全店の今日・今月・先月の売上、月の固定費、先月比と在庫のバー。カードを押すとその店へ）。会社の遊び方（ちくわくんの案内6場面。店長を雇った直後か、会社タブを初めて開いたときに1回だけ。設定タブから見直せる）。預金を預けた・引き出したら、金額のスライダーを0に戻す。スマホで画面の拡大・縮小（ピンチ・ダブルタップ）をしないように'],
     ['2.1.0', '2026-10-29', '店長・会社・複数のお店を追加。1号店が棚10台・広告Lv18・店員1人以上になり、お金がそろうと、投資タブに「👔 店長を雇う」（店長を雇ってオーナーになる）が出る。雇うと「🏢 会社」タブが出て、屋号と資本金を決めて会社を設立できる。会社では資本金の増資（店舗数と全店の売上で解放。資本金が大きいほど取引先が飲食店・小売店・製造業・金融業と上がり、取引の額が増える）、会社方針（安定経営・攻めの営業・大口狙い・地域密着で取引収入の入り方が変わる）、店舗管理（店の名前・店へ行く）、新しいお店を出す（出店場所は郊外・繁華街・高級住宅街・デパート・駅ナカ、すべてに出すとシーシャ屋が解放）、会社のステータス（売上の推移・景気・経営指標のダッシュボード）ができる。会社を設立すると景気の波が来る（株価の動きをもとにした景気循環で、お客さんの数が増減）。出店場所ごとに、来店数・治安・テナント料・災害・売れやすい品と、店の絵（ネオンのビル街・お屋敷・デパートの中・改札口と電車・むらさきの看板と少し煙っぽい店内）が変わる'],
@@ -4347,7 +4372,7 @@ function rollEvents() {
  */
 
 /** 店ごとに持つ状態のキー（切り替えのとき、出し入れする） */
-const STK = ['sname', 'loc', 'sty', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
+const STK = ['sname', 'loc', 'sty', 'od', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
 
 /** 店長の採用費と月給 */
 const MGR_HIRE = 500000, MGR_SAL = 300000;
@@ -4535,7 +4560,7 @@ const pickStore = s => JSON.parse(JSON.stringify(STK.reduce((o, k) => (o[k] = s[
 function newStore(name, loc, sty) {
     const f = fresh(), s = pickStore(f);
     s.log = [];
-    Object.assign(s, { sname: name, loc, sty: loc === 'shisha' ? 'normal' : sty || 'normal', mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
+    Object.assign(s, { sname: name, loc, sty: loc === 'shisha' ? 'normal' : sty || 'normal', od: state.day + 1, mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
     return s;
 }
 
@@ -4634,7 +4659,7 @@ function coSwitch(i) {
         return;
     S[state.cur] = pickStore(state);
     // 営業タブのログもお店ごと（v2.2.0〜。v2.1.0 のセーブの店には無いので空から）
-    Object.assign(state, { log: [], sty: 'normal' }, JSON.parse(JSON.stringify(S[i])));
+    Object.assign(state, { log: [], sty: 'normal', od: 0 }, JSON.parse(JSON.stringify(S[i])));
     state.cur = i;
     applyKind();
     fill();
@@ -8441,6 +8466,8 @@ function initLayout() {
  * 条件（4つすべて）：全店の累計売上1兆円・お店5店舗以上・預金1,000億円・営業50年（通算4,200日）。難易度は問わない。
  * そろった日の閉店後（engine.js の endDay の最後で clrCheck）に、クリア専用のカットイン（帯が斜めに入る＋紙吹雪と花火）を出し、
  * そのあと成績のカードを出す。クリアした日は state.co.clr（{ day, diff, at }）に残し、演出はセーブごとに1回だけ。
+ * 成績のカードの「お店を見る ▶」で、出したお店を1店ずつ紹介し（clrTour。4.5秒かタップで次へ・スキップあり）、
+ * 最後に「おしまい」の画面を出して終わる（v2.3.1〜）。お店の開店日は store の od（v2.3.1 より前に出した店は記録なし）。
  * 設定タブの「🏆 クリア演出をもう一度見る」で見直せる。クリアしたあともそのまま遊び続けられる。
  */
 
@@ -8566,9 +8593,10 @@ function clrShow() {
         + '<div class="cokv clrkv">' + kv('会社', esc(c.name || '')) + kv('難易度', D.n) + kv('かかった日数', y + '年（通算' + fmt(c.clr.day) + '日）') + kv('全店の累計売上', yen(clrTot())) + kv('預金', yen(state.sv || 0)) + kv('お店', A.length + '店舗') + '</div>'
         + '<div class="clrst">' + A.map((s, i) => '<span>' + locOf(s).e + ' ' + esc(s.sname || (i + 1) + '号店') + '<small>' + styName(s) + '</small></span>').join('') + '</div>'
         + '<div class="row"><button data-a="clrshare">📤 クリアをシェア</button></div>'
-        + '<button class="big" data-a="clrclose">つづける</button></div>';
+        + '<button class="big" data-a="clrtour">お店を見る ▶</button></div>'
+        + '<div class="clrtour" hidden></div>';
     el.hidden = false;
-    el.classList.remove('s2');
+    el.classList.remove('s2', 's3');
     tutFace(el.querySelector('.clrface'));
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (still)
@@ -8580,10 +8608,109 @@ function clrShow() {
     }
 }
 
+/** お店紹介のちくわくんのひとこと（スタイルごと。1号店とシーシャ屋は別） */
+const CLR_SAY = {
+    first: 'ここから、ぜんぶが始まったんだよね。いつ来てもほっとするお店だよ',
+    normal: 'いつものあの棚、いつものあの笑顔。町のみんなの「いつもの」になったね',
+    food: '毎日のごはんを支えてきた、町の台所みたいなお店だったね',
+    toy: '子どもたちの笑い声が、いちばん聞こえるお店だったね',
+    shoes: 'みんなの一歩を応援してきたお店。足どりも軽くなるね',
+    boutique: 'おしゃれな人たちが集まる、町のあこがれのお店になったね',
+    asian: 'いい香りと、遠い国の風が吹いてくるお店だったね',
+    under: 'ちょっとあやしいけど、ファンがいっぱいの名物店だよ',
+    kawaii: 'かわいいものに囲まれて、だれでも笑顔になれるお店だったね',
+    brand: 'ここで買ったものは、きっと一生の宝物になるね',
+    car: 'たくさんの人の、はじめてのドライブを送り出してきたお店だね',
+    tcg: '放課後になると、カードを広げる声でにぎやかだったね',
+    happy: 'その名前のとおり、しあわせを配ってきたお店だね',
+    shisha: 'ゆっくり煙をくゆらせて、夜を楽しむ大人のお店だったね'
+};
+
+/** 日にちの表示（◯ヶ月目・通算◯日） */
+const clrDate = d => (Math.floor((d - 1) / MD) + 1) + 'ヶ月目・通算' + fmt(d) + '日';
+
+/** お店のドット絵（96×60。屋根と日よけはスタイルの色、看板にスタイルの絵文字） */
+function clrShop(cv, s) {
+    const g = cv.getContext('2d'), t = styAlt(s), R = t ? t.r : PXB.r, C = t ? t.c : PXB.c;
+    const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+    r(0, 0, 96, 60, '#1d2b4a');
+    for (let i = 0; i < 18; i++)
+        r((i * 37 + 5) % 96, (i * 13 + 3) % 24, 1, 1, i % 3 ? '#9fb3d9' : '#fff');
+    r(0, 52, 96, 8, '#3b4250');
+    r(0, 52, 96, 1, '#596273');
+    r(16, 18, 64, 34, '#f3ead8');
+    r(16, 18, 64, 2, '#d9cdb4');
+    r(12, 10, 72, 9, R);
+    r(12, 10, 72, 2, 'rgba(255,255,255,.25)');
+    r(30, 4, 36, 9, C);
+    r(31, 5, 34, 7, 'rgba(255,255,255,.18)');
+    for (let i = 0; i < 9; i++)
+        r(14 + i * 8, 20, 8, 5, i % 2 ? '#fff' : C);
+    r(14, 25, 68, 1, 'rgba(0,0,0,.15)');
+    r(22, 30, 26, 16, '#ffe7a6');
+    r(22, 30, 26, 2, '#fff6d2');
+    r(34, 30, 2, 16, R);
+    r(56, 30, 16, 22, R);
+    r(58, 32, 12, 20, '#ffd98a');
+    r(68, 41, 1, 3, '#7a5a44');
+    r(20, 46, 30, 2, R);
+    r(4, 46, 6, 6, '#5aa65a');
+    r(86, 46, 6, 6, '#5aa65a');
+}
+
+/** お店紹介の1枚 */
+function clrSlide(i) {
+    const A = allStores(), s = A[i], L = locOf(s), sh = isShisha(s);
+    const od = i === 0 ? 1 : s.od, kv = (k, v) => '<span>' + k + '</span><b>' + v + '</b>';
+    const say = i === 0 ? CLR_SAY.first : sh ? CLR_SAY.shisha : CLR_SAY[(styAlt(s) || {}).id] || CLR_SAY.normal;
+    const emo = sh ? L.e : styOf(s).e;
+    return '<div class="clrsl"><div class="clrno">' + (i + 1) + '号店 <small>' + (i + 1) + ' / ' + A.length + '</small></div>'
+        + '<div class="clrpx"><canvas width="96" height="60"></canvas><span>' + emo + '</span></div>'
+        + '<div class="clrnm">' + esc(s.sname || (i + 1) + '号店') + '</div>'
+        + '<div class="cokv clrkv">' + kv('場所', L.e + ' ' + L.n) + (sh ? '' : kv('スタイル', styName(s)))
+        + kv('開店日', od ? clrDate(od) : '記録なし') + (od ? kv('営業した日数', fmt(Math.max(1, state.day - od + 1)) + '日') : '')
+        + kv('累計売上', yen(s.tot || 0)) + '</div>'
+        + '<div class="clrsay"><canvas class="clrface" width="32" height="32"></canvas><p>' + say + '</p></div></div>';
+}
+
+/** おしまいの画面 */
+function clrEndHtml() {
+    const c = state.co, D = DF[c.clr.diff] || difficulty(), y = Math.floor(c.clr.day / (MD * 12));
+    return '<div class="clrsl clrend"><canvas class="clrface big" width="32" height="32"></canvas>'
+        + '<div class="clrfin">ちいさなお店<br><b>おしまい</b></div>'
+        + '<div class="meta">' + esc(c.name || '会社') + '・' + D.n + '・' + y + '年・' + allStores().length + '店舗</div>'
+        + '<p>小さな1軒のお店から、ここまで来たね。<br>遊んでくれて、ほんとうにありがとう！</p>'
+        + '<div class="row"><button data-a="clrshare">📤 クリアをシェア</button></div>'
+        + '<button class="big" data-a="clrclose">つづけて遊ぶ</button></div>';
+}
+
+/** お店紹介を始める・次へ進める */
+function clrTour(i) {
+    const el = byId('clrm'), box = el && el.querySelector('.clrtour');
+    if (!box)
+        return;
+    clearTimeout(clrTour.t);
+    const n = allStores().length;
+    clrTour.i = i;
+    el.classList.add('s3');
+    el.scrollLeft = 0;
+    box.hidden = false;
+    if (i >= n) {
+        box.innerHTML = clrEndHtml();
+        tutFace(box.querySelector('.clrface'));
+        return;
+    }
+    box.innerHTML = clrSlide(i) + '<div class="clrnav"><span>タップで次へ</span><button class="alt" data-a="clrskip">スキップ ⏭</button></div>';
+    clrShop(box.querySelector('.clrpx canvas'), allStores()[i]);
+    tutFace(box.querySelector('.clrface'));
+    clrTour.t = setTimeout(() => clrTour(i + 1), 4500);
+}
+
 /** クリア演出を閉じる */
 function clrClose() {
     const el = byId('clrm');
     clrFx.stop();
+    clearTimeout(clrTour.t);
     if (el)
         el.hidden = true;
     render();
@@ -8607,6 +8734,17 @@ document.addEventListener('click', e => {
         clrShare();
     if (a === 'clrshow')
         clrShow();
+    if (a === 'clrtour')
+        clrTour(0);
+    if (a === 'clrskip')
+        clrTour(allStores().length);
+});
+
+// お店紹介はどこをタップしても次へ（ボタンは除く）
+document.addEventListener('click', e => {
+    const box = e.target.closest('.clrtour');
+    if (box && !e.target.closest('button') && !box.querySelector('.clrend'))
+        clrTour(clrTour.i + 1);
 });
 </script>
 <script>
