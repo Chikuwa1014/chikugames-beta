@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<!-- 試作環境：ちいさなお店 v2.2.0（号口へ出す前の確認用） -->
+<!-- 試作環境：ちいさなお店 v2.3.0（号口へ出す前の確認用） -->
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
@@ -1197,7 +1197,7 @@ button.big.rstb.arm {
 }
 
 /* ---- ポップアップ（倒産・甘酒・実績） ---- */
-#ovm, #ama, #achm, #costm, #codash {
+#ovm, #ama, #achm, #costm, #codash, #stym {
   position:fixed;
   inset:0;
   z-index:40;
@@ -1215,7 +1215,7 @@ button.big.rstb.arm {
   z-index:45;
 }
 
-#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden] {
+#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #stym[hidden], #clrm[hidden] {
   display:none;
 }
 
@@ -2451,6 +2451,54 @@ button.dbc.here {
   line-height:16px;
   font-weight:700;
 }
+
+/* ===== v2.3.0 お店のスタイル（styles.js） ===== */
+#stym { z-index:42; }
+.stypv { display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; justify-content:space-between; margin:6px 0 8px; padding:8px 10px; border-radius:12px; background:var(--bg); font-size:12px; color:var(--sub); }
+.styit { font-size:16px; letter-spacing:1px; }
+.stynote { margin:8px 0; }
+.styl { display:grid; gap:8px; margin-top:10px; }
+.styr { display:flex; gap:10px; align-items:center; padding:10px; border:2px solid var(--line); border-radius:14px; background:var(--card); }
+.styr.here { border-color:var(--mint); background:var(--mintl); }
+.styr.lock { opacity:.75; }
+.styr .ste { font-size:26px; flex:none; width:34px; text-align:center; }
+.stx { flex:1; min-width:0; display:grid; gap:1px; font-size:12px; color:var(--sub); }
+.stx b { font-size:14px; color:var(--ink); }
+.stx .styit { font-size:14px; overflow-wrap:anywhere; }
+.styr button { flex:none; padding:8px 12px; font-size:12px; }
+.styr .dbt { flex:none; }
+.adl { gap:8px; margin-top:6px; }
+.adl button { flex:1; line-height:1.3; }
+.adl small, .adrev small { display:block; font-weight:500; font-size:11px; opacity:.85; }
+.adrev { margin-top:10px; background:var(--gold); color:#3a2a00; }
+
+/* ===== v2.3.0 クリア演出（clear.js） ===== */
+#clrm { position:fixed; inset:0; z-index:60; background:rgba(10,22,19,.86); display:flex; align-items:center; justify-content:center; overflow:hidden;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left,0px)); }
+.clrcv { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; }
+.clrband { position:absolute; left:-10%; right:-10%; top:50%; height:150px; margin-top:-75px; z-index:1;
+  background:linear-gradient(90deg, var(--coral) 0%, var(--gold) 50%, var(--mint) 100%); transform:skewY(-7deg); box-shadow:0 10px 40px rgba(0,0,0,.4);
+  animation:clrband .55s cubic-bezier(.2,.9,.3,1.2) both; transition:top .6s ease, height .6s ease, margin-top .6s ease, opacity .6s ease; }
+.clrin { transform:skewY(7deg); height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.25); }
+.clrt { font-size:clamp(44px, 13vw, 84px); font-weight:900; letter-spacing:.04em; line-height:1; animation:clrpop .7s .35s cubic-bezier(.2,1.6,.4,1) both; }
+.clrs { font-size:clamp(15px, 4.4vw, 22px); font-weight:800; margin-top:6px; animation:clrup .5s .8s ease-out both; }
+@keyframes clrband { from { transform:skewY(-7deg) translateX(-110%); } to { transform:skewY(-7deg) translateX(0); } }
+@keyframes clrpop { from { transform:scale(.2) rotate(-12deg); opacity:0; } to { transform:scale(1) rotate(0); opacity:1; } }
+@keyframes clrup { from { transform:translateY(14px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.clrbox { position:relative; z-index:3; max-width:440px; max-height:100%; overflow:auto; opacity:0; transform:translateY(30px); pointer-events:none; transition:opacity .5s ease .2s, transform .5s ease .2s; border-top-color:var(--gold); }
+#clrm.s2 .clrband { top:0; height:96px; margin-top:calc(env(safe-area-inset-top,0px) + 8px); opacity:.0; }
+#clrm.s2 .clrbox { opacity:1; transform:none; pointer-events:auto; }
+.clrhd { display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+.clrhd b { display:block; font-size:20px; font-weight:900; color:var(--coral2); }
+.clrhd span { font-size:13px; color:var(--sub); }
+.clrface { width:48px; height:48px; image-rendering:pixelated; flex:none; background:var(--corall); border-radius:12px; padding:4px; }
+.clrkv { margin:8px 0; }
+.clrst { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px; }
+.clrst span { font-size:12px; font-weight:700; background:var(--bg); border-radius:10px; padding:4px 8px; }
+.clrst small { display:block; font-weight:500; color:var(--sub); }
+.clrbox .row { margin-bottom:8px; }
+.clrbox .row button { flex:1; }
+@media (prefers-reduced-motion:reduce) { .clrband, .clrt, .clrs { animation:none; } .clrbox { transition:none; } }
 </style>
 </head>
 <body>
@@ -2474,6 +2522,7 @@ button.dbc.here {
 <div id="co"></div>
 <div class="card thc" id="thc"></div>
 <div class="card tutc" id="tutc"><b>📖 遊び方</b><div class="meta">ちくわくんが、画面のどこで何をするのかを順に案内します。</div><button class="alt" data-a="tutorial">📖 遊び方を見る</button><button class="alt" data-a="tutco" id="tutcob" hidden>🏢 会社の遊び方を見る</button></div>
+<div class="card clrc" id="clrc" hidden><b>🏆 クリア</b><div class="meta">累計売上1兆円・5店舗・預金1,000億円・営業50年をそろえた記念です。</div><button class="alt" data-a="clrshow">🏆 クリア演出をもう一度見る</button></div>
 <div class="card v1c" id="v1c"><b>🕰 前の画面（ver.1）で遊ぶ</b><div class="meta">v1.5.4 までの見た目で遊べます。セーブは同じなので、どちらの画面でも続きから遊べます（同じ端末・同じアドレスのとき）。</div><a class="v1l" href="./v1/">ver.1 の画面を開く</a></div>
 <div class="card" id="svd"></div><input type="file" id="svf" accept=".json,application/json" hidden>
 <div class="card" id="cgMove"></div>
@@ -3199,6 +3248,113 @@ button.dbc.here {
 </script>
 <script>
 /**
+ * ちくわゲームズ 共通部品 v1 — ad.js（広告。core.js の後に読む）
+ *
+ * リワード広告（最後まで見るとごほうびがもらえる広告）の入り口。AdSense の「ゲーム向け広告（Ad Placement API）」の adBreak を使う。
+ * いまは広告を出していない（CG.ad.on が false）。そのあいだは ready() が false を返すので、ゲームは広告のボタンを出さない。
+ *
+ *   出すとき：CG.ad.on を true にし、CG.ad.client に 'ca-pub-…' を書く（AdSense の許可が降りてから。号口 CLAUDE.md 8 章の外部読み込みの例外）
+ *   開発で試す：URL に ?ad=test を付けて開くと、本物の広告の代わりに「数秒待つだけの仮の広告」が出る（広告サービスは読み込まない）
+ *
+ *   if (CG.ad.ready()) … ボタンを出す
+ *   CG.ad.kinds()                 → 見られる広告の種類 [{ k, n, m }]（m＝ごほうびの倍率。本物の広告は長さを選べないので1種類）
+ *   CG.ad.reward({ kind, name })  → Promise<boolean>（最後まで見たら true、閉じた・広告が無いときは false）
+ */
+(function () {
+    const CG = window.CG || (window.CG = {});
+    const test = /[?&]ad=test\b/.test(location.search);
+
+    /** 仮の広告の種類（?ad=test のときだけ。長いほどごほうびが多い） */
+    const TEST_KINDS = [
+        { k: 'short', n: '短い広告（15秒）', m: 1, sec: 5 },
+        { k: 'long', n: '長い広告（30秒）', m: 2.5, sec: 10 }
+    ];
+    const REAL_KINDS = [{ k: 'std', n: '広告', m: 1 }];
+
+    let loaded = false;
+    /** 広告サービスを読み込む（本物のときだけ・1回だけ） */
+    function load() {
+        if (loaded || !CG.ad.client)
+            return;
+        loaded = true;
+        const s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(CG.ad.client);
+        s.crossOrigin = 'anonymous';
+        s.dataset.adFrequencyHint = '30s';
+        document.head.appendChild(s);
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adBreak = window.adConfig = function (o) { window.adsbygoogle.push(o); };
+        window.adConfig({ preloadAdBreaks: 'on', sound: 'on' });
+    }
+
+    /** 仮の広告（画面を暗くして、数えたら閉じる。途中で閉じると false） */
+    function fake(K) {
+        return new Promise(res => {
+            const o = document.createElement('div');
+            o.setAttribute('role', 'dialog');
+            o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:700 16px system-ui,sans-serif;text-align:center;padding:24px';
+            let n = K.sec;
+            o.innerHTML = '<div style="font-size:13px;opacity:.7">開発用の仮の広告（?ad=test）</div><div style="font-size:42px">📺</div><div>' + K.n + '</div><div data-n style="font-size:28px">' + n + '</div><button type="button" style="font:inherit;padding:8px 18px;border-radius:999px;border:0;background:#fff;color:#222">閉じる（ごほうびなし）</button>';
+            document.body.appendChild(o);
+            const end = ok => {
+                clearInterval(t);
+                o.remove();
+                res(ok);
+            };
+            const t = setInterval(() => {
+                n--;
+                o.querySelector('[data-n]').textContent = n;
+                if (n <= 0)
+                    end(true);
+            }, 1000);
+            o.querySelector('button').onclick = () => end(false);
+        });
+    }
+
+    CG.ad = {
+        /** 広告を出すか（AdSense の許可が降りたら true にする） */
+        on: false,
+        /** AdSense のサイト運営者 ID（'ca-pub-…'）。決まったら書く */
+        client: '',
+        /** 開発用の仮の広告か */
+        test,
+        /** 広告のボタンを出してよいか */
+        ready() {
+            if (test)
+                return true;
+            if (!this.on || !this.client)
+                return false;
+            load();
+            return true;
+        },
+        /** 見られる広告の種類 */
+        kinds() {
+            return test ? TEST_KINDS.map(k => ({ k: k.k, n: k.n, m: k.m })) : REAL_KINDS.slice();
+        },
+        /** リワード広告を見せる。最後まで見たら true */
+        reward(o = {}) {
+            if (!this.ready())
+                return Promise.resolve(false);
+            if (test)
+                return fake(TEST_KINDS.find(k => k.k === o.kind) || TEST_KINDS[0]);
+            return new Promise(res => {
+                let got = false;
+                window.adBreak({
+                    type: 'reward',
+                    name: o.name || 'reward',
+                    beforeReward: show => show(),
+                    adViewed: () => { got = true; },
+                    adDismissed: () => { got = false; },
+                    adBreakDone: () => res(got)
+                });
+            });
+        }
+    };
+})();
+</script>
+<script>
+/**
  * data.js — データ定義（商品・季節・天気・難易度・各種テーブル）。ここは数値の調整だけで済む。
  */
 
@@ -3248,13 +3404,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['2.3.0', '2026-10-30', 'お店のスタイルを追加（12種類）。会社タブで新しいお店を出すときに「お店のスタイル」を選べる：いつものお店やさん・しょくりょうひん店・おもちゃ屋さん・靴屋さん・高級ブティック・アジアンざっかやさん・あんぐらショップ・かわいいやさん・高級ブランドショップ・くるまやさん・トレカショップ・しあわせやさん。スタイルごとに棚に並ぶ12個の商品とアップグレードの名前、よく買うお客さん、来店数、お店の屋根と看板の色が変わる（値段が高いスタイルほどお客さんが少なく、1日の売上はどれも同じくらい）。はじめから選べるのは4つ（いつもの・しょくりょうひん店・おもちゃ屋さん・靴屋さん）。今あるお店（1号店も）は、閉店中に店舗管理の「🎨 スタイル」から改装できる（改装費は出店費の半分。棚の在庫は原価で引き取り、解放した棚とアップグレードの段階は引きつぐ）。熱ばくだんおにぎりなどの商品のイベントは、いつものお店やさんだけ。クリアを追加：全店の累計売上1兆円・5店舗・預金1,000億円・営業50年をそろえると、クリア専用のカットイン（紙吹雪と花火）でお祝い。クリアしたあとも遊び続けられ、設定タブから演出を見直せる。実績に「🏆 クリア」を追加'],
     ['2.2.0', '2026-10-29', 'お店を切り替えても、営業タブのログに前のお店の履歴が残っていた不具合を修正（ログはお店ごとに）。日付の通算を「46ヶ月目（320日）」の表示に。1,000万円以上の金額は千円単位（例：13,964千円）で表示。月末の支払い予想はタップで💵だけに縮められる（縮めた💵をタップすると吹き出しで正確な額、「ひらく」で元に戻す）。会社タブに「🏪 お店のダッシュボード」（全店の今日・今月・先月の売上、月の固定費、先月比と在庫のバー。カードを押すとその店へ）。会社の遊び方（ちくわくんの案内6場面。店長を雇った直後か、会社タブを初めて開いたときに1回だけ。設定タブから見直せる）。預金を預けた・引き出したら、金額のスライダーを0に戻す。スマホで画面の拡大・縮小（ピンチ・ダブルタップ）をしないように'],
     ['2.1.0', '2026-10-29', '店長・会社・複数のお店を追加。1号店が棚10台・広告Lv18・店員1人以上になり、お金がそろうと、投資タブに「👔 店長を雇う」（店長を雇ってオーナーになる）が出る。雇うと「🏢 会社」タブが出て、屋号と資本金を決めて会社を設立できる。会社では資本金の増資（店舗数と全店の売上で解放。資本金が大きいほど取引先が飲食店・小売店・製造業・金融業と上がり、取引の額が増える）、会社方針（安定経営・攻めの営業・大口狙い・地域密着で取引収入の入り方が変わる）、店舗管理（店の名前・店へ行く）、新しいお店を出す（出店場所は郊外・繁華街・高級住宅街・デパート・駅ナカ、すべてに出すとシーシャ屋が解放）、会社のステータス（売上の推移・景気・経営指標のダッシュボード）ができる。会社を設立すると景気の波が来る（株価の動きをもとにした景気循環で、お客さんの数が増減）。出店場所ごとに、来店数・治安・テナント料・災害・売れやすい品と、店の絵（ネオンのビル街・お屋敷・デパートの中・改札口と電車・むらさきの看板と少し煙っぽい店内）が変わる'],
     ['2.0.0', '2026-10-28', '見た目を一新（ミント×コーラルのカジュアル・モダンなデザイン）。丸ゴシックの文字、丸みとやわらかい影のカード、ピル型のボタン。店の絵をドット絵のまま描き直し（なめらかな空・丸い雲・🌲の形の木・パステルの街並み・ミントの屋根とコーラルの看板のお店・夜は看板に明かり）、画面の端まで広げた。店の絵は解像度を2倍にして描き込みを増やし（屋根がわら・壁の板・れんがの腰板・窓わくと光の筋・ドアの取っ手・看板のびょう・植木鉢の花・道路のアスファルト）、人の顔を大きくして表情を9種類に（ふつう〈まばたき〉・にっこり・大よろこび・がっかり・かなしい・おどろき・ねむい・おこり・にやり）。設定タブで「イメージカラー」を6色（ミント×コーラル・さくら・そら・ちくわ色・ぶどう・モノクロ）から選べる（画面とお店の屋根・看板の色が変わる。端末ごとに保存）。所持金は大きなカード、難易度・季節・日付・天気はチップで表示。タブは画面の下に固定（上のふちの取っ手で、せり下げて隠す・せり上げて出す。隠したかどうかは端末が覚える）、一時停止・倍速は店の絵の右下へ。PC・タブレット（幅900px以上）は2列（左に店の絵・時計・ゲージ、右にタブの中身）、陳列棚・投資は幅に合わせて3列・2列に。遊び方（チュートリアル）を追加：画面を暗くして説明する場所だけ光らせ、ちくわくんが10場面で案内し、初めての人は続けて1日目（開業→補充→開店→営業→閉店後）を実際にいっしょに進める（最初に難易度を選んだ直後に1回だけ。「すべてスキップ」で飛ばせ、難易度えらびの画面のチェックで表示しないこともできる。設定タブの「📖 遊び方を見る」で説明だけ見直せる）。ゲームの内容・数値・セーブはそのまま（今のセーブで続きから遊べる）。前の見た目で遊びたい人のために、ver.1 の画面を残した（設定タブの「🕰 前の画面（ver.1）で遊ぶ」）'],
@@ -3528,6 +3685,9 @@ let themeId = 'mint';
 /** お店の絵の色（pixel.js が読む）。r＝屋根・腰板・窓わく、c＝看板・日よけ */
 const PXT = { r: '#2fbf97', c: '#ff7a68' };
 
+/** イメージカラーのお店の色（スタイルの店は drawPx がスタイルの色に入れ替え、いつものに戻すときはこれを使う。v2.3.0〜） */
+const PXB = { r: '#2fbf97', c: '#ff7a68' };
+
 /** HSL を #rrggbb にする */
 function hslHex(h, s, l) {
     s /= 100;
@@ -3553,8 +3713,8 @@ const themeDark = () => {
 function themeApply(id) {
     const T = THEMES.find(t => t.id === id) || THEMES[0], st = document.documentElement.style;
     themeId = T.id;
-    PXT.r = T.m;
-    PXT.c = T.id === 'mono' ? '#4a525c' : T.c;
+    PXT.r = PXB.r = T.m;
+    PXT.c = PXB.c = T.id === 'mono' ? '#4a525c' : T.c;
     const names = ['--bg', '--bg2', '--card', '--ink', '--sub', '--line', '--mint', '--mint2', '--mintl', '--mintg', '--coral', '--coral2', '--coral3', '--corall', '--tag', '--tagink', '--ok', '--bar', '--cg-accent'];
     names.forEach(n => st.removeProperty(n));
     if (T.id === 'mint')
@@ -3825,7 +3985,8 @@ const sickP = h => h >= 80 ? 0 : h >= 50 ? 0.05 : h >= 35 ? 0.1 : h >= 15 ? 0.15
 const upCost = (id, L) => r100(PRODUCTS[id].b * 15 * Math.pow(1.8, L));
 
 /** 客の性別による商品の買いやすさ */
-const gf = (id, g) => isShisha() ? 1 : (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
+// スタイルの店は、スタイルの「よく買う人」（m 男性・f 女性が2.5倍、もう片方は0.5倍。v2.3.0〜）
+const gf = (id, g) => isShisha() ? 1 : styAlt() ? ({ m: g ? 0.5 : 2.5, f: g ? 2.5 : 0.5 }[styAlt().items[id].g] || 1) : (id === 6 || id === 9) ? (g ? 0.5 : 2.5) : (id === 5 || id === 7) ? (g ? 2.5 : 0.5) : 1;
 
 /** アップグレードと原価変動を商品へ反映 */
 function applyUp() {
@@ -3956,7 +4117,8 @@ function openEv() {
 
 /** 最終段階の商品によるイベント抽選 */
 function rollProd() {
-    if (isShisha())
+    // シーシャ屋と、いつもの以外のスタイルでは起きない（新しいスタイルのイベントは保留。v2.3.0〜）
+    if (isShisha() || styAlt())
         return;
     const R = Math.random, on = id => state.up[id] === 7 && state.shelf.some(s => s && s.id === id);
     if (on(0) && R() < 0.02) {
@@ -4185,7 +4347,7 @@ function rollEvents() {
  */
 
 /** 店ごとに持つ状態のキー（切り替えのとき、出し入れする） */
-const STK = ['sname', 'loc', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
+const STK = ['sname', 'loc', 'sty', 'mgr', 'qual', 'slots', 'cap', 'ad', 'clerk', 'own', 'shelf', 'sold', 'miss', 'gauge', 'boost', 'mSales', 'tot', 'margin', 'feeMul', 'up', 'sd', 'cm', 'fem', 'rb', 'flame', 'sk', 'dn', 'sl', 'ss', 'sb', 'clean', 'prev', 'msl', 'mWage', 'pays', 'boom', 'mbDay', 'openH', 'closeH', 'bad', 'dRev', 'dSold', 'dMiss', 'dWage', 'gm', 'gu', 'slotQ', 'dM', 'dF', 'cleanDay', 'log'];
 
 /** 店長の採用費と月給 */
 const MGR_HIRE = 500000, MGR_SAL = 300000;
@@ -4288,12 +4450,15 @@ const locOf = (s = state) => LOCS[s.loc] || LOCS.suburb;
 
 /** 出店場所の倍率（来店数には景気もかける） */
 const locF = k => locOf()[k];
-const coCust = () => locF('cust') * econ();
+const coCust = () => locF('cust') * econ() * styCust();
 
 /** 商品の売れやすさ（出店場所） */
 const locPref = id => {
-    const f = locOf().pref;
-    return f ? f(id) : 1;
+    const f = locOf().pref, t = styOf();
+    // 駅ナカの「飲食物と雑誌」は、いつもの・しょくりょうひん店だけ（番号で決まっているため。v2.3.0〜）
+    if (!f || (state.loc === 'station' && !(t && (t.id === 'normal' || t.id === 'food'))))
+        return 1;
+    return f(id);
 };
 
 /** シーシャ屋か */
@@ -4303,17 +4468,19 @@ const isShisha = (s = state) => locOf(s).kind === 'shisha';
 const kindN = () => isShisha() ? FLAV.length : PRODUCTS.length;
 
 /** アップグレード後の名前（L＝1〜7） */
-const upName = (i, L) => isShisha() && i < FLAV.length ? FLAV[i].n + '・' + FLUP[L - 1] : NM[i][L - 1];
+const upName = (i, L) => isShisha() && i < FLAV.length ? FLAV[i].n + '・' + FLUP[L - 1] : styAlt() ? styAlt().items[i].up[L - 1] : NM[i][L - 1];
 
 /** 元の商品の定義（シーシャ屋から戻すときに使う） */
 let PDEF = null;
 
-/** いまの店の扱う品を PRODUCTS に反映する（シーシャ屋はフレーバー） */
+/** いまの店の扱う品を PRODUCTS に反映する（シーシャ屋はフレーバー、スタイルの店はスタイルの商品。styles.js） */
 function applyKind() {
     if (!PDEF)
         PDEF = PRODUCTS.map(p => ({ n0: p.n0 || p.n, e: p.e, b: p.b || p.c, p: p.p, u: p.u }));
     PRODUCTS.forEach((p, i) => {
-        const d = isShisha() && i < FLAV.length ? { n0: FLAV[i].n, e: FLAV[i].e, b: FLAV[i].c, p: Math.round(FLAV[i].c * 1.7), u: FLAV[i].u } : PDEF[i];
+        const t = styAlt(), q = t && t.items[i];
+        const d = isShisha() && i < FLAV.length ? { n0: FLAV[i].n, e: FLAV[i].e, b: FLAV[i].c, p: Math.round(FLAV[i].c * 1.7), u: FLAV[i].u }
+            : q ? { n0: q.n, e: q.e, b: q.c, p: Math.round(q.c * 1.7), u: PDEF[i].u } : PDEF[i];
         Object.assign(p, d);
     });
     applyUp();
@@ -4365,10 +4532,10 @@ const partner = () => {
 const pickStore = s => JSON.parse(JSON.stringify(STK.reduce((o, k) => (o[k] = s[k], o), {})));
 
 /** 新しいお店（ちいさなお店の初期状態。店長つき） */
-function newStore(name, loc) {
+function newStore(name, loc, sty) {
     const f = fresh(), s = pickStore(f);
     s.log = [];
-    Object.assign(s, { sname: name, loc, mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
+    Object.assign(s, { sname: name, loc, sty: loc === 'shisha' ? 'normal' : sty || 'normal', mgr: true, qual: false, margin: difficulty().mg, shelf: [{ id: 0, st: 0 }, { id: 1, st: 0 }], prev: null, msl: [], mSales: 0, tot: 0 });
     return s;
 }
 
@@ -4438,21 +4605,24 @@ function capUp() {
 const shishaOpen = () => ['suburb', 'downtown', 'uptown', 'dept', 'station'].every(k => (state.co.seen || []).includes(k));
 
 /** 新しいお店を出す */
-function coOpen(name, loc) {
+function coOpen(name, loc, sty) {
     const c = state.co, L = LOCS[loc];
     if (!c || !c.est || !L || state.phase !== 'closed' || state.over || storeSlots() < 1)
         return;
     if (loc === 'shisha' && !shishaOpen())
+        return;
+    if (loc !== 'shisha' && !styOpen().includes(sty || 'normal'))
         return;
     name = String(name || '').trim().slice(0, 16) || (allStores().length + 1) + '号店';
     if (state.money < L.cost)
         return CG.toast('出店費が足りません', 2000);
     state.money -= L.cost;
     state.stores[state.cur] = pickStore(state);
-    state.stores.push(newStore(name, loc));
+    state.stores.push(newStore(name, loc, sty));
     if (!c.seen.includes(loc))
         c.seen.push(loc);
-    addEvent('🎉 ' + L.e + ' ' + L.n + 'に「' + name + '」を出店しました（出店費' + yen(L.cost) + '）。店舗管理から行けます');
+    c.sdraft = '';
+    addEvent('🎉 ' + L.e + ' ' + L.n + 'に「' + name + '」を出店しました（' + (loc === 'shisha' ? '' : styName(state.stores.at(-1)) + '・') + '出店費' + yen(L.cost) + '）。店舗管理から行けます');
     render();
     save();
 }
@@ -4464,7 +4634,7 @@ function coSwitch(i) {
         return;
     S[state.cur] = pickStore(state);
     // 営業タブのログもお店ごと（v2.2.0〜。v2.1.0 のセーブの店には無いので空から）
-    Object.assign(state, { log: [] }, JSON.parse(JSON.stringify(S[i])));
+    Object.assign(state, { log: [], sty: 'normal' }, JSON.parse(JSON.stringify(S[i])));
     state.cur = i;
     applyKind();
     fill();
@@ -4497,17 +4667,13 @@ function coBgDay(s) {
         return;
     }
     // 商品の原価と売値（シーシャ屋はフレーバー。アップグレードも反映）
-    const shi = isShisha(s);
-    const pc = id => {
-        const b = shi && id < FLAV.length ? FLAV[id].c : (PDEF ? PDEF[id].b : PRODUCTS[id].b);
-        return Math.round(b * (1 + 0.4 * (s.up[id] || 0)) * (s.cm ? s.cm[id] : 1));
-    };
+    const pc = id => Math.round(baseCost(s, id) * (1 + 0.4 * (s.up[id] || 0)) * (s.cm ? s.cm[id] : 1));
     const pp = id => Math.max(pc(id) + 1, Math.round(pc(id) / (1 - s.margin / 100)));
     const tk = (s.closeH - s.openH) * 5;
     const df = Math.min(1.6, Math.max(0.5, 1 - (s.margin - 40) * 0.015));
-    const rate = (0.35 + 0.18 * s.ad + 0.08 * sh.length) * pwr(state.day) * econ() * L.cust * df * Math.pow(1.2, (s.pays || []).length) * difficulty().cust;
+    const rate = (0.35 + 0.18 * s.ad + 0.08 * sh.length) * pwr(state.day) * econ() * L.cust * styCust(s) * df * Math.pow(1.2, (s.pays || []).length) * difficulty().cust;
     const cust = rate * tk * (0.85 + 0.3 * R());
-    const wt = sh.map(t => Math.pow(80 / pc(t.id), 0.6) * (L.pref ? L.pref(t.id) : 1)), W = wt.reduce((a, b) => a + b, 0);
+    const st = styOf(s), wt = sh.map(t => Math.pow(80 / pc(t.id), 0.6) * (L.pref && !(s.loc === 'station' && !(st && (st.id === 'normal' || st.id === 'food'))) ? L.pref(t.id) : 1)), W = wt.reduce((a, b) => a + b, 0);
     const e = Math.max(0, (s.sk || 0) - (s.dn || 0)), amt = e >= 10 ? 1e9 : 5 * Math.pow(2, e);
     const sold = Math.round(Math.min(cust * (1.25 + 0.05 * s.ad), sh.length * s.cap + Math.max(1, s.clerk) * amt * tk * 0.3));
     let rev = 0, cg = 0;
@@ -4645,16 +4811,16 @@ function coRender() {
     h += '<div class="card"><b>🏪 店舗管理</b><div class="meta">店主（あなた）がいる店は、今までどおり遊べます。ほかの店は店長が営業します（店員の補充・投資は、その店へ行って行います）。店へ行けるのは閉店後です。</div><div class="stl">'
         + A.map((s, i) => {
             const L = locOf(s), here = i === (state.cur || 0), st = here ? '🙋 ここにいます' : (s.mgr || s.clerk > 0) ? '👔 店長が営業中' : '💤 休業中（店員なし）';
-            return '<div class="sti' + (here ? ' here' : '') + '"><div class="stn"><span class="ste">' + L.e + '</span><div><b>' + esc(s.sname || (i + 1) + '号店') + '</b><div class="meta">' + L.n + '・棚' + s.slots + '・広告Lv' + s.ad + '・店員' + s.clerk + '人・先月' + yen(s.prev || 0) + '</div><div class="meta">' + st + '</div></div></div><div class="btns"><button class="alt" data-a="coren" data-i="' + i + '">名前</button>' + (here ? '' : '<button data-a="cogo" data-i="' + i + '"' + dis(true) + '>この店へ行く</button>') + '</div></div>';
+            return '<div class="sti' + (here ? ' here' : '') + '"><div class="stn"><span class="ste">' + L.e + '</span><div><b>' + esc(s.sname || (i + 1) + '号店') + '</b><div class="meta">' + L.n + '・' + styName(s) + '・棚' + s.slots + '・広告Lv' + s.ad + '・店員' + s.clerk + '人・先月' + yen(s.prev || 0) + '</div><div class="meta">' + st + '</div></div></div><div class="btns"><button class="alt" data-a="coren" data-i="' + i + '">名前</button>' + (isShisha(s) ? '' : '<button class="alt" data-a="costy" data-i="' + i + '">🎨 スタイル</button>') + (here ? '' : '<button data-a="cogo" data-i="' + i + '"' + dis(true) + '>この店へ行く</button>') + '</div></div>';
         }).join('') + '</div></div>';
     // 新しいお店を出す
     const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
     h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
-        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店"></label>'
+        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"></label>'
         + '<div class="locl">' + locs.map(k => {
             const L = LOCS[k];
             return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
-        }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>'
+        }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>' + styPick()
         + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>';
     if (h !== coHtml)
         el.innerHTML = coHtml = h;
@@ -4782,7 +4948,8 @@ document.addEventListener('click', e => {
     }
     if (a === 'coopen') {
         const r = document.querySelector('input[name="loc"]:checked');
-        coOpen(byId('sname').value, r ? r.value : 'suburb');
+        const y = byId('ssty');
+        coOpen(byId('sname').value, r ? r.value : 'suburb', y ? y.value : 'normal');
     }
     if (a === 'costat')
         coStat(true);
@@ -4804,12 +4971,355 @@ document.addEventListener('change', e => {
         addLog('🧭 会社方針を「' + (POLS.find(p => p.k === t.value) || POLS[0]).n + '」にしました。');
         save();
     }
-    if (t.name === 'loc' && state.co)
+    if (t.name === 'loc' && state.co) {
         state.co.lsel = t.value;
+        render();
+    }
 });
 document.addEventListener('input', e => {
     if (e.target.id === 'coname' && state.co)
         state.co.draft = e.target.value;
+    if (e.target.id === 'sname' && state.co)
+        state.co.sdraft = e.target.value;
+});
+</script>
+<script>
+/**
+ * styles.js — お店のスタイル（v2.3.0〜）。company.js の後、actions.js の前に読む。
+ *
+ * お店ごとにスタイルを1つ持ち（店の項目 sty。無いときは「いつものお店やさん」）、棚に並ぶ12個の商品・アップグレード名・
+ * よく買う人・来店数・店の絵の屋根と看板の色を入れ替える。中身は 2026-10-29 に開発者がスタイルビルダーで確かめた12スタイル。
+ * 新しいお店を出すとき（会社タブ）に選び、閉店中なら店舗管理から変えられる（改装費＝その出店場所の出店費の半分）。
+ * シーシャ屋はフレーバーのお店なので、スタイルは選べない。
+ * はじめから選べるのは STY_INIT の4つ。残りは広告を見て1つずつ解放する（1日1回まで。広告が出ていないあいだは解放できない）。
+ * 最終段階の商品のイベント（熱ばくだんおにぎりの爆発など）は「いつもの」だけ（新しいスタイルのイベントは保留）。
+ */
+
+/** スタイルの一覧。items の並びは棚の解放順（安い順）。g：よく買う人（m 男性・f 女性・a みんな）、up：アップグレード7段階の名前、cust：来店数の倍率 */
+const STYLES = [
+    { id: 'normal', n: 'いつものお店やさん', e: '🏪', d: 'はじめのお店と同じ。なんでも少しずつ', r: '#2fbf97', c: '#ff7a68', cust: 1, items: [
+        { e: '🍙', n: 'おにぎり', c: 80, g: 'a', up: 'しおむすび/うめ/こんぶ/しぐれ/ツナマヨ/めんたいこ/熱ばくだん'.split('/') },
+        { e: '🍵', n: 'のみもの', c: 100, g: 'a', up: 'おいちい水/炭酸水/むぎ茶/緑茶/ジャスミン茶/烏龍茶/黒烏龍茶'.split('/') },
+        { e: '🍫', n: 'おかし', c: 150, g: 'a', up: 'ガム/太郎/タラタラ/カリカリ梅/板チョコ/ポテチ/硬バナナ'.split('/') },
+        { e: '✏️', n: '文房具', c: 220, g: 'a', up: 'えんぴつ/消しゴム/シャーペン/ボールペン/サインペン/ミリペン/ダイヤモンド万年筆'.split('/') },
+        { e: '📖', n: '雑誌', c: 350, g: 'a', up: '新聞/ビッグイシュー/なかおし/コリコリコミック/チンピャオン/アンアン/週刊春芸'.split('/') },
+        { e: '💄', n: '化粧品', c: 700, g: 'f', up: 'リップクリーム/日焼け止め/ファンデーション/ボディローション/乳液/化粧水/エクセレント香水'.split('/') },
+        { e: '🎧', n: 'イヤホン', c: 1600, g: 'm', up: '機内配布用/100均/無名メーカー/オーディオマテニカ/パナソニー/坊主/アップレ'.split('/') },
+        { e: '🌾', n: '米袋', c: 1800, g: 'f', up: '古古米/玄米/ブレンド米/あきたこまち/つや姫/ひとめぼれ/魚沼産コシヒカリ'.split('/') },
+        { e: '💪', n: '健康食品', c: 3000, g: 'a', up: 'ミルワーム/ざざ虫/えんどう豆/豆乳/ささみ/ホエイ/ザマス'.split('/') },
+        { e: '⌚', n: '腕時計', c: 4200, g: 'm', up: 'キッチンタイマー/目覚まし時計/懐中時計/ハチズン/アップレウォッチ/グランドサイコー/ロリックス'.split('/') },
+        { e: '📱', n: 'スマートフォン', c: 48000, g: 'a', up: '石版/文鎮/中古アンドロイド/新品アンドロイド/エクシペリア/アイピョン/AIスマートグラス'.split('/') },
+        { e: '🛴', n: '乗り物', c: 90000, g: 'a', up: 'ヒーリーズ/インラインスケート/スケボー/キックボード/ママチャリ/ロードバイク/電動キックボード'.split('/') }
+    ] },
+    { id: 'food', n: 'しょくりょうひん店', e: '🥬', d: '食べ物と飲み物だけ。毎日売れる', r: '#5aa65a', c: '#ffb13b', cust: 0.93, items: [
+        { e: '🍞', n: 'パン', c: 90, g: 'a', up: '8枚切り/7枚切り/6枚切り/あんぱん/ナン/かたパン/なま食感パン'.split('/') },
+        { e: '🥛', n: '牛乳', c: 120, g: 'a', up: '白絵の具水/脱脂粉乳/すっきり牛乳/のどごし牛乳/こってり牛乳/銭湯の牛乳/生搾り牛乳'.split('/') },
+        { e: '🥚', n: 'たまご', c: 170, g: 'f', up: 'うずらのたまご/ちゃぼのたまご/あかたまご/高級たまご/温泉たまご/うこっけい/ダチョウの卵'.split('/') },
+        { e: '🥬', n: 'やさい', c: 240, g: 'f', up: 'カット野菜/パセリ/だいこん/にんじん/キャベツ/濃厚ケール/スペシャルすいか'.split('/') },
+        { e: '🥩', n: 'お肉', c: 450, g: 'a', up: 'お手ごろお肉/定番お肉/人気のお肉/限定お肉/プレミアムお肉/職人のお肉/伝説のお肉'.split('/') },
+        { e: '🐟', n: 'お魚', c: 800, g: 'f', up: 'お手ごろお魚/定番お魚/人気のお魚/限定お魚/プレミアムお魚/職人のお魚/伝説のお魚'.split('/') },
+        { e: '🍚', n: 'お米', c: 1500, g: 'f', up: 'お手ごろお米/定番お米/人気のお米/限定お米/プレミアムお米/職人のお米/伝説のお米'.split('/') },
+        { e: '🧀', n: 'チーズ', c: 1900, g: 'a', up: 'お手ごろチーズ/定番チーズ/人気のチーズ/限定チーズ/プレミアムチーズ/職人のチーズ/伝説のチーズ'.split('/') },
+        { e: '🍷', n: 'ワイン', c: 3200, g: 'm', up: 'お手ごろワイン/定番ワイン/人気のワイン/限定ワイン/プレミアムワイン/職人のワイン/伝説のワイン'.split('/') },
+        { e: '🍈', n: '高級メロン', c: 4500, g: 'a', up: 'お手ごろ高級メロン/定番高級メロン/人気の高級メロン/限定高級メロン/プレミアム高級メロン/職人の高級メロン/伝説の高級メロン'.split('/') },
+        { e: '🐄', n: '黒毛和牛', c: 42000, g: 'm', up: 'お手ごろ黒毛和牛/定番黒毛和牛/人気の黒毛和牛/限定黒毛和牛/プレミアム黒毛和牛/職人の黒毛和牛/伝説の黒毛和牛'.split('/') },
+        { e: '🍣', n: '本マグロ', c: 85000, g: 'm', up: 'お手ごろ本マグロ/定番本マグロ/人気の本マグロ/限定本マグロ/プレミアム本マグロ/職人の本マグロ/伝説の本マグロ'.split('/') }
+    ] },
+    { id: 'toy', n: 'おもちゃ屋さん', e: '🧸', d: 'ミニカー・プラモ・フィギュア。子どもも大人も', r: '#3a9fe0', c: '#ffcf3a', cust: 1, items: [
+        { e: '🫧', n: 'シャボン玉', c: 80, g: 'a', up: 'お手ごろシャボン玉/定番シャボン玉/人気のシャボン玉/限定シャボン玉/プレミアムシャボン玉/職人のシャボン玉/伝説のシャボン玉'.split('/') },
+        { e: '🪀', n: 'ヨーヨー', c: 110, g: 'a', up: 'お手ごろヨーヨー/定番ヨーヨー/人気のヨーヨー/限定ヨーヨー/プレミアムヨーヨー/職人のヨーヨー/伝説のヨーヨー'.split('/') },
+        { e: '🚗', n: 'ミニカー', c: 180, g: 'm', up: 'お手ごろミニカー/定番ミニカー/人気のミニカー/限定ミニカー/プレミアムミニカー/職人のミニカー/伝説のミニカー'.split('/') },
+        { e: '🧸', n: 'ぬいぐるみ', c: 250, g: 'f', up: 'お手ごろぬいぐるみ/定番ぬいぐるみ/人気のぬいぐるみ/限定ぬいぐるみ/プレミアムぬいぐるみ/職人のぬいぐるみ/伝説のぬいぐるみ'.split('/') },
+        { e: '🧩', n: 'パズル', c: 400, g: 'a', up: 'お手ごろパズル/定番パズル/人気のパズル/限定パズル/プレミアムパズル/職人のパズル/伝説のパズル'.split('/') },
+        { e: '✈️', n: 'プラモデル', c: 800, g: 'm', up: 'お手ごろプラモデル/定番プラモデル/人気のプラモデル/限定プラモデル/プレミアムプラモデル/職人のプラモデル/伝説のプラモデル'.split('/') },
+        { e: '🎲', n: 'ボードゲーム', c: 1500, g: 'a', up: 'お手ごろボードゲーム/定番ボードゲーム/人気のボードゲーム/限定ボードゲーム/プレミアムボードゲーム/職人のボードゲーム/伝説のボードゲーム'.split('/') },
+        { e: '🦸', n: 'フィギュア', c: 1900, g: 'm', up: 'お手ごろフィギュア/定番フィギュア/人気のフィギュア/限定フィギュア/プレミアムフィギュア/職人のフィギュア/伝説のフィギュア'.split('/') },
+        { e: '🏎️', n: 'ラジコン', c: 3000, g: 'm', up: 'お手ごろラジコン/定番ラジコン/人気のラジコン/限定ラジコン/プレミアムラジコン/職人のラジコン/伝説のラジコン'.split('/') },
+        { e: '🏠', n: 'ドールハウス', c: 4300, g: 'f', up: 'お手ごろドールハウス/定番ドールハウス/人気のドールハウス/限定ドールハウス/プレミアムドールハウス/職人のドールハウス/伝説のドールハウス'.split('/') },
+        { e: '🎮', n: 'ゲーム機', c: 45000, g: 'm', up: 'お手ごろゲーム機/定番ゲーム機/人気のゲーム機/限定ゲーム機/プレミアムゲーム機/職人のゲーム機/伝説のゲーム機'.split('/') },
+        { e: '🚂', n: '鉄道模型セット', c: 90000, g: 'm', up: 'お手ごろ鉄道模型セット/定番鉄道模型セット/人気の鉄道模型セット/限定鉄道模型セット/プレミアム鉄道模型セット/職人の鉄道模型セット/伝説の鉄道模型セット'.split('/') }
+    ] },
+    { id: 'shoes', n: '靴屋さん', e: '👟', d: 'スニーカー・サンダル・革靴', r: '#7a5a44', c: '#f2a65a', cust: 0.9, items: [
+        { e: '🧦', n: 'くつ下', c: 90, g: 'a', up: 'お手ごろくつ下/定番くつ下/人気のくつ下/限定くつ下/プレミアムくつ下/職人のくつ下/伝説のくつ下'.split('/') },
+        { e: '🪢', n: 'くつひも', c: 120, g: 'a', up: 'お手ごろくつひも/定番くつひも/人気のくつひも/限定くつひも/プレミアムくつひも/職人のくつひも/伝説のくつひも'.split('/') },
+        { e: '🧴', n: '靴みがき', c: 200, g: 'm', up: 'お手ごろ靴みがき/定番靴みがき/人気の靴みがき/限定靴みがき/プレミアム靴みがき/職人の靴みがき/伝説の靴みがき'.split('/') },
+        { e: '🩴', n: 'ビーチサンダル', c: 350, g: 'a', up: 'お手ごろビーチサンダル/定番ビーチサンダル/人気のビーチサンダル/限定ビーチサンダル/プレミアムビーチサンダル/職人のビーチサンダル/伝説のビーチサンダル'.split('/') },
+        { e: '👟', n: '上ばき', c: 600, g: 'a', up: 'お手ごろ上ばき/定番上ばき/人気の上ばき/限定上ばき/プレミアム上ばき/職人の上ばき/伝説の上ばき'.split('/') },
+        { e: '👠', n: 'パンプス', c: 1200, g: 'f', up: 'お手ごろパンプス/定番パンプス/人気のパンプス/限定パンプス/プレミアムパンプス/職人のパンプス/伝説のパンプス'.split('/') },
+        { e: '👟', n: 'スニーカー', c: 1700, g: 'a', up: 'お手ごろスニーカー/定番スニーカー/人気のスニーカー/限定スニーカー/プレミアムスニーカー/職人のスニーカー/伝説のスニーカー'.split('/') },
+        { e: '🥾', n: '登山靴', c: 2000, g: 'm', up: 'お手ごろ登山靴/定番登山靴/人気の登山靴/限定登山靴/プレミアム登山靴/職人の登山靴/伝説の登山靴'.split('/') },
+        { e: '👢', n: 'ブーツ', c: 3200, g: 'f', up: 'お手ごろブーツ/定番ブーツ/人気のブーツ/限定ブーツ/プレミアムブーツ/職人のブーツ/伝説のブーツ'.split('/') },
+        { e: '👞', n: '革靴', c: 4500, g: 'm', up: 'お手ごろ革靴/定番革靴/人気の革靴/限定革靴/プレミアム革靴/職人の革靴/伝説の革靴'.split('/') },
+        { e: '✨', n: '限定スニーカー', c: 46000, g: 'm', up: 'お手ごろ限定スニーカー/定番限定スニーカー/人気の限定スニーカー/限定限定スニーカー/プレミアム限定スニーカー/職人の限定スニーカー/伝説の限定スニーカー'.split('/') },
+        { e: '👑', n: 'オーダーメイド靴', c: 92000, g: 'a', up: 'お手ごろオーダーメイド靴/定番オーダーメイド靴/人気のオーダーメイド靴/限定オーダーメイド靴/プレミアムオーダーメイド靴/職人のオーダーメイド靴/伝説のオーダーメイド靴'.split('/') }
+    ] },
+    { id: 'boutique', n: '高級ブティック', e: '👗', d: 'おしゃれな服・靴・鞄', r: '#2f353d', c: '#e8709a', cust: 0.55, items: [
+        { e: '🎀', n: 'ヘアアクセ', c: 150, g: 'f', up: 'お手ごろヘアアクセ/定番ヘアアクセ/人気のヘアアクセ/限定ヘアアクセ/プレミアムヘアアクセ/職人のヘアアクセ/伝説のヘアアクセ'.split('/') },
+        { e: '🤍', n: 'ハンカチ', c: 220, g: 'a', up: 'お手ごろハンカチ/定番ハンカチ/人気のハンカチ/限定ハンカチ/プレミアムハンカチ/職人のハンカチ/伝説のハンカチ'.split('/') },
+        { e: '🧦', n: 'ソックス', c: 320, g: 'a', up: 'お手ごろソックス/定番ソックス/人気のソックス/限定ソックス/プレミアムソックス/職人のソックス/伝説のソックス'.split('/') },
+        { e: '👕', n: 'Tシャツ', c: 550, g: 'a', up: 'お手ごろTシャツ/定番Tシャツ/人気のTシャツ/限定Tシャツ/プレミアムTシャツ/職人のTシャツ/伝説のTシャツ'.split('/') },
+        { e: '🧣', n: 'スカーフ', c: 950, g: 'f', up: 'お手ごろスカーフ/定番スカーフ/人気のスカーフ/限定スカーフ/プレミアムスカーフ/職人のスカーフ/伝説のスカーフ'.split('/') },
+        { e: '👚', n: 'ブラウス', c: 1700, g: 'f', up: 'お手ごろブラウス/定番ブラウス/人気のブラウス/限定ブラウス/プレミアムブラウス/職人のブラウス/伝説のブラウス'.split('/') },
+        { e: '👖', n: 'デニム', c: 2800, g: 'a', up: 'お手ごろデニム/定番デニム/人気のデニム/限定デニム/プレミアムデニム/職人のデニム/伝説のデニム'.split('/') },
+        { e: '🧥', n: 'ジャケット', c: 3600, g: 'm', up: 'お手ごろジャケット/定番ジャケット/人気のジャケット/限定ジャケット/プレミアムジャケット/職人のジャケット/伝説のジャケット'.split('/') },
+        { e: '👠', n: 'ハイヒール', c: 5200, g: 'f', up: 'お手ごろハイヒール/定番ハイヒール/人気のハイヒール/限定ハイヒール/プレミアムハイヒール/職人のハイヒール/伝説のハイヒール'.split('/') },
+        { e: '👜', n: 'ハンドバッグ', c: 7200, g: 'f', up: 'お手ごろハンドバッグ/定番ハンドバッグ/人気のハンドバッグ/限定ハンドバッグ/プレミアムハンドバッグ/職人のハンドバッグ/伝説のハンドバッグ'.split('/') },
+        { e: '👗', n: 'イブニングドレス', c: 62000, g: 'f', up: 'お手ごろイブニングドレス/定番イブニングドレス/人気のイブニングドレス/限定イブニングドレス/プレミアムイブニングドレス/職人のイブニングドレス/伝説のイブニングドレス'.split('/') },
+        { e: '🧥', n: 'カシミヤのコート', c: 120000, g: 'a', up: 'お手ごろカシミヤのコート/定番カシミヤのコート/人気のカシミヤのコート/限定カシミヤのコート/プレミアムカシミヤのコート/職人のカシミヤのコート/伝説のカシミヤのコート'.split('/') }
+    ] },
+    { id: 'asian', n: 'アジアンざっかやさん', e: '🪷', d: 'お香・スパイス・ラタンの家具', r: '#7b2900', c: '#004d65', cust: 1, items: [
+        { e: '🪷', n: 'お香', c: 80, g: 'f', up: 'お手ごろお香/定番お香/人気のお香/限定お香/プレミアムお香/職人のお香/伝説のお香'.split('/') },
+        { e: '🥥', n: 'ココナッツ石けん', c: 120, g: 'f', up: 'お手ごろココナッツ石けん/定番ココナッツ石けん/人気のココナッツ石けん/限定ココナッツ石けん/プレミアムココナッツ石けん/職人のココナッツ石けん/伝説のココナッツ石けん'.split('/') },
+        { e: '🌶️', n: 'スパイス', c: 170, g: 'a', up: 'お手ごろスパイス/定番スパイス/人気のスパイス/限定スパイス/プレミアムスパイス/職人のスパイス/伝説のスパイス'.split('/') },
+        { e: '🧺', n: '竹かご', c: 260, g: 'a', up: 'お手ごろ竹かご/定番竹かご/人気の竹かご/限定竹かご/プレミアム竹かご/職人の竹かご/伝説の竹かご'.split('/') },
+        { e: '👝', n: '刺しゅうポーチ', c: 450, g: 'f', up: 'お手ごろ刺しゅうポーチ/定番刺しゅうポーチ/人気の刺しゅうポーチ/限定刺しゅうポーチ/プレミアム刺しゅうポーチ/職人の刺しゅうポーチ/伝説の刺しゅうポーチ'.split('/') },
+        { e: '🏮', n: 'アジアンランプ', c: 850, g: 'a', up: 'お手ごろアジアンランプ/定番アジアンランプ/人気のアジアンランプ/限定アジアンランプ/プレミアムアジアンランプ/職人のアジアンランプ/伝説のアジアンランプ'.split('/') },
+        { e: '🧣', n: 'シルクの布', c: 1600, g: 'f', up: 'お手ごろシルクの布/定番シルクの布/人気のシルクの布/限定シルクの布/プレミアムシルクの布/職人のシルクの布/伝説のシルクの布'.split('/') },
+        { e: '🪑', n: 'ラタンチェア', c: 2000, g: 'a', up: 'お手ごろラタンチェア/定番ラタンチェア/人気のラタンチェア/限定ラタンチェア/プレミアムラタンチェア/職人のラタンチェア/伝説のラタンチェア'.split('/') },
+        { e: '🐘', n: '木彫りのゾウ', c: 3200, g: 'a', up: 'お手ごろ木彫りのゾウ/定番木彫りのゾウ/人気の木彫りのゾウ/限定木彫りのゾウ/プレミアム木彫りのゾウ/職人の木彫りのゾウ/伝説の木彫りのゾウ'.split('/') },
+        { e: '💚', n: 'ひすいの腕輪', c: 4500, g: 'f', up: 'お手ごろひすいの腕輪/定番ひすいの腕輪/人気のひすいの腕輪/限定ひすいの腕輪/プレミアムひすいの腕輪/職人のひすいの腕輪/伝説のひすいの腕輪'.split('/') },
+        { e: '🧶', n: '手織りじゅうたん', c: 50000, g: 'a', up: 'お手ごろ手織りじゅうたん/定番手織りじゅうたん/人気の手織りじゅうたん/限定手織りじゅうたん/プレミアム手織りじゅうたん/職人の手織りじゅうたん/伝説の手織りじゅうたん'.split('/') },
+        { e: '🛕', n: '金ぴかの仏さま', c: 95000, g: 'm', up: 'お手ごろ金ぴかの仏さま/定番金ぴかの仏さま/人気の金ぴかの仏さま/限定金ぴかの仏さま/プレミアム金ぴかの仏さま/職人の金ぴかの仏さま/伝説の金ぴかの仏さま'.split('/') }
+    ] },
+    { id: 'under', n: 'あんぐらショップ', e: '🕶️', d: 'ちょっとあやしい、くせの強い品ぞろえ', r: '#3b3046', c: '#9be15d', cust: 0.95, items: [
+        { e: '🏷️', n: 'ステッカー', c: 80, g: 'a', up: 'お手ごろステッカー/定番ステッカー/人気のステッカー/限定ステッカー/プレミアムステッカー/職人のステッカー/伝説のステッカー'.split('/') },
+        { e: '📛', n: '缶バッジ', c: 110, g: 'a', up: 'お手ごろ缶バッジ/定番缶バッジ/人気の缶バッジ/限定缶バッジ/プレミアム缶バッジ/職人の缶バッジ/伝説の缶バッジ'.split('/') },
+        { e: '👕', n: 'えんじふく', c: 200, g: 'm', up: 'お手ごろえんじふく/定番えんじふく/人気のえんじふく/限定えんじふく/プレミアムえんじふく/職人のえんじふく/伝説のえんじふく'.split('/') },
+        { e: '💿', n: '中古レコード', c: 320, g: 'm', up: 'お手ごろ中古レコード/定番中古レコード/人気の中古レコード/限定中古レコード/プレミアム中古レコード/職人の中古レコード/伝説の中古レコード'.split('/') },
+        { e: '🥫', n: 'なぞの缶詰', c: 500, g: 'a', up: 'お手ごろなぞの缶詰/定番なぞの缶詰/人気のなぞの缶詰/限定なぞの缶詰/プレミアムなぞの缶詰/職人のなぞの缶詰/伝説のなぞの缶詰'.split('/') },
+        { e: '💀', n: 'ドクロの指輪', c: 900, g: 'm', up: 'お手ごろドクロの指輪/定番ドクロの指輪/人気のドクロの指輪/限定ドクロの指輪/プレミアムドクロの指輪/職人のドクロの指輪/伝説のドクロの指輪'.split('/') },
+        { e: '📕', n: '古い魔導書', c: 1600, g: 'a', up: 'お手ごろ古い魔導書/定番古い魔導書/人気の古い魔導書/限定古い魔導書/プレミアム古い魔導書/職人の古い魔導書/伝説の古い魔導書'.split('/') },
+        { e: '🏺', n: 'あやしい壺', c: 2000, g: 'a', up: 'お手ごろあやしい壺/定番あやしい壺/人気のあやしい壺/限定あやしい壺/プレミアムあやしい壺/職人のあやしい壺/伝説のあやしい壺'.split('/') },
+        { e: '📻', n: '改造ラジカセ', c: 3300, g: 'm', up: 'お手ごろ改造ラジカセ/定番改造ラジカセ/人気の改造ラジカセ/限定改造ラジカセ/プレミアム改造ラジカセ/職人の改造ラジカセ/伝説の改造ラジカセ'.split('/') },
+        { e: '🪆', n: 'のろいの人形', c: 4500, g: 'f', up: 'お手ごろのろいの人形/定番のろいの人形/人気ののろいの人形/限定のろいの人形/プレミアムのろいの人形/職人ののろいの人形/伝説ののろいの人形'.split('/') },
+        { e: '☄️', n: 'いん石のかけら', c: 50000, g: 'm', up: 'お手ごろいん石のかけら/定番いん石のかけら/人気のいん石のかけら/限定いん石のかけら/プレミアムいん石のかけら/職人のいん石のかけら/伝説のいん石のかけら'.split('/') },
+        { e: '👽', n: '宇宙人のはく製', c: 95000, g: 'a', up: 'お手ごろ宇宙人のはく製/定番宇宙人のはく製/人気の宇宙人のはく製/限定宇宙人のはく製/プレミアム宇宙人のはく製/職人の宇宙人のはく製/伝説の宇宙人のはく製'.split('/') }
+    ] },
+    { id: 'kawaii', n: 'かわいいやさん', e: '🎀', d: 'ファンシーグッズ。女性のお客さんが多い', r: '#f28bb0', c: '#a58bea', cust: 1, items: [
+        { e: '✨', n: 'シール', c: 80, g: 'f', up: 'お手ごろシール/定番シール/人気のシール/限定シール/プレミアムシール/職人のシール/伝説のシール'.split('/') },
+        { e: '📒', n: 'メモ帳', c: 110, g: 'a', up: 'お手ごろメモ帳/定番メモ帳/人気のメモ帳/限定メモ帳/プレミアムメモ帳/職人のメモ帳/伝説のメモ帳'.split('/') },
+        { e: '🎞️', n: 'マスキングテープ', c: 160, g: 'f', up: 'お手ごろマスキングテープ/定番マスキングテープ/人気のマスキングテープ/限定マスキングテープ/プレミアムマスキングテープ/職人のマスキングテープ/伝説のマスキングテープ'.split('/') },
+        { e: '🎀', n: 'ヘアピン', c: 240, g: 'f', up: 'お手ごろヘアピン/定番ヘアピン/人気のヘアピン/限定ヘアピン/プレミアムヘアピン/職人のヘアピン/伝説のヘアピン'.split('/') },
+        { e: '👛', n: 'ポーチ', c: 400, g: 'f', up: 'お手ごろポーチ/定番ポーチ/人気のポーチ/限定ポーチ/プレミアムポーチ/職人のポーチ/伝説のポーチ'.split('/') },
+        { e: '☕', n: 'マグカップ', c: 700, g: 'a', up: 'お手ごろマグカップ/定番マグカップ/人気のマグカップ/限定マグカップ/プレミアムマグカップ/職人のマグカップ/伝説のマグカップ'.split('/') },
+        { e: '🧸', n: 'くまのぬいぐるみ', c: 1500, g: 'f', up: 'お手ごろくまのぬいぐるみ/定番くまのぬいぐるみ/人気のくまのぬいぐるみ/限定くまのぬいぐるみ/プレミアムくまのぬいぐるみ/職人のくまのぬいぐるみ/伝説のくまのぬいぐるみ'.split('/') },
+        { e: '🌙', n: 'ルームライト', c: 1800, g: 'a', up: 'お手ごろルームライト/定番ルームライト/人気のルームライト/限定ルームライト/プレミアムルームライト/職人のルームライト/伝説のルームライト'.split('/') },
+        { e: '💄', n: 'コスメセット', c: 3000, g: 'f', up: 'お手ごろコスメセット/定番コスメセット/人気のコスメセット/限定コスメセット/プレミアムコスメセット/職人のコスメセット/伝説のコスメセット'.split('/') },
+        { e: '🪞', n: 'ドレッサー', c: 4300, g: 'f', up: 'お手ごろドレッサー/定番ドレッサー/人気のドレッサー/限定ドレッサー/プレミアムドレッサー/職人のドレッサー/伝説のドレッサー'.split('/') },
+        { e: '🛏️', n: 'ゆめかわベッド', c: 45000, g: 'f', up: 'お手ごろゆめかわベッド/定番ゆめかわベッド/人気のゆめかわベッド/限定ゆめかわベッド/プレミアムゆめかわベッド/職人のゆめかわベッド/伝説のゆめかわベッド'.split('/') },
+        { e: '🏰', n: 'お城のドールハウス', c: 90000, g: 'f', up: 'お手ごろお城のドールハウス/定番お城のドールハウス/人気のお城のドールハウス/限定お城のドールハウス/プレミアムお城のドールハウス/職人のお城のドールハウス/伝説のお城のドールハウス'.split('/') }
+    ] },
+    { id: 'brand', n: '高級ブランドショップ', e: '💎', d: '財布・鞄・時計。高いけれどお客さんは少なめ', r: '#1f2a44', c: '#d8b45a', cust: 0.2, items: [
+        { e: '🤍', n: 'シルクのハンカチ', c: 300, g: 'a', up: 'お手ごろシルクのハンカチ/定番シルクのハンカチ/人気のシルクのハンカチ/限定シルクのハンカチ/プレミアムシルクのハンカチ/職人のシルクのハンカチ/伝説のシルクのハンカチ'.split('/') },
+        { e: '🔑', n: 'キーケース', c: 650, g: 'a', up: 'お手ごろキーケース/定番キーケース/人気のキーケース/限定キーケース/プレミアムキーケース/職人のキーケース/伝説のキーケース'.split('/') },
+        { e: '👔', n: 'ネクタイ', c: 950, g: 'm', up: 'お手ごろネクタイ/定番ネクタイ/人気のネクタイ/限定ネクタイ/プレミアムネクタイ/職人のネクタイ/伝説のネクタイ'.split('/') },
+        { e: '🌹', n: '香水', c: 1500, g: 'f', up: 'お手ごろ香水/定番香水/人気の香水/限定香水/プレミアム香水/職人の香水/伝説の香水'.split('/') },
+        { e: '🕶️', n: 'サングラス', c: 2400, g: 'a', up: 'お手ごろサングラス/定番サングラス/人気のサングラス/限定サングラス/プレミアムサングラス/職人のサングラス/伝説のサングラス'.split('/') },
+        { e: '👛', n: '長財布', c: 4200, g: 'a', up: 'お手ごろ長財布/定番長財布/人気の長財布/限定長財布/プレミアム長財布/職人の長財布/伝説の長財布'.split('/') },
+        { e: '🪢', n: '革のベルト', c: 6000, g: 'm', up: 'お手ごろ革のベルト/定番革のベルト/人気の革のベルト/限定革のベルト/プレミアム革のベルト/職人の革のベルト/伝説の革のベルト'.split('/') },
+        { e: '👜', n: 'ハンドバッグ', c: 9500, g: 'f', up: 'お手ごろハンドバッグ/定番ハンドバッグ/人気のハンドバッグ/限定ハンドバッグ/プレミアムハンドバッグ/職人のハンドバッグ/伝説のハンドバッグ'.split('/') },
+        { e: '⌚', n: '機械式の腕時計', c: 14000, g: 'm', up: '無名時計/カセヨ/サイコー/シツゾン/タゲホイヤー/オマイガ/ロメックス'.split('/') },
+        { e: '💍', n: 'ダイヤの指輪', c: 21000, g: 'f', up: 'お手ごろダイヤの指輪/定番ダイヤの指輪/人気のダイヤの指輪/限定ダイヤの指輪/プレミアムダイヤの指輪/職人のダイヤの指輪/伝説のダイヤの指輪'.split('/') },
+        { e: '🧳', n: 'トランクケース', c: 160000, g: 'a', up: 'お手ごろトランクケース/定番トランクケース/人気のトランクケース/限定トランクケース/プレミアムトランクケース/職人のトランクケース/伝説のトランクケース'.split('/') },
+        { e: '👑', n: '宝石のティアラ', c: 300000, g: 'f', up: 'お手ごろ宝石のティアラ/定番宝石のティアラ/人気の宝石のティアラ/限定宝石のティアラ/プレミアム宝石のティアラ/職人の宝石のティアラ/伝説の宝石のティアラ'.split('/') }
+    ] },
+    { id: 'car', n: 'くるまやさん', e: '🚗', d: '車と車の用品。1台売れれば大もうけ', r: '#4a525c', c: '#ef4f4f', cust: 0.03, items: [
+        { e: '🌲', n: '芳香剤', c: 300, g: 'a', up: 'お手ごろ芳香剤/定番芳香剤/人気の芳香剤/限定芳香剤/プレミアム芳香剤/職人の芳香剤/伝説の芳香剤'.split('/') },
+        { e: '🧽', n: '洗車スポンジ', c: 500, g: 'a', up: 'お手ごろ洗車スポンジ/定番洗車スポンジ/人気の洗車スポンジ/限定洗車スポンジ/プレミアム洗車スポンジ/職人の洗車スポンジ/伝説の洗車スポンジ'.split('/') },
+        { e: '🌧️', n: 'ワイパー', c: 1200, g: 'm', up: 'お手ごろワイパー/定番ワイパー/人気のワイパー/限定ワイパー/プレミアムワイパー/職人のワイパー/伝説のワイパー'.split('/') },
+        { e: '🛢️', n: 'エンジンオイル', c: 2500, g: 'm', up: 'お手ごろエンジンオイル/定番エンジンオイル/人気のエンジンオイル/限定エンジンオイル/プレミアムエンジンオイル/職人のエンジンオイル/伝説のエンジンオイル'.split('/') },
+        { e: '📹', n: 'ドラレコ', c: 6000, g: 'm', up: 'お手ごろドラレコ/定番ドラレコ/人気のドラレコ/限定ドラレコ/プレミアムドラレコ/職人のドラレコ/伝説のドラレコ'.split('/') },
+        { e: '🛞', n: 'タイヤ', c: 12000, g: 'm', up: 'お手ごろタイヤ/定番タイヤ/人気のタイヤ/限定タイヤ/プレミアムタイヤ/職人のタイヤ/伝説のタイヤ'.split('/') },
+        { e: '🗺️', n: 'カーナビ', c: 30000, g: 'a', up: 'お手ごろカーナビ/定番カーナビ/人気のカーナビ/限定カーナビ/プレミアムカーナビ/職人のカーナビ/伝説のカーナビ'.split('/') },
+        { e: '🛵', n: '原付', c: 120000, g: 'a', up: 'お手ごろ原付/定番原付/人気の原付/限定原付/プレミアム原付/職人の原付/伝説の原付'.split('/') },
+        { e: '🚙', n: '軽自動車', c: 900000, g: 'f', up: 'お手ごろ軽自動車/定番軽自動車/人気の軽自動車/限定軽自動車/プレミアム軽自動車/職人の軽自動車/伝説の軽自動車'.split('/') },
+        { e: '🚐', n: 'ミニバン', c: 2500000, g: 'f', up: 'お手ごろミニバン/定番ミニバン/人気のミニバン/限定ミニバン/プレミアムミニバン/職人のミニバン/伝説のミニバン'.split('/') },
+        { e: '🏎️', n: 'スポーツカー', c: 8000000, g: 'm', up: 'お手ごろスポーツカー/定番スポーツカー/人気のスポーツカー/限定スポーツカー/プレミアムスポーツカー/職人のスポーツカー/伝説のスポーツカー'.split('/') },
+        { e: '🚘', n: '高級外車', c: 20000000, g: 'm', up: 'お手ごろ高級外車/定番高級外車/人気の高級外車/限定高級外車/プレミアム高級外車/職人の高級外車/伝説の高級外車'.split('/') }
+    ] },
+    { id: 'tcg', n: 'トレカショップ', e: '🃏', d: 'トレーディングカード。レアカードは高値', r: '#3b4fb8', c: '#ffd23f', cust: 0.4, items: [
+        { e: '🗂️', n: 'カードスリーブ', c: 80, g: 'm', up: 'お手ごろカードスリーブ/定番カードスリーブ/人気のカードスリーブ/限定カードスリーブ/プレミアムカードスリーブ/職人のカードスリーブ/伝説のカードスリーブ'.split('/') },
+        { e: '🎴', n: 'パック', c: 150, g: 'a', up: 'お手ごろパック/定番パック/人気のパック/限定パック/プレミアムパック/職人のパック/伝説のパック'.split('/') },
+        { e: '📦', n: 'デッキケース', c: 300, g: 'm', up: 'お手ごろデッキケース/定番デッキケース/人気のデッキケース/限定デッキケース/プレミアムデッキケース/職人のデッキケース/伝説のデッキケース'.split('/') },
+        { e: '🗃️', n: 'ストレージ', c: 450, g: 'a', up: 'お手ごろストレージ/定番ストレージ/人気のストレージ/限定ストレージ/プレミアムストレージ/職人のストレージ/伝説のストレージ'.split('/') },
+        { e: '🟩', n: 'プレイマット', c: 800, g: 'm', up: 'お手ごろプレイマット/定番プレイマット/人気のプレイマット/限定プレイマット/プレミアムプレイマット/職人のプレイマット/伝説のプレイマット'.split('/') },
+        { e: '🃏', n: '構築済みデッキ', c: 1500, g: 'm', up: 'お手ごろ構築済みデッキ/定番構築済みデッキ/人気の構築済みデッキ/限定構築済みデッキ/プレミアム構築済みデッキ/職人の構築済みデッキ/伝説の構築済みデッキ'.split('/') },
+        { e: '📦', n: 'BOX', c: 4000, g: 'm', up: 'お手ごろBOX/定番BOX/人気のBOX/限定BOX/プレミアムBOX/職人のBOX/伝説のBOX'.split('/') },
+        { e: '✨', n: 'キラカード', c: 6000, g: 'a', up: 'お手ごろキラカード/定番キラカード/人気のキラカード/限定キラカード/プレミアムキラカード/職人のキラカード/伝説のキラカード'.split('/') },
+        { e: '🏆', n: '大会限定カード', c: 12000, g: 'm', up: 'お手ごろ大会限定カード/定番大会限定カード/人気の大会限定カード/限定大会限定カード/プレミアム大会限定カード/職人の大会限定カード/伝説の大会限定カード'.split('/') },
+        { e: '🔒', n: '鑑定済みカード', c: 30000, g: 'm', up: 'お手ごろ鑑定済みカード/定番鑑定済みカード/人気の鑑定済みカード/限定鑑定済みカード/プレミアム鑑定済みカード/職人の鑑定済みカード/伝説の鑑定済みカード'.split('/') },
+        { e: '🌈', n: '初版ホロカード', c: 80000, g: 'm', up: 'お手ごろ初版ホロカード/定番初版ホロカード/人気の初版ホロカード/限定初版ホロカード/プレミアム初版ホロカード/職人の初版ホロカード/伝説の初版ホロカード'.split('/') },
+        { e: '👑', n: '世界に1枚のカード', c: 500000, g: 'm', up: 'お手ごろ世界に1枚のカード/定番世界に1枚のカード/人気の世界に1枚のカード/限定世界に1枚のカード/プレミアム世界に1枚のカード/職人の世界に1枚のカード/伝説の世界に1枚のカード'.split('/') }
+    ] },
+    { id: 'happy', n: 'しあわせやさん', e: '🍀', d: 'しあわせになれる（かもしれない）ものだけ', r: '#ffbf47', c: '#2fbf97', cust: 1, items: [
+        { e: '🍀', n: '四つ葉のクローバー', c: 80, g: 'a', up: 'お手ごろ四つ葉のクローバー/定番四つ葉のクローバー/人気の四つ葉のクローバー/限定四つ葉のクローバー/プレミアム四つ葉のクローバー/職人の四つ葉のクローバー/伝説の四つ葉のクローバー'.split('/') },
+        { e: '😊', n: 'にこにこシール', c: 110, g: 'a', up: 'お手ごろにこにこシール/定番にこにこシール/人気のにこにこシール/限定にこにこシール/プレミアムにこにこシール/職人のにこにこシール/伝説のにこにこシール'.split('/') },
+        { e: '🎋', n: 'だいきちおみくじ', c: 160, g: 'a', up: 'お手ごろだいきちおみくじ/定番だいきちおみくじ/人気のだいきちおみくじ/限定だいきちおみくじ/プレミアムだいきちおみくじ/職人のだいきちおみくじ/伝説のだいきちおみくじ'.split('/') },
+        { e: '🔔', n: 'しあわせの鈴', c: 240, g: 'f', up: 'お手ごろしあわせの鈴/定番しあわせの鈴/人気のしあわせの鈴/限定しあわせの鈴/プレミアムしあわせの鈴/職人のしあわせの鈴/伝説のしあわせの鈴'.split('/') },
+        { e: '☀️', n: 'てるてる坊主', c: 380, g: 'a', up: 'お手ごろてるてる坊主/定番てるてる坊主/人気のてるてる坊主/限定てるてる坊主/プレミアムてるてる坊主/職人のてるてる坊主/伝説のてるてる坊主'.split('/') },
+        { e: '🧿', n: '幸運のお守り', c: 700, g: 'f', up: 'お手ごろ幸運のお守り/定番幸運のお守り/人気の幸運のお守り/限定幸運のお守り/プレミアム幸運のお守り/職人の幸運のお守り/伝説の幸運のお守り'.split('/') },
+        { e: '🐈', n: '招き猫', c: 1500, g: 'a', up: 'お手ごろ招き猫/定番招き猫/人気の招き猫/限定招き猫/プレミアム招き猫/職人の招き猫/伝説の招き猫'.split('/') },
+        { e: '🪶', n: 'にじ色の羽', c: 1800, g: 'f', up: 'お手ごろにじ色の羽/定番にじ色の羽/人気のにじ色の羽/限定にじ色の羽/プレミアムにじ色の羽/職人のにじ色の羽/伝説のにじ色の羽'.split('/') },
+        { e: '🐦', n: '幸せの青い鳥', c: 3000, g: 'a', up: 'お手ごろ幸せの青い鳥/定番幸せの青い鳥/人気の幸せの青い鳥/限定幸せの青い鳥/プレミアム幸せの青い鳥/職人の幸せの青い鳥/伝説の幸せの青い鳥'.split('/') },
+        { e: '⭐', n: '願いがかなう星', c: 4200, g: 'a', up: 'お手ごろ願いがかなう星/定番願いがかなう星/人気の願いがかなう星/限定願いがかなう星/プレミアム願いがかなう星/職人の願いがかなう星/伝説の願いがかなう星'.split('/') },
+        { e: '🏖️', n: 'ごほうび休暇', c: 45000, g: 'a', up: 'お手ごろごほうび休暇/定番ごほうび休暇/人気のごほうび休暇/限定ごほうび休暇/プレミアムごほうび休暇/職人のごほうび休暇/伝説のごほうび休暇'.split('/') },
+        { e: '🌈', n: 'ずっとしあわせ券', c: 90000, g: 'a', up: 'お手ごろずっとしあわせ券/定番ずっとしあわせ券/人気のずっとしあわせ券/限定ずっとしあわせ券/プレミアムずっとしあわせ券/職人のずっとしあわせ券/伝説のずっとしあわせ券'.split('/') }
+    ] }
+];
+
+/** はじめから選べるスタイル（いつもの＋3つ） */
+const STY_INIT = ['normal', 'food', 'toy', 'shoes'];
+
+/** そのお店のスタイル（シーシャ屋は null） */
+const styOf = (s = state) => isShisha(s) ? null : (STYLES.find(t => t.id === s.sty) || STYLES[0]);
+
+/** 「いつもの」以外のスタイルなら、そのスタイル（いつもの・シーシャ屋は null） */
+const styAlt = (s = state) => {
+    const t = styOf(s);
+    return t && t.id !== 'normal' ? t : null;
+};
+
+/** スタイルの名前（シーシャ屋はフレーバー） */
+const styName = (s = state) => {
+    const t = styOf(s);
+    return t ? t.e + ' ' + t.n : '💨 フレーバー';
+};
+
+/** 来店数の倍率 */
+const styCust = (s = state) => {
+    const t = styOf(s);
+    return t ? t.cust : 1;
+};
+
+/** 解放したスタイルの id（会社ができる前は、はじめの4つ） */
+const styOpen = () => (state.co && state.co.styU) || STY_INIT;
+
+/** 商品のもとの原価（アップグレード前）。シーシャ屋はフレーバー、スタイルの店はスタイルの商品 */
+const baseCost = (s, id) => {
+    if (isShisha(s) && id < FLAV.length)
+        return FLAV[id].c;
+    const t = styAlt(s);
+    return t ? t.items[id].c : (PDEF ? PDEF[id].b : PRODUCTS[id].b);
+};
+
+/** スタイルを変える改装費（その出店場所の出店費の半分） */
+const styFee = s => Math.round(locOf(s).cost / 2);
+
+/** 今日の日付（広告の「1日1回」に使う。端末の日付） */
+const styToday = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+};
+
+/** 今日はもう広告でスタイルを解放したか */
+const styAdUsed = () => !!(state.co && state.co.styAd === styToday());
+
+/** お店のスタイルを変える（閉店中だけ。棚の在庫は原価で引き取り、解放した棚とアップグレードの段階は同じ番号の商品に引きつぐ） */
+function styChange(i, id) {
+    const A = allStores(), s = A[i], t = STYLES.find(x => x.id === id);
+    if (!state.co || !s || !t || state.phase !== 'closed' || state.over || isShisha(s) || !styOpen().includes(id) || (s.sty || 'normal') === id)
+        return;
+    const fee = styFee(s);
+    if (state.money < fee)
+        return CG.toast('改装費が足りません', 2000);
+    let back = 0;
+    (s.shelf || []).forEach(x => {
+        if (!x)
+            return;
+        back += x.st * Math.round(baseCost(s, x.id) * (1 + 0.4 * (s.up[x.id] || 0)) * (s.cm ? s.cm[x.id] : 1));
+        x.st = 0;
+    });
+    state.money += back - fee;
+    s.sty = id;
+    if (s === state)
+        applyKind();
+    addEvent('🎨 「' + (s.sname || (i + 1) + '号店') + '」を' + t.e + ' ' + t.n + 'に改装しました（改装費' + yen(fee) + (back ? '・在庫の引き取り +' + yen(back) : '') + '）');
+    styPanel(-1);
+    render();
+    save();
+}
+
+/** 広告を見てスタイルを1つ解放する（1日1回まで） */
+function styAdUnlock(id) {
+    const c = state.co, t = STYLES.find(x => x.id === id);
+    if (!c || !t || styOpen().includes(id) || styAdUsed() || !CG.ad.ready())
+        return;
+    CG.ad.reward({ name: 'style-unlock' }).then(ok => {
+        if (!ok)
+            return CG.toast('広告を最後まで見ると解放されます', 2200);
+        c.styU = styOpen().concat(id);
+        c.styAd = styToday();
+        addEvent('🔓 新しいスタイル「' + t.e + ' ' + t.n + '」を解放しました');
+        styPanel(styPanelI);
+        render();
+        save();
+    });
+}
+
+/** 新しいお店を出すときのスタイルの選択（会社タブ） */
+function styPick() {
+    const c = state.co, sel = c.ssel || 'normal', O = styOpen(), shi = (c.lsel || 'suburb') === 'shisha';
+    if (shi)
+        return '<div class="meta stynote">💨 シーシャ屋はフレーバーのお店なので、スタイルは選べません。</div>';
+    const t = STYLES.find(x => x.id === sel) || STYLES[0];
+    return '<label class="cof">お店のスタイル<select id="ssty">' + STYLES.map(x => '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + (O.includes(x.id) ? '' : ' disabled') + '>' + (O.includes(x.id) ? x.e : '🔒') + ' ' + x.n + '</option>').join('') + '</select></label>'
+        + '<div class="stypv"><span>' + t.d + '</span><span class="styit">' + t.items.slice(0, 6).map(p => p.e).join('') + '…</span></div>'
+        + (O.length < STYLES.length ? '<div class="meta">🔒 のスタイルは、店舗管理の「🎨 スタイル」から解放できます（' + O.length + ' / ' + STYLES.length + '）。</div>' : '');
+}
+
+/** スタイルの画面（店舗管理の「🎨 スタイル」。i＝お店の番号、-1 で閉じる） */
+let styPanelI = -1;
+function styPanel(i) {
+    styPanelI = i;
+    let el = byId('stym');
+    if (i < 0) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'stym';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                styPanel(-1);
+        });
+        document.body.appendChild(el);
+    }
+    const s = allStores()[i], O = styOpen(), ok = state.phase === 'closed' && !state.over, fee = styFee(s), cur = (s.sty || 'normal'), ad = CG.ad.ready(), used = styAdUsed();
+    const rows = STYLES.map(t => {
+        const op = O.includes(t.id), here = t.id === cur;
+        const btn = here ? '<span class="dbt here">いまのスタイル</span>'
+            : op ? '<button data-a="stygo" data-v="' + t.id + '"' + (ok && state.money >= fee ? '' : ' disabled') + '>改装する</button>'
+                : ad ? '<button class="alt" data-a="styad" data-v="' + t.id + '"' + (used ? ' disabled' : '') + '>📺 広告で解放</button>' : '<span class="dbt off">🔒 まだ</span>';
+        return '<div class="styr' + (here ? ' here' : '') + (op ? '' : ' lock') + '"><span class="ste">' + (op ? t.e : '🔒') + '</span><div class="stx"><b>' + t.n + '</b><span>' + t.d + '</span><span class="styit">' + t.items.map(p => p.e).join('') + '</span><span class="meta">来店数×' + t.cust + '</span></div>' + btn + '</div>';
+    }).join('');
+    el.innerHTML = '<div class="ovbox cobox"><div class="achtop"><b>🎨 「' + esc(s.sname || (i + 1) + '号店') + '」のスタイル</b><button class="alt achx" data-a="styclose" aria-label="閉じる">✕</button></div><div class="achbody">'
+        + '<div class="meta">改装費 ' + yen(fee) + '（' + locOf(s).n + 'の出店費の半分）。棚の在庫は原価で引き取ります。解放した棚とアップグレードの段階は、同じ番号の商品に引きつぎます。' + (ok ? '' : '<b>閉店後に改装できます。</b>') + '</div>'
+        + (ad ? '<div class="meta">📺 まだのスタイルは、広告を見ると1つ解放できます（1日1回' + (used ? '・今日はもう解放しました' : '') + '）。</div>' : '')
+        + '<div class="styl">' + rows + '</div></div></div>';
+    el.hidden = false;
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'costy')
+        styPanel(+b.dataset.i);
+    if (a === 'styclose')
+        styPanel(-1);
+    if (a === 'stygo')
+        styChange(styPanelI, b.dataset.v);
+    if (a === 'styad')
+        styAdUnlock(b.dataset.v);
+});
+document.addEventListener('change', e => {
+    if (e.target.id === 'ssty' && state.co) {
+        state.co.ssel = e.target.value;
+        render();
+    }
 });
 </script>
 <script>
@@ -5062,7 +5572,7 @@ function endDay() {
         state.over = true;
         addLog('資金が' + fmt(LIMIT) + '円を下回り、倒産しました。');
     }
-    if (state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
+    if (!isShisha() && !styAlt() && state.up[3] === 7 && state.shelf.some(s => s && s.id === 3) && state.dSold > 0 && Math.random() < 0.1) {
         const k = 0.05 + Math.random() * 0.2, a = Math.round(state.dRev * k);
         state.money -= guard(a);
         addEvent('🥷 ダイヤモンド万年筆を狙った泥棒が侵入！売上金の' + Math.round(k * 100) + '%（' + yen(a) + '）が盗まれました' + (state.clerk > 0 ? '。店員が疑われました' : ''), 1);
@@ -5145,6 +5655,7 @@ function endDay() {
     }
     state.phase = 'closed';
     coDaily();
+    clrCheck();
 }
 
 /** 翌日へ（イベント・病気・休業の判定） */
@@ -6195,6 +6706,10 @@ function drawPx() {
     const W = 192, H = 92, se = seaOf(Math.max(state.day, 1)), wt = state.weather, op = state.phase === 'open';
     const hr = op ? state.openH + Math.floor(state.t / 5) : (state.phase === 'prep' ? state.openH : 21), night = hr >= 19 || hr < 6;
     const bad = badDay();
+    // お店の屋根・看板の色：スタイルの店はスタイルの色、いつもの・シーシャ屋はイメージカラー（v2.3.0〜）
+    const sty = styAlt();
+    PXT.r = sty ? sty.r : PXB.r;
+    PXT.c = sty ? sty.c : PXB.c;
     pxScene(W, se, wt, night, bad);
     pxLights(op, night);
     pxSec();
@@ -6860,7 +7375,7 @@ function syncOver() {
         }
         catch (e) { }
         o.innerHTML = '<div class="ovbox"><div class="ovhd">💸 倒産しました…</div>' +
-            '<div class="ovmsg">' + (state.overMsg || '資金が倒産ラインを下回り、倒産しました。') + '</div>' + img + shareBox() +
+            '<div class="ovmsg">' + (state.overMsg || '資金が倒産ラインを下回り、倒産しました。') + '</div>' + img + adReviveBtn() + shareBox() +
             '<button class="big" data-a="restart">🔄 最初からやり直す</button>' +
             '<button class="alt" data-a="ovclose" style="width:100%">閉じる（お店の様子を見る）</button></div>';
         o.hidden = false;
@@ -7274,6 +7789,81 @@ function amaDraw() {
 </script>
 <script>
 /**
+ * adgame.js — 広告のごほうび（v2.3.0〜）。広告そのものは共通部品 common/v1/ad.js（CG.ad）。
+ *
+ * いまは広告を出していない（CG.ad.on が false）ので、どのボタンも画面に出ない。開発で試すときは URL に ?ad=test を付ける。
+ * ・倒産からの復活：倒産ポップアップの「📺 広告を見て復活」。「大企業に買い取られた！」で、所持金のマイナスを0に戻し、
+ *   ノルマの50%を支給して続ける（回数の上限なし。実績もそのまま数える。2026-10-24 決定）
+ * ・返済不要の融資：お金タブ。広告の長さ（種類）でもらえる額が変わる。1日（ゲームの1日）1回まで
+ * ・新しいスタイルの解放：styles.js の styAdUnlock（端末の日付で1日1回まで）
+ * 金額の倍率は CG.ad.kinds() の m（本物の広告は長さを選べないので1種類）
+ */
+
+/** 返済不要の融資の額（基本＝ノルマの20%、最低¥30,000。広告の種類の倍率をかける） */
+const adLoanAmt = m => r100(Math.max(30000, quota() * 0.2) * m);
+
+/** 倒産から復活する（広告を最後まで見たら） */
+function adRevive() {
+    if (!state.over || !CG.ad.ready())
+        return;
+    CG.ad.reward({ name: 'revive' }).then(ok => {
+        if (!ok || !state.over)
+            return ok || CG.toast('広告を最後まで見ると復活できます', 2200);
+        const g = r100(quota() * 0.5);
+        state.money = Math.max(0, state.money) + g;
+        state.over = false;
+        state.overMsg = '';
+        state.ovx = false;
+        state.low = state.low5 = 0;
+        state.happy = Math.max(state.happy, 30);
+        state.revive = (state.revive || 0) + 1;
+        addEvent('🏢 大企業に買い取られた！借金を肩代わりしてもらい、運転資金' + yen(g) + 'で営業を続けます');
+        render();
+        save();
+    });
+}
+
+/** 返済不要の融資（広告を最後まで見たら。ゲームの1日1回まで） */
+function adLoan(kind) {
+    if (state.phase !== 'closed' || state.over || state.adLoan === state.day || !CG.ad.ready())
+        return;
+    const K = CG.ad.kinds().find(k => k.k === kind) || CG.ad.kinds()[0];
+    CG.ad.reward({ kind: K.k, name: 'free-loan' }).then(ok => {
+        if (!ok)
+            return CG.toast('広告を最後まで見ると受け取れます', 2200);
+        const a = adLoanAmt(K.m);
+        state.money += a;
+        state.adLoan = state.day;
+        addEvent('📺 スポンサーから返済不要の融資 +' + yen(a));
+        render();
+        save();
+    });
+}
+
+/** お金タブの「返済不要の融資」カード（広告が出ていないときは空） */
+function adLoanCard() {
+    if (!CG.ad.ready())
+        return '';
+    const used = state.adLoan === state.day;
+    return '<div class="card"><b>📺 返済不要の融資</b><div class="meta">広告を最後まで見ると、返済しなくてよいお金がもらえます。長い広告ほど多くもらえます（1日1回まで' + (used ? '・今日はもう受け取りました' : '') + '）。</div><div class="row adl">'
+        + CG.ad.kinds().map(k => '<button data-a="adloan" data-v="' + k.k + '"' + (used ? ' disabled' : '') + '>' + k.n + '<br><small>+' + yen(adLoanAmt(k.m)) + '</small></button>').join('') + '</div></div>';
+}
+
+/** 倒産ポップアップの「広告を見て復活」ボタン（広告が出ていないときは空） */
+const adReviveBtn = () => CG.ad.ready() ? '<button class="big adrev" data-a="adrev">📺 広告を見て復活（大企業に買い取られる）<small>所持金のマイナスを0に戻し、ノルマの50%（' + yen(r100(quota() * 0.5)) + '）がもらえます</small></button>' : '';
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    if (b.dataset.a === 'adrev')
+        adRevive();
+    if (b.dataset.a === 'adloan')
+        adLoan(b.dataset.v);
+});
+</script>
+<script>
+/**
  * ui.js — 画面の描画とボタン操作。
  */
 
@@ -7316,9 +7906,10 @@ const lockMoney = h => state.phase === 'closed' ? h : h.replace(/class="card"/g,
 
 function render() {
     // 店を切り替えた・読み込んだときは、扱う品（シーシャ屋はフレーバー）を入れ替える（v2.1.0〜）
-    if (kindOf !== state || kindLoc !== state.loc) {
+    if (kindOf !== state || kindLoc !== state.loc || kindSty !== state.sty) {
         kindOf = state;
         kindLoc = state.loc;
+        kindSty = state.sty;
         applyKind();
     }
     const d = Math.max(state.day, 1), m = Math.floor((d - 1) / MD) + 1, sea = SEA[seaOf(d)], we = WE[state.weather];
@@ -7378,6 +7969,7 @@ function render() {
     }
     // 設定タブの「🏢 会社の遊び方を見る」は、会社があるときだけ（v2.2.0〜）
     byId('tutcob').hidden = !state.co;
+    byId('clrc').hidden = !(state.co && state.co.clr);
     // 営業中の現在時刻（v1.4.1〜。購買欲ゲージの上に大きく）
     byId('clk').hidden = state.phase !== 'open' || state.over;
     if (state.phase === 'open')
@@ -7404,7 +7996,7 @@ function render() {
             pn += '<div class="card up"><div class="tx"><div class="nm">' + (k === 'typ' ? '🧱 土嚢を積んで耐える' + helpIcon('sandbag') : '⛄ かまくらを作る' + helpIcon('kama')) + '</div><div class="meta">無料・成功率55%</div></div><button class="' + (on ? '' : 'alt') + '" data-a="prep" data-v="' + k + '" style="flex:0 0 96px">' + (on ? '準備済み✓' : '備える') + '</button></div>';
         }
         pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
-        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">' + yen(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ' + yen(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済' + yen(state.ln.a * (1 + intr(state.ln.m))) + '（月' + yen(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月' + yen(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>';
+        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">' + yen(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ' + yen(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済' + yen(state.ln.a * (1 + intr(state.ln.m))) + '（月' + yen(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月' + yen(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>' + adLoanCard();
     }
     byId('hp').textContent = Math.floor(state.happy) + '%';
     byId('hb').style.width = state.happy + '%';
@@ -7531,7 +8123,7 @@ function render() {
 }
 
 /** いまの扱う品がどの店のものか（render が見て、変わったら applyKind する） */
-let kindOf = null, kindLoc = null;
+let kindOf = null, kindLoc = null, kindSty = null;
 
 document.addEventListener('click', e => {
     if (!e.target.closest('[data-a="help"]'))
@@ -7823,7 +8415,7 @@ function initLayout() {
     const my = byId('mny');
     my.open = true;
     P2.append(my);
-    P3.append(byId('mg'), byId('thc'), byId('tutc'), byId('v1c'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
+    P3.append(byId('mg'), byId('thc'), byId('tutc'), byId('clrc'), byId('v1c'), byId('svd'), byId('svf'), byId('cgMove'), byId('dbg'), document.querySelector('.rst'), byId('chg'), document.querySelector('.foot'));
     const sc = document.createElement('div');
     sc.id = 'scr';
     P4.append(byId('co'));
@@ -7841,6 +8433,181 @@ function initLayout() {
     place();
     wide.addEventListener('change', place);
 }
+</script>
+<script>
+/**
+ * clear.js — クリア演出（v2.3.0〜）。achv.js の前に読む。
+ *
+ * 条件（4つすべて）：全店の累計売上1兆円・お店5店舗以上・預金1,000億円・営業50年（通算4,200日）。難易度は問わない。
+ * そろった日の閉店後（engine.js の endDay の最後で clrCheck）に、クリア専用のカットイン（帯が斜めに入る＋紙吹雪と花火）を出し、
+ * そのあと成績のカードを出す。クリアした日は state.co.clr（{ day, diff, at }）に残し、演出はセーブごとに1回だけ。
+ * 設定タブの「🏆 クリア演出をもう一度見る」で見直せる。クリアしたあともそのまま遊び続けられる。
+ */
+
+/** クリアの条件 */
+const CLR = { tot: 1e12, stores: 5, sv: 1e11, day: 50 * MD * 12 };
+
+/** 全店の累計売上 */
+const clrTot = () => allStores().reduce((a, s) => a + (s.tot || 0), 0);
+
+/** 条件ごとの今の値と達成したか */
+const clrParts = () => [
+    { n: '全店の累計売上', v: yen(clrTot()), g: yen(CLR.tot), ok: clrTot() >= CLR.tot },
+    { n: 'お店の数', v: allStores().length + '店舗', g: CLR.stores + '店舗', ok: allStores().length >= CLR.stores },
+    { n: '預金', v: yen(state.sv || 0), g: yen(CLR.sv), ok: (state.sv || 0) >= CLR.sv },
+    { n: '営業', v: Math.floor(state.day / (MD * 12)) + '年（通算' + state.day + '日）', g: '50年', ok: state.day >= CLR.day }
+];
+
+/** 閉店のたびに調べる（まだクリアしていなくて、条件がそろったら演出） */
+function clrCheck() {
+    if (!state.co || state.co.clr || state.over || !clrParts().every(p => p.ok))
+        return;
+    state.co.clr = { day: state.day, diff: state.diff, at: new Date().toISOString() };
+    addEvent('🏆 ちいさなお店をクリアしました！おめでとう！');
+    save();
+    setTimeout(() => clrShow(), 300);
+}
+
+/** 紙吹雪と花火（canvas。止めるときは clrFx.stop()） */
+const clrFx = {
+    raf: 0,
+    stop() {
+        cancelAnimationFrame(this.raf);
+        this.raf = 0;
+    },
+    start(cv) {
+        this.stop();
+        const g = cv.getContext('2d'), C = ['#ff7a68', '#2fbf97', '#ffbf47', '#6fb8ff', '#e8709a', '#ffffff'];
+        let W = 0, H = 0, P = [], t0 = performance.now(), last = t0, nextFw = 0;
+        const fit = () => {
+            const r = devicePixelRatio || 1;
+            W = cv.clientWidth;
+            H = cv.clientHeight;
+            cv.width = W * r;
+            cv.height = H * r;
+            g.setTransform(r, 0, 0, r, 0, 0);
+        };
+        fit();
+        const conf = n => {
+            for (let i = 0; i < n; i++)
+                P.push({ k: 0, x: Math.random() * W, y: -20 - Math.random() * H * 0.6, vx: (Math.random() - 0.5) * 60, vy: 80 + Math.random() * 120, a: Math.random() * 6, va: (Math.random() - 0.5) * 8, w: 6 + Math.random() * 6, h: 4 + Math.random() * 4, c: C[i % C.length] });
+        };
+        const fw = () => {
+            const x = W * (0.15 + Math.random() * 0.7), y = H * (0.12 + Math.random() * 0.35), c = C[Math.floor(Math.random() * 5)];
+            for (let i = 0; i < 36; i++) {
+                const a = i / 36 * Math.PI * 2, sp = 120 + Math.random() * 60;
+                P.push({ k: 1, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, c });
+            }
+        };
+        conf(140);
+        const step = now => {
+            const dt = Math.min(0.05, (now - last) / 1000), el = (now - t0) / 1000;
+            last = now;
+            if (cv.clientWidth !== W || cv.clientHeight !== H)
+                fit();
+            if (el > nextFw && el < 9) {
+                fw();
+                nextFw = el + 0.5 + Math.random() * 0.6;
+            }
+            if (el < 6 && Math.random() < 0.3)
+                conf(2);
+            g.clearRect(0, 0, W, H);
+            P = P.filter(p => {
+                if (p.k) {
+                    p.vy += 90 * dt;
+                    p.vx *= 0.985;
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.life -= dt * 0.8;
+                    g.globalAlpha = Math.max(0, p.life);
+                    g.fillStyle = p.c;
+                    g.fillRect(p.x - 2, p.y - 2, 4, 4);
+                    return p.life > 0;
+                }
+                p.vy = Math.min(p.vy + 30 * dt, 200);
+                p.x += (p.vx + Math.sin(el * 3 + p.a) * 30) * dt;
+                p.y += p.vy * dt;
+                p.a += p.va * dt;
+                g.globalAlpha = 1;
+                g.save();
+                g.translate(p.x, p.y);
+                g.rotate(p.a);
+                g.fillStyle = p.c;
+                g.fillRect(-p.w / 2, -p.h / 2 * Math.abs(Math.cos(p.a * 1.7)), p.w, p.h * Math.abs(Math.cos(p.a * 1.7)) + 1);
+                g.restore();
+                return p.y < H + 30;
+            });
+            g.globalAlpha = 1;
+            if (el < 12 || P.length)
+                this.raf = requestAnimationFrame(step);
+        };
+        this.raf = requestAnimationFrame(step);
+    }
+};
+
+/** クリア演出を出す */
+function clrShow() {
+    const c = state.co;
+    if (!c || !c.clr)
+        return;
+    let el = byId('clrm');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'clrm';
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
+        document.body.appendChild(el);
+    }
+    const D = DF[c.clr.diff] || difficulty(), A = allStores(), y = Math.floor(c.clr.day / (MD * 12));
+    const kv = (k, v) => '<span>' + k + '</span><b>' + v + '</b>';
+    el.innerHTML = '<canvas class="clrcv"></canvas>'
+        + '<div class="clrband"><div class="clrin"><div class="clrt">🏆 CLEAR!</div><div class="clrs">ちいさなお店、だいせいこう！</div></div></div>'
+        + '<div class="ovbox clrbox"><div class="clrhd"><canvas class="clrface" width="32" height="32"></canvas><div><b>おめでとう！</b><span>小さなお店から始めて、' + esc(c.name || '会社') + 'は' + A.length + '店舗の大きな会社になったね。ここまでいっしょに来てくれてありがとう！</span></div></div>'
+        + '<div class="cokv clrkv">' + kv('会社', esc(c.name || '')) + kv('難易度', D.n) + kv('かかった日数', y + '年（通算' + fmt(c.clr.day) + '日）') + kv('全店の累計売上', yen(clrTot())) + kv('預金', yen(state.sv || 0)) + kv('お店', A.length + '店舗') + '</div>'
+        + '<div class="clrst">' + A.map((s, i) => '<span>' + locOf(s).e + ' ' + esc(s.sname || (i + 1) + '号店') + '<small>' + styName(s) + '</small></span>').join('') + '</div>'
+        + '<div class="row"><button data-a="clrshare">📤 クリアをシェア</button></div>'
+        + '<button class="big" data-a="clrclose">つづける</button></div>';
+    el.hidden = false;
+    el.classList.remove('s2');
+    tutFace(el.querySelector('.clrface'));
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still)
+        el.classList.add('s2');
+    else {
+        clrFx.start(el.querySelector('.clrcv'));
+        clearTimeout(clrShow.t);
+        clrShow.t = setTimeout(() => el.classList.add('s2'), 2600);
+    }
+}
+
+/** クリア演出を閉じる */
+function clrClose() {
+    const el = byId('clrm');
+    clrFx.stop();
+    if (el)
+        el.hidden = true;
+    render();
+}
+
+/** クリアをシェア（#ちくわげーむず は CG.share が付ける） */
+function clrShare() {
+    const c = state.co, D = DF[c.clr.diff] || difficulty();
+    const msg = 'ちいさなお店をクリアした！🏆（' + D.n + '・' + Math.floor(c.clr.day / (MD * 12)) + '年・' + allStores().length + '店舗・累計売上' + yen(clrTot()) + '）';
+    CG.share.open({ msg, url: shareUrl() });
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'clrclose')
+        clrClose();
+    if (a === 'clrshare')
+        clrShare();
+    if (a === 'clrshow')
+        clrShow();
+});
 </script>
 <script>
 /**
@@ -7875,6 +8642,7 @@ const ACH_GROUPS = [
     { g: '💴 累計売上', e: '💴', v: () => state.tot || 0, ns: [1e8, 1e9, 1e10, 1e11, 1e12], id: n => 'tot' + n, name: n => '累計売上 ' + achYen(n), fmt: v => yen(v) },
     { g: '🏪 営業', e: '🏪', v: () => state.day || 0, ns: [10 * YEAR, 50 * YEAR, 100 * YEAR], id: n => 'day' + n, name: n => '営業 ' + achTerm(n), fmt: v => '通算' + fmt(v) + '日' },
     { g: '🏦 貯金', e: '🏦', v: () => state.sv || 0, ns: [1e7, 1e8, 1e9, 1e10, 1e11, 1e12], id: n => 'sv' + n, name: n => '貯金 ' + achYen(n), fmt: v => '預金 ' + yen(v) },
+    { g: '🏆 クリア', e: '🏆', v: () => state.co && state.co.clr ? 1 : 0, ns: [1], id: () => 'clear', name: () => 'ちいさなお店をクリア', fmt: v => v ? 'クリア済み' : '累計売上1兆円・5店舗・預金1,000億円・営業50年' },
     { g: '🔥 インフェルノ', e: '🔥', v: () => state.diff === 'inferno' && !state.over ? state.day || 0 : 0, ns: [6 * MD, YEAR, 5 * YEAR, 10 * YEAR], id: n => 'inf' + n, name: n => 'インフェルノで ' + achTerm(n), fmt: v => state.diff === 'inferno' ? '通算' + fmt(v) + '日' : 'インフェルノで遊ぶと進みます' }
 ];
 
