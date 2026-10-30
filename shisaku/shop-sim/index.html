@@ -7850,7 +7850,7 @@ function adLoanCard() {
 }
 
 /** 倒産ポップアップの「広告を見て復活」ボタン（広告が出ていないときは空） */
-const adReviveBtn = () => CG.ad.ready() ? '<button class="big adrev" data-a="adrev">📺 広告を見て復活（大企業に買い取られる）<small>所持金のマイナスを0に戻し、ノルマの50%（' + yen(r100(quota() * 0.5)) + '）がもらえます</small></button>' : '';
+const adReviveBtn = () => CG.ad.ready() ? '<button class="big adrev" data-a="adrev">📺 広告を見て復活<br>（大企業に買い取られる）<small>所持金のマイナスを0に戻し、ノルマの50%（' + yen(r100(quota() * 0.5)) + '）がもらえます</small></button>' : '';
 
 document.addEventListener('click', e => {
     const b = e.target.closest('button');
