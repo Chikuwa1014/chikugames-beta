@@ -6,6 +6,10 @@
  *   仲介（worker/index.js の MultiRoom、/<フォルダ>/ws）で WebRTC の接続情報を交換し、あとは端末どうしが直接やりとり。
  *   最初に入った端末が親（ID "0"）。親が子それぞれと 1 対 1 でつながる星型。部屋コードは 4 桁の数字。
  *   子はつながったら仲介を閉じる。親は新しい人のために開けたまま（切れたら 2 秒後につなぎ直す）。
+ *   親は 15 秒ごとに仲介へ「生きてるよ」（ping）を送り、返事（pong）が来なくなったり、画面に戻ってきたときに
+ *   切れていたりしたら、すぐにつなぎ直す（キャリア回線は無通信の接続を黙って切るため。2026-10-31）。
+ *   つなぎ直すときは親の合い言葉（key）を渡し、仲介に残った古い親の接続と入れかわる。
+ *   子が参加したときに親がつなぎ直し中なら、すぐに失敗にせず 10 秒ほど待ってくり返す。
  *   新しいゲームで使うときは worker/index.js の WS_GAMES に「フォルダ名: 台数」を足す。
  *
  * ゲーム側が書くのは「メッセージを受け取ったときの処理」だけ：
@@ -63,6 +67,9 @@
         let ws = null, mode = null, leaving = false, chain = Promise.resolve(), timer = 0;
         let peers = new Map(), pc = null, dc = null, pendingIce = [], connected = false;
         let names = new Map();
+        // 親の生存確認（hostKey：つなぎ直しで親に戻るための合い言葉、beat：ping のタイマー、lastPong：最後に返事が来た時刻）
+        let hostKey = null, beat = 0, lastPong = 0;
+        const BEAT_MS = 15000, BEAT_LOST_MS = 35000;
 
         const R = {
             role: null, code: null, myId: null, members: [],
@@ -138,6 +145,8 @@
         function reset() {
             leaving = true;
             clearTimeout(timer);
+            clearInterval(beat);
+            hostKey = null;
             try {
                 ws && ws.close();
             }
@@ -186,7 +195,13 @@
             R.code = code;
             let s;
             try {
-                s = new WebSocket(signalUrl() + '?room=' + code);
+                // join=1：親がいなければ親にならずに「nohost」を返してもらう。reclaim：親のつなぎ直し（古い接続と入れかわる）
+                let q = '?room=' + code;
+                if (m === 'join')
+                    q += '&join=1';
+                if (m === 'reconnect' && hostKey)
+                    q += '&reclaim=' + encodeURIComponent(hostKey);
+                s = new WebSocket(signalUrl() + q);
             }
             catch (e) {
                 fail('サーバーに接続できません');
@@ -218,12 +233,16 @@
                 catch (err) {
                     return;
                 }
+                if (msg && msg.type === 'pong') {
+                    lastPong = Date.now();
+                    return;
+                }
                 chain = chain.then(() => onSignal(msg, tries)).catch(err => console.error(err));
             };
         }
 
-        /** 引き継ぎ（takeover・rejoin）で、まだつながらないときにやり直す */
-        function retryLater(code, m, tries) {
+        /** 引き継ぎ（takeover・rejoin）や、参加したときに親がつなぎ直し中のときに、少し待ってやり直す */
+        function retryLater(code, m, tries, text) {
             leaving = true;
             try {
                 ws && ws.close();
@@ -232,8 +251,61 @@
             ws = null;
             clearTimeout(timer);
             if (tries >= 14)
-                return fail('部屋が見つかりませんでした');
+                return fail(text || '部屋が見つかりませんでした');
             timer = setTimeout(() => openSignal(code, m, tries + 1), 700);
+        }
+
+        // ---- 親：仲介との接続の生存確認 ----
+        function startBeat() {
+            clearInterval(beat);
+            lastPong = Date.now();
+            beat = setInterval(() => {
+                if (R.role !== 'host' || leaving)
+                    return clearInterval(beat);
+                if (!ws)
+                    return;   // つなぎ直しの途中
+                if (Date.now() - lastPong > BEAT_LOST_MS)
+                    return reconnectNow();
+                sendSignal({ type: 'ping' });
+            }, BEAT_MS);
+        }
+        /** 親：いまの仲介の接続を捨てて、すぐにつなぎ直す */
+        function reconnectNow() {
+            if (R.role !== 'host' || leaving)
+                return;
+            const old = ws;
+            ws = null;   // 古い接続の onclose では何もしない
+            try {
+                old && old.close();
+            }
+            catch (e) { }
+            clearTimeout(timer);
+            call('onStatus', '仲介サーバーにつなぎ直しています…');
+            openSignal(R.code, 'reconnect', 0);
+        }
+        /** 親：画面に戻ってきた・回線が戻ったときに、仲介とつながっているか確かめる（返事が 4 秒来なければつなぎ直す） */
+        function checkAlive() {
+            if (R.role !== 'host' || leaving)
+                return;
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                if (!ws || ws.readyState !== WebSocket.CONNECTING)
+                    reconnectNow();
+                return;
+            }
+            const sent = Date.now();
+            sendSignal({ type: 'ping' });
+            setTimeout(() => {
+                if (R.role === 'host' && !leaving && lastPong < sent)
+                    reconnectNow();
+            }, 4000);
+        }
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible')
+                    checkAlive();
+            });
+            window.addEventListener('online', checkAlive);
+            window.addEventListener('pageshow', e => e.persisted && checkAlive());
         }
 
         /** 親：いまの人数（自分＋つながった子＋つなぎ途中の子） */
@@ -258,6 +330,8 @@
                             catch (e) { }
                             return;
                         }
+                        hostKey = msg.key || hostKey;
+                        startBeat();
                         call('onStatus', '');
                         return;
                     }
@@ -269,6 +343,8 @@
                     R.role = msg.role;
                     R.myId = msg.id;
                     if (R.role === 'host') {
+                        hostKey = msg.key || null;
+                        startBeat();
                         names.set('0', String(o.name()));
                         pushMembers();
                         call('onStatus', '');
@@ -281,9 +357,17 @@
                     return;
                 case 'full':
                     return fail('その部屋は満員です');
+                case 'nohost':
+                    // 親がいない（つなぎ直し中かもしれない）→ 少し待ってくり返す
+                    call('onStatus', '親を待っています…');
+                    return retryLater(R.code, mode, tries, 'その部屋は見つかりません');
                 case 'host-left':
                     if (!connected && (mode === 'rejoin' || mode === 'takeover'))
                         return retryLater(R.code, mode, tries);
+                    if (!connected && mode === 'join') {
+                        call('onStatus', '親を待っています…');
+                        return retryLater(R.code, mode, tries, '部屋が閉じられました');
+                    }
                     if (!connected)
                         fail('部屋が閉じられました');
                     return;
@@ -294,6 +378,12 @@
                 case 'peer-joined': {
                     if (R.role !== 'host')
                         return;
+                    // つなぎ直したあと、仲介が待っている子をもう一度知らせてくることがある
+                    const had = peers.get(msg.id);
+                    if (had && had.open)
+                        return;
+                    if (had)
+                        dropPeer(msg.id);
                     if (headcount() >= o.max) {
                         sendSignal({ type: 'reject', to: msg.id, reason: 'full' });
                         return;
@@ -362,7 +452,7 @@
                     sendSignal({ type: 'ice', to: id, c: e.candidate });
             };
             c.onconnectionstatechange = () => {
-                if (c.connectionState === 'failed')
+                if (c.connectionState === 'failed' && peers.get(id) === p)
                     dropPeer(id);
             };
             return p;
@@ -388,7 +478,11 @@
                 }
                 call('onMessage', id, m);
             };
-            ch.onclose = () => dropPeer(id);
+            ch.onclose = () => {
+                const p = peers.get(id);
+                if (p && p.dc === ch)
+                    dropPeer(id);
+            };
         }
         function dropPeer(id) {
             const p = peers.get(id);
