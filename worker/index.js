@@ -34,35 +34,79 @@ export default {
   },
 };
 
+// 2026-10-31 追加（common/v1/room.js の新しい版が使う。古い版や、ルーレット・バトルオセロの自前の処理には影響しない）
+//   ・{"type":"ping"} には {"type":"pong"} を返す（親の生存確認。部屋を起こさずに返す）
+//   ・?join=1：親がいなければ、親にせず {"type":"nohost"} を返して閉じる（子は少し待ってくり返す）
+//   ・?reclaim=<合い言葉>：親のつなぎ直し。合い言葉が合う古い親の接続を捨てて、入れかわる
+//     （キャリア回線では、切れた古い接続が仲介に残ったままになることがあるため）
 export class MultiRoom {
   constructor(state) {
     this.state = state;
+    try {
+      state.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"type":"ping"}', '{"type":"pong"}'));
+    } catch (e) {}
+  }
+
+  /** 捨てた古い接続（reclaim で入れかわった親）は数えない */
+  live(tag) {
+    return this.state.getWebSockets(tag).filter((ws) => !this.isStale(ws));
+  }
+  isStale(ws) {
+    try { const a = ws.deserializeAttachment(); return !!(a && a.stale); } catch (e) { return false; }
   }
 
   async fetch(request) {
-    const sockets = this.state.getWebSockets();
+    let params;
+    try { params = new URL(request.url).searchParams; } catch (e) { params = new URLSearchParams(); }
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     const max = Math.min(MAX_PEERS, Number(request.headers.get("X-Max-Peers")) || MAX_PEERS);
 
-    if (sockets.length >= max) {
-      server.accept();
-      server.send(JSON.stringify({ type: "full" }));
-      server.close(4000, "room full");
-      return new Response(null, { status: 101, webSocket: client });
+    // 親のつなぎ直し：合い言葉が合う古い親の接続を捨てる
+    const reclaim = params.get("reclaim") || "";
+    let key = "";
+    if (/^[0-9a-f]{16}$/.test(reclaim)) {
+      const old = this.live("key:" + reclaim);
+      if (old.length) {
+        key = reclaim;
+        for (const ws of old) {
+          try { ws.serializeAttachment({ stale: true }); } catch (e) {}
+          try { ws.close(4001, "replaced"); } catch (e) {}
+        }
+      }
     }
 
-    // 親がまだいなければ、この端末が親になる
+    const sockets = this.live();
+    const reject = (type, code) => {
+      server.accept();
+      server.send(JSON.stringify({ type }));
+      server.close(code, type);
+      return new Response(null, { status: 101, webSocket: client });
+    };
+    if (sockets.length >= max) return reject("full", 4000);
+
+    // 親がまだいなければ、この端末が親になる（参加のつもりの子は、親にしない）
     const hasHost = sockets.some((ws) => this.state.getTags(ws).includes("host"));
+    if (!hasHost && params.get("join") === "1") return reject("nohost", 4002);
     const role = hasHost ? "guest" : "host";
     // 端末ID：親は "0"、子はかぶらないランダムな文字列（接続を切った子のIDを使い回さない）
     const id = role === "host" ? "0" : crypto.randomUUID().slice(0, 8);
-    this.state.acceptWebSocket(server, [role, "id:" + id]);
+    const tags = [role, "id:" + id];
+    if (role === "host") {
+      if (!key) key = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+      tags.push("key:" + key);
+    }
+    this.state.acceptWebSocket(server, tags);
 
-    server.send(JSON.stringify({ type: "role", role, id }));
+    server.send(JSON.stringify(role === "host" ? { type: "role", role, id, key } : { type: "role", role, id }));
     if (role === "guest") {
-      for (const ws of this.state.getWebSockets("host")) {
+      for (const ws of this.live("host")) {
         ws.send(JSON.stringify({ type: "peer-joined", id }));
+      }
+    } else {
+      // 親が入れかわったとき：親を待っていた子を、新しい親に知らせる
+      for (const ws of this.live("guest")) {
+        server.send(JSON.stringify({ type: "peer-joined", id: this.idOf(ws) }));
       }
     }
     return new Response(null, { status: 101, webSocket: client });
@@ -78,23 +122,27 @@ export class MultiRoom {
     let msg;
     try { msg = JSON.parse(message); } catch (e) { return; }
     if (!msg || typeof msg !== "object") return;
+    if (this.isStale(ws)) return;
+    // 自動の返事が使えないとき（手元の確認用サーバーなど）の予備
+    if (msg.type === "ping") { try { ws.send('{"type":"pong"}'); } catch (e) {} return; }
     msg.from = this.idOf(ws);
     const text = JSON.stringify(msg);
     if (typeof msg.to === "string") {
-      for (const other of this.state.getWebSockets("id:" + msg.to)) {
+      for (const other of this.live("id:" + msg.to)) {
         if (other !== ws) other.send(text);
       }
       return;
     }
-    for (const other of this.state.getWebSockets()) {
+    for (const other of this.live()) {
       if (other !== ws) other.send(text);
     }
   }
 
   async webSocketClose(ws) {
+    if (this.isStale(ws)) return;   // 入れかわった古い親：ほかの人には知らせない
     const id = this.idOf(ws);
     const wasHost = this.state.getTags(ws).includes("host");
-    for (const other of this.state.getWebSockets()) {
+    for (const other of this.live()) {
       if (other === ws) continue;
       try { other.send(JSON.stringify(wasHost ? { type: "host-left" } : { type: "peer-left", id })); } catch (e) {}
     }
