@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<!-- 試作環境：ちいさなお店 v2.3.3（号口へ出す前の確認用） -->
+<!-- 試作環境：ちいさなお店 v2.4.0（号口へ出す前の確認用） -->
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
@@ -1197,7 +1197,7 @@ button.big.rstb.arm {
 }
 
 /* ---- ポップアップ（倒産・甘酒・実績） ---- */
-#ovm, #ama, #achm, #costm, #codash, #stym {
+#ovm, #ama, #achm, #costm, #codash, #stym, #sbm {
   position:fixed;
   inset:0;
   z-index:40;
@@ -1215,7 +1215,7 @@ button.big.rstb.arm {
   z-index:45;
 }
 
-#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #stym[hidden], #clrm[hidden] {
+#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #stym[hidden], #clrm[hidden], #sbm[hidden] {
   display:none;
 }
 
@@ -2556,6 +2556,45 @@ html.kb button.achb {
   padding:2px 9px;
   font-size:11px;
 }
+/* スタイルビルダー（v2.4.0〜） */
+#sbm { z-index:43; }
+.stmy { font-size:10px; font-weight:800; color:#fff; background:var(--coral2); border-radius:999px; padding:1px 6px; vertical-align:2px; }
+.sbneed { display:grid; gap:6px; margin-top:6px; }
+.sbneed span { font-size:13px; font-weight:800; background:var(--bg); border-radius:10px; padding:6px 10px; }
+.sbneed span.ok { background:var(--mintl); }
+.sbneed small { display:block; font-weight:500; color:var(--sub); font-size:11px; }
+.sbmine { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+.sbmine span { font-size:12px; font-weight:700; background:var(--bg); border-radius:10px; padding:4px 8px; }
+.sbbox .clrsay { margin:0 0 12px; animation:none; }
+.sbhi .achtop { margin-bottom:10px; }
+.sbhi .achx { margin-left:auto; }
+.sblater { width:100%; margin-top:8px; }
+.sbbtn { display:flex; flex-direction:column; gap:6px; flex:none; }
+.sbbtn button { flex:none; padding:7px 12px; font-size:12px; }
+.sbnew { margin-top:12px; }
+.sbpv { position:relative; border-radius:12px; overflow:hidden; margin-bottom:10px; }
+.sbpv canvas { display:block; width:100%; height:auto; image-rendering:pixelated; }
+.sbpv .sbpe { position:absolute; left:50%; top:11.5%; transform:translateX(-50%); font-size:clamp(16px, 5vw, 24px); line-height:1; }
+.sbbox input:not([type=color]), .sbbox select { font:inherit; font-size:16px; padding:7px 8px; border-radius:10px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); min-width:0; box-sizing:border-box; }
+.sbrow { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.sbrow .sbe { width:52px; flex:none; text-align:center; }
+.sbrow .sbn { flex:1; }
+.sbbox .sbd { width:100%; margin-bottom:6px; }
+.sbcol label { flex:1; display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--sub); }
+.sbcol input[type=color] { width:44px; height:34px; border:0; padding:0; background:none; flex:none; }
+.sbbal { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--sub); background:var(--bg); border-radius:10px; padding:8px 10px; margin:6px 0; }
+.sbbal b { color:var(--ink); }
+.sbits { display:grid; gap:8px; margin:8px 0; }
+.sbit { border:1.5px solid var(--line); border-radius:12px; padding:8px; }
+.sbit .sbrow { flex-wrap:wrap; margin-bottom:4px; }
+.sbno { font-size:12px; font-weight:900; color:var(--sub); width:18px; flex:none; text-align:center; }
+.sbit .sbn { flex:1 1 120px; }
+.sbit .sbcst { width:110px; flex:1 1 90px; }
+.sbit select { flex:none; }
+.sbit summary { font-size:11px; color:var(--sub); cursor:pointer; }
+.sbups { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; }
+.sberr { color:var(--red); font-size:12px; font-weight:700; margin:6px 0; }
+.sbbox input:disabled, .sbbox select:disabled { opacity:.55; }
 </style>
 </head>
 <body>
@@ -3461,13 +3500,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '2.3.3';
+const VERSION = '2.4.0';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['2.4.0', '2026-10-31', 'スタイルビルダーを追加：お店が10店舗（出店の上限）になり、純資産が10億円に届いた日の閉店後に解放（ちくわくんがお知らせ）。会社タブの「🛠️ スタイルビルダー」から、自分だけのお店のスタイルを作れる（名前・絵文字・説明・屋根と看板の色・商品12個の絵・名前・原価・よく買う人・上位品の名前）。もとにするスタイルを選んで作り始められる。来店数は原価から自動で決まる（高い商品ばかりならお客さんは少なめ）。作ったスタイルは、新しいお店と「🎨 スタイル」の改装で選べる。作ったスタイルは、はじめ3つまで持てて、広告を見ると1つずつ増やせる（最大5つ。広告はまだ出していないので、いまは3つまで）。お店で使っているスタイルは原価とよく買う人を変えられず、消せない。解放前は、会社タブに条件と今の値を表示'],
     ['2.3.3', '2026-10-30', 'お店の名前などを入力している間（キーボードが出ている間）は、お店の絵・日付・タブバーをたたみ、所持金を小さく表示して、入力欄の周りを広く使えるように（入力が終わると元に戻る。iPhone の Chrome で入力欄の周りがとても狭くなっていたため）'],
     ['2.3.2', '2026-10-30', 'iPhone の Chrome で、お店の名前などを入力しようとしてキーボードが出ると、横画面の2列の表示に切り替わってくずれる不具合を修正'],
     ['2.3.1', '2026-10-30', 'クリア演出のあとに「お店を見る ▶」：出したお店を1店ずつ紹介（お店のドット絵・場所・スタイル・開店日・営業した日数・累計売上・ちくわくんのひとこと。4.5秒かタップで次へ、スキップあり）し、最後に「おしまい」の画面（ちくわくんからのありがとうと、前向きになれる言葉）を出して終わるように。お店ごとに開店日を記録（v2.3.1 より前に出したお店は「記録なし」）'],
@@ -4881,7 +4921,7 @@ function coRender() {
             const L = LOCS[k];
             return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
         }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>' + styPick()
-        + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>';
+        + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>' + sbCard();
     if (h !== coHtml)
         el.innerHTML = coHtml = h;
     if (coDashOpen)
@@ -5053,6 +5093,7 @@ document.addEventListener('input', e => {
  * シーシャ屋はフレーバーのお店なので、スタイルは選べない。
  * はじめから選べるのは STY_INIT の4つ。残りは広告を見て1つずつ解放する（1日1回まで。広告が出ていないあいだは解放できない）。
  * 最終段階の商品のイベント（熱ばくだんおにぎりの爆発など）は「いつもの」だけ（新しいスタイルのイベントは保留）。
+ * v2.4.0〜 プレイヤーがスタイルビルダー（builder.js）で作ったスタイル（state.co.myS）も、ここの一覧 styAll に入る（いつでも選べる）。
  */
 
 /** スタイルの一覧。items の並びは棚の解放順（安い順）。g：よく買う人（m 男性・f 女性・a みんな）、up：アップグレード7段階の名前、cust：来店数の倍率 */
@@ -5230,8 +5271,11 @@ const STYLES = [
 /** はじめから選べるスタイル（いつもの＋3つ） */
 const STY_INIT = ['normal', 'food', 'toy', 'shoes'];
 
+/** 選べるスタイルの全部（12種＋自分で作ったスタイル） */
+const styAll = () => STYLES.concat((state.co && state.co.myS) || []);
+
 /** そのお店のスタイル（シーシャ屋は null） */
-const styOf = (s = state) => isShisha(s) ? null : (STYLES.find(t => t.id === s.sty) || STYLES[0]);
+const styOf = (s = state) => isShisha(s) ? null : (styAll().find(t => t.id === s.sty) || STYLES[0]);
 
 /** 「いつもの」以外のスタイルなら、そのスタイル（いつもの・シーシャ屋は null） */
 const styAlt = (s = state) => {
@@ -5252,7 +5296,7 @@ const styCust = (s = state) => {
 };
 
 /** 解放したスタイルの id（会社ができる前は、はじめの4つ） */
-const styOpen = () => (state.co && state.co.styU) || STY_INIT;
+const styOpen = () => ((state.co && state.co.styU) || STY_INIT).concat(((state.co && state.co.myS) || []).map(t => t.id));
 
 /** 商品のもとの原価（アップグレード前）。シーシャ屋はフレーバー、スタイルの店はスタイルの商品 */
 const baseCost = (s, id) => {
@@ -5276,7 +5320,7 @@ const styAdUsed = () => !!(state.co && state.co.styAd === styToday());
 
 /** お店のスタイルを変える（閉店中だけ。棚の在庫は原価で引き取り、解放した棚とアップグレードの段階は同じ番号の商品に引きつぐ） */
 function styChange(i, id) {
-    const A = allStores(), s = A[i], t = STYLES.find(x => x.id === id);
+    const A = allStores(), s = A[i], t = styAll().find(x => x.id === id);
     if (!state.co || !s || !t || state.phase !== 'closed' || state.over || isShisha(s) || !styOpen().includes(id) || (s.sty || 'normal') === id)
         return;
     const fee = styFee(s);
@@ -5321,10 +5365,10 @@ function styPick() {
     const c = state.co, sel = c.ssel || 'normal', O = styOpen(), shi = (c.lsel || 'suburb') === 'shisha';
     if (shi)
         return '<div class="meta stynote">💨 シーシャ屋はフレーバーのお店なので、スタイルは選べません。</div>';
-    const t = STYLES.find(x => x.id === sel) || STYLES[0];
-    return '<label class="cof">お店のスタイル<select id="ssty">' + STYLES.map(x => '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + (O.includes(x.id) ? '' : ' disabled') + '>' + (O.includes(x.id) ? x.e : '🔒') + ' ' + x.n + '</option>').join('') + '</select></label>'
+    const L = styAll(), t = L.find(x => x.id === sel) || STYLES[0];
+    return '<label class="cof">お店のスタイル<select id="ssty">' + L.map(x => '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + (O.includes(x.id) ? '' : ' disabled') + '>' + (O.includes(x.id) ? x.e : '🔒') + ' ' + x.n + (x.my ? '（自作）' : '') + '</option>').join('') + '</select></label>'
         + '<div class="stypv"><span>' + t.d + '</span><span class="styit">' + t.items.slice(0, 6).map(p => p.e).join('') + '…</span></div>'
-        + (O.length < STYLES.length ? '<div class="meta">🔒 のスタイルは、店舗管理の「🎨 スタイル」から解放できます（' + O.length + ' / ' + STYLES.length + '）。</div>' : '');
+        + (STYLES.some(x => !O.includes(x.id)) ? '<div class="meta">🔒 のスタイルは、店舗管理の「🎨 スタイル」から解放できます（' + STYLES.filter(x => O.includes(x.id)).length + ' / ' + STYLES.length + '）。</div>' : '');
 }
 
 /** スタイルの画面（店舗管理の「🎨 スタイル」。i＝お店の番号、-1 で閉じる） */
@@ -5347,12 +5391,12 @@ function styPanel(i) {
         document.body.appendChild(el);
     }
     const s = allStores()[i], O = styOpen(), ok = state.phase === 'closed' && !state.over, fee = styFee(s), cur = (s.sty || 'normal'), ad = CG.ad.ready(), used = styAdUsed();
-    const rows = STYLES.map(t => {
+    const rows = styAll().map(t => {
         const op = O.includes(t.id), here = t.id === cur;
         const btn = here ? '<span class="dbt here">いまのスタイル</span>'
             : op ? '<button data-a="stygo" data-v="' + t.id + '"' + (ok && state.money >= fee ? '' : ' disabled') + '>改装する</button>'
                 : ad ? '<button class="alt" data-a="styad" data-v="' + t.id + '"' + (used ? ' disabled' : '') + '>📺 広告で解放</button>' : '<span class="dbt off">🔒 まだ</span>';
-        return '<div class="styr' + (here ? ' here' : '') + (op ? '' : ' lock') + '"><span class="ste">' + (op ? t.e : '🔒') + '</span><div class="stx"><b>' + t.n + '</b><span>' + t.d + '</span><span class="styit">' + t.items.map(p => p.e).join('') + '</span><span class="meta">来店数×' + t.cust + '</span></div>' + btn + '</div>';
+        return '<div class="styr' + (here ? ' here' : '') + (op ? '' : ' lock') + '"><span class="ste">' + (op ? t.e : '🔒') + '</span><div class="stx"><b>' + t.n + (t.my ? ' <small class="stmy">自作</small>' : '') + '</b><span>' + t.d + '</span><span class="styit">' + t.items.map(p => p.e).join('') + '</span><span class="meta">来店数×' + t.cust + '</span></div>' + btn + '</div>';
     }).join('');
     el.innerHTML = '<div class="ovbox cobox"><div class="achtop"><b>🎨 「' + esc(s.sname || (i + 1) + '号店') + '」のスタイル</b><button class="alt achx" data-a="styclose" aria-label="閉じる">✕</button></div><div class="achbody">'
         + '<div class="meta">改装費 ' + yen(fee) + '（' + locOf(s).n + 'の出店費の半分）。棚の在庫は原価で引き取ります。解放した棚とアップグレードの段階は、同じ番号の商品に引きつぎます。' + (ok ? '' : '<b>閉店後に改装できます。</b>') + '</div>'
@@ -5716,6 +5760,7 @@ function endDay() {
     state.phase = 'closed';
     coDaily();
     clrCheck();
+    sbCheck();
 }
 
 /** 翌日へ（イベント・病気・休業の判定） */
@@ -8681,15 +8726,16 @@ const CLR_SAY = {
     car: 'たくさんの人の、はじめてのドライブを送り出してきたお店だね',
     tcg: '放課後になると、カードを広げる声でにぎやかだったね',
     happy: 'その名前のとおり、しあわせを配ってきたお店だね',
+    my: 'きみが考えたお店。世界にひとつだけの、すてきなお店だね',
     shisha: 'ゆっくり煙をくゆらせて、夜を楽しむ大人のお店だったね'
 };
 
 /** 日にちの表示（◯ヶ月目・通算◯日） */
 const clrDate = d => (Math.floor((d - 1) / MD) + 1) + 'ヶ月目・通算' + fmt(d) + '日';
 
-/** お店のドット絵（96×60。屋根と日よけはスタイルの色、看板にスタイルの絵文字） */
-function clrShop(cv, s) {
-    const g = cv.getContext('2d'), t = styAlt(s), R = t ? t.r : PXB.r, C = t ? t.c : PXB.c;
+/** お店のドット絵（96×60。屋根と日よけはスタイルの色、看板にスタイルの絵文字。o を渡すとその色で描く：スタイルビルダーの見本） */
+function clrShop(cv, s, o) {
+    const g = cv.getContext('2d'), t = o || styAlt(s), R = t ? t.r : PXB.r, C = t ? t.c : PXB.c;
     const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
     r(0, 0, 96, 60, '#1d2b4a');
     for (let i = 0; i < 18; i++)
@@ -8720,7 +8766,7 @@ function clrShop(cv, s) {
 function clrSlide(i) {
     const A = allStores(), s = A[i], L = locOf(s), sh = isShisha(s);
     const od = i === 0 ? 1 : s.od, kv = (k, v) => '<span>' + k + '</span><b>' + v + '</b>';
-    const say = i === 0 ? CLR_SAY.first : sh ? CLR_SAY.shisha : CLR_SAY[(styAlt(s) || {}).id] || CLR_SAY.normal;
+    const say = i === 0 ? CLR_SAY.first : sh ? CLR_SAY.shisha : (styAlt(s) && styAlt(s).my ? CLR_SAY.my : CLR_SAY[(styAlt(s) || {}).id]) || CLR_SAY.normal;
     const emo = sh ? L.e : styOf(s).e;
     return '<div class="clrsl"><div class="clrno">' + (i + 1) + '号店 <small>' + (i + 1) + ' / ' + A.length + '</small></div>'
         + '<div class="clrpx"><canvas width="96" height="60"></canvas><span>' + emo + '</span></div>'
@@ -8814,6 +8860,312 @@ document.addEventListener('click', e => {
     if (box && !e.target.closest('button') && !box.querySelector('.clrend'))
         clrTour(clrTour.i + 1);
 });
+</script>
+<script>
+/**
+ * builder.js — スタイルビルダー（v2.4.0〜）。styles.js と clear.js の後に読む。
+ *
+ * プレイヤーが自分でお店のスタイルを作れる。解放の条件は「お店10店舗（出店の上限）」と「純資産10億円」（2026-10-31 開発者が決定）。
+ * そろった日の閉店後（engine.js の endDay の最後で sbCheck）に解放し、ちくわくんがお知らせする。一度解放したら消えない（state.co.sbU＝解放した日）。
+ * 持てるのは、はじめ SB_INIT（3）個まで。広告を見ると1つずつ増え、最大 SB_MAX（5）個（state.co.sbX＝広告で増やした数。2026-10-31 開発者が決定）。state.co.myS に入る（{ id:'my…', my:true, n, e, d, r, c, cust, items[12]{ e, n, c, g, up[7] } }）。
+ * 来店数の倍率 cust はプレイヤーが決めず、原価から自動で決める（12個の「原価÷いつもの原価」の相乗平均の逆数。2026-10-29 のビルダーの試作と同じ考え方）。
+ * 作ったスタイルは styles.js の styAll に入り、新しいお店と改装で選べる（広告での解放はいらない）。
+ * お店で使っているスタイルは、原価とよく買う人を変えられない（名前・絵・説明・色・商品の名前と絵は変えられる）。消せるのは、使っているお店が無いときだけ。
+ */
+
+/** 解放の条件 */
+const SB_NEED = { stores: 10, net: 1e9 };
+/** 持てるスタイルの数（はじめ SB_INIT、広告で増やして最大 SB_MAX） */
+const SB_INIT = 3, SB_MAX = 5;
+
+/** いま持てる数 */
+const sbCap = () => Math.min(SB_MAX, SB_INIT + ((state.co && state.co.sbX) || 0));
+/** アップグレードの名前が空のときに前に付ける言葉 */
+const SB_TIER = ['お手ごろ', '定番', '人気の', '限定', 'プレミアム', '職人の', '伝説の'];
+/** 原価の下限と上限 */
+const SB_MINC = 10, SB_MAXC = 10000000;
+
+/** 純資産（会社タブと同じ：所持金＋預金＋資本金−借入） */
+const sbNet = () => {
+    const debt = (state.loans || []).reduce((a, l) => a + l.pay * l.left, 0);
+    return Math.round(state.money + (state.sv || 0) + ((state.co && state.co.cap) || 0) - debt);
+};
+
+/** 条件ごとの今の値と達成したか */
+const sbParts = () => [
+    { n: 'お店の数', v: allStores().length + '店舗', g: SB_NEED.stores + '店舗', ok: allStores().length >= SB_NEED.stores },
+    { n: '純資産', v: yen(sbNet()), g: yen(SB_NEED.net), ok: sbNet() >= SB_NEED.net }
+];
+
+/** 解放済みか */
+const sbOn = () => !!(state.co && state.co.sbU);
+
+/** 作ったスタイル */
+const sbMine = () => (state.co && state.co.myS) || [];
+
+/** そのスタイルを使っているお店の数 */
+const sbUsed = id => allStores().filter(s => !isShisha(s) && s.sty === id).length;
+
+/** 来店数の倍率（原価から自動。0.02〜1.2） */
+const sbCust = items => {
+    const B = STYLES[0].items;
+    let a = 0;
+    items.forEach((p, i) => a += Math.log(Math.max(1, p.c) / B[i].c));
+    return Math.round(Math.min(1.2, Math.max(0.02, 1 / Math.exp(a / items.length))) * 100) / 100;
+};
+
+/** 値段の倍率（いつもの何倍か） */
+const sbPrice = items => {
+    const B = STYLES[0].items;
+    let a = 0;
+    items.forEach((p, i) => a += Math.log(Math.max(1, p.c) / B[i].c));
+    return Math.exp(a / items.length);
+};
+
+/** 入力の文字を整える（HTML の記号を消し、長さをそろえる） */
+const sbTxt = (t, n) => [...String(t || '').replace(/[<>&"'`]/g, '').trim()].slice(0, n).join('');
+
+/** 閉店のたびに調べる（まだで、条件がそろったら解放してお知らせ） */
+function sbCheck() {
+    if (!state.co || !state.co.est || sbOn() || state.over || !sbParts().every(p => p.ok))
+        return;
+    state.co.sbU = state.day;
+    addEvent('🛠️ スタイルビルダーが使えるようになりました！会社タブから、自分だけのお店のスタイルを作れます');
+    save();
+    setTimeout(() => sbOpen('hello'), 400);
+}
+
+/** 会社タブのカード */
+function sbCard() {
+    if (!state.co || !state.co.est)
+        return '';
+    if (!sbOn())
+        return '<div class="card sbc"><b>🛠️ スタイルビルダー 🔒</b><div class="meta">自分だけのお店のスタイル（商品12個・色・名前）を作れるようになります。解放の条件：</div><div class="sbneed">'
+            + sbParts().map(p => '<span class="' + (p.ok ? 'ok' : '') + '">' + (p.ok ? '✅' : '⬜') + ' ' + p.n + ' ' + p.g + '<small>いま ' + p.v + '</small></span>').join('') + '</div></div>';
+    const M = sbMine();
+    return '<div class="card sbc"><b>🛠️ スタイルビルダー</b><div class="meta">自分だけのお店のスタイルを作れます（' + M.length + ' / ' + sbCap() + '）。作ったスタイルは、新しいお店と「🎨 スタイル」の改装で選べます。</div>'
+        + (M.length ? '<div class="sbmine">' + M.map(t => '<span>' + t.e + ' ' + t.n + '</span>').join('') + '</div>' : '')
+        + '<button class="big" data-a="sbopen">🛠️ スタイルビルダーを開く</button></div>';
+}
+
+/** 編集中のスタイル（保存するまで state には入れない）と、そのもと（新しく作るときは null） */
+let sbDraft = null, sbEditId = null;
+
+/** ビルダーの画面を開く（v：'list' 一覧・'edit' 編集・'hello' 解放のお知らせ・'close' 閉じる） */
+function sbOpen(v) {
+    let el = byId('sbm');
+    if (v === 'close') {
+        if (el)
+            el.hidden = true;
+        sbDraft = null;
+        return;
+    }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'sbm';
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
+        document.body.appendChild(el);
+    }
+    const top = t => '<div class="achtop"><b>' + t + '</b><button class="alt achx" data-a="sbclose" aria-label="閉じる">✕</button></div>';
+    if (v === 'hello') {
+        el.innerHTML = '<div class="ovbox sbbox sbhi">' + top('🛠️ スタイルビルダー') + '<div class="clrsay"><canvas class="clrface" width="32" height="32"></canvas><p>お店が10軒、純資産も10億円！ここまで来たきみなら、自分だけのお店をつくれるよ。商品も色も名前も、ぜんぶきみが決めていいんだ。</p></div>'
+            + '<button class="big" data-a="sblist">🛠️ さっそく作ってみる</button><button class="alt sblater" data-a="sbclose">あとで（会社タブから開けます）</button></div>';
+        tutFace(el.querySelector('.clrface'));
+    }
+    else if (v === 'edit' && sbDraft)
+        el.innerHTML = '<div class="ovbox cobox sbbox">' + top(sbEditId ? '🛠️ スタイルを直す' : '🛠️ 新しいスタイル') + '<div class="achbody">' + sbForm() + '</div></div>';
+    else {
+        const M = sbMine(), O = styAll().filter(t => styOpen().includes(t.id));
+        el.innerHTML = '<div class="ovbox cobox sbbox">' + top('🛠️ スタイルビルダー') + '<div class="achbody">'
+            + '<div class="meta">自分だけのお店のスタイルを、いまは' + sbCap() + 'つまで持てます' + (sbCap() < SB_MAX ? '（広告を見ると増やせます。最大' + SB_MAX + 'つ）' : '') + '。来店数は商品の原価から自動で決まります（高い商品ばかりだとお客さんは少なめ、安い商品ばかりだと多め）。</div>'
+            + '<div class="styl">' + (M.length ? M.map(t => {
+                const u = sbUsed(t.id);
+                return '<div class="styr"><span class="ste">' + t.e + '</span><div class="stx"><b>' + t.n + '</b><span>' + (t.d || '') + '</span><span class="styit">' + t.items.map(p => p.e).join('') + '</span><span class="meta">来店数×' + t.cust + (u ? '・' + u + '店で営業中' : '') + '</span></div>'
+                    + '<div class="sbbtn"><button data-a="sbedit" data-v="' + t.id + '">直す</button><button class="alt" data-a="sbdel" data-v="' + t.id + '"' + (u ? ' disabled' : '') + '>消す</button></div></div>';
+            }).join('') : '<div class="meta">まだありません。</div>') + '</div>'
+            + (M.length < sbCap() ? '<div class="card sbnew"><b>＋ 新しく作る</b><label class="cof">もとにするスタイル<select id="sbbase">' + O.map(t => '<option value="' + t.id + '">' + t.e + ' ' + t.n + '</option>').join('') + '</select></label><button class="big" data-a="sbnew">このスタイルをもとに作る</button></div>' : '<div class="meta">いっぱいです。新しく作るときは、どれかを消してください（使っているお店があるスタイルは消せません）。</div>')
+            + (sbCap() < SB_MAX ? (CG.ad.ready() ? '<button class="alt sblater" data-a="sbslot">📺 広告を見て、持てる数を1つ増やす（' + sbCap() + ' → ' + (sbCap() + 1) + '）</button>' : '<div class="meta">🔒 あと' + (SB_MAX - sbCap()) + 'つ分は、広告で増やせるようになる予定です。</div>') : '')
+            + '</div></div>';
+    }
+    el.hidden = false;
+    if (v === 'edit')
+        sbSync();
+}
+
+/** 編集の欄 */
+function sbForm() {
+    const t = sbDraft, lock = sbEditId && sbUsed(sbEditId) > 0;
+    const G = [['a', 'みんな'], ['m', '男性'], ['f', '女性']];
+    const inp = (k, v, ph, n, w) => '<input data-sb="' + k + '" value="' + esc(v) + '" placeholder="' + ph + '" maxlength="' + n + '"' + (w ? ' class="' + w + '"' : '') + '>';
+    return '<div class="sbpv"><canvas width="96" height="60"></canvas><span class="sbpe">' + t.e + '</span></div>'
+        + '<div class="sbrow">' + inp('e', t.e, '🏬', 4, 'sbe') + inp('n', t.n, 'スタイルの名前', 12, 'sbn') + '</div>'
+        + inp('d', t.d || '', '説明（例：○○を扱うお店）', 24, 'sbd')
+        + '<div class="sbrow sbcol"><label>屋根の色<input type="color" data-sb="r" value="' + t.r + '"></label><label>看板の色<input type="color" data-sb="c" value="' + t.c + '"></label></div>'
+        + '<div class="sbbal" id="sbbal"></div>'
+        + (lock ? '<div class="meta svwarn">このスタイルのお店が営業中なので、原価とよく買う人は変えられません（名前・絵・色は変えられます）。</div>' : '<div class="meta">原価は ' + yen(SB_MINC) + '〜' + yen(SB_MAXC) + '。保存すると、安い順に並べ替えます（棚は安い順に増えていきます）。</div>')
+        + '<div class="sbits">' + t.items.map((p, i) => '<div class="sbit"><div class="sbrow"><span class="sbno">' + (i + 1) + '</span>' + inp(i + '.e', p.e, '📦', 4, 'sbe') + inp(i + '.n', p.n, '商品の名前', 9, 'sbn')
+            + '<input type="number" data-sb="' + i + '.c" value="' + p.c + '" min="' + SB_MINC + '" max="' + SB_MAXC + '" step="1" inputmode="numeric" class="sbcst"' + (lock ? ' disabled' : '') + '>'
+            + '<select data-sb="' + i + '.g"' + (lock ? ' disabled' : '') + '>' + G.map(g => '<option value="' + g[0] + '"' + (p.g === g[0] ? ' selected' : '') + '>' + g[1] + '</option>').join('') + '</select></div>'
+            + '<details><summary>上位品の名前（空なら「<span class="sbup1">' + SB_TIER[1] + (p.n || '◯◯') + '</span>」のように自動）</summary><div class="sbups">' + p.up.map((u, k) => '<input data-sb="' + i + '.u' + k + '" value="' + esc(u) + '" placeholder="' + SB_TIER[k] + (p.n || '◯◯') + '" maxlength="12">').join('') + '</div></details></div>').join('') + '</div>'
+        + '<div class="sberr" id="sberr"></div>'
+        + '<button class="big" data-a="sbsave">保存する</button><button class="alt sblater" data-a="sblist">やめる（一覧へ）</button>';
+}
+
+/** 見本の絵とバランスの表示を今の入力に合わせる */
+function sbSync() {
+    const el = byId('sbm'), t = sbDraft;
+    if (!el || !t)
+        return;
+    const cv = el.querySelector('.sbpv canvas');
+    if (cv)
+        clrShop(cv, state, { r: t.r, c: t.c });
+    const pe = el.querySelector('.sbpe');
+    if (pe)
+        pe.textContent = t.e;
+    // 上位品の名前の見本（空のときに付く名前）を、いまの商品の名前に合わせる
+    el.querySelectorAll('.sbit').forEach((d, i) => {
+        const n = t.items[i].n || '◯◯', s = d.querySelector('.sbup1');
+        if (s)
+            s.textContent = SB_TIER[1] + n;
+        d.querySelectorAll('.sbups input').forEach((x, k) => x.placeholder = SB_TIER[k] + n);
+    });
+    const b = byId('sbbal');
+    if (b) {
+        const p = sbPrice(t.items), c = sbCust(t.items);
+        b.innerHTML = '<span>値段 <b>いつもの×' + (p >= 10 ? p.toFixed(0) : p.toFixed(2)) + '</b></span><span>来店数 <b>×' + c + '</b>（自動）</span>';
+    }
+}
+
+/** 入力を確かめて、まちがいの一覧を返す */
+function sbErrors(t) {
+    const out = [];
+    if (!sbTxt(t.n, 12))
+        out.push('スタイルの名前を入れてください。');
+    if (styAll().some(x => x.id !== sbEditId && x.n === sbTxt(t.n, 12)))
+        out.push('同じ名前のスタイルがあります。');
+    t.items.forEach((p, i) => {
+        if (!sbTxt(p.n, 9))
+            out.push((i + 1) + '番目の商品の名前を入れてください。');
+        if (!(p.c >= SB_MINC && p.c <= SB_MAXC))
+            out.push((i + 1) + '番目の原価は' + yen(SB_MINC) + '〜' + yen(SB_MAXC) + 'にしてください。');
+    });
+    return out;
+}
+
+/** 保存する */
+function sbSave() {
+    const t = sbDraft, c = state.co;
+    if (!t || !c)
+        return;
+    const er = sbErrors(t);
+    if (er.length) {
+        const e = byId('sberr');
+        if (e)
+            e.innerHTML = er.map(x => '<div>⚠️ ' + x + '</div>').join('');
+        return CG.toast(er[0], 2200);
+    }
+    const old = sbEditId && sbMine().find(x => x.id === sbEditId), lock = old && sbUsed(old.id) > 0;
+    let items = t.items.map((p, i) => {
+        const n = sbTxt(p.n, 9);
+        return { e: sbTxt(p.e, 4) || '📦', n, c: lock ? old.items[i].c : Math.round(p.c), g: lock ? old.items[i].g : (['a', 'm', 'f'].includes(p.g) ? p.g : 'a'), up: p.up.map((u, k) => sbTxt(u, 12) || SB_TIER[k] + n) };
+    });
+    if (!lock)
+        items = items.sort((a, b) => a.c - b.c);
+    const s = { id: old ? old.id : 'my' + Date.now().toString(36), my: true, n: sbTxt(t.n, 12), e: sbTxt(t.e, 4) || '🏬', d: sbTxt(t.d, 24), r: /^#[0-9a-f]{6}$/i.test(t.r) ? t.r : '#2fbf97', c: /^#[0-9a-f]{6}$/i.test(t.c) ? t.c : '#ff7a68', cust: sbCust(items), items };
+    c.myS = old ? sbMine().map(x => x.id === old.id ? s : x) : sbMine().concat(s);
+    if (styAlt() && styAlt().id === s.id)
+        applyKind();
+    addEvent('🛠️ スタイル「' + s.e + ' ' + s.n + '」を' + (old ? '直しました' : '作りました') + '（来店数×' + s.cust + '）');
+    sbEditId = null;
+    sbDraft = null;
+    sbOpen('list');
+    render();
+    save();
+}
+
+/** 編集を始める（id：直すスタイル、base：新しく作るときのもと） */
+function sbStart(id, base) {
+    const src = id ? sbMine().find(x => x.id === id) : styAll().find(x => x.id === base) || STYLES[0];
+    if (!src || (!id && sbMine().length >= sbCap()))
+        return;
+    sbEditId = id || null;
+    sbDraft = JSON.parse(JSON.stringify({ n: id ? src.n : '', e: src.e, d: id ? (src.d || '') : '', r: src.r, c: src.c, items: src.items.map(p => ({ e: p.e, n: p.n, c: p.c, g: p.g || 'a', up: id ? p.up : p.up.map(() => '') })) }));
+    sbOpen('edit');
+}
+
+/** 広告を見て、持てる数を1つ増やす */
+function sbSlotAd() {
+    const c = state.co;
+    if (!c || sbCap() >= SB_MAX || !CG.ad.ready())
+        return;
+    CG.ad.reward({ name: 'builder-slot' }).then(ok => {
+        if (!ok)
+            return CG.toast('広告を最後まで見ると増やせます', 2200);
+        c.sbX = Math.min(SB_MAX - SB_INIT, (c.sbX || 0) + 1);
+        addEvent('🔓 スタイルビルダーで持てる数が' + sbCap() + 'つになりました');
+        sbOpen('list');
+        render();
+        save();
+    });
+}
+
+/** 消す（使っているお店が無いときだけ） */
+function sbDel(id) {
+    const t = sbMine().find(x => x.id === id);
+    if (!t || sbUsed(id))
+        return;
+    if (!confirm('「' + t.n + '」を消しますか？（元にもどせません）'))
+        return;
+    state.co.myS = sbMine().filter(x => x.id !== id);
+    if (state.co.ssel === id)
+        state.co.ssel = 'normal';
+    addEvent('🗑️ スタイル「' + t.e + ' ' + t.n + '」を消しました');
+    sbOpen('list');
+    render();
+    save();
+}
+
+document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled)
+        return;
+    const a = b.dataset.a;
+    if (a === 'sbopen' || a === 'sblist')
+        sbOpen('list');
+    if (a === 'sbclose')
+        sbOpen('close');
+    if (a === 'sbnew')
+        sbStart(null, (byId('sbbase') || {}).value);
+    if (a === 'sbedit')
+        sbStart(b.dataset.v);
+    if (a === 'sbdel')
+        sbDel(b.dataset.v);
+    if (a === 'sbsave')
+        sbSave();
+    if (a === 'sbslot')
+        sbSlotAd();
+});
+
+// 入力のたびに下書きへ入れる（画面は作り直さない。入力中の欄を消さないため）
+['input', 'change'].forEach(ev => document.addEventListener(ev, e => {
+    const k = e.target.dataset && e.target.dataset.sb;
+    if (!k || !sbDraft)
+        return;
+    const v = e.target.value, m = k.match(/^(\d+)\.(e|n|c|g|u(\d))$/);
+    if (!m)
+        sbDraft[k] = v;
+    else {
+        const p = sbDraft.items[+m[1]];
+        if (m[2] === 'c')
+            p.c = Math.round(+v || 0);
+        else if (m[3] !== undefined)
+            p.up[+m[3]] = v;
+        else
+            p[m[2]] = v;
+    }
+    sbSync();
+}));
 </script>
 <script>
 /**
