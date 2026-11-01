@@ -3,109 +3,177 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#14202b">
 <title>つなげ！ちくわ線路（仮）</title>
 <style>
-:root{--bg:#1d2733;--panel:#2a3848;--ink:#eef3f8;--sub:#9fb2c6;--accent:#e9a55b;--cg-accent:#e9a55b}
+:root{--bg:#14202b;--panel:#1f2e3d;--panel2:#2a3d50;--ink:#f3f6f9;--sub:#9fb3c6;--accent:#f2a649;--gold:#ffd36e;--red:#e5533d;--cg-accent:#f2a649}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-touch-callout:none}
-button,.modal{-webkit-user-select:none;user-select:none;touch-action:pan-x pan-y}
-.mbox,.mbox *{touch-action:pan-y}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{margin:0;background:radial-gradient(120% 80% at 50% 0%,#1d3043 0%,var(--bg) 60%);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+button{font-family:inherit;-webkit-tap-highlight-color:transparent}
 input,textarea,select{font-size:16px!important}
-header{display:flex;align-items:center;padding:6px 12px;height:40px;flex:none}
+header{display:flex;align-items:center;gap:6px;padding:0 10px;height:38px;flex:none;padding-top:env(safe-area-inset-top)}
 header a{color:var(--sub);text-decoration:none;font-size:13px}
-header .ttl{margin-left:auto;font-weight:700;font-size:14px;color:var(--accent)}
-.layout{flex:1;min-height:0;display:flex;gap:10px;padding:0 10px;justify-content:center}
-.stage{flex:none;min-height:0;display:flex;align-items:center}
-canvas#cv{display:block;touch-action:none;border-radius:10px;height:100%;width:auto;max-height:100%;aspect-ratio:240/760;background:#101820}
-.side{width:120px;flex:none;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--sub)}
-.side .card{background:var(--panel);border-radius:10px;padding:8px}
-.side b{display:block;font-size:20px;color:var(--ink)}
-canvas#nx{display:block;width:48px;height:48px;background:#101820;border-radius:6px;margin-top:4px}
-#obj{line-height:1.5;color:var(--ink)}
+header .ttl{margin-left:auto;font-weight:800;font-size:14px;color:var(--accent);letter-spacing:.02em}
+header .hb{border:0;background:var(--panel);color:var(--ink);border-radius:8px;width:32px;height:28px;font-size:14px;cursor:pointer}
+.layout{flex:1;min-height:0;display:flex;gap:8px;padding:2px 8px 0;justify-content:center}
+#stage{flex:1 1 auto;min-width:0;min-height:0;display:flex;align-items:flex-start;justify-content:center;max-width:420px}
+#cv{display:block;touch-action:none;border-radius:10px;box-shadow:0 0 0 2px #0b141c,0 8px 24px rgba(0,0,0,.45)}
+.side{width:104px;flex:none;display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--sub);min-height:0;overflow:hidden}
+.card{background:var(--panel);border-radius:10px;padding:6px 8px}
+.card .v{display:block;font-size:19px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.card .lbl{font-weight:700}
+#sMode{font-weight:800;color:var(--accent);font-size:13px}
+#sGoal{color:var(--ink);line-height:1.45;font-size:11px}
+#sGoal .g{margin-top:3px}
+#sGoal .g.ok{color:var(--gold)}
+#sGoal .pg{display:block;height:4px;border-radius:2px;background:#0e1822;margin-top:2px;overflow:hidden}
+#sGoal .pg i{display:block;height:100%;background:var(--accent)}
+#sGoal .g.ok .pg i{background:var(--gold)}
+#clock .v{font-size:24px}
+#clock.warn .v{color:#ff7a5c;animation:bl .5s steps(2) infinite}
+@keyframes bl{50%{opacity:.35}}
+#clock .tbar{height:5px;border-radius:3px;background:#0e1822;margin-top:3px;overflow:hidden}
+#clock .tbar i{display:block;height:100%;background:linear-gradient(90deg,#7ed1a4,#ffd36e);transition:width .2s linear}
+#clock.warn .tbar i{background:#ff7a5c}
+#nx{display:block;width:88px;height:30px;margin-top:3px}
+#life{font-size:14px;letter-spacing:1px}
+#bGo{border:0;border-radius:14px;padding:10px 4px;font-size:17px;font-weight:900;background:#56606b;color:#c9d1d9;cursor:pointer;line-height:1.15;margin-top:auto;transition:background .15s,transform .1s}
+#bGo small{display:block;font-size:11px;font-weight:700;opacity:.9}
+#bGo.ready{background:linear-gradient(180deg,#ff7058,#d63c27);color:#fff;box-shadow:0 0 0 2px #ffd36e,0 0 18px rgba(255,170,80,.6);animation:pulse 1.1s ease-in-out infinite}
+#bGo:active{transform:scale(.96)}
+@keyframes pulse{50%{box-shadow:0 0 0 2px #ffd36e,0 0 4px rgba(255,170,80,.3)}}
 .bar{display:flex;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));flex:none;justify-content:center}
-.btn{border:0;border-radius:12px;padding:12px 0;font-size:18px;font-weight:700;background:var(--accent);color:#2a1a10;cursor:pointer;min-width:52px;flex:1;max-width:84px}
-.btn.sub{background:#3b4e63;color:var(--ink)}
-.btn.go{background:#e5533d;color:#fff;max-width:110px;font-size:15px}
-.btn:disabled{opacity:.4}
-.modal{position:fixed;inset:0;background:rgba(8,14,20,.85);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+.btn{border:0;border-radius:14px;height:50px;font-size:22px;font-weight:800;background:var(--panel2);color:var(--ink);cursor:pointer;flex:1;max-width:92px;touch-action:none}
+.btn:active,.btn.on{background:#3d5670}
+.modal{position:fixed;inset:0;background:rgba(6,12,18,.82);display:flex;align-items:center;justify-content:center;padding:14px;z-index:5;backdrop-filter:blur(2px)}
 .modal[hidden]{display:none}
-.mbox{background:var(--panel);border-radius:18px;padding:20px 18px;max-width:400px;width:100%;max-height:92dvh;overflow:auto;text-align:center}
-.mbox h1{margin:0 0 4px;font-size:24px;color:var(--accent)}
-.mbox h2{margin:0 0 8px;font-size:20px}
+.mbox{background:var(--panel);border-radius:18px;padding:18px 16px;max-width:400px;width:100%;max-height:94dvh;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);touch-action:pan-y}
+.mbox h1{margin:4px 0 2px;font-size:25px;color:var(--accent);letter-spacing:.03em}
+.mbox h2{margin:0 0 8px;font-size:21px}
 .mbox p{margin:8px 0;font-size:14px;line-height:1.7}
-.mbox .rule{text-align:left;font-size:13px;color:var(--sub);line-height:1.7;margin:10px 0}
-.mbox .big{font-size:38px;font-weight:800;color:var(--accent)}
+.mbox .lead{color:var(--sub);font-size:13px}
+.mbox .big{font-size:40px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
 .mbox .col{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .mbox .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
-.mbox .mbtn{border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:700;background:var(--accent);color:#2a1a10;cursor:pointer}
-.mbox .mbtn.sub{background:#3b4e63;color:var(--ink)}
-.mbox .mbtn:disabled{opacity:.45}
+.mbtn{border:0;border-radius:12px;padding:13px 14px;font-size:16px;font-weight:800;background:var(--accent);color:#2a1a10;cursor:pointer}
+.mbtn.sub{background:var(--panel2);color:var(--ink)}
+.mbtn:disabled{opacity:.4}
+.mbtn small{display:block;font-size:11px;font-weight:600;opacity:.8}
 .lv{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
-.lv button{border:0;border-radius:8px;padding:10px 0;font-weight:700;background:#3b4e63;color:var(--ink);font-size:15px}
+.lv button{border:0;border-radius:10px;padding:11px 0;font-weight:800;background:var(--panel2);color:var(--ink);font-size:16px;cursor:pointer}
 .lv button.on{background:var(--accent);color:#2a1a10}
-.lv button:disabled{opacity:.35}
-.mbox label{font-size:13px;color:var(--sub)}
-.mbox details{text-align:left;margin-top:10px;font-size:13px;color:var(--sub)}
-.ach li{margin:2px 0}.ach .ok{color:#f2b23a}
+.lv button:disabled{opacity:.3}
+.how{text-align:left;font-size:13.5px;line-height:1.7;padding-left:20px;margin:8px 0}
+.how li{margin:4px 0}
+.how b{color:var(--gold)}
+.goalbox{background:#16232f;border-radius:12px;padding:10px 12px;text-align:left;font-size:15px;line-height:1.7;margin:10px 0}
+.goalbox b{color:var(--gold)}
+.seg{display:flex;background:#16232f;border-radius:12px;padding:3px;margin:8px 0}
+.seg button{flex:1;border:0;background:transparent;color:var(--sub);padding:10px 4px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#2a1a10}
+.step{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0}
+.step button{border:0;width:44px;height:44px;border-radius:12px;background:var(--panel2);color:var(--ink);font-size:22px;font-weight:800;cursor:pointer}
+.step b{font-size:28px;min-width:70px}
+.ach{list-style:none;padding:0;margin:8px 0;text-align:left;font-size:14px}
+.ach li{padding:7px 10px;border-radius:10px;background:#16232f;margin:5px 0;color:var(--sub)}
+.ach li.ok{color:var(--ink)}
+.ach li.ok::before{content:"★ ";color:var(--gold)}
+.ach li:not(.ok)::before{content:"☆ "}
+.ach small{display:block;font-size:11.5px;color:var(--sub);margin-left:1.2em}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:12px;color:var(--sub)}
+.stats div{background:#16232f;border-radius:10px;padding:6px}
+.stats b{display:block;font-size:18px;color:var(--ink)}
+.newach{color:var(--gold);font-size:13px;font-weight:700}
+details{text-align:left;margin-top:12px;font-size:12.5px;color:var(--sub)}
+#logo{display:block;margin:0 auto;width:260px;height:110px}
 </style>
 </head>
 <body>
-<header><a href="../">← ちくわゲームズ</a><span class="ttl">つなげ！ちくわ線路（仮）</span></header>
+<header><a href="../">← ちくわゲームズ</a><span class="ttl">つなげ！ちくわ線路</span><button class="hb" id="bSnd" aria-label="音">🔊</button><button class="hb" id="bPause" aria-label="一時停止">⏸</button></header>
 <div class="layout">
-  <div class="stage"><canvas id="cv" width="480" height="1520"></canvas></div>
+  <div id="stage"><canvas id="cv"></canvas></div>
   <div class="side">
-    <div class="card">スコア<b id="sc">0</b></div>
-    <div class="card">つぎ<canvas id="nx" width="96" height="96"></canvas></div>
-    <div class="card" id="obj"></div>
-    <div class="card" id="miss"></div>
+    <div class="card"><div id="sMode">アーケード Lv1</div><div id="sGoal"></div></div>
+    <div class="card" id="clock"><span class="lbl">⏱ 次の発車</span><span class="v" id="clockV">--</span><div class="tbar"><i id="clockBar"></i></div></div>
+    <div class="card"><span class="lbl">つぎ</span><canvas id="nx"></canvas></div>
+    <div class="card"><span class="lbl">スコア</span><span class="v" id="sc">0</span></div>
+    <div class="card" id="lifeCard"><span class="lbl" id="lifeLbl">のこり</span><div id="life"></div></div>
+    <button id="bGo">発車<small id="goSub">線路をつなごう</small></button>
   </div>
 </div>
 <div class="bar">
-  <button class="btn sub" id="bL">◀</button>
-  <button class="btn sub" id="bR">▶</button>
-  <button class="btn sub" id="bRot">⟳</button>
-  <button class="btn sub" id="bDrop">▼</button>
-  <button class="btn go" id="bGo">発車</button>
+  <button class="btn" id="bL" aria-label="左">◀</button>
+  <button class="btn" id="bRot" aria-label="回す">⟳</button>
+  <button class="btn" id="bR" aria-label="右">▶</button>
+  <button class="btn" id="bDrop" aria-label="落とす">▼</button>
 </div>
 
+<!-- メニュー -->
 <div class="modal" id="mMenu">
   <div class="mbox">
-    <h1>つなげ！ちくわ線路（仮）</h1>
-    <p>降ってくる線路をつないで、駅から電車を走らせよう。</p>
-    <div class="rule">
-      ・線路のピースを動かして回して、底の駅（▲）から上へつなぐ<br>
-      ・「発車」で電車が出発。走った線路は消えて、上のピースが落ちる<br>
-      ・線路が途切れたところで停車。フリーでは、上まで着けないと脱線です
-    </div>
+    <canvas id="logo"></canvas>
+    <h1>つなげ！ちくわ線路</h1>
+    <p class="lead">駅から出て、駅にもどる線路をつなごう。<br>走った線路は消えて、上の線路が落ちてくる。</p>
     <div class="col">
-      <button class="mbtn" id="mArc">アーケード</button>
-      <button class="mbtn" id="mFree">フリー</button>
-      <button class="mbtn" disabled>対戦（準備中）</button>
-      <button class="mbtn" disabled>協力（準備中）</button>
-      <button class="mbtn sub" id="mAch">実績</button>
+      <button class="mbtn" id="mArc">アーケード<small>お題をクリアして Lv20 をめざす</small></button>
+      <button class="mbtn" id="mFree">フリー<small>脱線か満線になるまでつづく</small></button>
+      <button class="mbtn sub" disabled>対戦（準備中）</button>
+      <button class="mbtn sub" disabled>協力（準備中）</button>
+      <div class="row" style="margin-top:0"><button class="mbtn sub" id="mHow" style="flex:1">あそびかた</button><button class="mbtn sub" id="mAch" style="flex:1">実績</button></div>
     </div>
     <div id="move"></div>
+    <details><summary>更新履歴</summary><p>β0.2.0（2026-11-01）ゼロから作り直し。駅から出て駅にもどるルート・発車時刻・連鎖・岩・交差・アーケード20レベル・フリー・実績12個。<br>β0.1.0（2026-11-01）最初の試作。</p></details>
   </div>
 </div>
-<div class="modal" id="mLevel" hidden>
-  <div class="mbox"><h2>アーケード</h2><p>レベルを選ぼう（クリアで次が解放）</p><div class="lv" id="lvGrid"></div><div class="row"><button class="mbtn sub" data-back>もどる</button></div></div>
+<!-- あそびかた -->
+<div class="modal" id="mHowto" hidden>
+  <div class="mbox"><h2>あそびかた</h2>
+    <canvas id="howCv" width="240" height="150" style="width:240px;height:150px;display:block;margin:0 auto"></canvas>
+    <ol class="how">
+      <li>線路が上から降ってくる。<b>◀ ▶</b> で動かし、<b>⟳</b> で回し、<b>▼</b> で落とす。画面を左右にドラッグ・タップ・下にはらう でも操作できる。</li>
+      <li>下の駅から出て、<b>駅にもどる</b>ように線路をつなぐと、線路が<b>金色に光る</b>。</li>
+      <li><b>発車</b>で電車が走る。走った線路は消えて、上の線路が落ちてくる。落ちてまたつながったら、そのまま<b>連続発車（連鎖）</b>！</li>
+      <li><b>⏱ 発車時刻</b>になると電車は勝手に出る。つながっていないと<b>脱線</b>。早めに発車するとボーナス。</li>
+      <li>長いルートほど点が大きい。<b>岩</b>はとなりを電車が通るとこわれる。<b>十字</b>はまっすぐ通りぬけられる。</li>
+      <li>真ん中の列が上まで積み上がると<b>満線</b>でおしまい。</li>
+    </ol>
+    <div class="row"><button class="mbtn" data-back>もどる</button></div>
+  </div>
 </div>
+<!-- アーケード：レベル選択 -->
+<div class="modal" id="mLevel" hidden>
+  <div class="mbox"><h2>アーケード</h2><p class="lead">クリアすると次のレベルが解放されます</p><div class="lv" id="lvGrid"></div><div class="row"><button class="mbtn sub" data-back>もどる</button></div></div>
+</div>
+<!-- アーケード：お題 -->
+<div class="modal" id="mBrief" hidden>
+  <div class="mbox"><h2 id="bfTitle">Lv1</h2><div class="goalbox" id="bfGoal"></div><p class="lead" id="bfInfo"></p>
+    <div class="row"><button class="mbtn" id="bfStart" style="min-width:140px">出発進行！</button><button class="mbtn sub" id="bfBack">もどる</button></div></div>
+</div>
+<!-- フリー：設定 -->
 <div class="modal" id="mFreeSet" hidden>
   <div class="mbox"><h2>フリー</h2>
-    <p><label><input type="radio" name="fm" value="fix" checked> レベル固定</label>　<label><input type="radio" name="fm" value="var"> レベル可変（だんだん速く）</label></p>
-    <p><label>レベル <select id="freeLv"></select></label></p>
-    <div class="row"><button class="mbtn" id="freeStart">スタート</button><button class="mbtn sub" data-back>もどる</button></div>
+    <div class="seg" id="fSeg"><button data-v="fix" class="on">レベル固定</button><button data-v="var">だんだん速く</button></div>
+    <div class="step"><button id="fMinus">−</button><b id="fLv">Lv1</b><button id="fPlus">＋</button></div>
+    <p class="lead" id="fInfo"></p>
+    <div class="row"><button class="mbtn" id="freeStart" style="min-width:140px">出発進行！</button><button class="mbtn sub" data-back>もどる</button></div>
     <p>ベスト <b id="freeBest">0</b> 点</p>
   </div>
 </div>
+<!-- 実績 -->
 <div class="modal" id="mAchv" hidden>
-  <div class="mbox"><h2>実績</h2><ul class="ach" id="achList" style="text-align:left;padding-left:20px;font-size:14px"></ul><div class="row"><button class="mbtn sub" data-back>もどる</button></div></div>
+  <div class="mbox"><h2>実績</h2><p class="lead" id="achCount"></p><ul class="ach" id="achList"></ul><div class="row"><button class="mbtn sub" data-back>もどる</button></div></div>
 </div>
+<!-- 一時停止 -->
+<div class="modal" id="mPause" hidden>
+  <div class="mbox"><h2>一時停止</h2><div class="goalbox" id="pzGoal"></div>
+    <div class="col"><button class="mbtn" id="pzGo">つづける</button><button class="mbtn sub" id="pzRetry">はじめから</button><button class="mbtn sub" id="pzMenu">メニューへ</button></div></div>
+</div>
+<!-- 結果 -->
 <div class="modal" id="mResult" hidden>
-  <div class="mbox"><h2 id="rTitle"></h2><div class="big" id="rScore"></div><p id="rInfo"></p>
-    <div class="row"><button class="mbtn" id="rNext">次へ</button><button class="mbtn sub" id="rShare">シェア</button><button class="mbtn sub" id="rMenu">メニュー</button></div>
-    <details><summary>更新履歴</summary><p>β0.1.0（2026-11-01）最初の試作（アーケード20レベル・フリー・実績）。対戦と協力は準備中。</p></details>
+  <div class="mbox"><h2 id="rTitle"></h2><p class="lead" id="rWhy"></p><div class="big" id="rScore"></div>
+    <div class="stats" id="rStats"></div><div class="newach" id="rAch"></div>
+    <div class="col"><button class="mbtn" id="rNext"></button><div class="row" style="margin-top:0"><button class="mbtn sub" id="rShare" style="flex:1">シェア</button><button class="mbtn sub" id="rMenu" style="flex:1">メニュー</button></div></div>
   </div>
 </div>
 
@@ -116,281 +184,830 @@ canvas#nx{display:block;width:48px;height:48px;background:#101820;border-radius:
 <script>
 (() => {
 'use strict';
-const VERSION = 'β0.1.0';
+const VERSION = 'β0.2.0';
 const KEY = 'chikuwa-senro-v1';
 CG.init({ game: 'chikuwa-senro', title: 'つなげ！ちくわ線路（仮）', version: VERSION });
 try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
-document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
-document.addEventListener('touchstart', e => { if (e.touches.length > 1 && e.target.closest && e.target.closest('.modal')) e.preventDefault(); }, { passive: false });
 const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
 
-/* ---- 調整用の数値 ---- */
-const COLS = 8, ROWS = 24, CELL = 30, STATION_COL = 3, SPAWN_COL = 3;
-const RUN_SPEED = 7;                       // 電車の速さ（マス／秒）
-const MAX_MISS = 3, ARCADE_LEVELS = 20;
-const fallRate = lv => 1.2 + 0.18 * lv;    // 落ちる速さ（マス／秒）
-const arcade = n => ({ target: 3 + n, curves: n >= 4 ? Math.floor(n / 4) : 0, rock: n >= 8 ? Math.min(0.03 * (n - 7), 0.2) : 0, fall: fallRate(n) });
+/* ================= 調整用の数値 ================= */
+const COLS = 8, ROWS = 24, SPAWN_C = 3;      // フィールド（横8×縦24）と、ピースが出てくる列
+const STATION_H = 1.7;                       // 駅の高さ（マス）
+const SPEED = 8.5;                           // 電車の速さ（マス／秒）
+const CARS = 3, GAP = 0.8;                   // 電車の両数と車両の間隔（マス）
+const LOCK_DELAY = 0.45;                     // 着地してから固定されるまで（秒）
+const SOFT_FALL = 22;                        // 下にはらう・↓キーのあいだの落下速度（マス／秒）
+const MAX_MISS = 3;                          // アーケードの脱線の許容回数
+const fallOf = lv => 1.5 * Math.pow(1.08, lv - 1); // 落下速度（マス／秒）。Lv1=1.5、Lv20≈6.5
+const ttOf = lv => Math.round(50 - (lv - 1) * 1.4); // 発車時刻の間隔（秒）。Lv1=50、Lv20=23
+const rockOf = lv => lv < 5 ? 0 : Math.min(0.02 + 0.008 * (lv - 5), 0.14);
+const crossOf = lv => lv < 4 ? 0 : 0.06;
+/* ルートの点：長いほど大きく伸びる（小さい輪をたくさん作るより、長い旅のほうが得） */
+const routePts = (len, curves, crosses) => len * 10 + Math.max(0, len - 4) ** 2 * 5 + curves * 5 + crosses * 20;
+const chainMul = ch => 1 + 0.5 * (ch - 1);   // 連鎖の倍率
+const multiMul = n => 1 + 0.5 * (n - 1);     // 同時発車の倍率
+const EARLY_MAX = 0.5, ROCK_PTS = 50;        // 早発ボーナス（発車時刻までの残りが多いほど、最大で点が1.5倍）、岩1個
+const earlyMul = () => 1 + EARLY_MAX * Math.max(0, G.ttLeft) / G.tt;
+const FREE_LVUP = 20;                        // だんだん速く：何個置くごとにレベルが上がるか
 
-/* ---- ピース：開いている辺のビット（N=1, E=2, S=4, W=8）。岩は 0 ---- */
+/* アーケードのレベル：lv は落下速度と発車間隔の元になるレベル。goals はお題 */
+const LEVELS = [
+  { lv: 1, goals: [['runs', 1]], tip: 'まずは駅から出て駅にもどる、小さな輪を作ってみよう。カーブ2つでもOK。' },
+  { lv: 1, goals: [['tiles', 12]], tip: '何回走らせてもOK。合計のマス数を数えます。' },
+  { lv: 2, goals: [['long', 6]], tip: 'まっすぐの線路で上にのばしてから、ぐるっともどろう。' },
+  { lv: 3, goals: [['runs', 4]] },
+  { lv: 3, goals: [['curves', 6]], tip: 'くねくねのルートを作ろう。' },
+  { lv: 4, goals: [['tiles', 40]], cross: 0.08 },
+  { lv: 4, goals: [['cross', 1]], cross: 0.14, tip: '十字の線路は、まっすぐ通りぬけられる。' },
+  { lv: 5, goals: [['rocks', 3]], rock: 0.1, preRocks: 4, tip: '岩は、となりを電車が通るとこわれる。' },
+  { lv: 6, goals: [['long', 10]], cross: 0.06, rock: 0.04 },
+  { lv: 6, goals: [['chain', 2]], cross: 0.06, tip: '輪の上に、もうひとつ輪を積んでおくと…？' },
+  { lv: 7, goals: [['multi', 2]], cross: 0.06, rock: 0.04, tip: '輪を2つ作ってから発車すると、2本同時に走る。' },
+  { lv: 8, goals: [['tiles', 80]], cross: 0.06, rock: 0.06 },
+  { lv: 9, goals: [['long', 14], ['rocks', 4]], cross: 0.06, rock: 0.1, preRocks: 3 },
+  { lv: 10, goals: [['score', 2500]], cross: 0.06, rock: 0.06 },
+  { lv: 11, goals: [['cross', 3]], cross: 0.12, rock: 0.06 },
+  { lv: 12, goals: [['chain', 3]], cross: 0.06, rock: 0.04 },
+  { lv: 13, goals: [['long', 18]], cross: 0.06, rock: 0.06 },
+  { lv: 14, goals: [['multi', 2], ['chain', 2]], cross: 0.06, rock: 0.06 },
+  { lv: 15, goals: [['tiles', 150]], cross: 0.06, rock: 0.08 },
+  { lv: 17, goals: [['long', 20], ['chain', 3]], cross: 0.08, rock: 0.08 },
+];
+const GOAL_TEXT = {
+  runs: n => '電車を <b>' + n + '回</b> 走らせる', tiles: n => '合計 <b>' + n + 'マス</b> 走る', long: n => '1本で <b>' + n + 'マス以上</b> のルート',
+  curves: n => '1本で <b>カーブ' + n + '回</b> 以上', cross: n => '<b>十字</b>を ' + n + '回 通る', rocks: n => '<b>岩</b>を ' + n + '個 こわす',
+  chain: n => '<b>' + n + '連鎖</b> する', multi: n => '<b>' + n + '本同時</b>に発車', score: n => '<b>' + n + '点</b> 取る',
+};
+const goalVal = k => k === 'score' ? G.score : ({ runs: G.st.runs, tiles: G.st.tiles, long: G.st.longest, curves: G.st.maxCurves, cross: G.st.cross, rocks: G.st.rocks, chain: G.st.maxChain, multi: G.st.maxMulti })[k];
+
+/* ================= 線路のピース =================
+   m は開いている辺のビット（N=1 E=2 S=4 W=8）。k は種類：s まっすぐ／c カーブ／x 十字／r 岩 */
 const N = 1, E = 2, S = 4, W = 8;
-const DIRS = [{ b: N, dx: 0, dy: -1 }, { b: E, dx: 1, dy: 0 }, { b: S, dx: 0, dy: 1 }, { b: W, dx: -1, dy: 0 }];
+const D = { 1: { dx: 0, dy: -1 }, 2: { dx: 1, dy: 0 }, 4: { dx: 0, dy: 1 }, 8: { dx: -1, dy: 0 } };
 const opp = b => b === N ? S : b === S ? N : b === E ? W : E;
-const dirOf = b => DIRS.find(d => d.b === b);
-const STRAIGHTS = [N | S, E | W], CURVES = [N | E, E | S, S | W, W | N];
-const rot = m => m === 0 ? 0 : m === (N | S) ? (E | W) : m === (E | W) ? (N | S) : CURVES[(CURVES.indexOf(m) + 1) % 4];
-function randPiece(lv, rockP) {
-  if (Math.random() < rockP) return 0;
-  const r = Math.random();
-  if (r < 0.25) return N | S;
-  if (r < 0.40) return E | W;
-  return CURVES[Math.floor(Math.random() * 4)];
+const CURVES = [N | E, E | S, S | W, W | N];   // 時計回りの順
+const rotM = (k, m) => k === 's' ? (m === (N | S) ? (E | W) : (N | S)) : k === 'c' ? CURVES[(CURVES.indexOf(m) + 1) % 4] : m;
+let uid = 1;
+const mkTile = (k, m) => ({ k, m, id: uid++, fy: 0 });
+const mkRandom = k => k === 's' ? mkTile('s', Math.random() < 0.5 ? (N | S) : (E | W)) : k === 'c' ? mkTile('c', CURVES[Math.floor(Math.random() * 4)]) : k === 'x' ? mkTile('x', 15) : mkTile('r', 0);
+let bag = [];
+function drawKind() {
+  if (Math.random() < G.rockP) return 'r';
+  if (Math.random() < G.crossP) return 'x';
+  if (!bag.length) { bag = ['s', 's', 's', 'c', 'c', 'c', 'c', 'c']; for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; } }
+  return bag.pop();
 }
 
-/* ---- 状態 ---- */
-const cv = $('cv'), ctx = cv.getContext('2d'), nx = $('nx').getContext('2d');
-const save = (() => { try { return Object.assign({ cleared: 0, free: 0, st: {}, ach: {} }, JSON.parse(CG.ls.get(KEY, '{}'))); } catch (e) { return { cleared: 0, free: 0, st: {}, ach: {} }; } })();
+/* ================= 保存 ================= */
+const save = (() => {
+  const d = { cleared: 0, best: 0, st: {}, ach: {}, snd: 1, seen: 0 };
+  try { const o = JSON.parse(CG.ls.get(KEY, '{}')) || {}; if (typeof o.free === 'number') o.best = o.free; delete o.free; return Object.assign(d, o, { st: o.st || {}, ach: o.ach || {} }); } catch (e) { return d; }
+})();
 const persist = () => CG.ls.set(KEY, JSON.stringify(save));
-const G = { mode: 'menu', kind: 'arcade', lv: 1, cfg: null, grid: [], cur: null, next: 0, acc: 0, score: 0, miss: 0, placed: 0, run: null, over: false, t: 0, varLv: false, rocksOn: 0 };
-function emptyGrid() { return Array.from({ length: ROWS }, () => Array(COLS).fill(null)); }
-const cell = (c, r) => (c < 0 || c >= COLS || r >= ROWS) ? undefined : (r < 0 ? null : G.grid[r][c]);
 
-/* ---- 実績 ---- */
+/* ================= 実績 ================= */
 const ACH = [
-  ['first', '初めての発車', '発車を 1 回する'],
-  ['len10', '10マス走破', '1 回の走行で 10 マス以上走る'],
-  ['top', '終着！', '上まで到着する'],
-  ['arr5', '常連の運転士', '上まで到着を合計 5 回'],
-  ['curve8', 'くねくね運転', '1 回の走行でカーブを 8 回以上通る'],
-  ['lv20', 'アーケード制覇', 'アーケードのレベル 20 をクリア'],
+  ['first', 'はじめての発車', '電車を走らせる'],
+  ['loop10', '10マスの旅', '1本で10マス以上のルートを走る'],
+  ['loop20', '大回り', '1本で20マス以上のルートを走る'],
+  ['chain2', '連続発車', '2連鎖する'],
+  ['chain4', 'ダイヤの達人', '4連鎖する'],
+  ['multi2', '同時発車', '2本同時に発車する'],
+  ['cross', 'ダイヤモンドクロス', '十字の線路を通る'],
+  ['rock10', '落石除去', '岩を合計10個こわす'],
+  ['early', '定刻より早く', '発車時刻まで20秒以上のこして発車する'],
+  ['free5k', '一人前の運転士', 'フリーで5000点'],
+  ['free20k', '伝説の運転士', 'フリーで20000点'],
+  ['lv10', 'アーケード中級', 'アーケードのLv10をクリア'],
+  ['lv20', 'アーケード制覇', 'アーケードのLv20をクリア'],
 ];
 function unlock(id) {
   if (save.ach[id]) return;
-  save.ach[id] = 1; persist();
-  toast('実績「' + ACH.find(a => a[0] === id)[1] + '」解放！');
+  save.ach[id] = Date.now(); persist();
+  const a = ACH.find(x => x[0] === id);
+  G.newAch.push(a[1]);
+  banner('実績「' + a[1] + '」', '#ffd36e');
 }
-let toastT = 0;
-function toast(t) { G.toast = t; toastT = G.t; }
 
-/* ---- 進行 ---- */
-function newPiece() {
-  const lv = G.kind === 'arcade' ? G.lv : 1;
-  const m = G.next; G.next = randPiece(lv, G.cfg.rock);
-  return m;
-}
-function spawn() {
-  const m = newPiece();
-  if (G.grid[0][SPAWN_COL]) return gameOver('積み上がってしまった');
-  G.cur = { c: SPAWN_COL, r: 0, m, y: 0 };
-  drawNext();
-}
-function start(kind, lv) {
-  G.kind = kind; G.lv = lv; G.cfg = kind === 'arcade' ? arcade(lv) : { target: 99, curves: 0, rock: 0.05, fall: fallRate(lv) };
-  G.grid = emptyGrid(); G.score = 0; G.miss = 0; G.placed = 0; G.run = null; G.over = false; G.acc = 0; G.mode = 'play'; G.arrivals = 0;
-  G.next = randPiece(lv, 0); spawn();
-  document.querySelectorAll('.modal').forEach(m => m.hidden = true);
-  hud();
-}
-function hud() {
-  $('sc').textContent = G.score;
-  $('obj').innerHTML = G.kind === 'arcade'
-    ? '<b style="font-size:13px">Lv' + G.lv + ' のお題</b>' + G.cfg.target + 'マス以上走る' + (G.cfg.curves ? '<br>カーブ' + G.cfg.curves + '回以上' : '')
-    : '<b style="font-size:13px">フリー Lv' + G.lv + '</b>上まで走って到着しよう';
-  $('miss').innerHTML = G.kind === 'arcade' ? '失敗 ' + '✖'.repeat(G.miss) + '・'.repeat(MAX_MISS - G.miss) : '到着 <b style="display:inline;font-size:16px">' + G.arrivals + '</b> 回';
-  $('bGo').disabled = G.mode !== 'play' || !!G.run;
-}
-function lock() {
-  const p = G.cur; G.grid[p.r][p.c] = p.m; G.cur = null; G.placed++;
-  if (G.kind === 'free' && G.varLv && G.placed % 12 === 0) { G.lv = Math.min(20, G.lv + 1); G.cfg.fall = fallRate(G.lv); hud(); }
-  spawn();
-}
-function canMove(c, r) { return c >= 0 && c < COLS && r < ROWS && !G.grid[r][c]; }
-function move(d) { const p = G.cur; if (G.mode === 'play' && !G.run && p && canMove(p.c + d, p.r)) p.c += d; }
-function rotate() { const p = G.cur; if (G.mode === 'play' && !G.run && p) p.m = rot(p.m); }
-function hardDrop() { const p = G.cur; if (G.mode !== 'play' || G.run || !p) return; while (canMove(p.c, p.r + 1)) p.r++; lock(); }
+/* ================= 音（小さな電子音） ================= */
+const SFX = (() => {
+  let ac = null;
+  const ctx = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return ac; };
+  function tone(f, d, type = 'square', vol = 0.05, f2 = 0, at = 0) {
+    if (!save.snd) return; const a = ctx(); if (!a) return;
+    const t0 = a.currentTime + at, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + d);
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+    o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + d + 0.02);
+  }
+  const P = {
+    move: () => tone(520, 0.03, 'square', 0.02), rot: () => tone(760, 0.04, 'square', 0.03),
+    lock: () => tone(140, 0.08, 'triangle', 0.08, 90), ready: () => { tone(880, 0.08, 'sine', 0.05); tone(1320, 0.12, 'sine', 0.05, 0, 0.07); },
+    go: () => { tone(988, 0.18, 'square', 0.04); tone(1319, 0.3, 'square', 0.04, 0, 0.16); },
+    pop: () => tone(600 + Math.random() * 300, 0.05, 'triangle', 0.035, 300),
+    chain: n => [0, 1, 2].forEach(i => tone(523 * Math.pow(1.26, i + n), 0.1, 'square', 0.04, 0, i * 0.07)),
+    crash: () => { tone(160, 0.5, 'sawtooth', 0.08, 40); tone(90, 0.6, 'square', 0.05, 30, 0.05); },
+    tick: () => tone(1200, 0.04, 'sine', 0.04), clear: () => [0, 4, 7, 12].forEach((s, i) => tone(523 * Math.pow(2, s / 12), 0.18, 'square', 0.04, 0, i * 0.11)),
+    over: () => [7, 4, 0].forEach((s, i) => tone(392 * Math.pow(2, s / 12), 0.25, 'triangle', 0.06, 0, i * 0.18)),
+    rock: () => tone(220, 0.15, 'sawtooth', 0.04, 80),
+  };
+  return { play(n, a) { try { P[n] && P[n](a); } catch (e) {} }, unlock() { const a = ctx(); if (a && a.state === 'suspended') a.resume(); } };
+})();
+document.addEventListener('pointerdown', () => SFX.unlock(), { once: false, passive: true });
+const setSndIcon = () => { $('bSnd').textContent = save.snd ? '🔊' : '🔇'; };
+$('bSnd').onclick = () => { save.snd = save.snd ? 0 : 1; persist(); setSndIcon(); };
+setSndIcon();
 
-/* ---- 発車：経路を求めてから、動かす ---- */
-function planRun() {
-  const path = []; let c = STATION_COL, r = ROWS - 1, enter = S, topped = false;   // 駅の上のマスへ、下の辺から入る
-  const seen = new Set();
-  for (;;) {
-    const m = cell(c, r);
-    if (m === undefined || m === null || !(m & enter)) break;       // 線路が無い・つながっていない
-    const key = c + ',' + r; if (seen.has(key)) break; seen.add(key);
-    const exit = m & ~enter;
-    if (exit === 0 || (exit & (exit - 1))) break;                   // 出口がない（岩）・3方向（ありえない）
-    path.push({ c, r, m, enter, exit });
-    const d = dirOf(exit); const nc = c + d.dx, nr = r + d.dy;
-    if (nr < 0 && exit === N) { topped = true; break; }
+/* ================= 状態 ================= */
+const G = {
+  phase: 'menu', kind: 'arcade', li: 0, lv: 1, varLv: false, lv0: 1,
+  grid: [], cur: null, queue: [], fall: 1, tt: 50, ttLeft: 50, rockP: 0, crossP: 0,
+  score: 0, miss: 0, placed: 0, chain: 0, trains: [], ready: [], readyCells: new Set(), lastReadyN: 0,
+  st: null, newAch: [], soft: false, t: 0, shake: 0, derailed: false, why: '',
+};
+const emptyGrid = () => Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+const at = (c, r) => (c < 0 || c >= COLS || r < 0 || r >= ROWS) ? null : G.grid[r][c];
+const canPlace = (c, r) => c >= 0 && c < COLS && r < ROWS && (r < 0 || !G.grid[r][c]);
+
+/* ================= ルートを探す =================
+   駅（底）から入って、つながっている線路をたどる。底から出られたら「駅にもどった」＝完成 */
+function trace(c0) {
+  let c = c0, r = ROWS - 1, enter = S;
+  const steps = [], used = new Set();
+  for (let i = 0; i < 400; i++) {
+    const t = at(c, r);
+    if (!t || !(t.m & enter)) return { steps, ok: false, c0 };
+    const exit = t.k === 'x' ? opp(enter) : (t.m & ~enter);
+    const key = c + ',' + r + (t.k === 'x' ? ((enter & (N | S)) ? 'v' : 'h') : '');
+    if (used.has(key)) return { steps, ok: false, c0 };
+    used.add(key);
+    steps.push({ c, r, enter, exit, k: t.k });
+    const nc = c + D[exit].dx, nr = r + D[exit].dy;
+    if (nr >= ROWS) return { steps, ok: true, c0, c1: c };
+    if (nc < 0 || nc >= COLS || nr < 0) return { steps, ok: false, c0 };
     c = nc; r = nr; enter = opp(exit);
   }
-  return { path, topped };
+  return { steps, ok: false, c0 };
 }
-function depart() {
-  if (G.mode !== 'play' || G.run) return;
-  unlock('first');
-  const { path, topped } = planRun();
-  G.run = { path, topped, t: 0, done: false };
-  hud();
+function findRoutes() {
+  const out = [];
+  for (let c = 0; c < COLS; c++) {
+    const t = at(c, ROWS - 1);
+    if (!t || !(t.m & S)) continue;
+    const tr = trace(c);
+    if (tr.ok && tr.c1 > c) out.push(tr);   // 同じルートを両はしから2回数えない
+  }
+  return out;
+}
+function longestPartial() {
+  let best = null;
+  for (let c = 0; c < COLS; c++) {
+    const t = at(c, ROWS - 1);
+    if (!t || !(t.m & S)) continue;
+    const tr = trace(c);
+    if (!best || tr.steps.length > best.steps.length) best = tr;
+  }
+  return best || { steps: [], ok: false, c0: SPAWN_C };
+}
+function refreshReady() {
+  G.ready = G.phase === 'play' ? findRoutes() : [];
+  G.readyCells = new Set();
+  G.ready.forEach(rt => rt.steps.forEach(s => G.readyCells.add(s.c + ',' + s.r)));
+  const n = G.ready.length;
+  if (n > G.lastReadyN && G.phase === 'play') SFX.play('ready');
+  G.lastReadyN = n;
+  updGo();
+}
+
+/* ================= 進行 ================= */
+function newStats() { return { runs: 0, tiles: 0, longest: 0, maxCurves: 0, cross: 0, rocks: 0, maxChain: 0, maxMulti: 0 }; }
+function start(kind, arg) {
+  G.kind = kind; G.newAch = []; G.st = newStats(); G.score = 0; G.miss = 0; G.placed = 0; G.chain = 0; G.trains = [];
+  G.grid = emptyGrid(); G.cur = null; G.queue = []; bag = []; G.derailed = false; G.lastReadyN = 0; parts.length = 0; pops.length = 0; banners.length = 0;
+  if (kind === 'arcade') {
+    G.li = arg; const L = LEVELS[arg]; G.lv = L.lv; G.rockP = L.rock || 0; G.crossP = L.cross || 0;
+    for (let i = 0; i < (L.preRocks || 0); i++) { const c = [0, 2, 5, 7, 1, 6][i % 6]; const r = ROWS - 1 - (G.grid[ROWS - 1][c] ? 1 : 0); G.grid[r][c] = mkTile('r', 0); }
+  } else {
+    G.lv = arg; G.lv0 = arg; G.rockP = rockOf(arg); G.crossP = crossOf(arg);
+  }
+  G.fall = fallOf(G.lv); G.tt = ttOf(G.lv); G.ttLeft = G.tt;
+  for (let i = 0; i < 3; i++) G.queue.push(drawKind());
+  G.phase = 'play';
+  document.querySelectorAll('.modal').forEach(m => m.hidden = true);
+  spawn(); refreshReady(); hud(true);
+  banner(kind === 'arcade' ? 'Lv' + (arg + 1) + ' 出発進行！' : 'フリー Lv' + arg + ' 出発進行！', '#fff');
+}
+function spawn() {
+  const k = G.queue.shift(); G.queue.push(drawKind());
+  if (G.grid[0][SPAWN_C]) { G.cur = null; return end('mansen'); }
+  G.cur = { t: mkRandom(k), c: SPAWN_C, r: 0, y: -0.6, lockT: 0 };
+  drawNext();
+}
+function landRow(p) { let r = p.r; while (canPlace(p.c, r + 1)) r++; return r; }
+function lockPiece() {
+  const p = G.cur; if (!p) return;
+  G.grid[p.r][p.c] = p.t; p.t.fy = 0; G.cur = null; G.placed++;
+  SFX.play('lock'); puff(p.c, p.r);
+  if (G.kind === 'free' && G.varLv && G.placed % FREE_LVUP === 0 && G.lv < 20) {
+    G.lv++; G.fall = fallOf(G.lv); G.tt = ttOf(G.lv); G.rockP = rockOf(G.lv); G.crossP = crossOf(G.lv);
+    banner('レベルアップ！ Lv' + G.lv, '#7ed1a4');
+  }
+  refreshReady(); hud();
+  if (G.phase === 'play') spawn();
+}
+function tryMove(d) {
+  const p = G.cur; if (!p || G.phase !== 'play') return false;
+  const r = Math.max(0, p.r);
+  if (!canPlace(p.c + d, r) || !canPlace(p.c + d, Math.floor(p.y + 0.999))) return false;
+  p.c += d; p.lockT = 0; SFX.play('move'); return true;
+}
+function rotate() { const p = G.cur; if (!p || G.phase !== 'play') return; if (p.t.k === 's' || p.t.k === 'c') { p.t.m = rotM(p.t.k, p.t.m); p.spin = 1; SFX.play('rot'); } }
+function hardDrop() {
+  const p = G.cur; if (!p || G.phase !== 'play') return;
+  const r = landRow(p); p.t.fy = 0; trail(p.c, p.y, r); p.r = r; p.y = r; lockPiece();
+}
+
+/* ---- 発車 ---- */
+function depart(byButton) {
+  if (G.phase !== 'play') return;
+  const routes = findRoutes();
+  if (!routes.length) {
+    if (byButton) { banner('まだ駅にもどれない', '#9fb3c6'); return; }
+    return startRun([longestPartial()], true, 0);
+  }
+  const bonus = byButton ? Math.round(earlyMul() * 10) / 10 : 1;
+  if (byButton && G.ttLeft >= 20) unlock('early');
+  startRun(routes, false, bonus);
+}
+function startRun(routes, derail, bonus) {
+  G.phase = 'run'; G.soft = false;
+  if (!derail) { G.chain++; unlock('first'); }
+  G.runBonus = bonus;
+  G.trains = routes.map(rt => {
+    const last = new Map(); rt.steps.forEach((s, i) => last.set(s.c + ',' + s.r, i));
+    return { steps: rt.steps, c0: rt.c0, s: -(CARS - 1) * GAP - 0.7, vi: 0, last, derail, crashT: 0, done: false };
+  });
+  G.removed = [];
+  if (derail) SFX.play('go'); else if (G.chain > 1) SFX.play('chain', G.chain); else SFX.play('go');
+  if (!derail && G.chain > 1) banner(G.chain + '連鎖！', '#ffd36e', 1.6);
+  if (!derail && routes.length > 1) banner(routes.length + '本同時発車！', '#7ed1a4');
+  refreshReady(); hud();
+}
+function vanish(tr, i) {
+  const s = tr.steps[i];
+  if (tr.last.get(s.c + ',' + s.r) !== i) return;     // 十字を2回通るときは、2回目に通ったあとで消す
+  if (!G.grid[s.r][s.c]) return;
+  G.grid[s.r][s.c] = null; G.removed.push([s.c, s.r]);
+  burst(s.c, s.r, '#e9b66a', 7); SFX.play('pop');
+}
+function updateRun(dt) {
+  let all = true;
+  for (const tr of G.trains) {
+    if (tr.done) continue; all = false;
+    const L = tr.steps.length;
+    if (tr.derail) {
+      const stop = L - 0.3;
+      if (tr.s < stop) tr.s = Math.min(stop, tr.s + SPEED * dt);
+      else {
+        if (!tr.crashT) { SFX.play('crash'); G.shake = 0.5; try { navigator.vibrate && navigator.vibrate(120); } catch (e) {} const hp = trainHead(tr); burstPx(hp.x, hp.y, '#ff8a5c', 18); banner('脱線！', '#ff7a5c', 1.4); }
+        tr.crashT += dt;
+        if (tr.crashT > 1.1) { for (let i = 0; i < L; i++) vanish(tr, i); tr.done = true; }
+      }
+    } else tr.s += SPEED * dt;
+    const tail = tr.s - (CARS - 1) * GAP - 0.45;
+    while (tr.vi < L && tail >= tr.vi + 1) vanish(tr, tr.vi++);
+    if (!tr.derail && tail > L + 0.6) tr.done = true;
+  }
+  if (all) endRun();
 }
 function endRun() {
-  const { path, topped } = G.run;
-  const len = path.length, curves = path.filter(p => p.m !== (N | S) && p.m !== (E | W)).length;
-  // 走った線路を消して、上のピースを落とす
-  path.forEach(p => { G.grid[p.r][p.c] = null; });
-  for (let c = 0; c < COLS; c++) {
-    const col = []; for (let r = ROWS - 1; r >= 0; r--) if (G.grid[r][c] !== null) col.push(G.grid[r][c]);
-    for (let r = ROWS - 1, i = 0; r >= 0; r--, i++) G.grid[r][c] = i < col.length ? col[i] : null;
+  const derail = G.trains.some(t => t.derail);
+  // となりを電車が通った岩をこわす
+  let rocks = 0; const rm = new Set(G.removed.map(([c, r]) => c + ',' + r));
+  G.removed.forEach(([c, r]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
+    const t = at(c + dx, r + dy);
+    if (t && t.k === 'r' && !rm.has((c + dx) + ',' + (r + dy))) { G.grid[r + dy][c + dx] = null; rm.add((c + dx) + ',' + (r + dy)); rocks++; burst(c + dx, r + dy, '#9a9ca4', 10); }
+  }));
+  if (rocks) SFX.play('rock');
+  let pts = 0, topY = ROWS;
+  if (!derail) {
+    let sum = 0;
+    G.trains.forEach(tr => {
+      const len = tr.steps.length, curves = tr.steps.filter(s => s.k === 'c').length, crosses = tr.steps.filter(s => s.k === 'x').length;
+      sum += routePts(len, curves, crosses);
+      G.st.runs++; G.st.tiles += len; G.st.longest = Math.max(G.st.longest, len); G.st.maxCurves = Math.max(G.st.maxCurves, curves); G.st.cross += crosses;
+      if (len >= 10) unlock('loop10'); if (len >= 20) unlock('loop20'); if (crosses) unlock('cross');
+      tr.steps.forEach(s => { topY = Math.min(topY, s.r); });
+    });
+    const n = G.trains.length;
+    G.st.maxMulti = Math.max(G.st.maxMulti, n); G.st.maxChain = Math.max(G.st.maxChain, G.chain);
+    if (n >= 2) unlock('multi2'); if (G.chain >= 2) unlock('chain2'); if (G.chain >= 4) unlock('chain4');
+    const em = G.runBonus || 1;
+    pts = Math.round(sum * multiMul(n) * chainMul(G.chain) * em);
+    const lenAll = G.trains.reduce((a, t) => a + t.steps.length, 0);
+    pop(COLS / 2, Math.max(2, topY - 0.5), lenAll + 'マス +' + pts + (G.chain > 1 ? '（×' + chainMul(G.chain) + '）' : '') + (em > 1 ? ' 早発×' + em : ''), '#ffd36e');
   }
-  if (len >= 10) unlock('len10'); if (curves >= 8) unlock('curve8');
-  if (topped) { unlock('top'); save.st.arr = (save.st.arr || 0) + 1; persist(); if (save.st.arr >= 5) unlock('arr5'); G.arrivals++; }
-  const pts = len * 10 + curves * 5 + (topped ? 100 : 0);
-  G.score += pts; G.run = null; G.lastRun = { len, curves, topped };
-  toast(len + 'マス走行 +' + pts + (topped ? '（到着！）' : ''));
-  if (G.kind === 'arcade') {
-    if (len >= G.cfg.target && curves >= G.cfg.curves) return levelClear();
-    G.miss++; hud();
-    if (G.miss >= MAX_MISS) return gameOver('失敗が' + MAX_MISS + '回になった');
-  } else if (!topped) return gameOver('電車が脱線した');
+  if (rocks) { pts += rocks * ROCK_PTS; G.st.rocks += rocks; save.st.rocks = (save.st.rocks || 0) + rocks; if (save.st.rocks >= 10) unlock('rock10'); pop(COLS / 2, Math.max(3, topY + 1), '岩 ×' + rocks + ' +' + rocks * ROCK_PTS, '#c8ccd4'); }
+  G.score += pts; G.runBonus = 1; G.trains = [];
+  if (G.kind === 'free') { if (G.score >= 5000) unlock('free5k'); if (G.score >= 20000) unlock('free20k'); }
+  persist();
+  gravity();
+  G.derailed = derail;
+  G.phase = 'settle';
   hud();
 }
-function levelClear() {
-  G.mode = 'result';
-  if (G.lv > save.cleared) save.cleared = G.lv; if (G.lv === 20) unlock('lv20'); persist();
-  $('rTitle').textContent = 'Lv' + G.lv + ' クリア！'; $('rScore').textContent = G.score;
-  $('rInfo').textContent = G.lv >= ARCADE_LEVELS ? '全レベル制覇！' : '次のレベルが解放されました';
-  $('rNext').textContent = G.lv >= ARCADE_LEVELS ? 'もう一度' : '次のレベルへ'; $('rNext').onclick = () => start('arcade', G.lv >= ARCADE_LEVELS ? G.lv : G.lv + 1);
-  $('mResult').hidden = false; hud();
+function gravity() {
+  for (let c = 0; c < COLS; c++) {
+    let w = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      const t = G.grid[r][c]; if (!t) continue;
+      if (w !== r) { G.grid[w][c] = t; G.grid[r][c] = null; t.fy += (w - r); }
+      w--;
+    }
+  }
 }
-function gameOver(why) {
-  if (G.over) return; G.over = true; G.mode = 'result';
-  if (G.kind === 'free' && G.score > save.free) { save.free = G.score; persist(); }
-  $('rTitle').textContent = '脱線・ゲームオーバー'; $('rScore').textContent = G.score;
-  $('rInfo').textContent = why + (G.kind === 'free' ? '（ベスト ' + save.free + ' 点）' : '');
-  $('rNext').textContent = 'もう一回'; $('rNext').onclick = () => start(G.kind, G.kind === 'arcade' ? G.lv : G.lv0 || G.lv);
-  $('mResult').hidden = false; hud();
+function updateSettle(dt) {
+  let moving = false;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = G.grid[r][c]; if (!t || t.fy <= 0) continue;
+    t.v = (t.v || 4) + 60 * dt; t.fy = Math.max(0, t.fy - t.v * dt);
+    if (t.fy === 0) t.v = 0; else moving = true;
+  }
+  if (moving) return;
+  // 落ち終わった
+  if (G.derailed) {
+    G.chain = 0; G.derailed = false;
+    if (G.kind === 'free') return end('derail');
+    G.miss++; hud();
+    if (G.miss >= MAX_MISS) return end('miss');
+    return resume();
+  }
+  const routes = findRoutes();
+  if (routes.length) return startRun(routes, false, 0);   // 落ちてまたつながった → 連鎖
+  resume();
 }
-$('rShare').onclick = () => { try { CG.share.open({ msg: 'つなげ！ちくわ線路で ' + G.score + '点！', tags: ['ちくわ線路'], url: CG.pageUrl() }); } catch (e) {} };
-$('rMenu').onclick = () => { G.mode = 'menu'; $('mResult').hidden = true; $('mMenu').hidden = false; };
+function resume() {
+  G.chain = 0; G.ttLeft = G.tt; G.phase = 'play';
+  refreshReady(); hud();
+  if (G.kind === 'arcade' && goalsDone()) return end('clear');
+  if (!G.cur) spawn();
+}
+const goalsDone = () => LEVELS[G.li].goals.every(([k, n]) => goalVal(k) >= n);
 
-/* ---- メニュー ---- */
-const show = id => { document.querySelectorAll('.modal').forEach(m => m.hidden = true); $(id).hidden = false; };
+function end(why) {
+  if (G.phase === 'over') return;
+  G.phase = 'over'; G.why = why; G.cur = null; updGo();
+  const arc = G.kind === 'arcade', lvNo = G.li + 1;
+  let title, whyT, next;
+  if (why === 'clear') {
+    SFX.play('clear');
+    if (lvNo > save.cleared) save.cleared = lvNo;
+    if (lvNo >= 10) unlock('lv10'); if (lvNo >= 20) unlock('lv20');
+    title = 'Lv' + lvNo + ' クリア！'; whyT = lvNo >= LEVELS.length ? '全レベル制覇！おめでとう！' : '次のレベルが解放されました';
+    next = lvNo >= LEVELS.length ? ['もう一度', () => brief(G.li)] : ['Lv' + (lvNo + 1) + ' へ', () => brief(G.li + 1)];
+  } else {
+    SFX.play('over');
+    whyT = why === 'mansen' ? '真ん中の列が上まで積み上がった（満線）' : why === 'derail' ? '電車が脱線した' : '脱線が' + MAX_MISS + '回になった';
+    title = arc ? 'Lv' + lvNo + ' 失敗…' : (why === 'mansen' ? '満線！' : '脱線！');
+    next = ['もう一回', () => arc ? start('arcade', G.li) : start('free', G.lv0)];
+  }
+  let rec = false;
+  if (!arc && G.score > save.best) { save.best = G.score; rec = true; }
+  persist();
+  setTimeout(() => {
+    $('rTitle').textContent = title; $('rWhy').textContent = whyT + (rec ? '　ベスト更新！' : (!arc ? '　ベスト ' + save.best : ''));
+    $('rScore').textContent = G.score + ' 点';
+    $('rStats').innerHTML = [['走ったマス', G.st.tiles], ['最長ルート', G.st.longest], ['最大連鎖', G.st.maxChain], ['こわした岩', G.st.rocks]].map(([a, b]) => '<div>' + a + '<b>' + b + '</b></div>').join('');
+    $('rAch').textContent = G.newAch.length ? '新しい実績：' + G.newAch.join('・') : '';
+    $('rNext').textContent = next[0]; $('rNext').onclick = next[1];
+    show('mResult');
+  }, why === 'clear' ? 900 : 700);
+}
+$('rShare').onclick = () => {
+  const m = G.kind === 'arcade' ? (G.why === 'clear' ? 'つなげ！ちくわ線路 アーケード Lv' + (G.li + 1) + ' をクリア！（' + G.score + '点）' : 'つなげ！ちくわ線路 アーケード Lv' + (G.li + 1) + ' に挑戦中！')
+    : 'つなげ！ちくわ線路 フリーで ' + G.score + '点！（最長' + G.st.longest + 'マス・最大' + G.st.maxChain + '連鎖）';
+  try { CG.share.open({ msg: m, tags: ['ちくわ線路'], url: CG.pageUrl() }); } catch (e) {}
+};
+$('rMenu').onclick = () => toMenu();
+
+/* ================= 画面（メニューなど） ================= */
+const show = id => { document.querySelectorAll('.modal').forEach(m => m.hidden = m.id !== id); };
+function toMenu() { G.phase = 'menu'; G.cur = null; G.trains = []; updGo(); show('mMenu'); }
 document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => show('mMenu'));
+$('mHow').onclick = () => { show('mHowto'); drawHow(); };
 $('mArc').onclick = () => {
   const g = $('lvGrid'); g.innerHTML = '';
-  for (let i = 1; i <= ARCADE_LEVELS; i++) {
-    const b = document.createElement('button'); b.textContent = i; b.disabled = i > save.cleared + 1; if (i <= save.cleared) b.className = 'on';
-    b.onclick = () => start('arcade', i); g.appendChild(b);
-  }
+  LEVELS.forEach((L, i) => {
+    const b = document.createElement('button'); b.textContent = i + 1; b.disabled = i > save.cleared; if (i < save.cleared) b.className = 'on';
+    b.onclick = () => brief(i); g.appendChild(b);
+  });
   show('mLevel');
 };
-$('mFree').onclick = () => { $('freeBest').textContent = save.free; show('mFreeSet'); };
-for (let i = 1; i <= 20; i++) { const o = document.createElement('option'); o.value = i; o.textContent = i; $('freeLv').appendChild(o); }
-$('freeStart').onclick = () => {
-  const v = document.querySelector('input[name=fm]:checked').value === 'var', lv = parseInt($('freeLv').value, 10) || 1;
-  G.varLv = v; G.lv0 = lv; start('free', lv);
-};
+function goalHtml(li, live) {
+  return LEVELS[li].goals.map(([k, n]) => {
+    const v = live ? Math.min(goalVal(k), n) : 0;
+    return '<div>・' + GOAL_TEXT[k](n) + (live ? '　' + v + '/' + n : '') + '</div>';
+  }).join('');
+}
+function brief(i) {
+  const L = LEVELS[i];
+  $('bfTitle').textContent = 'Lv' + (i + 1) + ' のお題';
+  $('bfGoal').innerHTML = goalHtml(i, false);
+  $('bfInfo').textContent = (L.tip ? L.tip + ' ' : '') + '発車時刻は ' + ttOf(L.lv) + '秒ごと。脱線は' + MAX_MISS + '回まで。';
+  $('bfStart').onclick = () => start('arcade', i);
+  $('bfBack').onclick = () => $('mArc').onclick();
+  show('mBrief');
+}
+let fMode = 'fix', fLv = 1;
+const fUpd = () => { $('fLv').textContent = 'Lv' + fLv; $('fInfo').textContent = (fMode === 'var' ? FREE_LVUP + '個置くごとにレベルが上がって速くなる。' : 'ずっと同じ速さ。') + '発車時刻は ' + ttOf(fLv) + '秒ごと。脱線したら終わり。'; };
+$('fSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; fMode = b.dataset.v; [...$('fSeg').children].forEach(x => x.classList.toggle('on', x === b)); fUpd(); };
+$('fMinus').onclick = () => { fLv = Math.max(1, fLv - 1); fUpd(); };
+$('fPlus').onclick = () => { fLv = Math.min(20, fLv + 1); fUpd(); };
+$('mFree').onclick = () => { $('freeBest').textContent = save.best; fUpd(); show('mFreeSet'); };
+$('freeStart').onclick = () => { G.varLv = fMode === 'var'; start('free', fLv); };
 $('mAch').onclick = () => {
-  $('achList').innerHTML = ACH.map(a => '<li class="' + (save.ach[a[0]] ? 'ok' : '') + '">' + (save.ach[a[0]] ? '★ ' : '☆ ') + a[1] + '<br><small>' + a[2] + '</small></li>').join('');
+  $('achList').innerHTML = ACH.map(a => '<li class="' + (save.ach[a[0]] ? 'ok' : '') + '">' + a[1] + '<small>' + a[2] + '</small></li>').join('');
+  $('achCount').textContent = ACH.filter(a => save.ach[a[0]]).length + ' / ' + ACH.length + ' 解放';
   show('mAchv');
 };
+/* 一時停止 */
+let pausedFrom = null;
+function pause() {
+  if (!['play', 'run', 'settle'].includes(G.phase)) return;
+  pausedFrom = G.phase; G.phase = 'pause';
+  $('pzGoal').innerHTML = G.kind === 'arcade' ? '<b>Lv' + (G.li + 1) + '</b>' + goalHtml(G.li, true) : '<b>フリー Lv' + G.lv + '</b>　' + G.score + '点';
+  show('mPause');
+}
+$('bPause').onclick = pause;
+$('pzGo').onclick = () => { if (G.phase === 'pause') G.phase = pausedFrom; show(null); };
+$('pzRetry').onclick = () => G.kind === 'arcade' ? start('arcade', G.li) : start('free', G.lv0);
+$('pzMenu').onclick = toMenu;
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
-/* ---- 入力 ---- */
-$('bL').onclick = () => move(-1); $('bR').onclick = () => move(1); $('bRot').onclick = rotate; $('bDrop').onclick = hardDrop; $('bGo').onclick = depart;
+/* ================= 横の表示 ================= */
+let lastClock = -1;
+function hud(full) {
+  $('sc').textContent = G.score;
+  if (G.kind === 'arcade') {
+    $('sMode').textContent = 'アーケード Lv' + (G.li + 1);
+    $('sGoal').innerHTML = LEVELS[G.li].goals.map(([k, n]) => { const v = Math.min(goalVal(k) || 0, n); return '<div class="g' + (v >= n ? ' ok' : '') + '">' + GOAL_TEXT[k](n) + '<span class="pg"><i style="width:' + (v / n * 100) + '%"></i></span></div>'; }).join('');
+    $('lifeLbl').textContent = 'のこり';
+    $('life').textContent = '🚃'.repeat(Math.max(0, MAX_MISS - G.miss)) + '・'.repeat(Math.min(MAX_MISS, G.miss));
+  } else {
+    $('sMode').textContent = 'フリー Lv' + G.lv;
+    $('sGoal').innerHTML = '<div class="g">ベスト ' + save.best + '</div>' + (G.varLv ? '<div class="g" style="color:var(--sub)">だんだん速く</div>' : '');
+    $('lifeLbl').textContent = '最長ルート';
+    $('life').textContent = G.st.longest + ' マス';
+  }
+  updClock(true);
+}
+function updClock(force) {
+  const v = Math.max(0, Math.ceil(G.ttLeft));
+  if (!force && v === lastClock) return;
+  if (G.phase === 'play' && v !== lastClock && v <= 5 && v > 0) SFX.play('tick');
+  lastClock = v;
+  $('clockV').textContent = v + '秒';
+  $('clockBar').style.width = (Math.max(0, G.ttLeft) / G.tt * 100) + '%';
+  $('clock').classList.toggle('warn', v <= 5 && G.phase === 'play');
+}
+function updGo() {
+  const b = $('bGo'), n = G.ready.length;
+  const len = G.ready.reduce((a, r) => a + r.steps.length, 0);
+  b.classList.toggle('ready', n > 0 && G.phase === 'play');
+  $('goSub').textContent = G.phase === 'run' || G.phase === 'settle' ? (G.chain > 1 ? G.chain + '連鎖中' : '走行中') : n ? (n > 1 ? n + '本・' : '') + len + 'マス' + (G.ttLeft >= 1 ? ' 早発×' + (Math.round(earlyMul() * 10) / 10) : '') : '線路をつなごう';
+}
+
+/* ================= 入力 ================= */
+function hold(id, fn, rep) {
+  const el = $(id); let t1 = 0, t2 = 0;
+  const stop = () => { clearTimeout(t1); clearInterval(t2); el.classList.remove('on'); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); fn(); el.classList.add('on'); if (rep) { t1 = setTimeout(() => { t2 = setInterval(fn, 65); }, 180); } });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => el.addEventListener(t, stop));
+}
+hold('bL', () => tryMove(-1), true); hold('bR', () => tryMove(1), true); hold('bRot', rotate); hold('bDrop', hardDrop);
+$('bGo').onclick = () => depart(true);
 document.addEventListener('keydown', e => {
-  const k = e.key; if (k === 'ArrowLeft') move(-1); else if (k === 'ArrowRight') move(1); else if (k === 'ArrowUp' || k === ' ') rotate(); else if (k === 'ArrowDown') hardDrop(); else if (k === 'Enter') depart(); else return;
+  if (G.phase === 'menu' || G.phase === 'over') return;
+  const k = e.key;
+  if (k === 'Escape' || k === 'p') { G.phase === 'pause' ? $('pzGo').onclick() : pause(); }
+  else if (G.phase === 'pause') return;
+  else if (k === 'ArrowLeft' || k === 'a') tryMove(-1);
+  else if (k === 'ArrowRight' || k === 'd') tryMove(1);
+  else if (k === 'ArrowUp' || k === 'x' || k === 'z' || k === 'w') rotate();
+  else if (k === 'ArrowDown' || k === 's') G.soft = true;
+  else if (k === ' ') hardDrop();
+  else if (k === 'Enter') depart(true);
+  else return;
   e.preventDefault();
 });
-
-/* ---- 描画 ---- */
-function sideMid(c0, r0, b) { const d = dirOf(b); return { x: (c0 + 0.5 + d.dx * 0.5) * CELL, y: (r0 + 0.5 + d.dy * 0.5) * CELL }; }
-function drawTrack(g, c0, r0, m, alpha, size) {
-  // g の座標系は CELL 単位。size は 1 マスの大きさ
-  g.save(); g.translate(c0 * CELL, r0 * CELL);
-  g.globalAlpha = alpha === undefined ? 1 : alpha;
-  g.fillStyle = m === 0 ? '#5a5f68' : '#3a4a3a'; g.fillRect(1, 1, CELL - 2, CELL - 2);
-  if (m === 0) {   // 岩
-    g.fillStyle = '#8a8f99'; g.beginPath(); g.moveTo(5, 24); g.lineTo(9, 9); g.lineTo(20, 5); g.lineTo(26, 16); g.lineTo(24, 26); g.closePath(); g.fill();
-    g.fillStyle = '#a7acb6'; g.fillRect(11, 10, 6, 3); g.restore(); return;
-  }
-  const bs = DIRS.filter(d => m & d.b), h = CELL / 2;
-  const P = d => ({ x: h + d.dx * h, y: h + d.dy * h });
-  const path = () => {
-    g.beginPath();
-    if (bs.length === 2 && (m === (N | S) || m === (E | W))) { const a = P(bs[0]), b = P(bs[1]); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); }
-    else { const a = P(bs[0]), b = P(bs[1]), cx = h + (bs[0].dx + bs[1].dx) * h, cy = h + (bs[0].dy + bs[1].dy) * h; let a0 = Math.atan2(a.y - cy, a.x - cx), a1 = Math.atan2(b.y - cy, b.x - cx); let da = a1 - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; g.arc(cx, cy, h, a0, a0 + da, da < 0); }
+document.addEventListener('keyup', e => { if (e.key === 'ArrowDown' || e.key === 's') G.soft = false; });
+/* 画面の操作：左右にドラッグで移動、タップで回す、下にはらうと落とす、ゆっくり下にドラッグで速く落とす */
+(() => {
+  let id = null, x0 = 0, y0 = 0, t0 = 0, moved = 0, lastX = 0, dragDown = false;
+  cv.addEventListener('pointerdown', e => { if (G.phase !== 'play') return; id = e.pointerId; x0 = lastX = e.clientX; y0 = e.clientY; t0 = performance.now(); moved = 0; dragDown = false; try { cv.setPointerCapture(id); } catch (er) {} });
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerId !== id) return;
+    const cs = G.cs * 0.9, dx = e.clientX - lastX, dy = e.clientY - y0;
+    if (Math.abs(dx) >= cs && !dragDown) { const d = Math.sign(dx); const n = Math.floor(Math.abs(dx) / cs); for (let i = 0; i < n; i++) if (tryMove(d)) moved++; lastX += d * n * cs; }
+    if (dy > G.cs * 1.2 && Math.abs(e.clientX - x0) < G.cs) { dragDown = true; G.soft = true; }
+  });
+  const up = e => {
+    if (e.pointerId !== id) return; id = null; G.soft = false;
+    const dt = performance.now() - t0, dx = e.clientX - x0, dy = e.clientY - y0;
+    if (dy > G.cs * 2 && dy / dt > 0.7 && Math.abs(dx) < dy) hardDrop();
+    else if (!moved && !dragDown && Math.hypot(dx, dy) < 12 && dt < 350) rotate();
   };
-  g.lineCap = 'butt'; g.strokeStyle = '#8a6a44'; g.lineWidth = 14; path(); g.stroke();                 // 枕木の帯
-  g.strokeStyle = '#6a4e2c'; g.lineWidth = 12; g.setLineDash([2, 4]); path(); g.stroke(); g.setLineDash([]);
-  g.strokeStyle = '#d6dce4'; g.lineWidth = 2; g.save(); g.lineWidth = 2; path(); g.stroke(); g.restore();
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+})();
+
+/* ================= 描画 ================= */
+const nxc = $('nx'), nctx = nxc.getContext('2d');
+let DPR = 1;
+const sprites = new Map();
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+/* 1マスの線路を、原点から s×s の大きさで描く */
+function paintTile(g, k, m, s) {
+  if (k === 'r') {
+    g.fillStyle = '#2b2a30'; rr(g, s * .03, s * .03, s * .94, s * .94, s * .14); g.fill();
+    g.fillStyle = '#5d5f68'; g.beginPath(); g.moveTo(s * .14, s * .82); g.lineTo(s * .22, s * .36); g.lineTo(s * .48, s * .14); g.lineTo(s * .8, s * .28); g.lineTo(s * .88, s * .7); g.lineTo(s * .66, s * .88); g.closePath(); g.fill();
+    g.fillStyle = '#8e919b'; g.beginPath(); g.moveTo(s * .24, s * .42); g.lineTo(s * .48, s * .2); g.lineTo(s * .74, s * .32); g.lineTo(s * .56, s * .5); g.lineTo(s * .3, s * .56); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(s * .4, s * .26, s * .14, s * .05);
+    return;
+  }
+  g.fillStyle = '#3b3027'; rr(g, s * .03, s * .03, s * .94, s * .94, s * .14); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.05)'; rr(g, s * .03, s * .03, s * .94, s * .3, s * .14); g.fill();
+  // 砂利の粒
+  g.fillStyle = 'rgba(0,0,0,.18)'; for (let i = 0; i < 6; i++) g.fillRect(s * ((i * 37 % 80) / 100 + .08), s * ((i * 53 % 80) / 100 + .08), s * .05, s * .05);
+  const rail = s * .17, sl = s * .32;
+  const straight = (sleepers) => {
+    if (sleepers) { g.fillStyle = '#7a4d26'; for (let i = 0; i < 4; i++) g.fillRect(-sl, -s / 2 + s * (.125 + .25 * i) - s * .045, sl * 2, s * .09); }
+    [-rail, rail].forEach(x => { g.strokeStyle = '#1d1d22'; g.lineWidth = s * .1; g.beginPath(); g.moveTo(x, -s / 2); g.lineTo(x, s / 2); g.stroke(); g.strokeStyle = '#dfe5ec'; g.lineWidth = s * .05; g.beginPath(); g.moveTo(x, -s / 2); g.lineTo(x, s / 2); g.stroke(); });
+  };
+  g.save(); g.translate(s / 2, s / 2); g.lineCap = 'butt';
+  if (k === 's') { if (m === (E | W)) g.rotate(Math.PI / 2); straight(true); }
+  else if (k === 'x') { straight(true); g.rotate(Math.PI / 2); g.fillStyle = '#7a4d26'; [-.375, .375].forEach(y => g.fillRect(-sl, s * y - s * .045, sl * 2, s * .09)); straight(false); }
+  else {
+    g.rotate(CURVES.indexOf(m) * Math.PI / 2);
+    const cx = s / 2, cy = -s / 2, R = s / 2;
+    g.fillStyle = '#7a4d26';
+    for (let j = 0; j < 3; j++) { const a = Math.PI / 2 + (j + .5) * (Math.PI / 2) / 3; g.save(); g.translate(cx, cy); g.rotate(a); g.fillRect(R - sl, -s * .045, sl * 2, s * .09); g.restore(); }
+    [R - rail, R + rail].forEach(rad => { g.strokeStyle = '#1d1d22'; g.lineWidth = s * .1; g.beginPath(); g.arc(cx, cy, rad, Math.PI / 2, Math.PI); g.stroke(); g.strokeStyle = '#dfe5ec'; g.lineWidth = s * .05; g.beginPath(); g.arc(cx, cy, rad, Math.PI / 2, Math.PI); g.stroke(); });
+  }
   g.restore();
 }
-function trainPos(step, f) {
-  const a = sideMid(step.c, step.r, step.enter), b = sideMid(step.c, step.r, step.exit), h = CELL / 2;
-  if (step.m === (N | S) || step.m === (E | W)) return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, ang: Math.atan2(b.y - a.y, b.x - a.x) };
-  const d1 = dirOf(step.enter), d2 = dirOf(step.exit);
-  const cx = (step.c + 0.5 + (d1.dx + d2.dx) * 0.5) * CELL, cy = (step.r + 0.5 + (d1.dy + d2.dy) * 0.5) * CELL;
-  const a0 = Math.atan2(a.y - cy, a.x - cx), a1 = Math.atan2(b.y - cy, b.x - cx); let da = a1 - a0;
-  while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
-  const an = a0 + da * f; return { x: cx + Math.cos(an) * h, y: cy + Math.sin(an) * h, ang: an + (da > 0 ? Math.PI / 2 : -Math.PI / 2) };
+function sprite(k, m) {
+  const key = k + m; let sp = sprites.get(key);
+  if (!sp) { sp = document.createElement('canvas'); const px = Math.ceil(G.cs * DPR); sp.width = sp.height = px; const g = sp.getContext('2d'); paintTile(g, k, m, px); sprites.set(key, sp); }
+  return sp;
 }
+const drawTileAt = (g, k, m, x, y, s) => g.drawImage(sprite(k, m), x, y, s, s);
+/* ちくわ電車の1両（x,y は中心、ang は進む向き） */
+function drawCar(g, x, y, ang, cs, lead, crash) {
+  g.save(); g.translate(x, y); g.rotate(ang);
+  const L = cs * .78, Wd = cs * .5;
+  g.fillStyle = 'rgba(0,0,0,.35)'; rr(g, -L / 2 + cs * .05, -Wd / 2 + cs * .08, L, Wd, Wd / 2); g.fill();
+  const gr = g.createLinearGradient(-L / 2, 0, L / 2, 0);
+  gr.addColorStop(0, '#f6e6c0'); gr.addColorStop(.12, '#e7b066'); gr.addColorStop(.5, '#c9772e'); gr.addColorStop(.88, '#e7b066'); gr.addColorStop(1, '#f6e6c0');
+  g.fillStyle = gr; rr(g, -L / 2, -Wd / 2, L, Wd, Wd / 2); g.fill();
+  g.fillStyle = 'rgba(120,60,20,.45)'; [-.2, .05, .28].forEach(f => g.fillRect(L * f - L * .035, -Wd / 2 + 1, L * .07, Wd - 2));
+  g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(-L * .3, -Wd * .36, L * .6, Wd * .1);
+  if (lead) {
+    const ex = L * .26, ey = Wd * .2, er = Math.max(1.5, Wd * .13);
+    g.fillStyle = '#fff'; [-ey, ey].forEach(yy => { g.beginPath(); g.arc(ex, yy, er, 0, 7); g.fill(); });
+    g.fillStyle = '#2a1a10'; [-ey, ey].forEach(yy => { g.beginPath(); if (crash) { g.fillRect(ex - er * .8, yy - er * .2, er * 1.6, er * .4); } else { g.arc(ex + er * .3, yy, er * .55, 0, 7); g.fill(); } });
+    g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(L / 2 - 1, 0, Wd * .12, 0, 7); g.fill();
+  }
+  g.restore();
+}
+/* ルートの上の位置。s はマス単位（0＝最初のマスの入り口）。駅の中（s<0、s>長さ）も線路の延長として返す */
+function posAlong(steps, s, cs, c0) {
+  const L = steps.length;
+  if (s < 0 || !L) { const c = L ? steps[0].c : c0; return { x: (c + .5) * cs, y: (ROWS - Math.min(s, 0)) * cs, ang: -Math.PI / 2 }; }
+  if (s >= L) { const z = steps[L - 1], d = D[z.exit], f = s - L; const ex = (z.c + .5 + d.dx * .5) * cs, ey = (z.r + .5 + d.dy * .5) * cs; return { x: ex + d.dx * f * cs, y: ey + d.dy * f * cs, ang: Math.atan2(d.dy, d.dx) }; }
+  const i = Math.floor(s), f = s - i, st = steps[i];
+  const de = D[st.enter], dx = D[st.exit];
+  const ax = (st.c + .5 + de.dx * .5) * cs, ay = (st.r + .5 + de.dy * .5) * cs, bx = (st.c + .5 + dx.dx * .5) * cs, by = (st.r + .5 + dx.dy * .5) * cs;
+  if (st.enter === opp(st.exit)) return { x: ax + (bx - ax) * f, y: ay + (by - ay) * f, ang: Math.atan2(by - ay, bx - ax) };
+  const cx = (st.c + .5 + (de.dx + dx.dx) * .5) * cs, cy = (st.r + .5 + (de.dy + dx.dy) * .5) * cs;
+  const a0 = Math.atan2(ay - cy, ax - cx); let da = Math.atan2(by - cy, bx - cx) - a0;
+  while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+  const a = a0 + da * f;
+  return { x: cx + Math.cos(a) * cs / 2, y: cy + Math.sin(a) * cs / 2, ang: a + (da > 0 ? Math.PI / 2 : -Math.PI / 2) };
+}
+const trainHead = tr => posAlong(tr.steps, tr.s, G.cs, tr.c0);
+
+/* 演出：粒・文字・大きな見出し */
+const parts = [], pops = [], banners = [];
+function burstPx(x, y, col, n) { for (let i = 0; i < n; i++) { const a = Math.random() * 7, v = 40 + Math.random() * 120; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: .6 + Math.random() * .4, col, s: 2 + Math.random() * 3 }); } }
+const burst = (c, r, col, n) => burstPx((c + .5) * G.cs, (r + .5) * G.cs, col, n);
+const puff = (c, r) => { for (let i = 0; i < 5; i++) parts.push({ x: (c + .1 + Math.random() * .8) * G.cs, y: (r + 1) * G.cs, vx: (Math.random() - .5) * 40, vy: -10 - Math.random() * 20, life: .35, col: 'rgba(220,220,220,.6)', s: 2 }); };
+const trail = (c, y0, y1) => { for (let y = Math.max(0, y0); y < y1; y += .5) parts.push({ x: (c + .5) * G.cs, y: (y + .5) * G.cs, vx: 0, vy: 0, life: .25, col: 'rgba(255,211,110,.16)', s: G.cs * .5, sq: 1 }); };
+const pop = (c, r, text, col) => pops.push({ x: c * G.cs, y: r * G.cs, text, col, life: 1.8 });
+function banner(text, col, life) { banners.push({ text, col, life: life || 1.3, t: 0 }); if (banners.length > 3) banners.shift(); }
+
+function resize() {
+  const st = $('stage'), w = st.clientWidth, h = st.clientHeight;
+  const cs = Math.max(10, Math.floor(Math.min(w / COLS, h / (ROWS + STATION_H))));
+  G.cs = cs; DPR = Math.min(3, window.devicePixelRatio || 1);
+  cv.style.width = cs * COLS + 'px'; cv.style.height = Math.round(cs * (ROWS + STATION_H)) + 'px';
+  cv.width = Math.round(cs * COLS * DPR); cv.height = Math.round(cs * (ROWS + STATION_H) * DPR);
+  nxc.width = 88 * DPR; nxc.height = 30 * DPR;
+  sprites.clear(); drawNext();
+}
+window.addEventListener('resize', resize);
+function drawNext() {
+  if (!G.cs) return;
+  const g = nctx; g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, 88, 30);
+  const sizes = [26, 22, 18];
+  let x = 0;
+  G.queue.forEach((k, i) => {
+    const s = sizes[i], m = k === 's' ? (N | S) : k === 'c' ? (S | E) : k === 'x' ? 15 : 0;
+    g.globalAlpha = 1 - i * .25; g.save(); g.translate(x, (30 - s) / 2); paintTile(g, k, m, s); g.restore(); x += s + 4;
+  });
+  g.globalAlpha = 1;
+}
+
 function draw() {
-  const k = cv.width / (COLS * CELL); ctx.setTransform(k, 0, 0, k, 0, 0);
-  ctx.fillStyle = '#101820'; ctx.fillRect(0, 0, COLS * CELL, ROWS * CELL + 40);
-  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
-  for (let c = 0; c <= COLS; c++) { ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke(); }
-  for (let r = 0; r <= ROWS; r += 4) { ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke(); }
-  // 駅
-  const sx = STATION_COL * CELL, sy = ROWS * CELL;
-  ctx.fillStyle = '#2a3848'; ctx.fillRect(0, sy, COLS * CELL, 40);
-  ctx.fillStyle = '#c9772e'; ctx.fillRect(sx - 6, sy + 8, CELL + 12, 26); ctx.fillStyle = '#f3ddb2'; ctx.fillRect(sx - 6, sy + 8, CELL + 12, 5);
-  ctx.fillStyle = '#2a1a10'; ctx.font = '700 11px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('ちくわ駅', sx + CELL / 2, sy + 24);
-  ctx.fillStyle = 'rgba(233,165,91,.5)'; ctx.beginPath(); ctx.moveTo(sx + CELL / 2, ROWS * CELL - 2); ctx.lineTo(sx + CELL / 2 - 6, ROWS * CELL + 4); ctx.lineTo(sx + CELL / 2 + 6, ROWS * CELL + 4); ctx.closePath();
-  // ピース
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const m = G.grid[r][c]; if (m !== null) drawTrack(ctx, c, r, m); }
-  // 走った線路を光らせ、電車を動かす
-  if (G.run) {
-    const run = G.run, pos = run.t * RUN_SPEED, n = run.path.length;
-    for (let i = 0; i < Math.min(n, Math.floor(pos)); i++) { const s = run.path[i]; ctx.fillStyle = 'rgba(255,224,138,.35)'; ctx.fillRect(s.c * CELL, s.r * CELL, CELL, CELL); }
-    if (n > 0) {
-      const i = Math.min(n - 1, Math.floor(pos)), p = trainPos(run.path[i], Math.min(1, pos - i));
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.ang);
-      ctx.fillStyle = '#e9a55b'; ctx.strokeStyle = '#8a4a1a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(-11, -7, 22, 14, 4); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff2c9'; ctx.fillRect(2, -4, 6, 8); ctx.restore();
-    }
+  const cs = G.cs, FW = cs * COLS, FH = cs * ROWS;
+  const g = ctx; g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  let sx = 0, sy = 0; if (G.shake > 0) { sx = (Math.random() - .5) * 8 * G.shake; sy = (Math.random() - .5) * 8 * G.shake; }
+  g.translate(sx, sy);
+  // 背景（夜の横丁）
+  const bg = g.createLinearGradient(0, 0, 0, FH); bg.addColorStop(0, '#0f1a26'); bg.addColorStop(1, '#1b2a37');
+  g.fillStyle = bg; g.fillRect(-10, -10, FW + 20, FH + 20);
+  g.fillStyle = 'rgba(255,255,255,.04)';
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) g.fillRect((c + .5) * cs - 1, (r + .5) * cs - 1, 2, 2);
+  // 真ん中の列（積み上がると満線）
+  g.fillStyle = 'rgba(242,166,73,.05)'; g.fillRect(SPAWN_C * cs, 0, cs, FH);
+  const stackH = (() => { for (let r = 0; r < ROWS; r++) if (G.grid[r] && G.grid[r][SPAWN_C]) return ROWS - r; return 0; })();
+  if (stackH > ROWS - 6 && G.phase !== 'menu') { g.fillStyle = 'rgba(229,83,61,' + (.15 + .1 * Math.sin(G.t * 8)) + ')'; g.fillRect(0, 0, FW, cs * 2); }
+  // 光るルート
+  const pulse = .55 + .45 * Math.sin(G.t * 5);
+  // 置かれた線路
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = G.grid[r] && G.grid[r][c]; if (!t) continue;
+    const y = (r - t.fy) * cs;
+    if (G.readyCells.has(c + ',' + r) && G.phase === 'play') { g.fillStyle = 'rgba(255,200,80,' + (.25 + .25 * pulse) + ')'; rr(g, c * cs - 1, y - 1, cs + 2, cs + 2, cs * .2); g.fill(); }
+    drawTileAt(g, t.k, t.m, c * cs, y, cs);
+    if (G.readyCells.has(c + ',' + r) && G.phase === 'play') { g.strokeStyle = 'rgba(255,215,110,' + (.5 + .5 * pulse) + ')'; g.lineWidth = 2; rr(g, c * cs + 1.5, y + 1.5, cs - 3, cs - 3, cs * .16); g.stroke(); }
   }
   // 落ちてくるピース
   const p = G.cur;
-  if (p && G.mode === 'play') {
-    let gr = p.r; while (canMove(p.c, gr + 1)) gr++;
-    drawTrack(ctx, p.c, gr, p.m, 0.18);
-    drawTrack(ctx, p.c, p.y, p.m, 1);
-    ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2; ctx.strokeRect(p.c * CELL + 1, p.y * CELL + 1, CELL - 2, CELL - 2);
+  if (p && (G.phase === 'play' || G.phase === 'pause' || G.phase === 'run' || G.phase === 'settle')) {
+    const lr = landRow(p);
+    g.globalAlpha = .28; drawTileAt(g, p.t.k, p.t.m, p.c * cs, lr * cs, cs); g.globalAlpha = 1;
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.setLineDash([3, 3]); g.lineWidth = 1; g.strokeRect(p.c * cs + 1.5, lr * cs + 1.5, cs - 3, cs - 3); g.setLineDash([]);
+    const y = Math.min(p.y, p.r) * cs;
+    g.save(); g.translate((p.c + .5) * cs, y + cs / 2);
+    if (p.spin) { g.rotate(-p.spin * Math.PI / 2); }
+    drawTileAt(g, p.t.k, p.t.m, -cs / 2, -cs / 2, cs); g.restore();
+    g.strokeStyle = '#ffd36e'; g.lineWidth = 2; rr(g, p.c * cs + 1, y + 1, cs - 2, cs - 2, cs * .16); g.stroke();
   }
-  if (G.toast && G.t - toastT < 2) { ctx.globalAlpha = Math.min(1, 2 - (G.t - toastT)); ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(10, 90, COLS * CELL - 20, 30); ctx.fillStyle = '#ffe08a'; ctx.font = '700 13px system-ui,sans-serif'; ctx.fillText(G.toast, COLS * CELL / 2, 105); ctx.globalAlpha = 1; }
+  // 駅
+  drawStation(g, cs, FW, FH);
+  // 電車
+  for (const tr of G.trains) {
+    for (let i = CARS - 1; i >= 0; i--) {
+      let s = tr.s - i * GAP; if (tr.derail && tr.crashT) s -= i * .12 * Math.min(1, tr.crashT * 4);
+      if (s < -0.5 - 0.0) { const q = posAlong(tr.steps, s, cs, tr.c0); if (q.y > FH + STATION_H * cs * .55) continue; }
+      const q = posAlong(tr.steps, s, cs, tr.c0);
+      let ang = q.ang; if (tr.derail && tr.crashT) ang += (i % 2 ? 1 : -1) * Math.min(.6, tr.crashT * 2) + Math.sin(G.t * 40) * .05;
+      drawCar(g, q.x, q.y, ang, cs, i === 0, tr.derail && tr.crashT);
+    }
+  }
+  // 粒と文字
+  for (const q of parts) { g.globalAlpha = Math.max(0, Math.min(1, q.life * 2)); g.fillStyle = q.col; if (q.sq) g.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s); else g.fillRect(q.x, q.y, q.s, q.s); }
+  g.globalAlpha = 1;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const q of pops) {
+    g.globalAlpha = Math.min(1, q.life); g.font = '800 ' + Math.max(12, cs * .5) + 'px system-ui,sans-serif';
+    const y = q.y - (1.8 - q.life) * cs * .8;
+    g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.7)'; g.strokeText(q.text, FW / 2, y); g.fillStyle = q.col; g.fillText(q.text, FW / 2, y);
+  }
+  banners.forEach((b, i) => {
+    const k = Math.min(1, b.t * 6), a = Math.min(1, b.life * 2);
+    let fs = Math.round(cs * .85 * (0.8 + 0.2 * k)); g.font = '900 ' + fs + 'px system-ui,sans-serif';
+    const tw = g.measureText(b.text).width; if (tw > FW - 12) { fs = Math.floor(fs * (FW - 12) / tw); g.font = '900 ' + fs + 'px system-ui,sans-serif'; }
+    g.globalAlpha = a;
+    const y = FH * .32 + i * cs * 1.1;
+    g.lineWidth = 6; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(b.text, FW / 2, y); g.fillStyle = b.col; g.fillText(b.text, FW / 2, y);
+  });
+  g.globalAlpha = 1;
+  // 発車時刻の直前は赤く
+  if (G.phase === 'play' && G.ttLeft <= 5) { g.strokeStyle = 'rgba(255,90,60,' + (.35 + .35 * Math.sin(G.t * 12)) + ')'; g.lineWidth = 4; g.strokeRect(2, 2, FW - 4, FH - 4); }
 }
-function drawNext() { nx.setTransform(96 / CELL, 0, 0, 96 / CELL, 0, 0); nx.fillStyle = '#101820'; nx.fillRect(0, 0, CELL, CELL); drawTrack(nx, 0, 0, G.next); }
+function drawStation(g, cs, FW, FH) {
+  const H = STATION_H * cs, y = FH;
+  g.fillStyle = '#2a1d14'; g.fillRect(0, y, FW, H);
+  // 駅に入る線路（底が開いている列）
+  for (let c = 0; c < COLS; c++) {
+    const t = G.grid[ROWS - 1] && G.grid[ROWS - 1][c], open = t && (t.m & S) && !t.fy;
+    if (!open) continue;
+    const lit = G.readyCells.has(c + ',' + (ROWS - 1)) && G.phase === 'play';
+    [-.17, .17].forEach(o => { g.strokeStyle = lit ? '#ffd36e' : '#8b939c'; g.lineWidth = Math.max(1, cs * .05); g.beginPath(); g.moveTo((c + .5 + o) * cs, y); g.lineTo((c + .5 + o) * cs, y + H * .55); g.stroke(); });
+    g.fillStyle = lit ? '#ffd36e' : '#6f7882'; g.beginPath(); g.arc((c + .5) * cs, y + H * .62, cs * .1, 0, 7); g.fill();
+  }
+  // ホームと屋根
+  g.fillStyle = '#c9772e'; g.fillRect(0, y + H * .7, FW, H * .3);
+  g.fillStyle = '#f3ddb2'; g.fillRect(0, y + H * .7, FW, H * .06);
+  g.fillStyle = 'rgba(0,0,0,.25)'; for (let x = 0; x < FW; x += cs * .5) g.fillRect(x, y + H * .78, 1, H * .22);
+  // 看板
+  const bw = cs * 3.2, bx = FW / 2 - bw / 2, by = y + H * .72;
+  g.fillStyle = '#fff8e8'; rr(g, bx, by, bw, H * .26, 4); g.fill();
+  g.fillStyle = '#2a1a10'; g.font = '800 ' + Math.round(cs * .36) + 'px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('ちくわ駅', FW / 2, by + H * .13);
+  // ちょうちん
+  [cs * .7, FW - cs * .7].forEach(x => { g.fillStyle = '#d93a2b'; g.beginPath(); g.ellipse(x, y + H * .85, cs * .2, cs * .26, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(255,233,168,.5)'; g.fillRect(x - cs * .2, y + H * .85 - 1, cs * .4, 2); });
+}
 
+/* あそびかたの図：小さなルートと電車 */
+let howT = 0;
+function drawHow() {
+  const c = $('howCv'); if (c.offsetParent === null) return;
+  const d = Math.min(3, window.devicePixelRatio || 1);
+  if (c.width !== 240 * d) { c.width = 240 * d; c.height = 150 * d; }
+  const g = c.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
+  const cs = 36, ox = 48, rows = 3;
+  g.fillStyle = '#132130'; g.fillRect(0, 0, 240, 150);
+  g.save(); g.translate(ox, 6);
+  const cells = [[1, 2, 's', N | S], [1, 1, 's', N | S], [1, 0, 'c', S | E], [2, 0, 's', E | W], [3, 0, 'c', W | S], [3, 1, 's', N | S], [3, 2, 's', N | S], [0, 2, 'r', 0], [2, 2, 'c', N | E], [2, 1, 's', E | W], [0, 1, 'c', E | S]];
+  const pulse = .5 + .5 * Math.sin(howT * 5);
+  const route = new Set(['1,2', '1,1', '1,0', '2,0', '3,0', '3,1', '3,2']);
+  cells.forEach(([x, y, k, m]) => { if (route.has(x + ',' + y)) { g.fillStyle = 'rgba(255,200,80,' + (.25 + .3 * pulse) + ')'; g.fillRect(x * cs - 1, y * cs - 1, cs + 2, cs + 2); } g.save(); g.translate(x * cs, y * cs); paintTile(g, k, m, cs); g.restore(); });
+  // 駅
+  g.fillStyle = '#c9772e'; g.fillRect(-ox, rows * cs + 10, 240, 40); g.fillStyle = '#2a1d14'; g.fillRect(-ox, rows * cs, 240, 10);
+  g.fillStyle = '#fff8e8'; g.fillRect(cs * 2 - 34, rows * cs + 14, 68, 18); g.fillStyle = '#2a1a10'; g.font = '800 12px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('ちくわ駅', cs * 2, rows * cs + 23);
+  const steps = [{ c: 1, r: 2, enter: S, exit: N }, { c: 1, r: 1, enter: S, exit: N }, { c: 1, r: 0, enter: S, exit: E }, { c: 2, r: 0, enter: W, exit: E }, { c: 3, r: 0, enter: W, exit: S }, { c: 3, r: 1, enter: N, exit: S }, { c: 3, r: 2, enter: N, exit: S }];
+  const s = (howT * 2.2) % 11 - 2;
+  for (let i = CARS - 1; i >= 0; i--) {
+    const q = posLocal(steps, s - i * GAP, cs, rows);
+    if (q.y > rows * cs + 8) continue;
+    drawCar(g, q.x, q.y, q.ang, cs, i === 0, false);
+  }
+  g.restore();
+  howT += 1 / 60;
+  requestAnimationFrame(drawHow);
+}
+function posLocal(steps, s, cs, rows) {
+  // posAlong は ROWS を底にしているので、小さな盤用にずらす
+  const q = posAlong(steps.map(x => ({ ...x, r: x.r + ROWS - rows })), s, cs, 1);
+  return { x: q.x, y: q.y - (ROWS - rows) * cs, ang: q.ang };
+}
+/* メニューの飾り：ぐるっと回る電車 */
+let logoT = 0;
+function drawLogo() {
+  const c = $('logo'); if (c.offsetParent === null) return;
+  const d = Math.min(3, window.devicePixelRatio || 1);
+  if (c.width !== 260 * d) { c.width = 260 * d; c.height = 110 * d; }
+  const g = c.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, 260, 110);
+  const cs = 30, rows = 3, ox = 10;
+  g.save(); g.translate(ox, 4);
+  const steps = [{ c: 1, r: 2, enter: S, exit: N }, { c: 1, r: 1, enter: S, exit: E }, { c: 2, r: 1, enter: W, exit: N }, { c: 2, r: 0, enter: S, exit: E }, { c: 3, r: 0, enter: W, exit: E }, { c: 4, r: 0, enter: W, exit: E }, { c: 5, r: 0, enter: W, exit: S }, { c: 5, r: 1, enter: N, exit: E }, { c: 6, r: 1, enter: W, exit: S }, { c: 6, r: 2, enter: N, exit: S }];
+  steps.forEach(st => { const k = st.enter === opp(st.exit) ? 's' : 'c'; const m = st.enter | st.exit; g.save(); g.translate(st.c * cs, st.r * cs); paintTile(g, k, m, cs); g.restore(); });
+  g.fillStyle = '#c9772e'; g.fillRect(-ox, rows * cs, 260, 12); g.fillStyle = '#f3ddb2'; g.fillRect(-ox, rows * cs, 260, 3);
+  const L = steps.length, s = (logoT * 3) % (L + 6) - 3;
+  for (let i = CARS - 1; i >= 0; i--) { const q = posLocal(steps, s - i * GAP, cs, rows); if (q.y > rows * cs + 2) continue; drawCar(g, q.x, q.y, q.ang, cs, i === 0, false); }
+  g.restore();
+  logoT += 1 / 60;
+  requestAnimationFrame(drawLogo);
+}
+
+/* ================= 毎フレーム ================= */
 let prev = 0;
 function frame(ts) {
   const dt = Math.min(0.05, (ts - prev) / 1000 || 0); prev = ts;
-  if (!document.hidden) G.t += dt;
-  if (G.mode === 'play' && !document.hidden) {
-    if (G.run) {
-      G.run.t += dt;
-      if (G.run.t * RUN_SPEED >= G.run.path.length + 0.4) endRun();
-    } else if (G.cur) {
-      const p = G.cur; p.y += G.cfg.fall * dt;
-      while (G.cur && Math.floor(p.y) > p.r) { if (canMove(p.c, p.r + 1)) p.r++; else { lock(); break; } }
+  G.t += dt;
+  if (G.phase === 'play') {
+    G.ttLeft -= dt;
+    if (G.ttLeft <= 0) { G.ttLeft = 0; depart(false); }
+    const p = G.cur;
+    if (p && G.phase === 'play') {
+      const sp = G.soft ? Math.max(G.fall, SOFT_FALL) : G.fall;
+      p.y += sp * dt;
+      while (Math.floor(p.y) > p.r) { if (canPlace(p.c, p.r + 1)) { p.r++; p.lockT = 0; } else { p.y = p.r; break; } }
+      if (!canPlace(p.c, p.r + 1)) { p.y = Math.min(p.y, p.r); p.lockT += dt * (G.soft ? 3 : 1); if (p.lockT >= LOCK_DELAY) lockPiece(); }
+      if (p.spin) p.spin = Math.max(0, p.spin - dt * 10);
     }
-    $('sc').textContent = G.score;
+    updClock(); updGo();
+  } else if (G.phase === 'run') updateRun(dt);
+  else if (G.phase === 'settle') updateSettle(dt);
+  if (G.phase !== 'pause') {
+    for (let i = parts.length - 1; i >= 0; i--) { const q = parts[i]; q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 300 * dt; if (q.life <= 0) parts.splice(i, 1); }
+    for (let i = pops.length - 1; i >= 0; i--) { pops[i].life -= dt; if (pops[i].life <= 0) pops.splice(i, 1); }
+    for (let i = banners.length - 1; i >= 0; i--) { banners[i].life -= dt; banners[i].t += dt; if (banners[i].life <= 0) banners.splice(i, 1); }
+    if (G.shake > 0) G.shake = Math.max(0, G.shake - dt);
   }
-  draw(); requestAnimationFrame(frame);
+  draw();
+  requestAnimationFrame(frame);
 }
-G.cfg = arcade(1); G.next = randPiece(1, 0); G.grid = emptyGrid(); G.cur = null; drawNext();
+G.grid = emptyGrid(); G.st = newStats(); G.queue = ['c', 's', 'c'];
+resize(); hud(true);
 requestAnimationFrame(frame);
-window.SENRO = { G, planRun, depart, hardDrop, move, rotate, start, rot, randPiece, N, E, S, W, ROWS, COLS, STATION_COL, endRun, lock };
+drawLogo();
+if (!save.seen) { save.seen = 1; persist(); }
+window.SENRO = { G, start, depart, hardDrop, tryMove, rotate, findRoutes, trace, lockPiece, mkTile, N, E, S, W, ROWS, COLS, LEVELS, end };
 })();
 </script>
 </body>
