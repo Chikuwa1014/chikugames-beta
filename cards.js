@@ -174,4 +174,26 @@ add({
 });
 
 
+add({
+  order: 106,
+  kicker: 'ほどくパズル', title: 'ほどけ！おでん串', sub: '絡まった串をほどいて鍋へ',
+  desc: '絡まったおでん串をタップで引き抜いて、鍋にどんどん入れよう。結び目つきの串、同じ具のつづけ技、定番の組み合わせで高得点。抜くと奥の串が動いて、ずっと終わらない。',
+  tags: ['パズル', 'ひとりで遊ぶ'], version: 'β0.1.0', updated: '2026-11-01',
+  /* 開発に公開：ぼかして「開発中」。リンクは貼らない（URL は会話の中でだけ共有する） */
+  dev: true,
+  /* 160×90 のサムネイル。t は秒 */
+  draw(c, t) {
+    const g = c.createLinearGradient(0, 0, 0, 90); g.addColorStop(0, '#6A4424'); g.addColorStop(1, '#4F3119');
+    c.fillStyle = g; c.fillRect(0, 0, 160, 90);
+    c.lineCap = 'round';
+    const sk = (x1, y1, x2, y2, w, col) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
+    const sw = Math.sin(t * 2) * 3;
+    sk(24, 20, 112 + sw, 62, 3, '#ECD199'); sk(30, 72, 120, 24 + sw, 4, '#D79A4A'); sk(60, 12, 56, 80, 3, '#ECD199');
+    c.fillStyle = '#F4ECD8'; c.beginPath(); c.arc(112 + sw, 62, 8, 0, 7); c.fill();
+    c.fillStyle = '#FFF8EA'; c.beginPath(); c.ellipse(120, 24 + sw, 9, 7, 0, 0, 7); c.fill(); c.fillStyle = '#F2B23A'; c.beginPath(); c.arc(120, 24 + sw, 3, 0, 7); c.fill();
+    c.fillStyle = '#D99A52'; c.fillRect(48, 76, 16, 8);
+    c.strokeStyle = '#D64A3A'; c.lineWidth = 2; c.beginPath(); c.arc(60, 46, 5, 0, 7); c.stroke();
+  }
+});
+
 })();
