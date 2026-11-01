@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<title>つなげ！ちくわ線路（仮）</title>
+<style>
+:root{--bg:#1d2733;--panel:#2a3848;--ink:#eef3f8;--sub:#9fb2c6;--accent:#e9a55b;--cg-accent:#e9a55b}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-touch-callout:none}
+button,.modal{-webkit-user-select:none;user-select:none;touch-action:pan-x pan-y}
+.mbox,.mbox *{touch-action:pan-y}
+input,textarea,select{font-size:16px!important}
+header{display:flex;align-items:center;padding:6px 12px;height:40px;flex:none}
+header a{color:var(--sub);text-decoration:none;font-size:13px}
+header .ttl{margin-left:auto;font-weight:700;font-size:14px;color:var(--accent)}
+.layout{flex:1;min-height:0;display:flex;gap:10px;padding:0 10px;justify-content:center}
+.stage{flex:none;min-height:0;display:flex;align-items:center}
+canvas#cv{display:block;touch-action:none;border-radius:10px;height:100%;width:auto;max-height:100%;aspect-ratio:240/760;background:#101820}
+.side{width:120px;flex:none;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--sub)}
+.side .card{background:var(--panel);border-radius:10px;padding:8px}
+.side b{display:block;font-size:20px;color:var(--ink)}
+canvas#nx{display:block;width:48px;height:48px;background:#101820;border-radius:6px;margin-top:4px}
+#obj{line-height:1.5;color:var(--ink)}
+.bar{display:flex;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));flex:none;justify-content:center}
+.btn{border:0;border-radius:12px;padding:12px 0;font-size:18px;font-weight:700;background:var(--accent);color:#2a1a10;cursor:pointer;min-width:52px;flex:1;max-width:84px}
+.btn.sub{background:#3b4e63;color:var(--ink)}
+.btn.go{background:#e5533d;color:#fff;max-width:110px;font-size:15px}
+.btn:disabled{opacity:.4}
+.modal{position:fixed;inset:0;background:rgba(8,14,20,.85);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+.modal[hidden]{display:none}
+.mbox{background:var(--panel);border-radius:18px;padding:20px 18px;max-width:400px;width:100%;max-height:92dvh;overflow:auto;text-align:center}
+.mbox h1{margin:0 0 4px;font-size:24px;color:var(--accent)}
+.mbox h2{margin:0 0 8px;font-size:20px}
+.mbox p{margin:8px 0;font-size:14px;line-height:1.7}
+.mbox .rule{text-align:left;font-size:13px;color:var(--sub);line-height:1.7;margin:10px 0}
+.mbox .big{font-size:38px;font-weight:800;color:var(--accent)}
+.mbox .col{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.mbox .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.mbox .mbtn{border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:700;background:var(--accent);color:#2a1a10;cursor:pointer}
+.mbox .mbtn.sub{background:#3b4e63;color:var(--ink)}
+.mbox .mbtn:disabled{opacity:.45}
+.lv{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.lv button{border:0;border-radius:8px;padding:10px 0;font-weight:700;background:#3b4e63;color:var(--ink);font-size:15px}
+.lv button.on{background:var(--accent);color:#2a1a10}
+.lv button:disabled{opacity:.35}
+.mbox label{font-size:13px;color:var(--sub)}
+.mbox details{text-align:left;margin-top:10px;font-size:13px;color:var(--sub)}
+.ach li{margin:2px 0}.ach .ok{color:#f2b23a}
+</style>
+</head>
+<body>
+<header><a href="../">← ちくわゲームズ</a><span class="ttl">つなげ！ちくわ線路（仮）</span></header>
+<div class="layout">
+  <div class="stage"><canvas id="cv" width="480" height="1520"></canvas></div>
+  <div class="side">
+    <div class="card">スコア<b id="sc">0</b></div>
+    <div class="card">つぎ<canvas id="nx" width="96" height="96"></canvas></div>
+    <div class="card" id="obj"></div>
+    <div class="card" id="miss"></div>
+  </div>
+</div>
+<div class="bar">
+  <button class="btn sub" id="bL">◀</button>
+  <button class="btn sub" id="bR">▶</button>
+  <button class="btn sub" id="bRot">⟳</button>
+  <button class="btn sub" id="bDrop">▼</button>
+  <button class="btn go" id="bGo">発車</button>
+</div>
+
+<div class="modal" id="mMenu">
+  <div class="mbox">
+    <h1>つなげ！ちくわ線路（仮）</h1>
+    <p>降ってくる線路をつないで、駅から電車を走らせよう。</p>
+    <div class="rule">
+      ・線路のピースを動かして回して、底の駅（▲）から上へつなぐ<br>
+      ・「発車」で電車が出発。走った線路は消えて、上のピースが落ちる<br>
+      ・線路が途切れたところで停車。フリーでは、上まで着けないと脱線です
+    </div>
+    <div class="col">
+      <button class="mbtn" id="mArc">アーケード</button>
+      <button class="mbtn" id="mFree">フリー</button>
+      <button class="mbtn" disabled>対戦（準備中）</button>
+      <button class="mbtn" disabled>協力（準備中）</button>
+      <button class="mbtn sub" id="mAch">実績</button>
+    </div>
+    <div id="move"></div>
+  </div>
+</div>
+<div class="modal" id="mLevel" hidden>
+  <div class="mbox"><h2>アーケード</h2><p>レベルを選ぼう（クリアで次が解放）</p><div class="lv" id="lvGrid"></div><div class="row"><button class="mbtn sub" data-back>もどる</button></div></div>
+</div>
+<div class="modal" id="mFreeSet" hidden>
+  <div class="mbox"><h2>フリー</h2>
+    <p><label><input type="radio" name="fm" value="fix" checked> レベル固定</label>　<label><input type="radio" name="fm" value="var"> レベル可変（だんだん速く）</label></p>
+    <p><label>レベル <select id="freeLv"></select></label></p>
+    <div class="row"><button class="mbtn" id="freeStart">スタート</button><button class="mbtn sub" data-back>もどる</button></div>
+    <p>ベスト <b id="freeBest">0</b> 点</p>
+  </div>
+</div>
+<div class="modal" id="mAchv" hidden>
+  <div class="mbox"><h2>実績</h2><ul class="ach" id="achList" style="text-align:left;padding-left:20px;font-size:14px"></ul><div class="row"><button class="mbtn sub" data-back>もどる</button></div></div>
+</div>
+<div class="modal" id="mResult" hidden>
+  <div class="mbox"><h2 id="rTitle"></h2><div class="big" id="rScore"></div><p id="rInfo"></p>
+    <div class="row"><button class="mbtn" id="rNext">次へ</button><button class="mbtn sub" id="rShare">シェア</button><button class="mbtn sub" id="rMenu">メニュー</button></div>
+    <details><summary>更新履歴</summary><p>β0.1.0（2026-11-01）最初の試作（アーケード20レベル・フリー・実績）。対戦と協力は準備中。</p></details>
+  </div>
+</div>
+
+<script src="../common/v1/core.js"></script>
+<script src="../common/v1/share.js"></script>
+<script src="../common/v1/save.js"></script>
+<script src="../common/v1/move.js"></script>
+<script>
+(() => {
+'use strict';
+const VERSION = 'β0.1.0';
+const KEY = 'chikuwa-senro-v1';
+CG.init({ game: 'chikuwa-senro', title: 'つなげ！ちくわ線路（仮）', version: VERSION });
+try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchstart', e => { if (e.touches.length > 1 && e.target.closest && e.target.closest('.modal')) e.preventDefault(); }, { passive: false });
+const $ = id => document.getElementById(id);
+
+/* ---- 調整用の数値 ---- */
+const COLS = 8, ROWS = 24, CELL = 30, STATION_COL = 3, SPAWN_COL = 3;
+const RUN_SPEED = 7;                       // 電車の速さ（マス／秒）
+const MAX_MISS = 3, ARCADE_LEVELS = 20;
+const fallRate = lv => 1.2 + 0.18 * lv;    // 落ちる速さ（マス／秒）
+const arcade = n => ({ target: 3 + n, curves: n >= 4 ? Math.floor(n / 4) : 0, rock: n >= 8 ? Math.min(0.03 * (n - 7), 0.2) : 0, fall: fallRate(n) });
+
+/* ---- ピース：開いている辺のビット（N=1, E=2, S=4, W=8）。岩は 0 ---- */
+const N = 1, E = 2, S = 4, W = 8;
+const DIRS = [{ b: N, dx: 0, dy: -1 }, { b: E, dx: 1, dy: 0 }, { b: S, dx: 0, dy: 1 }, { b: W, dx: -1, dy: 0 }];
+const opp = b => b === N ? S : b === S ? N : b === E ? W : E;
+const dirOf = b => DIRS.find(d => d.b === b);
+const STRAIGHTS = [N | S, E | W], CURVES = [N | E, E | S, S | W, W | N];
+const rot = m => m === 0 ? 0 : m === (N | S) ? (E | W) : m === (E | W) ? (N | S) : CURVES[(CURVES.indexOf(m) + 1) % 4];
+function randPiece(lv, rockP) {
+  if (Math.random() < rockP) return 0;
+  const r = Math.random();
+  if (r < 0.25) return N | S;
+  if (r < 0.40) return E | W;
+  return CURVES[Math.floor(Math.random() * 4)];
+}
+
+/* ---- 状態 ---- */
+const cv = $('cv'), ctx = cv.getContext('2d'), nx = $('nx').getContext('2d');
+const save = (() => { try { return Object.assign({ cleared: 0, free: 0, st: {}, ach: {} }, JSON.parse(CG.ls.get(KEY, '{}'))); } catch (e) { return { cleared: 0, free: 0, st: {}, ach: {} }; } })();
+const persist = () => CG.ls.set(KEY, JSON.stringify(save));
+const G = { mode: 'menu', kind: 'arcade', lv: 1, cfg: null, grid: [], cur: null, next: 0, acc: 0, score: 0, miss: 0, placed: 0, run: null, over: false, t: 0, varLv: false, rocksOn: 0 };
+function emptyGrid() { return Array.from({ length: ROWS }, () => Array(COLS).fill(null)); }
+const cell = (c, r) => (c < 0 || c >= COLS || r >= ROWS) ? undefined : (r < 0 ? null : G.grid[r][c]);
+
+/* ---- 実績 ---- */
+const ACH = [
+  ['first', '初めての発車', '発車を 1 回する'],
+  ['len10', '10マス走破', '1 回の走行で 10 マス以上走る'],
+  ['top', '終着！', '上まで到着する'],
+  ['arr5', '常連の運転士', '上まで到着を合計 5 回'],
+  ['curve8', 'くねくね運転', '1 回の走行でカーブを 8 回以上通る'],
+  ['lv20', 'アーケード制覇', 'アーケードのレベル 20 をクリア'],
+];
+function unlock(id) {
+  if (save.ach[id]) return;
+  save.ach[id] = 1; persist();
+  toast('実績「' + ACH.find(a => a[0] === id)[1] + '」解放！');
+}
+let toastT = 0;
+function toast(t) { G.toast = t; toastT = G.t; }
+
+/* ---- 進行 ---- */
+function newPiece() {
+  const lv = G.kind === 'arcade' ? G.lv : 1;
+  const m = G.next; G.next = randPiece(lv, G.cfg.rock);
+  return m;
+}
+function spawn() {
+  const m = newPiece();
+  if (G.grid[0][SPAWN_COL]) return gameOver('積み上がってしまった');
+  G.cur = { c: SPAWN_COL, r: 0, m, y: 0 };
+  drawNext();
+}
+function start(kind, lv) {
+  G.kind = kind; G.lv = lv; G.cfg = kind === 'arcade' ? arcade(lv) : { target: 99, curves: 0, rock: 0.05, fall: fallRate(lv) };
+  G.grid = emptyGrid(); G.score = 0; G.miss = 0; G.placed = 0; G.run = null; G.over = false; G.acc = 0; G.mode = 'play'; G.arrivals = 0;
+  G.next = randPiece(lv, 0); spawn();
+  document.querySelectorAll('.modal').forEach(m => m.hidden = true);
+  hud();
+}
+function hud() {
+  $('sc').textContent = G.score;
+  $('obj').innerHTML = G.kind === 'arcade'
+    ? '<b style="font-size:13px">Lv' + G.lv + ' のお題</b>' + G.cfg.target + 'マス以上走る' + (G.cfg.curves ? '<br>カーブ' + G.cfg.curves + '回以上' : '')
+    : '<b style="font-size:13px">フリー Lv' + G.lv + '</b>上まで走って到着しよう';
+  $('miss').innerHTML = G.kind === 'arcade' ? '失敗 ' + '✖'.repeat(G.miss) + '・'.repeat(MAX_MISS - G.miss) : '到着 <b style="display:inline;font-size:16px">' + G.arrivals + '</b> 回';
+  $('bGo').disabled = G.mode !== 'play' || !!G.run;
+}
+function lock() {
+  const p = G.cur; G.grid[p.r][p.c] = p.m; G.cur = null; G.placed++;
+  if (G.kind === 'free' && G.varLv && G.placed % 12 === 0) { G.lv = Math.min(20, G.lv + 1); G.cfg.fall = fallRate(G.lv); hud(); }
+  spawn();
+}
+function canMove(c, r) { return c >= 0 && c < COLS && r < ROWS && !G.grid[r][c]; }
+function move(d) { const p = G.cur; if (G.mode === 'play' && !G.run && p && canMove(p.c + d, p.r)) p.c += d; }
+function rotate() { const p = G.cur; if (G.mode === 'play' && !G.run && p) p.m = rot(p.m); }
+function hardDrop() { const p = G.cur; if (G.mode !== 'play' || G.run || !p) return; while (canMove(p.c, p.r + 1)) p.r++; lock(); }
+
+/* ---- 発車：経路を求めてから、動かす ---- */
+function planRun() {
+  const path = []; let c = STATION_COL, r = ROWS - 1, enter = S, topped = false;   // 駅の上のマスへ、下の辺から入る
+  const seen = new Set();
+  for (;;) {
+    const m = cell(c, r);
+    if (m === undefined || m === null || !(m & enter)) break;       // 線路が無い・つながっていない
+    const key = c + ',' + r; if (seen.has(key)) break; seen.add(key);
+    const exit = m & ~enter;
+    if (exit === 0 || (exit & (exit - 1))) break;                   // 出口がない（岩）・3方向（ありえない）
+    path.push({ c, r, m, enter, exit });
+    const d = dirOf(exit); const nc = c + d.dx, nr = r + d.dy;
+    if (nr < 0 && exit === N) { topped = true; break; }
+    c = nc; r = nr; enter = opp(exit);
+  }
+  return { path, topped };
+}
+function depart() {
+  if (G.mode !== 'play' || G.run) return;
+  unlock('first');
+  const { path, topped } = planRun();
+  G.run = { path, topped, t: 0, done: false };
+  hud();
+}
+function endRun() {
+  const { path, topped } = G.run;
+  const len = path.length, curves = path.filter(p => p.m !== (N | S) && p.m !== (E | W)).length;
+  // 走った線路を消して、上のピースを落とす
+  path.forEach(p => { G.grid[p.r][p.c] = null; });
+  for (let c = 0; c < COLS; c++) {
+    const col = []; for (let r = ROWS - 1; r >= 0; r--) if (G.grid[r][c] !== null) col.push(G.grid[r][c]);
+    for (let r = ROWS - 1, i = 0; r >= 0; r--, i++) G.grid[r][c] = i < col.length ? col[i] : null;
+  }
+  if (len >= 10) unlock('len10'); if (curves >= 8) unlock('curve8');
+  if (topped) { unlock('top'); save.st.arr = (save.st.arr || 0) + 1; persist(); if (save.st.arr >= 5) unlock('arr5'); G.arrivals++; }
+  const pts = len * 10 + curves * 5 + (topped ? 100 : 0);
+  G.score += pts; G.run = null; G.lastRun = { len, curves, topped };
+  toast(len + 'マス走行 +' + pts + (topped ? '（到着！）' : ''));
+  if (G.kind === 'arcade') {
+    if (len >= G.cfg.target && curves >= G.cfg.curves) return levelClear();
+    G.miss++; hud();
+    if (G.miss >= MAX_MISS) return gameOver('失敗が' + MAX_MISS + '回になった');
+  } else if (!topped) return gameOver('電車が脱線した');
+  hud();
+}
+function levelClear() {
+  G.mode = 'result';
+  if (G.lv > save.cleared) save.cleared = G.lv; if (G.lv === 20) unlock('lv20'); persist();
+  $('rTitle').textContent = 'Lv' + G.lv + ' クリア！'; $('rScore').textContent = G.score;
+  $('rInfo').textContent = G.lv >= ARCADE_LEVELS ? '全レベル制覇！' : '次のレベルが解放されました';
+  $('rNext').textContent = G.lv >= ARCADE_LEVELS ? 'もう一度' : '次のレベルへ'; $('rNext').onclick = () => start('arcade', G.lv >= ARCADE_LEVELS ? G.lv : G.lv + 1);
+  $('mResult').hidden = false; hud();
+}
+function gameOver(why) {
+  if (G.over) return; G.over = true; G.mode = 'result';
+  if (G.kind === 'free' && G.score > save.free) { save.free = G.score; persist(); }
+  $('rTitle').textContent = '脱線・ゲームオーバー'; $('rScore').textContent = G.score;
+  $('rInfo').textContent = why + (G.kind === 'free' ? '（ベスト ' + save.free + ' 点）' : '');
+  $('rNext').textContent = 'もう一回'; $('rNext').onclick = () => start(G.kind, G.kind === 'arcade' ? G.lv : G.lv0 || G.lv);
+  $('mResult').hidden = false; hud();
+}
+$('rShare').onclick = () => { try { CG.share.open({ msg: 'つなげ！ちくわ線路で ' + G.score + '点！', tags: ['ちくわ線路'], url: CG.pageUrl() }); } catch (e) {} };
+$('rMenu').onclick = () => { G.mode = 'menu'; $('mResult').hidden = true; $('mMenu').hidden = false; };
+
+/* ---- メニュー ---- */
+const show = id => { document.querySelectorAll('.modal').forEach(m => m.hidden = true); $(id).hidden = false; };
+document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => show('mMenu'));
+$('mArc').onclick = () => {
+  const g = $('lvGrid'); g.innerHTML = '';
+  for (let i = 1; i <= ARCADE_LEVELS; i++) {
+    const b = document.createElement('button'); b.textContent = i; b.disabled = i > save.cleared + 1; if (i <= save.cleared) b.className = 'on';
+    b.onclick = () => start('arcade', i); g.appendChild(b);
+  }
+  show('mLevel');
+};
+$('mFree').onclick = () => { $('freeBest').textContent = save.free; show('mFreeSet'); };
+for (let i = 1; i <= 20; i++) { const o = document.createElement('option'); o.value = i; o.textContent = i; $('freeLv').appendChild(o); }
+$('freeStart').onclick = () => {
+  const v = document.querySelector('input[name=fm]:checked').value === 'var', lv = parseInt($('freeLv').value, 10) || 1;
+  G.varLv = v; G.lv0 = lv; start('free', lv);
+};
+$('mAch').onclick = () => {
+  $('achList').innerHTML = ACH.map(a => '<li class="' + (save.ach[a[0]] ? 'ok' : '') + '">' + (save.ach[a[0]] ? '★ ' : '☆ ') + a[1] + '<br><small>' + a[2] + '</small></li>').join('');
+  show('mAchv');
+};
+
+/* ---- 入力 ---- */
+$('bL').onclick = () => move(-1); $('bR').onclick = () => move(1); $('bRot').onclick = rotate; $('bDrop').onclick = hardDrop; $('bGo').onclick = depart;
+document.addEventListener('keydown', e => {
+  const k = e.key; if (k === 'ArrowLeft') move(-1); else if (k === 'ArrowRight') move(1); else if (k === 'ArrowUp' || k === ' ') rotate(); else if (k === 'ArrowDown') hardDrop(); else if (k === 'Enter') depart(); else return;
+  e.preventDefault();
+});
+
+/* ---- 描画 ---- */
+function sideMid(c0, r0, b) { const d = dirOf(b); return { x: (c0 + 0.5 + d.dx * 0.5) * CELL, y: (r0 + 0.5 + d.dy * 0.5) * CELL }; }
+function drawTrack(g, c0, r0, m, alpha, size) {
+  // g の座標系は CELL 単位。size は 1 マスの大きさ
+  g.save(); g.translate(c0 * CELL, r0 * CELL);
+  g.globalAlpha = alpha === undefined ? 1 : alpha;
+  g.fillStyle = m === 0 ? '#5a5f68' : '#3a4a3a'; g.fillRect(1, 1, CELL - 2, CELL - 2);
+  if (m === 0) {   // 岩
+    g.fillStyle = '#8a8f99'; g.beginPath(); g.moveTo(5, 24); g.lineTo(9, 9); g.lineTo(20, 5); g.lineTo(26, 16); g.lineTo(24, 26); g.closePath(); g.fill();
+    g.fillStyle = '#a7acb6'; g.fillRect(11, 10, 6, 3); g.restore(); return;
+  }
+  const bs = DIRS.filter(d => m & d.b), h = CELL / 2;
+  const P = d => ({ x: h + d.dx * h, y: h + d.dy * h });
+  const path = () => {
+    g.beginPath();
+    if (bs.length === 2 && (m === (N | S) || m === (E | W))) { const a = P(bs[0]), b = P(bs[1]); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); }
+    else { const a = P(bs[0]), b = P(bs[1]), cx = h + (bs[0].dx + bs[1].dx) * h, cy = h + (bs[0].dy + bs[1].dy) * h; let a0 = Math.atan2(a.y - cy, a.x - cx), a1 = Math.atan2(b.y - cy, b.x - cx); let da = a1 - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; g.arc(cx, cy, h, a0, a0 + da, da < 0); }
+  };
+  g.lineCap = 'butt'; g.strokeStyle = '#8a6a44'; g.lineWidth = 14; path(); g.stroke();                 // 枕木の帯
+  g.strokeStyle = '#6a4e2c'; g.lineWidth = 12; g.setLineDash([2, 4]); path(); g.stroke(); g.setLineDash([]);
+  g.strokeStyle = '#d6dce4'; g.lineWidth = 2; g.save(); g.lineWidth = 2; path(); g.stroke(); g.restore();
+  g.restore();
+}
+function trainPos(step, f) {
+  const a = sideMid(step.c, step.r, step.enter), b = sideMid(step.c, step.r, step.exit), h = CELL / 2;
+  if (step.m === (N | S) || step.m === (E | W)) return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, ang: Math.atan2(b.y - a.y, b.x - a.x) };
+  const d1 = dirOf(step.enter), d2 = dirOf(step.exit);
+  const cx = (step.c + 0.5 + (d1.dx + d2.dx) * 0.5) * CELL, cy = (step.r + 0.5 + (d1.dy + d2.dy) * 0.5) * CELL;
+  const a0 = Math.atan2(a.y - cy, a.x - cx), a1 = Math.atan2(b.y - cy, b.x - cx); let da = a1 - a0;
+  while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+  const an = a0 + da * f; return { x: cx + Math.cos(an) * h, y: cy + Math.sin(an) * h, ang: an + (da > 0 ? Math.PI / 2 : -Math.PI / 2) };
+}
+function draw() {
+  const k = cv.width / (COLS * CELL); ctx.setTransform(k, 0, 0, k, 0, 0);
+  ctx.fillStyle = '#101820'; ctx.fillRect(0, 0, COLS * CELL, ROWS * CELL + 40);
+  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
+  for (let c = 0; c <= COLS; c++) { ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke(); }
+  for (let r = 0; r <= ROWS; r += 4) { ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke(); }
+  // 駅
+  const sx = STATION_COL * CELL, sy = ROWS * CELL;
+  ctx.fillStyle = '#2a3848'; ctx.fillRect(0, sy, COLS * CELL, 40);
+  ctx.fillStyle = '#c9772e'; ctx.fillRect(sx - 6, sy + 8, CELL + 12, 26); ctx.fillStyle = '#f3ddb2'; ctx.fillRect(sx - 6, sy + 8, CELL + 12, 5);
+  ctx.fillStyle = '#2a1a10'; ctx.font = '700 11px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('ちくわ駅', sx + CELL / 2, sy + 24);
+  ctx.fillStyle = 'rgba(233,165,91,.5)'; ctx.beginPath(); ctx.moveTo(sx + CELL / 2, ROWS * CELL - 2); ctx.lineTo(sx + CELL / 2 - 6, ROWS * CELL + 4); ctx.lineTo(sx + CELL / 2 + 6, ROWS * CELL + 4); ctx.closePath();
+  // ピース
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const m = G.grid[r][c]; if (m !== null) drawTrack(ctx, c, r, m); }
+  // 走った線路を光らせ、電車を動かす
+  if (G.run) {
+    const run = G.run, pos = run.t * RUN_SPEED, n = run.path.length;
+    for (let i = 0; i < Math.min(n, Math.floor(pos)); i++) { const s = run.path[i]; ctx.fillStyle = 'rgba(255,224,138,.35)'; ctx.fillRect(s.c * CELL, s.r * CELL, CELL, CELL); }
+    if (n > 0) {
+      const i = Math.min(n - 1, Math.floor(pos)), p = trainPos(run.path[i], Math.min(1, pos - i));
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.ang);
+      ctx.fillStyle = '#e9a55b'; ctx.strokeStyle = '#8a4a1a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(-11, -7, 22, 14, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff2c9'; ctx.fillRect(2, -4, 6, 8); ctx.restore();
+    }
+  }
+  // 落ちてくるピース
+  const p = G.cur;
+  if (p && G.mode === 'play') {
+    let gr = p.r; while (canMove(p.c, gr + 1)) gr++;
+    drawTrack(ctx, p.c, gr, p.m, 0.18);
+    drawTrack(ctx, p.c, p.y, p.m, 1);
+    ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2; ctx.strokeRect(p.c * CELL + 1, p.y * CELL + 1, CELL - 2, CELL - 2);
+  }
+  if (G.toast && G.t - toastT < 2) { ctx.globalAlpha = Math.min(1, 2 - (G.t - toastT)); ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(10, 90, COLS * CELL - 20, 30); ctx.fillStyle = '#ffe08a'; ctx.font = '700 13px system-ui,sans-serif'; ctx.fillText(G.toast, COLS * CELL / 2, 105); ctx.globalAlpha = 1; }
+}
+function drawNext() { nx.setTransform(96 / CELL, 0, 0, 96 / CELL, 0, 0); nx.fillStyle = '#101820'; nx.fillRect(0, 0, CELL, CELL); drawTrack(nx, 0, 0, G.next); }
+
+let prev = 0;
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - prev) / 1000 || 0); prev = ts;
+  if (!document.hidden) G.t += dt;
+  if (G.mode === 'play' && !document.hidden) {
+    if (G.run) {
+      G.run.t += dt;
+      if (G.run.t * RUN_SPEED >= G.run.path.length + 0.4) endRun();
+    } else if (G.cur) {
+      const p = G.cur; p.y += G.cfg.fall * dt;
+      while (G.cur && Math.floor(p.y) > p.r) { if (canMove(p.c, p.r + 1)) p.r++; else { lock(); break; } }
+    }
+    $('sc').textContent = G.score;
+  }
+  draw(); requestAnimationFrame(frame);
+}
+G.cfg = arcade(1); G.next = randPiece(1, 0); G.grid = emptyGrid(); G.cur = null; drawNext();
+requestAnimationFrame(frame);
+window.SENRO = { G, planRun, depart, hardDrop, move, rotate, start, rot, randPiece, N, E, S, W, ROWS, COLS, STATION_COL, endRun, lock };
+})();
+</script>
+</body>
+</html>
