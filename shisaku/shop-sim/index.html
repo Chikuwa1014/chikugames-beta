@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<!-- 試作環境：ちいさなお店 v2.4.0（号口へ出す前の確認用） -->
+<!-- 試作環境：ちいさなお店 v2.4.1（号口へ出す前の確認用） -->
 <meta name="robots" content="noindex">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
@@ -1197,7 +1197,7 @@ button.big.rstb.arm {
 }
 
 /* ---- ポップアップ（倒産・甘酒・実績） ---- */
-#ovm, #ama, #achm, #costm, #codash, #stym, #sbm {
+#ovm, #ama, #achm, #costm, #codash, #copick, #stym, #sbm {
   position:fixed;
   inset:0;
   z-index:40;
@@ -1215,7 +1215,7 @@ button.big.rstb.arm {
   z-index:45;
 }
 
-#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #stym[hidden], #clrm[hidden], #sbm[hidden] {
+#ovm[hidden], #ama[hidden], #achm[hidden], #costm[hidden], #codash[hidden], #copick[hidden], #stym[hidden], #clrm[hidden], #sbm[hidden] {
   display:none;
 }
 
@@ -2595,6 +2595,49 @@ html.kb button.achb {
 .sbups { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:6px; }
 .sberr { color:var(--red); font-size:12px; font-weight:700; margin:6px 0; }
 .sbbox input:disabled, .sbbox select:disabled { opacity:.55; }
+
+/* 融資の行：2つの選択肢と「借りる」を、枠の中に収める（v2.4.0〜。選択肢の幅で枠からはみ出していた） */
+.row.loanr select {
+  min-width:0;
+}
+
+.row.loanr button.loanb {
+  flex:0 0 auto;
+  padding:8px 12px;
+  white-space:nowrap;
+}
+
+/* 店舗管理のボタン：「この店へ行く」などを1行に収める（v2.4.0〜。スタイルのボタンが増えて2行になっていた） */
+.sti .btns button {
+  flex:1 1 auto;
+  min-width:0;
+  padding:8px 8px;
+  white-space:nowrap;
+  font-size:13px;
+}
+
+/* 店のチップ（○号店）は押せる（v2.4.0〜） */
+.chip.sto {
+  cursor:pointer;
+}
+
+/* 店の一覧（v2.4.0〜） */
+#copick {
+  z-index:42;
+}
+
+.ovbox.copbox {
+  max-height:min(560px, 100%);
+  display:flex;
+  flex-direction:column;
+  padding:14px 16px;
+  border-top-color:var(--mint);
+  overflow:hidden;
+}
+
+.copbox .achbody {
+  overflow-y:auto;
+}
 </style>
 </head>
 <body>
@@ -3500,13 +3543,14 @@ const WW = [
 const PHN = { prep: '① 開店準備', open: '② 開店', closed: '③ 閉店後' };
 
 /** バージョン（大きな機能追加で真ん中、細かい修正で右端を上げる）。上げたら下の CHANGES・CHANGELOG.md・README.md・card.js もそろえる */
-const VERSION = '2.4.0';
+const VERSION = '2.4.1';
 
 /**
  * 画面の「更新履歴」（設定タブの一番下。v1.4.0〜）。新しい版を先頭に足す。
  * 先頭（最新）だけ表示し、残りは「過去の更新履歴」を開いて見る（つくれ！おでん横丁と同じ形）。詳しい内容は CHANGELOG.md
  */
 const CHANGES = [
+    ['2.4.1', '2026-11-01', 'お金タブの「借りる」が枠からはみ出す不具合を直す。店舗管理の「この店へ行く」などを1行に。10店舗のときは出店の名前と場所を入力できないように。お店の絵を左右にはらうと隣のお店へ（閉店後）。○号店のチップをタップすると、ほかのお店へ行く一覧を出す'],
     ['2.4.0', '2026-10-31', 'スタイルビルダーを追加：お店が10店舗（出店の上限）になり、純資産が10億円に届いた日の閉店後に解放（ちくわくんがお知らせ）。会社タブの「🛠️ スタイルビルダー」から、自分だけのお店のスタイルを作れる（名前・絵文字・説明・屋根と看板の色・商品12個の絵・名前・原価・よく買う人・上位品の名前）。もとにするスタイルを選んで作り始められる。来店数は原価から自動で決まる（高い商品ばかりならお客さんは少なめ）。作ったスタイルは、新しいお店と「🎨 スタイル」の改装で選べる。作ったスタイルは、はじめ3つまで持てて、広告を見ると1つずつ増やせる（最大5つ。広告はまだ出していないので、いまは3つまで）。お店で使っているスタイルは原価とよく買う人を変えられず、消せない。解放前は、会社タブに条件と今の値を表示'],
     ['2.3.3', '2026-10-30', 'お店の名前などを入力している間（キーボードが出ている間）は、お店の絵・日付・タブバーをたたみ、所持金を小さく表示して、入力欄の周りを広く使えるように（入力が終わると元に戻る。iPhone の Chrome で入力欄の周りがとても狭くなっていたため）'],
     ['2.3.2', '2026-10-30', 'iPhone の Chrome で、お店の名前などを入力しようとしてキーボードが出ると、横画面の2列の表示に切り替わってくずれる不具合を修正'],
@@ -4916,10 +4960,10 @@ function coRender() {
     // 新しいお店を出す
     const locs = Object.keys(LOCS).filter(k => k !== 'shisha' || shishaOpen());
     h += '<div class="card"><b>🆕 新しいお店を出す</b><div class="meta">ちいさなお店の初期状態（棚2台・店長つき）から始まります。どれかのお店が「棚10台・広告Lv18・店員1人以上」になるたびに、出店枠が1つ増えます。店長の月給は' + yen(MGR_SAL) + '。</div><div class="meta">出店枠：<b>' + sl + '</b>' + (n >= MAX_STORES ? '（お店は最大です）' : '') + '</div>'
-        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"></label>'
+        + '<label class="cof">名前<input id="sname" maxlength="16" placeholder="' + (n + 1) + '号店" value="' + esc(c.sdraft || '') + '"' + (n >= MAX_STORES ? ' disabled' : '') + '></label>'
         + '<div class="locl">' + locs.map(k => {
             const L = LOCS[k];
-            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
+            return '<label class="loc"><input type="radio" name="loc" value="' + k + '"' + (k === (c.lsel || 'suburb') ? ' checked' : '') + (n >= MAX_STORES ? ' disabled' : '') + '><span class="le">' + L.e + '</span><span class="lt"><b>' + L.n + '</b><span>' + L.d + '</span><span>出店費 ' + yen(L.cost) + '</span></span></label>';
         }).join('') + (shishaOpen() ? '' : '<div class="meta">💨 ？？？：ほかの出店場所すべてにお店を出すと解放</div>') + '</div>' + styPick()
         + '<button class="big" data-a="coopen"' + dis(sl > 0) + '>お店を出す</button></div>' + sbCard();
     if (h !== coHtml)
@@ -4968,6 +5012,62 @@ function coStat(on) {
         + '<h3>景気（株価の動き・直近24ヶ月）　' + econName(econ()) + '</h3><svg class="coeco" viewBox="0 0 300 60" preserveAspectRatio="none"><polyline points="' + poly + '" fill="none" stroke="var(--mint)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
         + '<h3>店舗ごと（先月）</h3><table class="cotb"><tr><th>店</th><th>場所</th><th>売上</th><th>棚</th><th>店員</th></tr>' + A.map(s => '<tr><td>' + esc(s.sname || '') + '</td><td>' + locOf(s).e + locOf(s).n + '</td><td>' + yen(s.prev || 0) + '</td><td>' + s.slots + '</td><td>' + s.clerk + '</td></tr>').join('') + '</table>'
         + '</div></div>';
+}
+
+/** 閉店後に、隣（左右）のお店へ行く（v2.4.0〜。お店の絵を左右にスワイプしたとき） */
+function coStep(d) {
+    const A = allStores();
+    if (!state.co || A.length < 2 || state.phase !== 'closed' || state.over)
+        return;
+    coSwitch((((state.cur || 0) + d) % A.length + A.length) % A.length);
+}
+
+// お店の絵（.pxw）の上を左右にはらうと、隣のお店へ。ほぼ横のはらいだけを数える（縦のスクロールや小さな動きは無視）
+let swX = null, swY = 0;
+document.addEventListener('touchstart', e => {
+    const on = e.touches.length === 1 && e.target.closest && e.target.closest('.pxw');
+    swX = on ? e.touches[0].clientX : null;
+    swY = on ? e.touches[0].clientY : 0;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+    if (swX === null)
+        return;
+    const dx = e.changedTouches[0].clientX - swX, dy = e.changedTouches[0].clientY - swY;
+    swX = null;
+    if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.5)
+        coStep(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+/**
+ * 店の一覧（v2.4.0〜）。「○号店」のチップをタップすると、ほかのお店へ行く一覧を出す。閉店後だけ行ける。
+ * 開いている間は描き直さない（閉店後にだけ動くため）
+ */
+function coPick(on) {
+    let el = byId('copick');
+    if (!on) {
+        if (el)
+            el.hidden = true;
+        return;
+    }
+    if (!state.co || allStores().length < 2)
+        return;
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'copick';
+        el.addEventListener('click', e => {
+            if (e.target === el)
+                coPick(false);
+        });
+        document.body.appendChild(el);
+    }
+    el.hidden = false;
+    const A = allStores(), cur = state.cur || 0, ok = state.phase === 'closed' && !state.over;
+    el.innerHTML = '<div class="ovbox copbox"><div class="achtop"><b>🏪 お店へ行く</b><button class="alt achx" data-a="copickclose" aria-label="閉じる">✕</button></div><div class="achbody">'
+        + '<div class="meta">' + (ok ? '行きたいお店を選んでください。' : '閉店後に、ほかのお店へ行けます。') + '</div><div class="dbl">'
+        + A.map((s, i) => {
+            const L = locOf(s), here = i === cur;
+            return '<button type="button" class="dbc' + (here ? ' here' : '') + '" data-a="pickgo" data-i="' + i + '"' + (here || !ok ? ' disabled' : '') + '><div class="dbh"><span class="dbe">' + L.e + '</span><span class="dbn"><b>' + esc(s.sname || (i + 1) + '号店') + '</b><small>' + L.n + '</small></span>' + (here ? '<span class="dbt here">🙋 ここ</span>' : '') + '</div></button>';
+        }).join('') + '</div></div></div>';
 }
 
 /**
@@ -5055,6 +5155,12 @@ document.addEventListener('click', e => {
         coStat(true);
     if (a === 'costclose')
         coStat(false);
+    if (a === 'copickclose')
+        coPick(false);
+    if (a === 'pickgo') {
+        coPick(false);
+        coSwitch(+b.dataset.i);
+    }
     if (a === 'codash')
         coDash(true);
     if (a === 'codashclose')
@@ -5081,6 +5187,12 @@ document.addEventListener('input', e => {
         state.co.draft = e.target.value;
     if (e.target.id === 'sname' && state.co)
         state.co.sdraft = e.target.value;
+});
+
+// 店のチップ（「○号店」）をタップすると、店の一覧を出す（v2.4.0〜）
+document.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('.chip.sto'))
+        coPick(true);
 });
 </script>
 <script>
@@ -8101,7 +8213,7 @@ function render() {
             pn += '<div class="card up"><div class="tx"><div class="nm">' + (k === 'typ' ? '🧱 土嚢を積んで耐える' + helpIcon('sandbag') : '⛄ かまくらを作る' + helpIcon('kama')) + '</div><div class="meta">無料・成功率55%</div></div><button class="' + (on ? '' : 'alt') + '" data-a="prep" data-v="' + k + '" style="flex:0 0 96px">' + (on ? '準備済み✓' : '備える') + '</button></div>';
         }
         pn += '<div class="card up"><div class="tx"><div class="nm">🛌 翌日を店休日にする' + helpIcon('hol') + '</div></div><button class="' + (state.hol ? '' : 'alt') + '" data-a="hol" style="flex:0 0 96px">' + (state.hol ? '休む✓' : '休まない') + '</button></div>';
-        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">' + yen(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" style="flex:0 0 80px"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ' + yen(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済' + yen(state.ln.a * (1 + intr(state.ln.m))) + '（月' + yen(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月' + yen(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>' + adLoanCard();
+        pn += '<div class="card"><b>🏦 融資</b>' + helpIcon('loan') + '<div class="row loanr" style="margin:6px 0"><select data-a="la">' + LA.map(v => '<option' + (v >= 1500000 && v > loanCap() ? ' disabled' : '') + (state.ln.a === v ? ' selected' : '') + ' value="' + v + '">' + yen(v) + '</option>').join('') + '</select><select data-a="lm">' + (state.ln.a >= 1500000 ? [3, 6, 12, 36, 48, 60] : [3, 6, 12]).map(v => '<option' + (state.ln.m === v ? ' selected' : '') + ' value="' + v + '">' + v + 'ヶ月払い</option>').join('') + '</select><button data-a="loan" class="loanb"' + (state.loans.length >= 3 || (state.ln.a >= 1500000 && state.ln.a > loanCap()) ? ' disabled' : '') + '>借りる</button></div><div class="meta">150万円以上の上限 ' + yen(loanCap()) + '</div><div class="meta">利子' + Math.round(intr(state.ln.m) * 100) + '% → 総返済' + yen(state.ln.a * (1 + intr(state.ln.m))) + '（月' + yen(Math.round(state.ln.a * (1 + intr(state.ln.m)) / state.ln.m)) + '）</div>' + state.loans.map(l => '<div class="meta">返済中：月' + yen(l.pay) + ' × 残り' + l.left + 'ヶ月</div>').join('') + '</div>' + adLoanCard();
     }
     byId('hp').textContent = Math.floor(state.happy) + '%';
     byId('hb').style.width = state.happy + '%';
@@ -8138,7 +8250,7 @@ function render() {
             if (e && !v)
                 e.closest('.card').style.display = 'none';
         });
-        byId('dt').insertAdjacentHTML('afterbegin', '<span class="chip df-' + state.diff + '">' + dd.n + '</span>' + (state.co ? '<span class="chip sto">' + locOf().e + ' ' + esc(state.sname || '1号店') + '</span>' : ''));
+        byId('dt').insertAdjacentHTML('afterbegin', '<span class="chip df-' + state.diff + '">' + dd.n + '</span>' + (state.co ? '<span class="chip sto" title="タップでお店の一覧">' + locOf().e + ' ' + esc(state.sname || '1号店') + '</span>' : ''));
         byId('dfc').style.display = state.diff ? 'none' : 'block';
     }
     {
