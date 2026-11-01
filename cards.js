@@ -196,4 +196,27 @@ add({
   }
 });
 
+add({
+  order: 107,
+  kicker: '線路つなぎパズル', title: 'つなげ！ちくわ線路（仮）', sub: '線路をつないで電車を走らせよう',
+  desc: '降ってくる線路のピースをつないで、底の駅から電車を走らせよう。走った線路は消えて、上のピースが落ちてくる。アーケード（20レベル）とフリー。対戦・協力は準備中。',
+  tags: ['パズル', 'ひとりで遊ぶ'], version: 'β0.1.0', updated: '2026-11-01',
+  /* 開発に公開：ぼかして「開発中」。リンクは貼らない（URL は会話の中でだけ共有する） */
+  dev: true,
+  /* 160×90 のサムネイル。t は秒 */
+  draw(c, t) {
+    c.fillStyle = '#1D2733'; c.fillRect(0, 0, 160, 90);
+    const tile = (x, y) => { c.fillStyle = '#3A4A3A'; c.fillRect(x, y, 18, 18); };
+    c.strokeStyle = '#D6DCE4'; c.lineWidth = 2;
+    const pts = [[80, 90], [80, 54], [98, 54], [98, 18], [62, 18]];
+    pts.forEach((p, i) => { if (i) { const q = pts[i - 1]; tile(Math.min(p[0], q[0]) - 9, Math.min(p[1], q[1]) - 9); } });
+    c.lineWidth = 6; c.strokeStyle = '#8A6A44'; c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke();
+    c.lineWidth = 2; c.strokeStyle = '#D6DCE4'; c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke();
+    const u = (t * 0.25) % 1, seg = [[80, 90, 80, 54], [80, 54, 98, 54], [98, 54, 98, 18], [98, 18, 62, 18]], len = seg.map(s => Math.hypot(s[2] - s[0], s[3] - s[1])), tot = len.reduce((a, b) => a + b, 0);
+    let d = u * tot, i = 0; while (i < 3 && d > len[i]) { d -= len[i]; i++; }
+    const s = seg[i], f = d / len[i], x = s[0] + (s[2] - s[0]) * f, y = s[1] + (s[3] - s[1]) * f;
+    c.fillStyle = '#E9A55B'; c.fillRect(Math.round(x) - 6, Math.round(y) - 6, 12, 12); c.fillStyle = '#FFF2C9'; c.fillRect(Math.round(x) - 2, Math.round(y) - 3, 4, 6);
+  }
+});
+
 })();
