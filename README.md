@@ -14,6 +14,7 @@
 - `yasunyan-sanpo/`：やすにゃんこんにゃん！散歩チュウ（`β0.7.2`。開発に公開。仕様と引き継ぎは `CLAUDE.md`）
 - `ugokase-chikuwa/index.html`：号口の `/ugokase-chikuwa/` へ移動するページ（2026-10-28 に昇格）
 - `hayaoshi-chikupon/`：早押し！ちくぽん！は 2026-10-24 に号口へ昇格。号口のページへ移動するだけのページを残している
+- `hodoke-odensushi/`：ほどけ！おでん串（`β0.1.0`。開発に公開。仕様と引き継ぎは `CLAUDE.md`）
 - `common/v1/`：共通部品（本番と同じ中身）
 - `worker/index.js`：マルチの仲介（本番と同じ `MultiRoom`）
 - `dev/`・`claude/`・各ゲームの `dev/`：手元のテスト・引き継ぎ（公開しない）
