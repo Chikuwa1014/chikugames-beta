@@ -51,17 +51,26 @@ header .ttl{margin-left:auto;font-weight:800;font-size:14px;color:var(--accent)}
 #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9}
 /* 麻雀 */
 .hand{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;width:100%;max-width:420px}
-.tile{position:relative;aspect-ratio:3/4;border-radius:7px;border:0;background:linear-gradient(#fffdf6,#efe6cf);box-shadow:0 4px 0 #3f8f5f,0 5px 0 #20503a;color:#222;font-weight:900;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1;font-family:"Hiragino Mincho ProN","Noto Serif JP",serif}
-.tile .n{font-size:clamp(16px,5.4vw,24px)}
-.tile .s{font-size:clamp(10px,3.2vw,14px);margin-top:3px}
-.tile.m .s{color:#c62828}.tile.p .n,.tile.p .s{color:#1565c0}.tile.s .n,.tile.s .s{color:#2e7d32}
-.tile.h .n{font-size:clamp(20px,6.6vw,30px)}
-.tile.red .n{color:#d32f2f}.tile.grn .n{color:#2e7d32}
+.tile{position:relative;aspect-ratio:3/4;border-radius:8px;border:0;background:#f7f1e1;box-shadow:inset 0 -2px 0 #e2d6b8,0 3px 0 #d9ccaa,0 6px 0 #2f8a58,0 8px 0 #1c5a39,0 10px 8px rgba(0,0,0,.35);cursor:pointer;padding:0;overflow:hidden;transition:transform .1s}
+.tile svg,.tile img{display:block;width:100%;height:100%}
+.tile.img{aspect-ratio:150/190;background:none;box-shadow:none;border-radius:0;overflow:visible;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+.tile.img img{image-rendering:pixelated;-webkit-user-drag:none}
+.tile.img.ok{box-shadow:none;filter:drop-shadow(0 0 6px var(--good)) drop-shadow(0 0 3px var(--good))}
 .tile:active{transform:translateY(-6px)}
-.tile.ok{box-shadow:0 0 0 3px var(--good),0 4px 0 #3f8f5f}
+.tile.ok{box-shadow:0 0 0 3px var(--good),0 3px 0 #d9ccaa,0 6px 0 #2f8a58,0 0 18px 4px var(--good)}
 .tile.cut{opacity:.25;transform:translateY(-10px)}
 .tsumo{display:flex;align-items:center;gap:10px;margin:14px 0 4px;min-height:80px}
-.tsumo .tile{width:54px;cursor:default}
+.tsumo .tile{width:56px;cursor:default}
+.hand{gap:6px 5px}
+.arc{display:block;width:100%;max-width:440px;margin:0 auto 12px;border:0;border-radius:20px;padding:16px 12px;cursor:pointer;color:#2b1300;text-align:center;background:linear-gradient(100deg,#ffb03b,#ff5fa2 55%,#8f7bff);box-shadow:0 5px 0 #6a2a6a;font-weight:900;font-size:22px;animation:hue 6s linear infinite}
+.arc:active{transform:translateY(4px);box-shadow:0 1px 0 #6a2a6a}
+.arc small{display:block;font-size:12px;font-weight:700;margin-top:4px;color:#3a1530}
+.arc .best{font-size:13px;margin-top:4px;color:#fff}
+.steps{display:flex;justify-content:center;gap:6px;margin:10px 0}
+.steps span{width:46px;height:46px;border-radius:12px;background:#1b1030;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.45}
+.steps span.done{opacity:1;background:#46307a}.steps span.now{opacity:1;background:var(--accent);animation:pop .5s}
+.brk{text-align:left;margin:10px auto 0;max-width:260px;font-size:14px;line-height:1.9}
+.brk div{display:flex;justify-content:space-between}
 /* スロット */
 .slot{background:linear-gradient(#ffcf5a,#e08a00);padding:12px;border-radius:22px;box-shadow:0 6px 0 #8a4b00;width:100%;max-width:360px}
 .lamps{display:flex;justify-content:space-around;margin-bottom:8px}
@@ -97,10 +106,11 @@ canvas.play{display:block;touch-action:none;max-width:100%;max-height:100%;width
   <div class="screen" id="sMenu">
     <div class="scroll">
       <div class="logo"><h1>ちくわでるでる！<br>ドーパミン</h1><p>手軽でテンポよく、気持ちいいミニゲーム集</p></div>
+      <button class="arc" id="arcBtn">🎮 アーケード<small>4つのゲームを連続で！合計点で勝負</small><div class="best" id="arcBest"></div></button>
       <div class="cards" id="cards"></div>
       <details style="max-width:440px;margin:16px auto 0;font-size:13px;color:var(--sub)"><summary>セーブの引っ越し・更新履歴</summary>
         <div id="move"></div>
-        <p>β0.1.0（2026-11-03）最初の試作。麻雀「あと1手」・777揃え・空き缶プレス・ゴミ箱スローの4つ。</p>
+        <p>β0.2.1（2026-11-03）麻雀牌をドット絵の画像に差し替えた。<br>β0.2.0（2026-11-03）アーケード（4つ連続）を追加。麻雀牌の絵を描き直した。<br>β0.1.0（2026-11-03）最初の試作。麻雀「あと1手」・777揃え・空き缶プレス・ゴミ箱スローの4つ。</p>
       </details>
     </div>
   </div>
@@ -118,6 +128,14 @@ canvas.play{display:block;touch-action:none;max-width:100%;max-height:100%;width
     <div class="row"><button class="btn sub" id="rShare">シェア</button></div>
   </div>
 </div>
+<div class="modal" id="mStage" hidden>
+  <div class="mbox">
+    <h2 id="sTitle"></h2>
+    <div class="steps" id="sSteps"></div>
+    <p id="sInfo"></p>
+    <div class="row"><button class="btn" id="sNext">次へ</button></div>
+  </div>
+</div>
 <div id="flash"></div>
 <canvas id="fx"></canvas>
 
@@ -128,7 +146,7 @@ canvas.play{display:block;touch-action:none;max-width:100%;max-height:100%;width
 <script>
 (() => {
 'use strict';
-const VERSION = 'β0.1.0';
+const VERSION = 'β0.2.1';
 const KEY = 'chikuwa-dopamine-v1';
 CG.init({ game: 'chikuwa-dopamine', title: 'ちくわでるでる！ドーパミン', version: VERSION });
 try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
@@ -234,8 +252,9 @@ function startTimer(sec, onEnd) {
 }
 function hideTimer(h) { $('hTbar').style.visibility = h ? 'hidden' : 'visible'; }
 function play(g) {
+  $('mStage').hidden = true;
   H.game = g; H.running = true; H.ended = false; setScore(0); setCombo(0); hideTimer(false);
-  $('sMenu').hidden = true; $('sGame').hidden = false; $('mResult').hidden = true; $('ttl').textContent = g.title; $('backBtn').textContent = '← もどる';
+  $('sMenu').hidden = true; $('sGame').hidden = false; $('mResult').hidden = true; $('ttl').textContent = H.arc ? 'STAGE ' + (H.arc.i + 1) + '/' + GAMES.length + '　' + g.title : g.title; $('backBtn').textContent = '← もどる';
   const st = $('stage'); st.innerHTML = '';
   g.start(st);
 }
@@ -244,6 +263,8 @@ function finish(info) {
   const g = H.game; if (g.stop) g.stop();
   const best = save.best[g.id] || 0, rec = H.score > best;
   if (rec) { save.best[g.id] = H.score; persist(); }
+  if (H.arc) { H.arc.scores[H.arc.i] = H.score; return setTimeout(arcStage, 600); }
+  H.shareMsg = 'ちくわでるでる！ドーパミンの「' + g.title + '」で ' + H.score + '点！';
   setTimeout(() => {
     $('rTitle').textContent = g.title; $('rScore').textContent = H.score;
     $('rInfo').innerHTML = (info || '') + '<br>' + (rec && H.score > 0 ? '<span class="new">ベスト更新！</span>' : 'ベスト ' + Math.max(best, H.score));
@@ -251,14 +272,41 @@ function finish(info) {
     if (rec && H.score > 0) { const [x, y] = elXY($('rScore')); burst(x, y, 60); SFX.win(); }
   }, 600);
 }
+/* アーケード：GAMES を順に遊び、合計点で勝負 */
+function startArcade() { H.arc = { i: 0, scores: [] }; H.arcDone = false; play(GAMES[0]); }
+function steps(now) { return GAMES.map((g, i) => '<span class="' + (i < now ? 'done' : i === now ? 'now' : '') + '">' + g.icon + '</span>').join(''); }
+function arcStage() {
+  const a = H.arc, total = a.scores.reduce((x, y) => x + y, 0), g = GAMES[a.i];
+  if (a.i < GAMES.length - 1) {
+    const nx = GAMES[a.i + 1];
+    $('sTitle').textContent = 'STAGE ' + (a.i + 1) + ' おわり！';
+    $('sSteps').innerHTML = steps(a.i + 1);
+    $('sInfo').innerHTML = g.title + '　<b>' + a.scores[a.i] + '</b> 点<br>合計 <b style="font-size:22px;color:var(--accent)">' + total + '</b> 点<br><br>次は ' + nx.icon + ' <b>' + nx.title + '</b><br><small style="color:var(--sub)">' + nx.desc + '</small>';
+    $('sNext').textContent = '次へ';
+    $('sNext').onclick = () => { a.i++; SFX.tap(); play(GAMES[a.i]); };
+    $('mStage').hidden = false; SFX.good(a.i + 2);
+    return;
+  }
+  // 全部おわり
+  H.arcDone = true;
+  const best = save.best.arcade || 0, rec = total > best;
+  if (rec) { save.best.arcade = total; persist(); }
+  H.shareMsg = 'ちくわでるでる！ドーパミンのアーケードで 合計' + total + '点！';
+  $('rTitle').textContent = 'アーケード 結果'; $('rScore').textContent = total;
+  $('rInfo').innerHTML = '<div class="brk">' + GAMES.map((x, i) => '<div><span>' + x.icon + ' ' + x.title + '</span><b>' + a.scores[i] + '</b></div>').join('') + '</div>' + (rec && total > 0 ? '<span class="new">ベスト更新！</span>' : 'ベスト ' + Math.max(best, total));
+  $('mResult').hidden = false;
+  const [x, y] = elXY($('rScore')); burst(x, y, 80); fountain(x, y, 40); SFX.jackpot(); if (rec) flash(0.5);
+}
 function toMenu() {
+  H.arc = null; H.arcDone = false; $('mStage').hidden = true;
   H.running = false; clearInterval(H.timer); if (H.game && H.game.stop) H.game.stop(); H.game = null;
   $('mResult').hidden = true; $('sGame').hidden = true; $('sMenu').hidden = false; $('ttl').textContent = 'ちくわでるでる！ドーパミン'; $('backBtn').textContent = '← ちくわゲームズ';
   renderMenu();
 }
-$('rAgain').onclick = () => play(H.game);
+$('rAgain').onclick = () => H.arcDone ? startArcade() : play(H.game);
+$('arcBtn').onclick = () => { ac(); SFX.tap(); startArcade(); };
 $('rMenu').onclick = toMenu;
-$('rShare').onclick = () => { try { CG.share.open({ msg: 'ちくわでるでる！ドーパミンの「' + H.game.title + '」で ' + H.score + '点！', tags: ['ちくわでるでるドーパミン'], url: CG.pageUrl() }); } catch (e) {} };
+$('rShare').onclick = () => { try { CG.share.open({ msg: H.shareMsg, tags: ['ちくわでるでるドーパミン'], url: CG.pageUrl() }); } catch (e) {} };
 $('backBtn').onclick = () => { if (!$('sGame').hidden) toMenu(); else location.href = '../'; };
 document.addEventListener('visibilitychange', () => { if (AC && document.hidden) try { AC.suspend(); } catch (e) {} });
 
@@ -303,10 +351,77 @@ const MJ = (() => {
     }
     return null;
   }
+  /* ---- 牌の絵（SVG。60×80 の座標で描く） ----
+     画像に差し替えるときは TILE_IMG を true にし、img/tiles/ に 34 枚の PNG を置く（chikuwa-dopamine/CLAUDE.md 付録） */
+  const TILE_IMG = true;   // 2026-11-03 SEIJI の画像（ドット絵、150×190。厚みつき）
+  const TILE_FILES = [...'123456789'].map(n => 'm' + n).concat([...'123456789'].map(n => 'p' + n), [...'123456789'].map(n => 's' + n), [...'1234567'].map(n => 'z' + n));
+  const BL = '#1d4ea6', RD = '#c8262c', GR = '#137a3c', SERIF = "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif";
+  const svgCache = {};
+  function pin(x, y, r, c) {
+    return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + c + '"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.74) + '" fill="#f7f1e1"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.56) + '" fill="' + c + '"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.36) + '" fill="#f7f1e1"/>' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.2) + '" fill="' + c + '"/>';
+  }
+  function stick(x, y, h, c) {
+    const w = 7, t = y - h / 2;
+    return '<rect x="' + (x - w / 2) + '" y="' + t + '" width="' + w + '" height="' + h + '" rx="3.5" fill="' + c + '"/>' +
+      '<rect x="' + (x - 1.2) + '" y="' + (t + 2) + '" width="1.6" height="' + (h - 4) + '" rx=".8" fill="rgba(255,255,255,.55)"/>' +
+      '<rect x="' + (x - w / 2 - .6) + '" y="' + (y - 1) + '" width="' + (w + 1.2) + '" height="2" fill="#0b3d1f"/>' +
+      '<rect x="' + (x - w / 2) + '" y="' + (t + h * 0.22) + '" width="' + w + '" height="1.2" fill="rgba(0,0,0,.25)"/>' +
+      '<rect x="' + (x - w / 2) + '" y="' + (t + h * 0.76) + '" width="' + w + '" height="1.2" fill="rgba(0,0,0,.25)"/>';
+  }
+  const PINS = {
+    2: [[30, 22, 13, GR], [30, 58, 13, BL]],
+    3: [[15, 16, 10, BL], [30, 40, 10, RD], [45, 64, 10, GR]],
+    4: [[18, 22, 11, BL], [42, 22, 11, GR], [18, 58, 11, GR], [42, 58, 11, BL]],
+    5: [[16, 18, 10, BL], [44, 18, 10, GR], [30, 40, 10, RD], [16, 62, 10, GR], [44, 62, 10, BL]],
+    6: [[19, 15, 8.5, GR], [41, 15, 8.5, GR], [19, 44, 8.5, RD], [41, 44, 8.5, RD], [19, 65, 8.5, RD], [41, 65, 8.5, RD]],
+    7: [[14, 11, 7, GR], [30, 19, 7, GR], [46, 27, 7, GR], [19, 47, 8, RD], [41, 47, 8, RD], [19, 67, 8, RD], [41, 67, 8, RD]],
+    8: [[19, 12, 7.8, BL], [41, 12, 7.8, BL], [19, 31, 7.8, BL], [41, 31, 7.8, BL], [19, 50, 7.8, BL], [41, 50, 7.8, BL], [19, 69, 7.8, BL], [41, 69, 7.8, BL]],
+    9: [[14, 16, 7.8, BL], [30, 16, 7.8, BL], [46, 16, 7.8, BL], [14, 40, 7.8, RD], [30, 40, 7.8, RD], [46, 40, 7.8, RD], [14, 64, 7.8, GR], [30, 64, 7.8, GR], [46, 64, 7.8, GR]],
+  };
+  const STICKS = {
+    2: [[30, 22, 28], [30, 58, 28]],
+    3: [[30, 22, 28], [18, 58, 28], [42, 58, 28]],
+    4: [[19, 22, 28], [41, 22, 28], [19, 58, 28], [41, 58, 28]],
+    5: [[15, 22, 28], [45, 22, 28], [30, 40, 28, RD], [15, 58, 28], [45, 58, 28]],
+    6: [[15, 22, 28], [30, 22, 28], [45, 22, 28], [15, 58, 28], [30, 58, 28], [45, 58, 28]],
+    7: [[30, 13, 20, RD], [15, 40, 20], [30, 40, 20], [45, 40, 20], [15, 65, 20], [30, 65, 20], [45, 65, 20]],
+    8: [[12, 22, 28], [24, 22, 28], [36, 22, 28], [48, 22, 28], [12, 58, 28], [24, 58, 28], [36, 58, 28], [48, 58, 28]],
+    9: [[15, 14, 20], [30, 14, 20, RD], [45, 14, 20], [15, 40, 20], [30, 40, 20, RD], [45, 40, 20], [15, 66, 20], [30, 66, 20, RD], [45, 66, 20]],
+  };
+  function txt(x, y, size, col, t) { return '<text x="' + x + '" y="' + y + '" font-size="' + size + '" fill="' + col + '" font-family="' + SERIF + '" font-weight="900" text-anchor="middle" dominant-baseline="central">' + t + '</text>'; }
+  function tileSvg(t) {
+    if (svgCache[t]) return svgCache[t];
+    let body = '';
+    if (t < 9) body = txt(30, 25, 27, '#1a1a1a', KAN[t]) + txt(30, 58, 27, RD, '萬');
+    else if (t < 18) {
+      const n = t - 8;
+      if (n === 1) body = '<circle cx="30" cy="40" r="23" fill="' + GR + '"/><circle cx="30" cy="40" r="19" fill="#f7f1e1"/>' +
+        [...Array(12)].map((_, i) => { const a = i / 12 * Math.PI * 2; return '<circle cx="' + (30 + Math.cos(a) * 15.5) + '" cy="' + (40 + Math.sin(a) * 15.5) + '" r="2.6" fill="' + (i % 2 ? BL : GR) + '"/>'; }).join('') + pin(30, 40, 11, RD);
+      else body = PINS[n].map(p => pin(...p)).join('');
+    } else if (t < 27) {
+      const n = t - 17;
+      if (n === 1) body = // 1索：鳥
+        '<path d="M14 58 Q8 40 20 30 L22 44 Z" fill="' + BL + '"/><path d="M12 64 Q4 52 12 42 L22 52 Z" fill="' + RD + '"/>' +
+        '<ellipse cx="31" cy="50" rx="14" ry="12" fill="' + GR + '"/><path d="M24 46 Q31 40 40 48" stroke="#f7f1e1" stroke-width="2" fill="none"/>' +
+        '<circle cx="40" cy="30" r="8" fill="' + GR + '"/><path d="M47 29 L55 32 L47 34 Z" fill="#e88a1a"/><circle cx="42" cy="28" r="1.8" fill="#fff"/><circle cx="42.4" cy="28" r=".9" fill="#111"/>' +
+        '<path d="M36 23 Q38 14 44 16 Q40 18 41 23 Z" fill="' + RD + '"/><path d="M26 61 L24 70 M33 62 L34 70" stroke="#8a5a20" stroke-width="2"/>';
+      else body = STICKS[n].map(([x, y, h, c]) => stick(x, y, h, c || GR)).join('');
+    } else {
+      const k = t - 27;
+      if (k === 4) body = '<rect x="13" y="15" width="34" height="50" rx="4" fill="none" stroke="#2f6fd0" stroke-width="3"/><rect x="17" y="19" width="26" height="42" rx="2" fill="none" stroke="#2f6fd0" stroke-width="1"/>';
+      else body = txt(30, 41, 40, k === 5 ? GR : k === 6 ? RD : '#1a1a1a', HON[k]);
+    }
+    const svg = '<svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="tf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf5"/><stop offset="1" stop-color="#efe5cc"/></linearGradient></defs><rect x="0" y="0" width="60" height="80" fill="url(#tf)"/>' + body + '</svg>';
+    return (svgCache[t] = svg);
+  }
   function tileEl(t) {
-    const b = document.createElement('button'); b.className = 'tile';
-    if (t >= 27) { b.classList.add('h'); if (t === 33) b.classList.add('red'); if (t === 32) b.classList.add('grn'); b.innerHTML = '<span class="n">' + (t === 31 ? '　' : HON[t - 27]) + '</span>'; if (t === 31) b.style.outline = '3px solid #8fb4e6', b.style.outlineOffset = '-10px'; }
-    else { const s = Math.floor(t / 9), n = t % 9; b.classList.add('msp'[s]); b.innerHTML = s === 0 ? '<span class="n">' + KAN[n] + '</span><span class="s">萬</span>' : '<span class="n">' + (n + 1) + '</span><span class="s">' + (s === 1 ? '筒' : '索') + '</span>'; }
+    const b = document.createElement('button'); b.className = TILE_IMG ? 'tile img' : 'tile';
+    b.setAttribute('aria-label', t < 27 ? (t % 9 + 1) + ['萬', '筒', '索'][Math.floor(t / 9)] : HON[t - 27]);
+    b.innerHTML = TILE_IMG ? '<img src="img/tiles/' + TILE_FILES[t] + '.png" alt="" draggable="false">' : tileSvg(t);
     return b;
   }
   let round = 0, busy = false, root = null, alive = false;
@@ -348,7 +463,7 @@ const MJ = (() => {
     id: 'mahjong', title: '麻雀 あと1手', icon: '🀄', desc: 'あと1手でツモ！どの牌を切る？',
     start(st) { root = st; round = 0; alive = true; startTimer(45, () => finish(round - 1 + '問挑戦')); next(); },
     stop() { busy = true; alive = false; },
-    gen, isWin,
+    gen, isWin, tileEl,
   };
 })();
 
@@ -674,6 +789,7 @@ const THROW = (() => {
 /* ---- メニュー ---- */
 const GAMES = [MJ, SLOT, CAN, THROW];
 function renderMenu() {
+  $('arcBest').textContent = 'ベスト ' + (save.best.arcade || 0);
   const c = $('cards'); c.innerHTML = '';
   GAMES.forEach(g => {
     const b = document.createElement('button'); b.className = 'gcard';
@@ -685,7 +801,7 @@ function renderMenu() {
 renderMenu();
 
 /* 試験用（dev/ のテストが使う） */
-window.DOPA = { H, MJ, SLOT, CAN, THROW, play, finish, toMenu };
+window.DOPA = { H, MJ, SLOT, CAN, THROW, play, finish, toMenu, startArcade, GAMES };
 })();
 </script>
 </body>
