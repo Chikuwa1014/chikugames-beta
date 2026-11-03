@@ -219,4 +219,22 @@ add({
   }
 });
 
+add({
+  order: 108,
+  kicker: 'ミニゲーム集', title: 'ちくわでるでる！ドーパミン', sub: '気持ちいいミニゲーム集',
+  desc: '手軽でテンポよく、気持ちいいミニゲーム集。麻雀「あと1手」・777揃え・空き缶プレス・ゴミ箱スローの4つ。',
+  tags: ['ミニゲーム', 'ひとりで遊ぶ'], version: 'β0.1.0', updated: '2026-11-03',
+  /* 開発に公開：ぼかして「開発中」。リンクは貼らない（URL は会話の中でだけ共有する） */
+  dev: true,
+  /* 160×90 のサムネイル。t は秒 */
+  draw(c, t) {
+    const g = c.createLinearGradient(0, 0, 0, 90); g.addColorStop(0, '#3A1F63'); g.addColorStop(1, '#1B1030');
+    c.fillStyle = g; c.fillRect(0, 0, 160, 90);
+    c.fillStyle = '#FFCF5A'; c.fillRect(34, 22, 92, 46); c.fillStyle = '#1A0D00'; c.fillRect(39, 30, 82, 30);
+    c.font = '900 22px Impact,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    for (let i = 0; i < 3; i++) { c.fillStyle = '#FFFFFF'; c.fillRect(42 + i * 27, 33, 23, 24); c.fillStyle = '#E10000'; c.fillText('7', 53 + i * 27, 46 + Math.sin(t * 6 + i) * 2); }
+    for (let i = 0; i < 14; i++) { const p = (t * 0.6 + i / 14) % 1, x = (i * 37) % 160, y = 90 - p * 100; c.fillStyle = i % 3 ? '#FFD84A' : '#FF5FA2'; c.fillRect(x, y, 4, 4); }
+  }
+});
+
 })();
