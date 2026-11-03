@@ -57,10 +57,21 @@ const ok = (c, m) => { if (!c) { console.log('NG', m); process.exitCode = 1; } e
   ok(true, '時刻に脱線してミス1');
 
   // 5) 操作：移動・回転・落とす
-  const r5 = await pg.evaluate(() => { const G = SENRO.G; const c0 = G.cur.c; SENRO.tryMove(1); SENRO.tryMove(1); const c1 = G.cur.c; const n = G.placed; SENRO.hardDrop(); return { c0, c1, placed: G.placed - n }; });
+  const r5 = await pg.evaluate(() => { const G = SENRO.G; G.cur.t = SENRO.mkTile('s', SENRO.N | SENRO.S); const c0 = G.cur.c; SENRO.tryMove(1); SENRO.tryMove(1); const c1 = G.cur.c; const n = G.placed; SENRO.hardDrop(); return { c0, c1, placed: G.placed - n }; });
   ok(r5.c1 === r5.c0 + 2 && r5.placed === 1, '移動と落下 ' + JSON.stringify(r5));
   await pg.mouse.click(100, 200); // タップで回す（落ちてくるピースが無くてもエラーにならない）
 
+  // 5b) アイテム：こわす・回す
+  const r5b = await pg.evaluate(() => {
+    const { G, mkTile, N, E, S, W } = SENRO; for (let r = 0; r < 12; r++) G.grid[r].fill(null);
+    G.grid[11][0] = mkTile('s', N | S); G.grid[11][7] = mkTile('c', N | E);
+    const drop = (c, k, n) => { G.cur.t = mkTile(k, 0); G.cur.turns = 1; for (let i = 1; i < (n || 1); i++) SENRO.rotate(); while (G.cur.c > c) SENRO.tryMove(-1); while (G.cur.c < c) SENRO.tryMove(1); SENRO.hardDrop(); };
+    drop(0, 'b'); const gone = !G.grid[11][0] && !G.grid[10][0];
+    drop(7, 't', 2); const m = G.grid[11][7] && G.grid[11][7].m;
+    return { gone, m, S, W };
+  });
+  ok(r5b.gone, 'こわすアイテムで真下の線路が消える');
+  ok(r5b.m === (r5b.S | r5b.W), '回すアイテム×2で向きが変わる ' + r5b.m);
   // 6) Lv1 クリア判定（runs 1 はすでに満たしている → 次の resume でクリア）
   await pg.evaluate(() => { SENRO.start('arcade', 0); const G = SENRO.G; for (let r = 0; r < 12; r++) G.grid[r].fill(null); G.grid[11][1] = SENRO.mkTile('c', SENRO.S | SENRO.E); G.grid[11][2] = SENRO.mkTile('c', SENRO.W | SENRO.S); SENRO.depart(true); });
   await pg.waitForSelector('#mResult:not([hidden])', { timeout: 8000 });
