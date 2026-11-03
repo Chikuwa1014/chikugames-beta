@@ -123,7 +123,7 @@ details{text-align:left;margin-top:12px;font-size:12.5px;color:var(--sub)}
       <div class="row" style="margin-top:0"><button class="mbtn sub" id="mHow" style="flex:1">あそびかた</button><button class="mbtn sub" id="mAch" style="flex:1">実績</button></div>
     </div>
     <div id="move"></div>
-    <details><summary>更新履歴</summary><p>β0.2.0（2026-11-01）ゼロから作り直し。駅から出て駅にもどるルート・発車時刻・連鎖・岩・交差・アーケード20レベル・フリー・実績12個。<br>β0.1.0（2026-11-01）最初の試作。</p></details>
+    <details><summary>更新履歴</summary><p>β0.2.1（2026-11-04）電車の形を、窓・前照灯・パンタグラフのある電車らしい形に描き直し。<br>β0.2.0（2026-11-01）ゼロから作り直し。駅から出て駅にもどるルート・発車時刻・連鎖・岩・交差・アーケード20レベル・フリー・実績12個。<br>β0.1.0（2026-11-01）最初の試作。</p></details>
   </div>
 </div>
 <!-- あそびかた -->
@@ -184,7 +184,7 @@ details{text-align:left;margin-top:12px;font-size:12.5px;color:var(--sub)}
 <script>
 (() => {
 'use strict';
-const VERSION = 'β0.2.0';
+const VERSION = 'β0.2.1';
 const KEY = 'chikuwa-senro-v1';
 CG.init({ game: 'chikuwa-senro', title: 'つなげ！ちくわ線路（仮）', version: VERSION });
 try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
@@ -764,22 +764,47 @@ function sprite(k, m) {
   return sp;
 }
 const drawTileAt = (g, k, m, x, y, s) => g.drawImage(sprite(k, m), x, y, s, s);
-/* ちくわ電車の1両（x,y は中心、ang は進む向き） */
-function drawCar(g, x, y, ang, cs, lead, crash) {
+/* 電車の1両を真上から描く（x,y は中心、ang は進む向き）。i：0＝先頭車、CARS-1＝最後尾、間はパンタグラフ付き
+   色はちくわ（クリームの車体に焼き色の帯） */
+function carPath(g, L, Wd, front, back) {
+  // front・back は前・後ろの角の丸み
+  const x0 = -L / 2, x1 = L / 2, y0 = -Wd / 2, y1 = Wd / 2;
+  g.beginPath(); g.moveTo(x0 + back, y0); g.lineTo(x1 - front, y0); g.quadraticCurveTo(x1, y0, x1, y0 + front); g.lineTo(x1, y1 - front); g.quadraticCurveTo(x1, y1, x1 - front, y1);
+  g.lineTo(x0 + back, y1); g.quadraticCurveTo(x0, y1, x0, y1 - back); g.lineTo(x0, y0 + back); g.quadraticCurveTo(x0, y0, x0 + back, y0); g.closePath();
+}
+function drawCar(g, x, y, ang, cs, i, crash) {
   g.save(); g.translate(x, y); g.rotate(ang);
-  const L = cs * .78, Wd = cs * .5;
-  g.fillStyle = 'rgba(0,0,0,.35)'; rr(g, -L / 2 + cs * .05, -Wd / 2 + cs * .08, L, Wd, Wd / 2); g.fill();
-  const gr = g.createLinearGradient(-L / 2, 0, L / 2, 0);
-  gr.addColorStop(0, '#f6e6c0'); gr.addColorStop(.12, '#e7b066'); gr.addColorStop(.5, '#c9772e'); gr.addColorStop(.88, '#e7b066'); gr.addColorStop(1, '#f6e6c0');
-  g.fillStyle = gr; rr(g, -L / 2, -Wd / 2, L, Wd, Wd / 2); g.fill();
-  g.fillStyle = 'rgba(120,60,20,.45)'; [-.2, .05, .28].forEach(f => g.fillRect(L * f - L * .035, -Wd / 2 + 1, L * .07, Wd - 2));
-  g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(-L * .3, -Wd * .36, L * .6, Wd * .1);
-  if (lead) {
-    const ex = L * .26, ey = Wd * .2, er = Math.max(1.5, Wd * .13);
-    g.fillStyle = '#fff'; [-ey, ey].forEach(yy => { g.beginPath(); g.arc(ex, yy, er, 0, 7); g.fill(); });
-    g.fillStyle = '#2a1a10'; [-ey, ey].forEach(yy => { g.beginPath(); if (crash) { g.fillRect(ex - er * .8, yy - er * .2, er * 1.6, er * .4); } else { g.arc(ex + er * .3, yy, er * .55, 0, 7); g.fill(); } });
-    g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(L / 2 - 1, 0, Wd * .12, 0, 7); g.fill();
+  const L = cs * .8, Wd = cs * .54, lead = i === 0, tail = i === CARS - 1;
+  const fr = lead ? Wd * .42 : Wd * .14, bk = tail && !lead ? Wd * .3 : Wd * .14;
+  // 影
+  g.save(); g.translate(cs * .04, cs * .07); g.fillStyle = 'rgba(0,0,0,.35)'; carPath(g, L, Wd, fr, bk); g.fill(); g.restore();
+  // 連結器（後ろ）
+  if (!tail) { g.fillStyle = '#3a3a40'; g.fillRect(-L / 2 - cs * .08, -Wd * .1, cs * .1, Wd * .2); }
+  // 車体（焼き色の帯 → クリームの屋根）
+  g.fillStyle = '#b8692a'; carPath(g, L, Wd, fr, bk); g.fill();
+  g.fillStyle = '#f4e3bd'; carPath(g, L - Wd * .16, Wd * .7, fr * .7, bk * .7); g.fill();
+  g.strokeStyle = 'rgba(80,40,10,.5)'; g.lineWidth = Math.max(.6, cs * .02); carPath(g, L, Wd, fr, bk); g.stroke();
+  // 横の窓（帯の上に並ぶ）
+  g.fillStyle = '#2f4b66';
+  const wx0 = -L / 2 + Wd * .2, wx1 = L / 2 - (lead ? Wd * .55 : Wd * .2), nw = 3, ww = (wx1 - wx0) / nw;
+  for (let k = 0; k < nw; k++) [-1, 1].forEach(sd => g.fillRect(wx0 + k * ww + ww * .15, sd * Wd * .5 - (sd > 0 ? Wd * .13 : 0) + (sd > 0 ? 0 : Wd * .02), ww * .7, Wd * .11));
+  // 屋根の機器
+  if (!lead && !tail) {
+    // パンタグラフ（ひし形）
+    g.strokeStyle = '#4a4f58'; g.lineWidth = Math.max(.8, cs * .025);
+    g.beginPath(); g.moveTo(-L * .16, 0); g.lineTo(0, -Wd * .22); g.lineTo(L * .16, 0); g.lineTo(0, Wd * .22); g.closePath(); g.stroke();
+    g.beginPath(); g.moveTo(0, -Wd * .3); g.lineTo(0, Wd * .3); g.stroke();
+  } else {
+    g.fillStyle = 'rgba(90,70,50,.35)'; [-.18, .1].forEach(f => g.fillRect(L * f - L * .06, -Wd * .1, L * .12, Wd * .2));
   }
+  if (lead) {
+    // 前面の窓と前照灯
+    g.fillStyle = '#2f4b66'; g.beginPath(); g.moveTo(L / 2 - Wd * .42, -Wd * .3); g.quadraticCurveTo(L / 2 - Wd * .08, -Wd * .3, L / 2 - Wd * .06, 0); g.quadraticCurveTo(L / 2 - Wd * .08, Wd * .3, L / 2 - Wd * .42, Wd * .3); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(L / 2 - Wd * .38, -Wd * .22, Wd * .08, Wd * .16);
+    g.fillStyle = crash ? '#ff5a3c' : '#fff3b0'; [-1, 1].forEach(sd => { g.beginPath(); g.arc(L / 2 - Wd * .12, sd * Wd * .36, Math.max(1, Wd * .07), 0, 7); g.fill(); });
+    if (!crash) { g.fillStyle = 'rgba(255,240,170,.18)'; g.beginPath(); g.moveTo(L / 2, -Wd * .4); g.lineTo(L / 2 + cs * .5, -Wd * .7); g.lineTo(L / 2 + cs * .5, Wd * .7); g.lineTo(L / 2, Wd * .4); g.closePath(); g.fill(); }
+  }
+  if (tail && !lead) { g.fillStyle = '#e5533d'; [-1, 1].forEach(sd => { g.beginPath(); g.arc(-L / 2 + Wd * .1, sd * Wd * .34, Math.max(1, Wd * .06), 0, 7); g.fill(); }); }
   g.restore();
 }
 /* ルートの上の位置。s はマス単位（0＝最初のマスの入り口）。駅の中（s<0、s>長さ）も線路の延長として返す */
@@ -875,7 +900,7 @@ function draw() {
       if (s < -0.5 - 0.0) { const q = posAlong(tr.steps, s, cs, tr.c0); if (q.y > FH + STATION_H * cs * .55) continue; }
       const q = posAlong(tr.steps, s, cs, tr.c0);
       let ang = q.ang; if (tr.derail && tr.crashT) ang += (i % 2 ? 1 : -1) * Math.min(.6, tr.crashT * 2) + Math.sin(G.t * 40) * .05;
-      drawCar(g, q.x, q.y, ang, cs, i === 0, tr.derail && tr.crashT);
+      drawCar(g, q.x, q.y, ang, cs, i, tr.derail && tr.crashT);
     }
   }
   // 粒と文字
@@ -944,7 +969,7 @@ function drawHow() {
   for (let i = CARS - 1; i >= 0; i--) {
     const q = posLocal(steps, s - i * GAP, cs, rows);
     if (q.y > rows * cs + 8) continue;
-    drawCar(g, q.x, q.y, q.ang, cs, i === 0, false);
+    drawCar(g, q.x, q.y, q.ang, cs, i, false);
   }
   g.restore();
   howT += 1 / 60;
@@ -968,7 +993,7 @@ function drawLogo() {
   steps.forEach(st => { const k = st.enter === opp(st.exit) ? 's' : 'c'; const m = st.enter | st.exit; g.save(); g.translate(st.c * cs, st.r * cs); paintTile(g, k, m, cs); g.restore(); });
   g.fillStyle = '#c9772e'; g.fillRect(-ox, rows * cs, 260, 12); g.fillStyle = '#f3ddb2'; g.fillRect(-ox, rows * cs, 260, 3);
   const L = steps.length, s = (logoT * 3) % (L + 6) - 3;
-  for (let i = CARS - 1; i >= 0; i--) { const q = posLocal(steps, s - i * GAP, cs, rows); if (q.y > rows * cs + 2) continue; drawCar(g, q.x, q.y, q.ang, cs, i === 0, false); }
+  for (let i = CARS - 1; i >= 0; i--) { const q = posLocal(steps, s - i * GAP, cs, rows); if (q.y > rows * cs + 2) continue; drawCar(g, q.x, q.y, q.ang, cs, i, false); }
   g.restore();
   logoT += 1 / 60;
   requestAnimationFrame(drawLogo);
