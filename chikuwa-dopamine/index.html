@@ -53,6 +53,9 @@ header .ttl{margin-left:auto;font-weight:800;font-size:14px;color:var(--accent)}
 .hand{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;width:100%;max-width:420px}
 .tile{position:relative;aspect-ratio:3/4;border-radius:8px;border:0;background:#f7f1e1;box-shadow:inset 0 -2px 0 #e2d6b8,0 3px 0 #d9ccaa,0 6px 0 #2f8a58,0 8px 0 #1c5a39,0 10px 8px rgba(0,0,0,.35);cursor:pointer;padding:0;overflow:hidden;transition:transform .1s}
 .tile svg,.tile img{display:block;width:100%;height:100%}
+.tile.img{aspect-ratio:150/190;background:none;box-shadow:none;border-radius:0;overflow:visible;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+.tile.img img{image-rendering:pixelated;-webkit-user-drag:none}
+.tile.img.ok{box-shadow:none;filter:drop-shadow(0 0 6px var(--good)) drop-shadow(0 0 3px var(--good))}
 .tile:active{transform:translateY(-6px)}
 .tile.ok{box-shadow:0 0 0 3px var(--good),0 3px 0 #d9ccaa,0 6px 0 #2f8a58,0 0 18px 4px var(--good)}
 .tile.cut{opacity:.25;transform:translateY(-10px)}
@@ -107,7 +110,7 @@ canvas.play{display:block;touch-action:none;max-width:100%;max-height:100%;width
       <div class="cards" id="cards"></div>
       <details style="max-width:440px;margin:16px auto 0;font-size:13px;color:var(--sub)"><summary>セーブの引っ越し・更新履歴</summary>
         <div id="move"></div>
-        <p>β0.2.0（2026-11-03）アーケード（4つ連続）を追加。麻雀牌の絵を描き直した。<br>β0.1.0（2026-11-03）最初の試作。麻雀「あと1手」・777揃え・空き缶プレス・ゴミ箱スローの4つ。</p>
+        <p>β0.2.1（2026-11-03）麻雀牌をドット絵の画像に差し替えた。<br>β0.2.0（2026-11-03）アーケード（4つ連続）を追加。麻雀牌の絵を描き直した。<br>β0.1.0（2026-11-03）最初の試作。麻雀「あと1手」・777揃え・空き缶プレス・ゴミ箱スローの4つ。</p>
       </details>
     </div>
   </div>
@@ -143,7 +146,7 @@ canvas.play{display:block;touch-action:none;max-width:100%;max-height:100%;width
 <script>
 (() => {
 'use strict';
-const VERSION = 'β0.2.0';
+const VERSION = 'β0.2.1';
 const KEY = 'chikuwa-dopamine-v1';
 CG.init({ game: 'chikuwa-dopamine', title: 'ちくわでるでる！ドーパミン', version: VERSION });
 try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
@@ -350,7 +353,7 @@ const MJ = (() => {
   }
   /* ---- 牌の絵（SVG。60×80 の座標で描く） ----
      画像に差し替えるときは TILE_IMG を true にし、img/tiles/ に 34 枚の PNG を置く（chikuwa-dopamine/CLAUDE.md 付録） */
-  const TILE_IMG = false;
+  const TILE_IMG = true;   // 2026-11-03 SEIJI の画像（ドット絵、150×190。厚みつき）
   const TILE_FILES = [...'123456789'].map(n => 'm' + n).concat([...'123456789'].map(n => 'p' + n), [...'123456789'].map(n => 's' + n), [...'1234567'].map(n => 'z' + n));
   const BL = '#1d4ea6', RD = '#c8262c', GR = '#137a3c', SERIF = "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif";
   const svgCache = {};
@@ -416,7 +419,7 @@ const MJ = (() => {
     return (svgCache[t] = svg);
   }
   function tileEl(t) {
-    const b = document.createElement('button'); b.className = 'tile';
+    const b = document.createElement('button'); b.className = TILE_IMG ? 'tile img' : 'tile';
     b.setAttribute('aria-label', t < 27 ? (t % 9 + 1) + ['萬', '筒', '索'][Math.floor(t / 9)] : HON[t - 27]);
     b.innerHTML = TILE_IMG ? '<img src="img/tiles/' + TILE_FILES[t] + '.png" alt="" draggable="false">' : tileSvg(t);
     return b;
