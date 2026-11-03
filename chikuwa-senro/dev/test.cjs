@@ -72,6 +72,19 @@ const ok = (c, m) => { if (!c) { console.log('NG', m); process.exitCode = 1; } e
   });
   ok(r5b.gone, 'こわすアイテムで真下の線路が消える');
   ok(r5b.m === (r5b.S | r5b.W), '回すアイテム×2で向きが変わる ' + r5b.m);
+  // 5c) 左右のホーム：つなぐ・通過
+  const r5c = await pg.evaluate(() => {
+    const { G, mkTile, N, E, S, W, findRoutes } = SENRO; for (let r = 0; r < 12; r++) G.grid[r].fill(null);
+    for (let r = 7; r < 12; r++) G.grid[r][0] = mkTile('s', N | S); G.grid[6][0] = mkTile('c', S | W);          // 駅 → 左のホーム
+    for (let r = 6; r < 12; r++) { G.grid[r][7] = mkTile('s', N | S); G.grid[r][6] = mkTile('s', N | S); }    // 右のホームの前を通過してUターン
+    G.grid[5][7] = mkTile('c', S | W); G.grid[5][6] = mkTile('c', E | S);
+    return findRoutes().map(r => r.st.id + '-' + r.end + ':' + r.steps.length + ':p' + r.passes).sort();
+  });
+  ok(JSON.stringify(r5c) === JSON.stringify(['B0-L:6:p0', 'B6-B7:14:p1']), 'ホームへの接続と通過 ' + JSON.stringify(r5c));
+  await pg.screenshot({ path: '/tmp/senro-plat.png' });
+  await pg.evaluate(() => SENRO.depart(true)); await pg.waitForTimeout(900); await pg.screenshot({ path: '/tmp/senro-plat-run.png' });
+  await pg.waitForFunction(() => SENRO.G.phase === 'play', null, { timeout: 8000 });
+  ok(await pg.evaluate(() => SENRO.G.st.pass === 1), '通過を数えた');
   // 6) Lv1 クリア判定（runs 1 はすでに満たしている → 次の resume でクリア）
   await pg.evaluate(() => { SENRO.start('arcade', 0); const G = SENRO.G; for (let r = 0; r < 12; r++) G.grid[r].fill(null); G.grid[11][1] = SENRO.mkTile('c', SENRO.S | SENRO.E); G.grid[11][2] = SENRO.mkTile('c', SENRO.W | SENRO.S); SENRO.depart(true); });
   await pg.waitForSelector('#mResult:not([hidden])', { timeout: 8000 });

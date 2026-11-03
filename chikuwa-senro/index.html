@@ -131,7 +131,7 @@ details{text-align:left;margin-top:12px;font-size:12.5px;color:var(--sub)}
       <div class="row" style="margin-top:0"><button class="mbtn sub" id="mHow" style="flex:1">あそびかた</button><button class="mbtn sub" id="mAch" style="flex:1">実績</button></div>
     </div>
     <div id="move"></div>
-    <details><summary>更新履歴</summary><p>β0.2.3（2026-11-04）「つぎ」を盤面の右下へ。アイテム「こわす」「回す」を追加。<br>β0.2.2（2026-11-04）縦を24マスから12マスに縮めて、マスと操作ボタンを大きくした。表示を上にまとめ、発車ボタンを下の操作ボタンの並びへ。<br>β0.2.1（2026-11-04）電車の形を、窓・前照灯・パンタグラフのある電車らしい形に描き直し。<br>β0.2.0（2026-11-01）ゼロから作り直し。駅から出て駅にもどるルート・発車時刻・連鎖・岩・交差・アーケード20レベル・フリー・実績12個。<br>β0.1.0（2026-11-01）最初の試作。</p></details>
+    <details><summary>更新履歴</summary><p>β0.2.4（2026-11-04）左右の下から6段目にホームを追加（つなぐと出入り口、前を通過するとボーナス）。<br>β0.2.3（2026-11-04）「つぎ」を盤面の右下へ。アイテム「こわす」「回す」を追加。<br>β0.2.2（2026-11-04）縦を24マスから12マスに縮めて、マスと操作ボタンを大きくした。表示を上にまとめ、発車ボタンを下の操作ボタンの並びへ。<br>β0.2.1（2026-11-04）電車の形を、窓・前照灯・パンタグラフのある電車らしい形に描き直し。<br>β0.2.0（2026-11-01）ゼロから作り直し。駅から出て駅にもどるルート・発車時刻・連鎖・岩・交差・アーケード20レベル・フリー・実績12個。<br>β0.1.0（2026-11-01）最初の試作。</p></details>
   </div>
 </div>
 <!-- あそびかた -->
@@ -144,6 +144,7 @@ details{text-align:left;margin-top:12px;font-size:12.5px;color:var(--sub)}
       <li><b>発車</b>で電車が走る。走った線路は消えて、上の線路が落ちてくる。落ちてまたつながったら、そのまま<b>連続発車（連鎖）</b>！</li>
       <li><b>⏱ 発車時刻</b>になると電車は勝手に出る。つながっていないと<b>脱線</b>。早めに発車するとボーナス。</li>
       <li>長いルートほど点が大きい。<b>岩</b>はとなりを電車が通るとこわれる。<b>十字</b>はまっすぐ通りぬけられる。</li>
+      <li>左右の下から6段目に<b>ホーム</b>がある。ホームに線路をつなぐと、駅と同じように出入りできる。ホームの前を<b>縦のまっすぐ（か十字）で通過</b>して、ほかの駅・ホームへつなぐと<b>通過ボーナス</b>（1回ごとに点+50%）。</li>
       <li>ときどき<b>アイテム</b>が降ってくる。<b>💣こわす</b>は着地した真下の線路や岩をこわす。<b>🔄回す</b>は真下の線路を回す（⟳で回す数を1〜3回に変えられる）。</li>
       <li>真ん中の列が上まで積み上がると<b>満線</b>でおしまい。</li>
     </ol>
@@ -193,7 +194,7 @@ details{text-align:left;margin-top:12px;font-size:12.5px;color:var(--sub)}
 <script>
 (() => {
 'use strict';
-const VERSION = 'β0.2.3';
+const VERSION = 'β0.2.4';
 const KEY = 'chikuwa-senro-v1';
 CG.init({ game: 'chikuwa-senro', title: 'つなげ！ちくわ線路（仮）', version: VERSION });
 try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
@@ -205,6 +206,9 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 /* ================= 調整用の数値 ================= */
 const COLS = 8, ROWS = 12, SPAWN_C = 3;      // フィールド（横8×縦12。β0.2.2 で24から縮めた）と、ピースが出てくる列
 const STATION_H = 1.7;                       // 駅の高さ（マス）
+const PLAT_ROW = ROWS - 6;                   // 左右のホームの高さ（下から6段目の行）
+const SIDE_M = 0.55;                         // 盤面の左右に取る、ホームを描くすき間（マス）
+const PASS_MUL = 0.5;                        // 通過ボーナス：ホームの前を通過してほかの駅・ホームへつないだら、1回ごとに点 +50%
 const SPEED = 8.5;                           // 電車の速さ（マス／秒）
 const CARS = 3, GAP = 0.8;                   // 電車の両数と車両の間隔（マス）
 const LOCK_DELAY = 0.45;                     // 着地してから固定されるまで（秒）
@@ -293,6 +297,8 @@ const ACH = [
   ['early', '定刻より早く', '発車時刻まで20秒以上のこして発車する'],
   ['free5k', '一人前の運転士', 'フリーで5000点'],
   ['free20k', '伝説の運転士', 'フリーで20000点'],
+  ['plat', 'ホームに到着', '左右のホームに線路をつなぐ'],
+  ['pass', '通過列車', 'ホームの前を通過して、ほかの駅・ホームへつなぐ'],
   ['lv10', 'アーケード中級', 'アーケードのLv10をクリア'],
   ['lv20', 'アーケード制覇', 'アーケードのLv20をクリア'],
 ];
@@ -346,43 +352,58 @@ const canPlace = (c, r) => c >= 0 && c < COLS && r < ROWS && (r < 0 || !G.grid[r
 
 /* ================= ルートを探す =================
    駅（底）から入って、つながっている線路をたどる。底から出られたら「駅にもどった」＝完成 */
-function trace(c0) {
-  let c = c0, r = ROWS - 1, enter = S;
+/* 入口・出口は「駅（底の各列）」と「左右のホーム（PLAT_ROW の左はし・右はし）」。
+   start は { c, r, enter, id }。別の入口から外へ出られたら完成 */
+function starts() {
+  const out = [];
+  for (let c = 0; c < COLS; c++) { const t = at(c, ROWS - 1); if (t && (t.m & S)) out.push({ c, r: ROWS - 1, enter: S, id: 'B' + c }); }
+  const l = at(0, PLAT_ROW); if (l && (l.m & W)) out.push({ c: 0, r: PLAT_ROW, enter: W, id: 'L' });
+  const rt = at(COLS - 1, PLAT_ROW); if (rt && (rt.m & E)) out.push({ c: COLS - 1, r: PLAT_ROW, enter: E, id: 'R' });
+  return out;
+}
+function exitId(c, r, exit) {
+  if (exit === S && r === ROWS - 1) return 'B' + c;
+  if (exit === W && c === 0 && r === PLAT_ROW) return 'L';
+  if (exit === E && c === COLS - 1 && r === PLAT_ROW) return 'R';
+  return null;
+}
+function trace(st) {
+  let c = st.c, r = st.r, enter = st.enter;
   const steps = [], used = new Set();
+  const res = ok => ({ steps, ok, st, c0: st.c, passes: steps.filter(x => x.pass).length });
   for (let i = 0; i < 400; i++) {
     const t = at(c, r);
-    if (!t || !(t.m & enter)) return { steps, ok: false, c0 };
+    if (!t || !(t.m & enter)) return res(false);
     const exit = t.k === 'x' ? opp(enter) : (t.m & ~enter);
     const key = c + ',' + r + (t.k === 'x' ? ((enter & (N | S)) ? 'v' : 'h') : '');
-    if (used.has(key)) return { steps, ok: false, c0 };
+    if (used.has(key)) return res(false);
     used.add(key);
-    steps.push({ c, r, enter, exit, k: t.k });
+    // 通過：ホームの前（左はし・右はしの列の PLAT_ROW）を縦にまっすぐ走る
+    const pass = r === PLAT_ROW && (c === 0 || c === COLS - 1) && (enter & (N | S)) && exit === opp(enter);
+    steps.push({ c, r, enter, exit, k: t.k, pass: pass ? (c === 0 ? 'L' : 'R') : '' });
+    const eid = exitId(c, r, exit);
+    if (eid) { const o = res(eid !== st.id); o.end = eid; return o; }
     const nc = c + D[exit].dx, nr = r + D[exit].dy;
-    if (nr >= ROWS) return { steps, ok: true, c0, c1: c };
-    if (nc < 0 || nc >= COLS || nr < 0) return { steps, ok: false, c0 };
+    if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) return res(false);
     c = nc; r = nr; enter = opp(exit);
   }
-  return { steps, ok: false, c0 };
+  return res(false);
 }
 function findRoutes() {
-  const out = [];
-  for (let c = 0; c < COLS; c++) {
-    const t = at(c, ROWS - 1);
-    if (!t || !(t.m & S)) continue;
-    const tr = trace(c);
-    if (tr.ok && tr.c1 > c) out.push(tr);   // 同じルートを両はしから2回数えない
+  const out = [], seen = new Set();
+  for (const st of starts()) {
+    const tr = trace(st);
+    if (!tr.ok) continue;
+    const key = [st.id, tr.end].sort().join('-');
+    if (seen.has(key)) continue;             // 同じルートを両はしから2回数えない
+    seen.add(key); out.push(tr);
   }
   return out;
 }
 function longestPartial() {
   let best = null;
-  for (let c = 0; c < COLS; c++) {
-    const t = at(c, ROWS - 1);
-    if (!t || !(t.m & S)) continue;
-    const tr = trace(c);
-    if (!best || tr.steps.length > best.steps.length) best = tr;
-  }
-  return best || { steps: [], ok: false, c0: SPAWN_C };
+  for (const st of starts()) { const tr = trace(st); if (!best || tr.steps.length > best.steps.length) best = tr; }
+  return best || { steps: [], ok: false, c0: SPAWN_C, st: { c: SPAWN_C, r: ROWS - 1, enter: S }, passes: 0 };
 }
 function refreshReady() {
   G.ready = G.phase === 'play' ? findRoutes() : [];
@@ -481,7 +502,7 @@ function startRun(routes, derail, bonus) {
   G.runBonus = bonus;
   G.trains = routes.map(rt => {
     const last = new Map(); rt.steps.forEach((s, i) => last.set(s.c + ',' + s.r, i));
-    return { steps: rt.steps, c0: rt.c0, s: -(CARS - 1) * GAP - 0.7, vi: 0, last, derail, crashT: 0, done: false };
+    return { steps: rt.steps, c0: rt.c0, st: rt.st, passes: rt.passes || 0, s: -(CARS - 1) * GAP - 0.7, vi: 0, last, derail, crashT: 0, done: false };
   });
   G.removed = [];
   if (derail) SFX.play('go'); else if (G.chain > 1) SFX.play('chain', G.chain); else SFX.play('go');
@@ -527,10 +548,14 @@ function endRun() {
   if (rocks) SFX.play('rock');
   let pts = 0, topY = ROWS;
   if (!derail) {
-    let sum = 0;
+    let sum = 0, passN = 0;
     G.trains.forEach(tr => {
       const len = tr.steps.length, curves = tr.steps.filter(s => s.k === 'c').length, crosses = tr.steps.filter(s => s.k === 'x').length;
-      sum += routePts(len, curves, crosses);
+      const ps = tr.passes || 0;
+      sum += routePts(len, curves, crosses) * (1 + PASS_MUL * ps);
+      if (ps) { G.st.pass = (G.st.pass || 0) + ps; unlock('pass'); }
+      if (tr.steps.length && (tr.st.id === 'L' || tr.st.id === 'R' || /[LR]/.test(tr.end || ''))) unlock('plat');
+      passN += ps;
       G.st.runs++; G.st.tiles += len; G.st.longest = Math.max(G.st.longest, len); G.st.maxCurves = Math.max(G.st.maxCurves, curves); G.st.cross += crosses;
       if (len >= 10) unlock('loop10'); if (len >= 20) unlock('loop20'); if (crosses) unlock('cross');
       tr.steps.forEach(s => { topY = Math.min(topY, s.r); });
@@ -542,6 +567,7 @@ function endRun() {
     pts = Math.round(sum * multiMul(n) * chainMul(G.chain) * em);
     const lenAll = G.trains.reduce((a, t) => a + t.steps.length, 0);
     pop(COLS / 2, Math.max(2, topY - 0.5), lenAll + 'マス +' + pts + (G.chain > 1 ? '（×' + chainMul(G.chain) + '）' : '') + (em > 1 ? ' 早発×' + em : ''), '#ffd36e');
+    if (passN) pop(COLS / 2, Math.max(3, topY + 0.6), '通過ボーナス ×' + (1 + PASS_MUL * passN), '#7ed1a4');
   }
   if (rocks) { pts += rocks * ROCK_PTS; G.st.rocks += rocks; save.st.rocks = (save.st.rocks || 0) + rocks; if (save.st.rocks >= 10) unlock('rock10'); pop(COLS / 2, Math.max(3, topY + 1), '岩 ×' + rocks + ' +' + rocks * ROCK_PTS, '#c8ccd4'); }
   G.score += pts; G.runBonus = 1; G.trains = [];
@@ -861,7 +887,12 @@ function drawCar(g, x, y, ang, cs, i, crash) {
 /* ルートの上の位置。s はマス単位（0＝最初のマスの入り口）。駅の中（s<0、s>長さ）も線路の延長として返す */
 function posAlong(steps, s, cs, c0) {
   const L = steps.length;
-  if (s < 0 || !L) { const c = L ? steps[0].c : c0; return { x: (c + .5) * cs, y: (ROWS - Math.min(s, 0)) * cs, ang: -Math.PI / 2 }; }
+  if (s < 0 || !L) {
+    if (!L) return { x: (c0 + .5) * cs, y: (ROWS - Math.min(s, 0)) * cs, ang: -Math.PI / 2 };
+    const a = steps[0], d = D[a.enter], f = -s;   // 入口の辺から外へのばす
+    const ex = (a.c + .5 + d.dx * .5) * cs, ey = (a.r + .5 + d.dy * .5) * cs;
+    return { x: ex + d.dx * f * cs, y: ey + d.dy * f * cs, ang: Math.atan2(-d.dy, -d.dx) };
+  }
   if (s >= L) { const z = steps[L - 1], d = D[z.exit], f = s - L; const ex = (z.c + .5 + d.dx * .5) * cs, ey = (z.r + .5 + d.dy * .5) * cs; return { x: ex + d.dx * f * cs, y: ey + d.dy * f * cs, ang: Math.atan2(d.dy, d.dx) }; }
   const i = Math.floor(s), f = s - i, st = steps[i];
   const de = D[st.enter], dx = D[st.exit];
@@ -886,10 +917,10 @@ function banner(text, col, life) { banners.push({ text, col, life: life || 1.3, 
 
 function resize() {
   const st = $('stage'), w = st.clientWidth - 62, h = st.clientHeight;
-  const cs = Math.max(10, Math.floor(Math.min(w / COLS, h / (ROWS + STATION_H))));
+  const cs = Math.max(10, Math.floor(Math.min(w / (COLS + SIDE_M * 2), h / (ROWS + STATION_H))));
   G.cs = cs; DPR = Math.min(3, window.devicePixelRatio || 1);
-  cv.style.width = cs * COLS + 'px'; cv.style.height = Math.round(cs * (ROWS + STATION_H)) + 'px';
-  cv.width = Math.round(cs * COLS * DPR); cv.height = Math.round(cs * (ROWS + STATION_H) * DPR);
+  cv.style.width = Math.round(cs * (COLS + SIDE_M * 2)) + 'px'; cv.style.height = Math.round(cs * (ROWS + STATION_H)) + 'px';
+  cv.width = Math.round(cs * (COLS + SIDE_M * 2) * DPR); cv.height = Math.round(cs * (ROWS + STATION_H) * DPR);
   nxc.width = 48 * DPR; nxc.height = 134 * DPR;
   sprites.clear(); drawNext();
 }
@@ -910,10 +941,13 @@ function draw() {
   const cs = G.cs, FW = cs * COLS, FH = cs * ROWS;
   const g = ctx; g.setTransform(DPR, 0, 0, DPR, 0, 0);
   let sx = 0, sy = 0; if (G.shake > 0) { sx = (Math.random() - .5) * 8 * G.shake; sy = (Math.random() - .5) * 8 * G.shake; }
-  g.translate(sx, sy);
+  const MX = SIDE_M * cs;
+  g.fillStyle = '#0b141c'; g.fillRect(0, 0, FW + MX * 2, FH + STATION_H * cs);
+  g.translate(sx + MX, sy);
   // 背景（夜の横丁）
   const bg = g.createLinearGradient(0, 0, 0, FH); bg.addColorStop(0, '#0f1a26'); bg.addColorStop(1, '#1b2a37');
-  g.fillStyle = bg; g.fillRect(-10, -10, FW + 20, FH + 20);
+  g.fillStyle = bg; g.fillRect(0, -10, FW, FH + 20);
+  drawPlatforms(g, cs, FW, MX);
   g.fillStyle = 'rgba(255,255,255,.04)';
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) g.fillRect((c + .5) * cs - 1, (r + .5) * cs - 1, 2, 2);
   // 真ん中の列（積み上がると満線）
@@ -981,9 +1015,28 @@ function draw() {
   // 発車時刻の直前は赤く
   if (G.phase === 'play' && G.ttLeft <= 5) { g.strokeStyle = 'rgba(255,90,60,' + (.35 + .35 * Math.sin(G.t * 12)) + ')'; g.lineWidth = 4; g.strokeRect(2, 2, FW - 4, FH - 4); }
 }
+/* 左右のホーム：盤面の外のすき間に描く。つながっていればレールをのばし、ルートに入っていれば光らせる */
+function drawPlatforms(g, cs, FW, MX) {
+  const y = PLAT_ROW * cs;
+  [['L', 0, W, -MX], ['R', COLS - 1, E, FW]].forEach(([id, c, b, x]) => {
+    const t = G.grid[PLAT_ROW] && G.grid[PLAT_ROW][c], open = t && (t.m & b) && !t.fy;
+    const lit = open && G.readyCells.has(c + ',' + PLAT_ROW) && G.phase === 'play';
+    const pass = t && !t.fy && ((t.k === 's' && t.m === (N | S)) || t.k === 'x');
+    // ホーム（コンクリートと黄色い線）
+    g.fillStyle = '#5b6470'; g.fillRect(x, y - cs * .9, MX, cs * .75);
+    g.fillStyle = '#ffd36e'; g.fillRect(id === 'L' ? x + MX - 3 : x, y - cs * .9, 3, cs * .75);
+    g.fillStyle = '#e9edf2'; g.font = '800 ' + Math.round(cs * .24) + 'px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    ['ホ', 'ー', 'ム'].forEach((ch, i) => g.fillText(ch, x + MX / 2, y - cs * .7 + i * cs * .23));
+    // つなぐ先の線路の口
+    g.strokeStyle = lit ? '#ffd36e' : open ? '#8b939c' : 'rgba(139,147,156,.35)'; g.lineWidth = Math.max(1, cs * .05);
+    [-.17, .17].forEach(o => { g.beginPath(); g.moveTo(x, y + (.5 + o) * cs); g.lineTo(x + MX, y + (.5 + o) * cs); g.stroke(); });
+    if (!open) { g.setLineDash([3, 3]); g.strokeStyle = 'rgba(255,255,255,.18)'; g.strokeRect((c) * cs + 1, y + 1, cs - 2, cs - 2); g.setLineDash([]); }
+    if (pass) { g.fillStyle = 'rgba(126,209,164,.9)'; g.font = '800 ' + Math.round(cs * .22) + 'px system-ui,sans-serif'; g.fillText('通過', x + MX / 2, y + cs * .5); }
+  });
+}
 function drawStation(g, cs, FW, FH) {
-  const H = STATION_H * cs, y = FH;
-  g.fillStyle = '#2a1d14'; g.fillRect(0, y, FW, H);
+  const H = STATION_H * cs, y = FH, MX = SIDE_M * cs;
+  g.fillStyle = '#2a1d14'; g.fillRect(-MX, y, FW + MX * 2, H);
   // 駅に入る線路（底が開いている列）
   for (let c = 0; c < COLS; c++) {
     const t = G.grid[ROWS - 1] && G.grid[ROWS - 1][c], open = t && (t.m & S) && !t.fy;
@@ -993,8 +1046,8 @@ function drawStation(g, cs, FW, FH) {
     g.fillStyle = lit ? '#ffd36e' : '#6f7882'; g.beginPath(); g.arc((c + .5) * cs, y + H * .62, cs * .1, 0, 7); g.fill();
   }
   // ホームと屋根
-  g.fillStyle = '#c9772e'; g.fillRect(0, y + H * .7, FW, H * .3);
-  g.fillStyle = '#f3ddb2'; g.fillRect(0, y + H * .7, FW, H * .06);
+  g.fillStyle = '#c9772e'; g.fillRect(-MX, y + H * .7, FW + MX * 2, H * .3);
+  g.fillStyle = '#f3ddb2'; g.fillRect(-MX, y + H * .7, FW + MX * 2, H * .06);
   g.fillStyle = 'rgba(0,0,0,.25)'; for (let x = 0; x < FW; x += cs * .5) g.fillRect(x, y + H * .78, 1, H * .22);
   // 看板
   const bw = cs * 3.2, bx = FW / 2 - bw / 2, by = y + H * .72;
