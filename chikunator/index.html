@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<title>チクネーター</title>
+<meta name="description" content="思い浮かべた食べ物を、ちくわくんがおでん鍋の湯気を読んで当てる推理ゲーム。">
+<style>
+:root{--bg:#1a1322;--bg2:#2a1d2f;--panel:#2f2236;--ink:#fff6e6;--sub:#c9b8c9;--tan:#e9b46a;--yaki:#a8642a;--red:#e5533d;--yel:#ffd36b;--line:#4a3550;--cg-accent:#e5533d}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y}
+body{margin:0;min-height:100dvh;background:radial-gradient(120% 70% at 50% 0%,#3a2440 0%,var(--bg) 60%);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-touch-callout:none}
+button{font:inherit;-webkit-user-select:none;user-select:none;cursor:pointer}
+input{font-size:16px!important}
+header{display:flex;align-items:center;gap:8px;padding:6px 14px;height:38px;max-width:520px;margin:0 auto}
+header a{color:var(--sub);text-decoration:none;font-size:13px}
+header .ttl{margin-left:auto;font-weight:900;font-size:13px;color:var(--tan);letter-spacing:.06em}
+.snd{border:0;background:transparent;color:var(--sub);font-size:18px;padding:2px 4px}
+main{max-width:520px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+.scr[hidden]{display:none}
+.scr{animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+
+/* ちょうちん */
+.lanterns{display:flex;justify-content:space-between;padding:0 10px;height:30px;margin-bottom:-6px}
+.lantern{width:22px;height:30px;border-radius:45%;background:radial-gradient(circle at 50% 40%,#ff8a6a,var(--red) 60%,#8f2a1e);box-shadow:0 0 18px rgba(229,83,61,.55);position:relative;animation:sway 3s ease-in-out infinite}
+.lantern:nth-child(2){animation-delay:-1s}.lantern:nth-child(3){animation-delay:-2s}
+.lantern::before,.lantern::after{content:"";position:absolute;left:4px;right:4px;height:3px;background:#2a1a10;border-radius:2px}
+.lantern::before{top:0}.lantern::after{bottom:0}
+@keyframes sway{50%{transform:rotate(4deg)}}
+
+/* タイトル */
+.logo{text-align:center;margin:10px 0 0}
+.logo small{display:block;font-size:13px;color:var(--sub);letter-spacing:.2em}
+.logo b{display:block;font-size:46px;font-weight:900;letter-spacing:.04em;color:var(--tan);text-shadow:0 3px 0 var(--yaki),0 0 24px rgba(233,180,106,.35)}
+.lead{text-align:center;font-size:14px;line-height:1.8;color:var(--ink);margin:10px 0}
+.card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.8;color:#e9dbe9}
+.card b{color:var(--yel)}
+.stats{display:flex;justify-content:center;gap:18px;font-size:13px;color:var(--sub);margin:10px 0}
+.stats b{color:var(--ink);font-size:16px}
+.btn{display:block;width:100%;border:0;border-radius:16px;padding:15px 18px;font-size:18px;font-weight:900;letter-spacing:.06em;background:linear-gradient(180deg,#f07a4f,var(--red));color:#fff;box-shadow:0 5px 0 #8f2a1e,0 10px 24px rgba(229,83,61,.3);margin-top:14px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #8f2a1e}
+.btn.sub{background:var(--panel);box-shadow:0 4px 0 #160f1a;font-size:15px;padding:12px}
+.btn.gold{background:linear-gradient(180deg,#ffe08a,#e9a93a);color:#3a2410;box-shadow:0 5px 0 #8a5a14}
+.row{display:flex;gap:10px}.row .btn{flex:1}
+details{margin-top:16px;font-size:13px;color:var(--sub)}
+details p{line-height:1.7}
+
+/* 鍋とちくわくん */
+.potwrap{position:relative;height:210px;margin:4px auto 0;max-width:360px}
+.potwrap.small{height:170px}
+.potwrap svg{position:absolute;left:0;right:0;bottom:0;margin:auto;width:100%;height:100%;overflow:visible}
+.steam{position:absolute;left:12%;right:30%;bottom:46%;height:70%;pointer-events:none}
+.steam i{position:absolute;bottom:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,0) 70%);filter:blur(4px);opacity:0;animation:rise var(--sp,3.2s) ease-out infinite}
+@keyframes rise{0%{opacity:0;transform:translate(0,0) scale(.6)}20%{opacity:var(--op,.7)}100%{opacity:0;transform:translate(var(--dx,10px),-150px) scale(2.2)}}
+.bub{animation:bub var(--bsp,1.6s) ease-in infinite;transform-box:fill-box;transform-origin:center}
+@keyframes bub{0%{transform:translateY(0) scale(.4);opacity:0}30%{opacity:1}100%{transform:translateY(-10px) scale(1.1);opacity:0}}
+.bob{animation:bob 2.4s ease-in-out infinite;transform-box:fill-box}
+@keyframes bob{50%{transform:translateY(-3px) rotate(-3deg)}}
+.chiku{animation:float 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes float{50%{transform:translateY(-6px)}}
+.think .chiku{animation:think .5s ease-in-out infinite}
+@keyframes think{50%{transform:translateY(-3px) rotate(-4deg)}}
+.boil .pot{animation:shake .12s linear infinite}
+@keyframes shake{25%{transform:translate(1px,0)}75%{transform:translate(-1px,0)}}
+
+/* ちくわの写真 */
+.photo{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:16/9;background:#000;box-shadow:0 14px 40px rgba(0,0,0,.55);margin-top:10px}
+.photo img{width:100%;height:100%;object-fit:cover;display:block;animation:kb 9s ease-out forwards}
+@keyframes kb{from{transform:scale(1.18) translate(2%,2%)}to{transform:scale(1.02)}}
+.photo .glow{position:absolute;inset:0;background:radial-gradient(80% 70% at 50% 60%,rgba(255,170,90,.0),rgba(0,0,0,.45));pointer-events:none}
+.photo .steam{left:0;right:0;bottom:10%;height:100%}
+.photo .steam i{width:70px;height:70px;filter:blur(10px)}
+.photo .cap{position:absolute;left:0;right:0;bottom:0;padding:22px 14px 10px;background:linear-gradient(transparent,rgba(0,0,0,.65));font-size:12px;color:#ffe9c8;letter-spacing:.1em;text-align:right}
+.say{font-size:15px;line-height:1.8;text-align:center;margin:14px 0 0;min-height:3.6em}
+.say b{color:var(--yel)}
+
+/* 質問 */
+.qhead{display:flex;align-items:center;gap:10px;margin-top:6px}
+.qno{font-weight:900;color:var(--tan);font-size:20px;white-space:nowrap}
+.dots{display:flex;flex-wrap:wrap;gap:3px;flex:1}
+.dots i{width:9px;height:9px;border-radius:50%;background:#3d2d44}
+.dots i.on{background:var(--tan)}
+.dots i.ex{background:var(--yel);box-shadow:0 0 6px var(--yel)}
+.meter{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub);margin-top:6px}
+.meter .bar{flex:1;height:6px;border-radius:9px;background:#3d2d44;overflow:hidden}
+.meter .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--tan),var(--red));transition:width .5s}
+.bubble{position:relative;background:#fff6e6;color:#3a2410;border-radius:18px;padding:16px 16px;font-size:19px;font-weight:800;line-height:1.55;text-align:center;margin:12px 0 4px;min-height:84px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 #c9a77a}
+.bubble::after{content:"";position:absolute;left:62%;bottom:-12px;border:12px solid transparent;border-top-color:#fff6e6;border-bottom:0}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.ans{border:0;border-radius:14px;padding:13px 8px;font-size:16px;font-weight:800;color:#fff;background:var(--panel);box-shadow:0 4px 0 #160f1a}
+.ans:active{transform:translateY(3px);box-shadow:0 1px 0 #160f1a}
+.ans.y{background:#d9572f;box-shadow:0 4px 0 #7f2a14}
+.ans.n{background:#4d6fb8;box-shadow:0 4px 0 #24396a}
+.ans.py{background:#a8642a;box-shadow:0 4px 0 #5a3312}
+.ans.pn{background:#5a5f8f;box-shadow:0 4px 0 #2b2e52}
+.ans.u{grid-column:1/-1;background:#3d2d44}
+.ans:disabled{opacity:.5}
+.undo{display:block;margin:12px auto 0;border:0;background:transparent;color:var(--sub);font-size:13px;text-decoration:underline}
+
+/* 当てる */
+.guess{text-align:center}
+.guess .em{font-size:84px;line-height:1.1;margin-top:6px;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.2) rotate(-20deg);opacity:0}}
+.guess .nm{font-size:34px;font-weight:900;color:var(--yel);text-shadow:0 3px 0 #7a4a12;margin:4px 0}
+.guess .kind{font-size:12px;color:var(--sub)}
+.result{text-align:center}
+.result h2{font-size:30px;margin:8px 0 0;color:var(--tan)}
+.result p{line-height:1.8;font-size:14px}
+.pick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
+.pick button{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);border-radius:999px;padding:7px 12px;font-size:14px}
+.field{display:flex;gap:8px;margin-top:8px}
+.field input{flex:1;min-width:0;border-radius:12px;border:1px solid var(--line);background:#120d17;color:var(--ink);padding:11px 12px}
+.field button{border:0;border-radius:12px;background:var(--tan);color:#3a2410;font-weight:900;padding:0 16px}
+.note{font-size:12px;color:var(--sub);line-height:1.7;margin-top:8px}
+.conf{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:20}
+.conf i{position:absolute;top:-40px;font-size:26px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+</style>
+</head>
+<body>
+<header><a href="../">← ちくわゲームズ</a><button class="snd" id="sndBtn" aria-label="音">🔊</button><span class="ttl">チクネーター</span></header>
+<main>
+  <div class="lanterns"><span class="lantern"></span><span class="lantern"></span><span class="lantern"></span></div>
+
+  <!-- タイトル -->
+  <section class="scr" id="sTitle">
+    <h1 class="logo"><small>おでん鍋占い</small><b>チクネーター</b></h1>
+    <div class="potwrap" id="potT"></div>
+    <p class="lead">食べ物をひとつ、心に思い浮かべてください。<br>ちくわくんが<b style="color:var(--yel)">おでん鍋の湯気</b>を読んで、<br>20問以内に当ててみせます。</p>
+    <div class="card">・質問には「はい」「いいえ」「たぶんそう」「たぶん違う」「わからない」で答えます<br>・おでんの具、駄菓子、ごはん、おやつ、果物、飲み物…いろいろ当てます<br>・負けたら答えを教えてください。ちくわくんが<b>この端末で覚えます</b></div>
+    <div class="stats"><span>あそんだ <b id="tPlays">0</b></span><span>当てた <b id="tWins">0</b></span><span>勝ち越された <b id="tLoses">0</b></span></div>
+    <button class="btn" id="startBtn">はじめる</button>
+    <details><summary>セーブの引っ越し・更新履歴</summary>
+      <div id="move"></div>
+      <p>β0.1.0（2026-11-04）最初の試作。食べ物 110 種類・質問 48 問。ちくわの写真、おでん鍋占い、負けたときの記憶（この端末だけ）。</p>
+    </details>
+  </section>
+
+  <!-- ちくわの写真 -->
+  <section class="scr" id="sPhoto" hidden>
+    <div class="photo"><img id="photoImg" alt="焼きたてのちくわ"><div class="glow"></div><div class="steam" id="photoSteam"></div><div class="cap" id="photoCap"></div></div>
+    <p class="say" id="photoSay">まずは、この<b>うまそうなちくわ</b>を見て<br>心を落ち着けてください…</p>
+    <button class="btn" id="readyBtn" disabled>思い浮かべた！</button>
+  </section>
+
+  <!-- 質問 -->
+  <section class="scr" id="sQ" hidden>
+    <div class="qhead"><span class="qno" id="qNo">Q1</span><span class="dots" id="dots"></span></div>
+    <div class="meter"><span>湯気の手ごたえ</span><span class="bar"><i id="conf"></i></span></div>
+    <div class="bubble" id="qText">…</div>
+    <div class="potwrap small" id="potQ"></div>
+    <div class="answers">
+      <button class="ans y" data-a="1">はい</button>
+      <button class="ans n" data-a="0">いいえ</button>
+      <button class="ans py" data-a="0.75">たぶんそう</button>
+      <button class="ans pn" data-a="0.25">たぶん違う</button>
+      <button class="ans u" data-a="u">わからない</button>
+    </div>
+    <button class="undo" id="undoBtn">ひとつ前にもどる</button>
+  </section>
+
+  <!-- 当てる -->
+  <section class="scr guess" id="sGuess" hidden>
+    <div class="potwrap small boil" id="potG"></div>
+    <p class="say" id="gSay">湯気が…見えたぞ！<br>あなたが思い浮かべたのは…</p>
+    <div class="em" id="gEm">🍢</div>
+    <div class="nm" id="gName">ちくわ</div>
+    <div class="kind" id="gKind"></div>
+    <div class="row"><button class="btn" id="yesBtn">あたり！</button><button class="btn sub" id="noBtn">ちがう</button></div>
+  </section>
+
+  <!-- 勝ち -->
+  <section class="scr result" id="sWin" hidden>
+    <div class="potwrap small" id="potW"></div>
+    <h2>ちくわくんの勝ち！</h2>
+    <p id="wText"></p>
+    <div class="row"><button class="btn" id="againBtn1">もう一回</button><button class="btn sub" id="shareBtn1">シェア</button></div>
+  </section>
+
+  <!-- 負け -->
+  <section class="scr result" id="sLose" hidden>
+    <div class="potwrap small" id="potL"></div>
+    <h2 id="lTitle">まいった…！</h2>
+    <p id="lText"></p>
+    <div id="adBox" hidden><button class="btn gold" id="adBtn">📺 広告を見て、あと5問つづける</button></div>
+    <div id="teach">
+      <p style="margin-bottom:0">思い浮かべた食べ物を教えてください。</p>
+      <div class="pick" id="pick"></div>
+      <div class="field"><input id="ansIn" maxlength="20" placeholder="例：ちくわの磯辺揚げ" enterkeyhint="done"><button id="ansBtn">教える</button></div>
+      <p class="note">教えてもらった答えと、今回の答え方は、この端末にだけ記録します（ほかの人には送りません）。</p>
+    </div>
+    <div id="after" hidden>
+      <p id="aText"></p>
+      <div class="row"><button class="btn" id="againBtn2">もう一回</button><button class="btn sub" id="shareBtn2">シェア</button></div>
+    </div>
+  </section>
+</main>
+<div class="conf" id="conf2"></div>
+
+<script src="../common/v1/core.js"></script>
+<script src="../common/v1/share.js"></script>
+<script src="../common/v1/save.js"></script>
+<script src="../common/v1/move.js"></script>
+<script src="../common/v1/ad.js"></script>
+<script>
+'use strict';
+const VERSION = 'β0.1.0';
+const KEY = 'chikunator-v1';
+CG.init({ game: 'chikunator', title: 'チクネーター', version: VERSION });
+
+/* ===== 調整用の数値 ===== */
+const MAX_Q = 20;          // 質問の上限
+const AD_EXTRA = 5;        // 広告で増える質問
+const GUESS_P = 0.82;      // この確率をこえたら当てにいく
+const MIN_Q = 6;           // これより前には当てにいかない
+const SHARP = 3.6;         // 答えのずれへのきびしさ（大きいほど1回の答えで候補がしぼられる）
+const LEARN_W = 2;         // 覚えた答えを混ぜるときの、もとの表の重み（回数でわる）
+
+/* ちくわの写真（質問の前にランダムで1枚）。足すときはここに1行 */
+const PHOTOS = [
+  { src: 'img/chikuwa1.webp', cap: '焼きたて・その一' },
+  { src: 'img/chikuwa2.webp', cap: '焼きたて・その二' },
+  { src: 'img/chikuwa3.webp', cap: '焼きたて・その三' },
+];
+
+/* ===== 質問 ===== */
+const QS = [
+  ['oden', 'それは、おでんの具ですか？'],
+  ['neri', '練り物（魚のすり身でできたもの）ですか？'],
+  ['fish', '魚・貝・えび・いか・たこなど、海の幸を使っていますか？'],
+  ['meat', '肉を使っていますか？'],
+  ['egg', '卵を使っていますか？'],
+  ['soy', '大豆（豆腐・あげ・きなこなど）からできていますか？'],
+  ['dairy', '牛乳・チーズ・バターなど、乳製品を使っていますか？'],
+  ['rice', 'お米やもち米を使っていますか？'],
+  ['wheat', '小麦粉の生地やパンを使っていますか？'],
+  ['noodle', '麺類ですか？'],
+  ['veg', '野菜・いも・豆・きのこが主役ですか？'],
+  ['fruit', '果物ですか？（果物が主役のもの）'],
+  ['drink', '飲み物ですか？'],
+  ['sweet', '甘いですか？'],
+  ['snack', 'お菓子・おやつですか？'],
+  ['dagashi', '駄菓子屋さんで売っていますか？'],
+  ['hot', 'あたたかい状態で食べますか？'],
+  ['cold', '冷たくして食べますか？'],
+  ['fried', '油で揚げてありますか？'],
+  ['grill', '焼いたり炒めたりしてありますか？'],
+  ['boil', '煮たり、ゆでたりしますか？'],
+  ['rawf', '火を通さず、そのまま食べますか？'],
+  ['soup', '汁やスープといっしょに食べますか？'],
+  ['round', '丸い形ですか？'],
+  ['long', '細長い形ですか？'],
+  ['hole', '穴があいていますか？'],
+  ['stick', '串や棒に刺さっていますか？'],
+  ['soft', 'やわらかいですか？'],
+  ['crisp', 'サクサク・パリパリしていますか？'],
+  ['white', '白っぽい色ですか？'],
+  ['brown', '茶色っぽい色ですか？'],
+  ['red', '赤やピンクのところがありますか？'],
+  ['green', '緑色のところがありますか？'],
+  ['yellow', '黄色やオレンジっぽいですか？'],
+  ['spicy', '辛いですか？'],
+  ['sauce', 'ソース・タレ・ケチャップなどをかけますか？'],
+  ['hand', '手で持って食べますか？'],
+  ['washoku', '日本で生まれた食べ物（和食）ですか？'],
+  ['western', '洋食や、外国から来た食べ物ですか？'],
+  ['chinese', '中華料理ですか？'],
+  ['conv', 'コンビニで買えますか？'],
+  ['matsuri', 'お祭りの屋台で見かけますか？'],
+  ['bento', 'お弁当によく入っていますか？'],
+  ['main', 'それだけで食事のメインになりますか？'],
+  ['kids', '子どもに大人気ですか？'],
+  ['winter', '寒い季節に食べたくなりますか？'],
+  ['summer', '暑い季節に食べたくなりますか？'],
+  ['breakfast', '朝ごはんによく食べますか？'],
+];
+
+/* ===== 食べ物 =====
+   [名前, 絵文字, 当てはまる質問]。書いた質問は「はい」、~ を付けると「ときどき・ものによる」、書かない質問は「いいえ」。
+   名前の | の後ろは呼び方のちがい（負けたときの入力を見分けるだけ）。 */
+const FOODS = [
+  // おでん
+  ['ちくわ|竹輪', '🍢', 'oden neri fish ~grill boil soup hot long hole soft white brown washoku conv ~bento winter ~hand ~kids'],
+  ['大根|だいこん', '🍢', 'oden veg boil soup hot round soft white washoku conv winter'],
+  ['ゆでたまご|たまご|卵|ゆで卵', '🥚', 'oden egg boil ~soup ~hot round soft white yellow washoku conv winter ~bento ~breakfast'],
+  ['こんにゃく|蒟蒻', '🍢', 'oden boil soup hot soft washoku conv winter ~stick'],
+  ['はんぺん', '🍢', 'oden neri fish boil soup hot soft white washoku conv winter'],
+  ['さつま揚げ|さつまあげ', '🍢', 'oden neri fish fried boil soup hot ~round soft brown washoku conv winter ~bento'],
+  ['ちくわぶ', '🍢', 'oden wheat boil soup hot long hole soft white washoku ~conv winter'],
+  ['牛すじ|ぎゅうすじ', '🍢', 'oden meat boil soup hot stick soft brown washoku conv winter'],
+  ['もち巾着|餅巾着', '🍢', 'oden rice soy boil soup hot soft brown washoku conv winter'],
+  ['がんもどき|がんも', '🍢', 'oden soy fried boil soup hot round soft brown washoku conv winter'],
+  ['厚揚げ|あつあげ', '🍢', 'oden soy fried boil soup hot soft brown white washoku conv winter'],
+  ['昆布|こんぶ|結び昆布', '🍢', 'oden boil soup hot long ~soft ~green brown washoku conv winter'],
+  ['ごぼう巻き|ごぼう天', '🍢', 'oden neri fish ~veg fried boil soup hot long brown washoku conv winter'],
+  ['つみれ', '🍢', 'oden neri fish boil soup hot round soft brown washoku ~conv winter'],
+  ['ロールキャベツ', '🥬', 'oden meat veg boil soup hot soft green western ~washoku conv winter ~main'],
+  ['じゃがいも|ジャガイモ', '🥔', 'oden veg boil ~soup hot round soft yellow ~washoku ~conv winter'],
+  ['しらたき|糸こんにゃく', '🍢', 'oden ~noodle boil soup hot long soft white washoku conv winter'],
+  ['かまぼこ|蒲鉾', '🍥', 'neri fish rawf ~cold soft white red washoku conv bento ~winter'],
+  ['カニカマ|かにかま', '🦀', 'neri fish rawf ~cold long soft white red ~washoku conv ~bento ~hand ~kids'],
+  ['ちくわの磯辺揚げ|磯辺揚げ', '🍢', 'neri fish fried hot~ long hole crisp green brown washoku conv bento ~hand ~kids'],
+  // 駄菓子・おやつ
+  ['うまい棒', '🌽', 'snack dagashi crisp long hole hand yellow washoku conv kids'],
+  ['きなこ棒', '🍡', 'snack dagashi sweet soy long stick hand soft brown washoku kids'],
+  ['ラムネ菓子', '🍬', 'snack dagashi sweet round white hand ~crisp ~conv kids'],
+  ['ガム', '🍬', 'snack dagashi sweet ~round hand ~white ~red ~green conv ~kids'],
+  ['チョコレート|チョコ', '🍫', 'snack sweet dairy ~dagashi brown hand conv kids western'],
+  ['ポテトチップス|ポテチ', '🥔', 'snack ~veg fried crisp ~round hand yellow conv kids western'],
+  ['せんべい|おせんべい|煎餅', '🍘', 'snack rice grill crisp round brown hand ~sauce washoku conv'],
+  ['酢漬けいか|酢いか', '🦑', 'snack dagashi fish long red hand washoku conv'],
+  ['ラーメンスナック|ベビースター', '🍜', 'snack dagashi wheat noodle fried crisp brown hand washoku conv kids'],
+  ['わたあめ|綿あめ|わたがし|綿菓子', '🍭', 'snack sweet white soft stick hand matsuri kids'],
+  ['麩菓子|ふがし', '🍬', 'snack dagashi wheat sweet long brown soft ~crisp hand washoku kids'],
+  ['ドーナツ', '🍩', 'snack sweet wheat ~egg ~dairy fried round hole soft brown hand western conv kids ~breakfast'],
+  ['ポップコーン', '🍿', 'snack ~veg ~grill ~fried crisp white yellow hand western ~matsuri kids'],
+  ['クッキー', '🍪', 'snack sweet wheat ~egg dairy grill crisp round brown hand western conv kids'],
+  ['グミ', '🍬', 'snack dagashi sweet ~round soft ~red ~yellow ~green hand western conv kids'],
+  ['飴|あめ|キャンディ', '🍬', 'snack dagashi sweet round ~red ~yellow ~white ~stick hand conv kids'],
+  // ごはん・料理
+  ['たこ焼き|たこやき', '🐙', 'fish wheat egg grill hot round soft brown sauce ~stick ~hand washoku ~conv matsuri kids ~winter'],
+  ['お好み焼き|おこのみやき', '🥞', 'wheat egg ~meat ~fish veg grill hot round soft brown sauce washoku ~matsuri main'],
+  ['焼きそば|やきそば', '🍝', 'noodle wheat meat veg grill hot long brown sauce washoku conv matsuri main kids'],
+  ['ラーメン', '🍜', 'noodle wheat ~meat ~egg boil soup hot long ~chinese ~washoku conv main winter'],
+  ['うどん', '🍜', 'noodle wheat boil soup ~hot ~cold long soft white washoku conv main ~winter'],
+  ['そば|蕎麦', '🍜', 'noodle ~wheat boil ~soup ~hot ~cold long brown washoku conv main'],
+  ['そうめん|素麺', '🍜', 'noodle wheat boil cold long white washoku main summer'],
+  ['カップ麺|カップラーメン', '🍜', 'noodle wheat soup hot long ~brown ~washoku conv main ~kids ~winter'],
+  ['スパゲッティ|パスタ|ナポリタン|ミートソース', '🍝', 'noodle wheat ~meat boil hot long ~red sauce western conv main kids'],
+  ['カレーライス|カレー', '🍛', 'rice meat veg boil hot brown yellow ~spicy ~sauce ~western ~washoku conv main kids'],
+  ['ハンバーグ', '🍖', 'meat egg grill hot round soft brown sauce western conv bento main kids'],
+  ['唐揚げ|からあげ', '🍗', 'meat fried ~hot crisp brown ~hand washoku conv bento ~matsuri ~main kids'],
+  ['とんかつ|豚カツ', '🍖', 'meat wheat egg fried hot crisp brown sauce washoku ~conv ~bento main'],
+  ['餃子|ぎょうざ', '🥟', 'meat veg wheat grill ~boil hot white brown sauce chinese conv ~main kids'],
+  ['寿司|すし|お寿司', '🍣', 'rice fish rawf ~cold red white ~hand washoku conv main'],
+  ['おにぎり|おむすび', '🍙', 'rice ~fish ~round white hand washoku conv bento main breakfast kids'],
+  ['天ぷら|てんぷら', '🍤', '~fish ~veg wheat egg fried hot crisp yellow washoku ~conv ~main'],
+  ['すき焼き|すきやき', '🥘', 'meat veg ~soy egg boil hot sweet brown washoku main winter'],
+  ['焼き鳥|やきとり', '🍢', 'meat grill hot stick brown sauce hand washoku conv matsuri'],
+  ['焼き魚|焼きさんま|塩焼き', '🐟', 'fish grill hot ~long brown washoku ~bento main breakfast'],
+  ['刺身|さしみ', '🍣', 'fish rawf cold soft red white washoku ~conv'],
+  ['味噌汁|みそしる', '🥣', 'soy ~veg boil soup hot brown washoku breakfast'],
+  ['納豆|なっとう', '🫘', 'soy soft brown washoku conv breakfast'],
+  ['豆腐|とうふ|冷奴|冷ややっこ', '⬜', 'soy ~boil ~cold ~hot soft white washoku conv ~summer'],
+  ['オムライス', '🍳', 'rice egg ~meat grill hot soft yellow red sauce ~western ~washoku conv main kids'],
+  ['ピザ', '🍕', 'wheat dairy ~meat grill hot round red yellow hand western ~main kids'],
+  ['グラタン', '🧀', 'dairy ~wheat ~meat grill hot soft white brown western winter ~main'],
+  ['シチュー|クリームシチュー', '🍲', 'dairy meat veg boil soup hot white western winter main'],
+  ['ハンバーガー', '🍔', 'wheat meat grill hot round brown sauce hand western ~conv main kids'],
+  ['ホットドッグ', '🌭', 'wheat meat grill hot long brown red yellow sauce hand western ~matsuri'],
+  ['サンドイッチ|サンドウィッチ', '🥪', 'wheat ~egg ~veg ~meat ~dairy rawf ~cold white hand western conv breakfast'],
+  ['トースト|食パン|パン', '🍞', 'wheat ~dairy grill ~hot brown ~crisp ~hand ~western conv breakfast'],
+  ['目玉焼き|めだまやき', '🍳', 'egg grill hot round white yellow breakfast'],
+  ['卵焼き|たまご焼き|玉子焼き', '🍳', 'egg grill ~hot ~sweet soft yellow washoku conv bento breakfast kids'],
+  ['茶碗蒸し|ちゃわんむし', '🍮', 'egg ~fish boil hot soft yellow soup washoku'],
+  ['焼肉|やきにく', '🥩', 'meat grill hot brown sauce ~washoku main kids'],
+  ['麻婆豆腐|マーボー豆腐', '🌶️', 'soy meat boil hot spicy red soft chinese ~main'],
+  ['チャーハン|炒飯|焼き飯', '🍚', 'rice egg ~meat grill hot yellow chinese conv main'],
+  ['肉まん|にくまん', '🥟', 'wheat meat boil hot round soft white hand chinese conv winter'],
+  ['春巻き|はるまき', '🌯', 'wheat veg meat fried hot crisp long brown chinese ~conv ~bento'],
+  ['牛丼|ぎゅうどん', '🍚', 'rice meat boil hot brown washoku main'],
+  ['カツ丼|かつどん', '🍚', 'rice meat egg wheat fried hot brown yellow washoku conv main'],
+  ['親子丼|おやこどん', '🍚', 'rice meat egg boil hot soft yellow washoku main'],
+  ['コロッケ', '🥔', 'veg ~meat wheat fried ~hot crisp ~round brown sauce ~hand washoku conv bento kids'],
+  ['フライドポテト|ポテト', '🍟', 'veg fried hot long crisp yellow ~sauce hand western conv kids'],
+  ['焼きとうもろこし|とうもろこし|コーン', '🌽', 'veg grill hot long yellow ~sauce hand ~washoku matsuri summer'],
+  ['枝豆|えだまめ', '🫛', 'soy veg boil green hand washoku summer'],
+  ['サラダ', '🥗', 'veg rawf cold green ~red ~sauce western conv'],
+  ['キムチ', '🌶️', 'veg rawf cold spicy red western conv'],
+  ['いなり寿司|おいなりさん|いなり', '🍣', 'rice soy sweet soft brown hand washoku conv bento'],
+  ['肉じゃが|にくじゃが', '🥘', 'meat veg boil hot ~sweet brown washoku ~bento ~main'],
+  ['梅干し|うめぼし', '🔴', '~fruit rawf round soft red washoku conv bento'],
+  ['焼きいも|焼き芋|やきいも', '🍠', 'veg grill hot sweet long brown yellow hand washoku winter'],
+  // あまいもの
+  ['たい焼き|たいやき', '🐟', 'snack wheat ~egg grill hot sweet brown hand washoku ~matsuri winter kids'],
+  ['だんご|団子|みたらし団子', '🍡', 'snack rice sweet round stick soft ~white ~brown ~sauce hand washoku conv'],
+  ['大福|だいふく', '⚪', 'snack rice sweet round soft white hand washoku conv'],
+  ['どら焼き|どらやき', '🥞', 'snack wheat egg sweet grill round soft brown hand washoku conv'],
+  ['ケーキ|ショートケーキ', '🍰', 'snack wheat egg dairy sweet soft white red ~fruit western conv'],
+  ['プリン', '🍮', 'snack egg dairy sweet ~boil cold soft yellow brown western conv kids'],
+  ['アイスクリーム|アイス|ソフトクリーム', '🍨', 'snack dairy sweet cold soft white ~hand western conv kids summer'],
+  ['かき氷|かきごおり', '🍧', 'snack sweet cold white ~red ~green matsuri summer kids'],
+  ['ホットケーキ|パンケーキ', '🥞', 'snack wheat egg dairy sweet grill hot round soft brown yellow western ~breakfast kids'],
+  ['クレープ', '🌯', 'snack wheat egg dairy ~fruit sweet grill soft hand western ~matsuri'],
+  ['りんご飴|りんごあめ', '🍎', 'snack fruit sweet round stick red hand ~crisp matsuri'],
+  ['チョコバナナ', '🍌', 'snack fruit sweet ~cold long stick brown hand matsuri kids'],
+  // くだもの・やさい
+  ['りんご|リンゴ', '🍎', 'fruit rawf sweet round crisp red ~hand ~winter'],
+  ['バナナ', '🍌', 'fruit rawf sweet long soft yellow hand conv breakfast'],
+  ['みかん|ミカン', '🍊', 'fruit rawf sweet round soft yellow hand washoku winter'],
+  ['すいか|スイカ|西瓜', '🍉', 'fruit rawf cold sweet round red green summer'],
+  ['いちご|イチゴ|苺', '🍓', 'fruit rawf sweet ~round red green hand'],
+  ['トマト', '🍅', 'veg rawf ~cold round red green'],
+  // 飲み物
+  ['ラムネ', '🫙', 'drink sweet cold matsuri summer kids'],
+  ['牛乳|ミルク', '🥛', 'drink dairy cold ~hot white conv breakfast kids'],
+  ['緑茶|お茶', '🍵', 'drink ~hot ~cold green washoku conv'],
+  ['コーラ', '🥤', 'drink sweet cold brown western conv kids summer'],
+];
+
+/* ===== 保存 ===== */
+const SAVE = Object.assign({ plays: 0, wins: 0, loses: 0, sound: true, learned: {} }, CG.ls.getJSON(KEY, {}) || {});
+const persist = () => CG.ls.setJSON(KEY, SAVE);
+try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
+
+/* 名前をそろえる（カタカナ→ひらがな・空白を消す） */
+const norm = s => String(s || '').normalize('NFKC').replace(/\s+/g, '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).toLowerCase();
+
+/* 表を作る：items[i] = { name, alias[], em, v: Float32Array(質問の数) } */
+let ITEMS = [];
+function build() {
+  const qi = Object.fromEntries(QS.map((q, i) => [q[0], i]));
+  ITEMS = FOODS.map(([names, em, tags]) => {
+    const ns = names.split('|'), v = new Array(QS.length).fill(0);
+    for (const t of tags.split(/\s+/)) {
+      if (!t) continue;
+      const half = t[0] === '~' || t.endsWith('~'), k = t.replace(/~/g, '');
+      if (!(k in qi)) { console.warn('知らない質問', k, ns[0]); continue; }
+      v[qi[k]] = half ? 0.5 : 1;
+    }
+    return { name: ns[0], alias: ns.map(norm), em, v, base: v.slice() };
+  });
+  // この端末で覚えたこと：もとの表と混ぜる／表に無い食べ物は足す
+  for (const [nm, L] of Object.entries(SAVE.learned || {})) {
+    let it = findItem(nm);
+    if (!it) { it = { name: L.name || nm, alias: [norm(nm)], em: '🍽️', v: new Array(QS.length).fill(0.5), base: null, mine: true }; ITEMS.push(it); }
+    QS.forEach((q, i) => {
+      const s = L.a && L.a[q[0]];
+      if (!s) return;
+      const b = it.base ? it.base[i] : 0.5, w = it.base ? LEARN_W : 0.3;
+      it.v[i] = (b * w + s[0]) / (w + s[1]);
+    });
+  }
+}
+const findItem = nm => { const n = norm(nm); return n ? ITEMS.find(it => it.alias.includes(n)) : null; };
+
+/* ===== 推理のしくみ ===== */
+const like = (a, v) => Math.exp(-SHARP * (a - v) * (a - v));
+const OUT = [1, 0.75, 0.25, 0];
+let G = null;
+function newGame() {
+  G = { asked: [], p: ITEMS.map(() => 1 / ITEMS.length), out: new Set(), limit: MAX_Q, adUsed: false, guesses: 0, cur: -1 };
+}
+/* 答えの履歴から確率を計算しなおす（もどるにも使う） */
+function recompute() {
+  const p = ITEMS.map((it, i) => G.out.has(i) ? 0 : 1);
+  for (const [q, a] of G.asked) if (a !== null) ITEMS.forEach((it, i) => { p[i] *= like(a, it.v[q]); });
+  const s = p.reduce((x, y) => x + y, 0) || 1;
+  G.p = p.map(x => x / s);
+}
+const entropy = ps => { let h = 0; for (const x of ps) if (x > 1e-12) h -= x * Math.log(x); return h; };
+/* 次の質問：答えたあとの迷い（エントロピー）がいちばん小さくなる質問。上位から少しだけゆらぐ */
+function nextQuestion() {
+  const used = new Set(G.asked.map(x => x[0]));
+  const scores = [];
+  QS.forEach((q, qi) => {
+    if (used.has(qi)) return;
+    let eh = 0;
+    for (const a of OUT) {
+      let pa = 0;
+      const post = G.p.map((p, i) => { const l = p * like(a, ITEMS[i].v[qi]); pa += l; return l; });
+      if (pa <= 0) continue;
+      eh += pa * entropy(post.map(x => x / pa));
+    }
+    // 答えの出方の合計で割って、期待値にそろえる
+    let tot = 0; for (const a of OUT) G.p.forEach((p, i) => tot += p * like(a, ITEMS[i].v[qi]));
+    scores.push([eh / tot, qi]);
+  });
+  scores.sort((x, y) => x[0] - y[0]);
+  if (!scores.length) return -1;
+  const best = scores[0][0], near = scores.filter(s => s[0] <= best + 0.04).slice(0, 3);
+  return near[Math.floor(Math.random() * near.length)][1];
+}
+const ranked = () => G.p.map((p, i) => [p, i]).filter(x => !G.out.has(x[1])).sort((a, b) => b[0] - a[0]);
+const qCount = () => G.asked.length;
+
+/* ===== 鍋とちくわくん（SVG） ===== */
+function potSVG(u) {
+  return `<div class="steam">${Array.from({ length: 7 }, (_, i) => `<i style="left:${8 + i * 12}%;animation-delay:${(-i * 0.47).toFixed(2)}s;--dx:${(i % 2 ? -1 : 1) * (6 + i * 3)}px"></i>`).join('')}</div>
+<svg viewBox="0 0 360 210" aria-hidden="true">
+  <defs>
+    <radialGradient id="dashi${u}" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#e8b66a"/><stop offset="1" stop-color="#a8642a"/></radialGradient>
+    <linearGradient id="potg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a2a"/><stop offset="1" stop-color="#2a1a14"/></linearGradient>
+    <linearGradient id="chk${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7d79a"/><stop offset=".55" stop-color="#e9b46a"/><stop offset="1" stop-color="#c58a45"/></linearGradient>
+  </defs>
+  <!-- 火 -->
+  <g opacity=".9"><path d="M95 200 q8-22 16 0z" fill="#ff8a3a"/><path d="M130 202 q9-28 18 0z" fill="#ffb03a"/><path d="M168 200 q8-22 16 0z" fill="#ff8a3a"/></g>
+  <g class="pot">
+    <ellipse cx="140" cy="118" rx="112" ry="26" fill="#1c120e"/>
+    <path d="M30 118 q0 70 110 74 q110-4 110-74z" fill="url(#potg${u})"/>
+    <path d="M18 112 h20 v10 h-20z M242 112 h20 v10 h-20z" fill="#3a2418"/>
+    <ellipse cx="140" cy="116" rx="104" ry="21" fill="url(#dashi${u})"/>
+    <!-- 具 -->
+    <g class="bob"><path d="M70 112 l18-14 l18 14z" fill="#8a8d95"/><circle cx="82" cy="108" r="1.4" fill="#5a5d66"/><circle cx="92" cy="106" r="1.4" fill="#5a5d66"/></g>
+    <g class="bob" style="animation-delay:-.8s"><ellipse cx="128" cy="110" rx="16" ry="8" fill="#f3ead8"/><ellipse cx="128" cy="108" rx="13" ry="5" fill="#e7cf9f"/></g>
+    <g class="bob" style="animation-delay:-1.6s"><ellipse cx="172" cy="111" rx="11" ry="8" fill="#fff8ea"/><ellipse cx="172" cy="111" rx="5" ry="4" fill="#ffc94a"/></g>
+    <g class="bob" style="animation-delay:-.4s"><rect x="196" y="104" width="30" height="9" rx="4.5" fill="#d9a35c"/><ellipse cx="226" cy="108.5" rx="3" ry="4.5" fill="#8a5a24"/></g>
+    <!-- あわ -->
+    <circle class="bub" cx="110" cy="118" r="3" fill="#fff3d6" opacity=".8"/>
+    <circle class="bub" cx="150" cy="122" r="2.4" fill="#fff3d6" style="animation-delay:-.5s"/>
+    <circle class="bub" cx="190" cy="120" r="3" fill="#fff3d6" style="animation-delay:-1s"/>
+    <circle class="bub" cx="60" cy="120" r="2" fill="#fff3d6" style="animation-delay:-1.3s"/>
+  </g>
+  <!-- ちくわくん -->
+  <g class="chiku">
+    <rect x="262" y="44" width="86" height="40" rx="20" fill="url(#chk${u})" stroke="#8a5a24" stroke-width="2"/>
+    <path d="M280 46 q4 18 0 36 M298 45 q5 20 0 38 M318 45 q5 20 0 38" stroke="#a8642a" stroke-width="5" fill="none" opacity=".55" stroke-linecap="round"/>
+    <ellipse cx="264" cy="64" rx="10" ry="19" fill="#f4dcae" stroke="#8a5a24" stroke-width="2"/>
+    <ellipse cx="264" cy="64" rx="5" ry="10" fill="#6a3d18"/>
+    <!-- 鉢巻 -->
+    <path d="M285 46 q30 -6 58 6" stroke="#fff" stroke-width="5" fill="none"/>
+    <path d="M343 52 l10 -6 M343 52 l9 4" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="300" cy="62" r="4.2" fill="#2a1a10"/><circle cx="322" cy="62" r="4.2" fill="#2a1a10"/>
+    <circle cx="301.4" cy="60.6" r="1.3" fill="#fff"/><circle cx="323.4" cy="60.6" r="1.3" fill="#fff"/>
+    <ellipse cx="293" cy="71" rx="4" ry="2.5" fill="#f2a0a0" opacity=".8"/><ellipse cx="330" cy="71" rx="4" ry="2.5" fill="#f2a0a0" opacity=".8"/>
+    <path class="mouth" d="M305 72 q6 6 12 0" stroke="#2a1a10" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <!-- 手（鍋へかざす） -->
+    <path d="M272 82 q-14 12 -30 10" stroke="#c58a45" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="240" cy="92" r="5" fill="#e9b46a" stroke="#8a5a24" stroke-width="1.5"/>
+  </g>
+</svg>`;
+}
+const POTS = ['potT', 'potQ', 'potG', 'potW', 'potL'].map(id => { const el = document.getElementById(id); el.innerHTML = potSVG(id); return el; });
+/* 手ごたえ（0〜1）で湯気とあわの勢いを変える */
+function setHeat(el, h) {
+  el.style.setProperty('--sp', (3.6 - h * 2).toFixed(2) + 's');
+  el.style.setProperty('--op', (0.35 + h * 0.55).toFixed(2));
+  el.style.setProperty('--bsp', (1.9 - h * 1.3).toFixed(2) + 's');
+}
+POTS.forEach(el => setHeat(el, 0.3));
+setHeat(document.getElementById('potG'), 1);
+function photoSteam() {
+  document.getElementById('photoSteam').innerHTML = Array.from({ length: 9 }, (_, i) => `<i style="left:${5 + i * 10}%;animation-delay:${(-i * 0.6).toFixed(2)}s;--dx:${(i % 2 ? -1 : 1) * (10 + i * 4)}px;--sp:${(4 + (i % 3)).toFixed(1)}s;--op:.55"></i>`).join('');
+}
+
+/* ===== 音（WebAudio。ファイルは使わない） ===== */
+let AC = null;
+function tone(f, d = 0.12, type = 'sine', vol = 0.12, slide = 0) {
+  if (!SAVE.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + 0.02);
+  } catch (e) {}
+}
+const SFX = {
+  tap: () => tone(520 + Math.random() * 200, 0.09, 'sine', 0.1, 1.6),           // ぽこっ
+  boil: () => { for (let i = 0; i < 6; i++) setTimeout(() => tone(300 + Math.random() * 400, 0.07, 'sine', 0.08, 1.8), i * 70); },
+  win: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.22, 'triangle', 0.12), i * 110)),
+  lose: () => [392, 330, 262].forEach((f, i) => setTimeout(() => tone(f, 0.28, 'triangle', 0.1), i * 160)),
+};
+const sndBtn = document.getElementById('sndBtn');
+const sndShow = () => sndBtn.textContent = SAVE.sound ? '🔊' : '🔇';
+sndBtn.onclick = () => { SAVE.sound = !SAVE.sound; persist(); sndShow(); };
+sndShow();
+
+/* ===== 画面 ===== */
+const $ = id => document.getElementById(id);
+const SCR = ['sTitle', 'sPhoto', 'sQ', 'sGuess', 'sWin', 'sLose'];
+function show(id) { SCR.forEach(s => $(s).hidden = s !== id); window.scrollTo(0, 0); }
+function titleStats() { $('tPlays').textContent = SAVE.plays; $('tWins').textContent = SAVE.wins; $('tLoses').textContent = SAVE.loses; }
+titleStats();
+
+let photoTimer = 0;
+function startPhoto() {
+  build(); newGame();
+  const ph = PHOTOS[Math.floor(Math.random() * PHOTOS.length)];
+  const img = $('photoImg');
+  img.style.animation = 'none'; void img.offsetWidth; img.style.animation = '';
+  img.src = ph.src;
+  $('photoCap').textContent = ph.cap;
+  photoSteam();
+  const lines = ['まずは、この<b>うまそうなちくわ</b>を見て<br>心を落ち着けてください…', '湯気の向こうに…<br>あなたの<b>食べ物</b>を思い浮かべて…', 'いいですか…？<br>思い浮かべたら、ボタンを押してください'];
+  const btn = $('readyBtn'); btn.disabled = true;
+  let k = 0; $('photoSay').innerHTML = lines[0];
+  clearInterval(photoTimer);
+  photoTimer = setInterval(() => { k++; if (k < lines.length) $('photoSay').innerHTML = lines[k]; if (k >= 1) btn.disabled = false; if (k >= lines.length - 1) clearInterval(photoTimer); }, 1600);
+  show('sPhoto');
+}
+$('startBtn').onclick = () => { SFX.tap(); startPhoto(); };
+$('readyBtn').onclick = () => { clearInterval(photoTimer); SFX.boil(); SAVE.plays++; persist(); ask(); };
+
+function drawDots() {
+  const n = G.limit, a = qCount();
+  $('dots').innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i < a ? 'on' : ''} ${i >= MAX_Q ? 'ex' : ''}"></i>`).join('');
+}
+function heat() { const r = ranked(); return r.length ? Math.min(1, r[0][0] / GUESS_P) : 0; }
+function ask() {
+  // 当てにいくか
+  const r = ranked();
+  if (!r.length) return lose();
+  if ((r[0][0] >= GUESS_P && qCount() >= MIN_Q) || qCount() >= G.limit) return guess();
+  const q = nextQuestion();
+  if (q < 0) return guess();
+  G.cur = q;
+  $('qNo').textContent = 'Q' + (qCount() + 1);
+  $('qText').textContent = QS[q][1];
+  drawDots();
+  const h = heat();
+  $('conf').style.width = Math.round(h * 100) + '%';
+  setHeat($('potQ'), h);
+  $('undoBtn').hidden = !G.asked.length;
+  show('sQ');
+  const pw = $('potQ'); pw.classList.remove('think');
+}
+document.querySelectorAll('.ans').forEach(b => b.onclick = () => {
+  if (!G || G.cur < 0) return;
+  SFX.tap();
+  const a = b.dataset.a === 'u' ? null : Number(b.dataset.a);
+  G.asked.push([G.cur, a]); G.cur = -1;
+  recompute();
+  const pw = $('potQ'); pw.classList.add('think');
+  document.querySelectorAll('.ans').forEach(x => x.disabled = true);
+  setTimeout(() => { document.querySelectorAll('.ans').forEach(x => x.disabled = false); ask(); }, 260);
+});
+$('undoBtn').onclick = () => {
+  if (!G.asked.length) return;
+  G.asked.pop(); recompute(); G.cur = -1;
+  ask();
+};
+
+function kindOf(it) {
+  const v = k => it.v[QS.findIndex(q => q[0] === k)];
+  if (it.mine) return 'この端末で覚えた食べ物';
+  if (v('oden') >= 1) return 'おでんの具';
+  if (v('drink') >= 1) return '飲み物';
+  if (v('fruit') >= 1) return '果物';
+  if (v('dagashi') >= 1) return '駄菓子';
+  if (v('snack') >= 1) return 'おやつ';
+  return 'ごはん・料理';
+}
+function guess() {
+  const r = ranked();
+  if (!r.length) return lose();
+  const it = ITEMS[r[0][1]];
+  G.guessIdx = r[0][1]; G.guesses++;
+  $('gEm').textContent = it.em;
+  $('gName').textContent = it.name;
+  $('gKind').textContent = kindOf(it);
+  $('gSay').innerHTML = G.guesses > 1 ? 'ぐぬぬ…湯気をよく見ると…<br>こんどこそ、それは…' : '湯気が…見えたぞ！<br>あなたが思い浮かべたのは…';
+  SFX.boil();
+  show('sGuess');
+  // 名前と絵文字は少し遅れて出す
+  ['gEm', 'gName', 'gKind'].forEach(id => { const el = $(id); el.style.visibility = 'hidden'; });
+  $('yesBtn').disabled = $('noBtn').disabled = true;
+  setTimeout(() => { ['gEm', 'gName', 'gKind'].forEach(id => $(id).style.visibility = ''); const el = $('gEm'); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; $('yesBtn').disabled = $('noBtn').disabled = false; tone(880, .2, 'triangle', .12, 1.5); }, 1100);
+}
+$('yesBtn').onclick = () => win();
+$('noBtn').onclick = () => {
+  SFX.tap();
+  G.out.add(G.guessIdx); recompute();
+  if (qCount() >= G.limit || G.guesses >= 3 && qCount() >= G.limit - 2) return lose();
+  ask();
+};
+
+function confetti(chars) {
+  const box = $('conf2'); box.innerHTML = '';
+  for (let i = 0; i < 26; i++) {
+    const e = document.createElement('i');
+    e.textContent = chars[i % chars.length];
+    e.style.left = Math.random() * 100 + '%';
+    e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
+    e.style.animationDelay = (Math.random() * .6) + 's';
+    box.appendChild(e);
+  }
+  setTimeout(() => box.innerHTML = '', 4200);
+}
+let lastShare = null;
+function win() {
+  const it = ITEMS[G.guessIdx];
+  SAVE.wins++; persist(); titleStats();
+  learn(it.name, it.name);
+  SFX.win(); confetti(['🍢', it.em, '✨']);
+  $('wText').innerHTML = `<b style="color:var(--yel)">${CG.esc(it.name)}</b> を <b>${qCount()}問</b> で当てました。<br>おでん鍋の湯気は、うそをつきません。`;
+  setHeat($('potW'), 1);
+  lastShare = { msg: `チクネーターに「${it.name}」を${qCount()}問で当てられた…！🍢`, tags: ['チクネーター'] };
+  show('sWin');
+}
+function lose() {
+  SFX.lose();
+  const canAd = !G.adUsed && CG.ad.ready();
+  $('adBox').hidden = !canAd;
+  $('lTitle').textContent = canAd ? 'ぐぬぬ…わからない！' : 'まいった…！';
+  $('lText').innerHTML = canAd ? `${qCount()}問では当てられませんでした。<br>広告を見てくれたら、あと${AD_EXTRA}問で当ててみせます！` : `${qCount()}問では当てられませんでした。<br>ちくわくんの負けです…。`;
+  // 答えの候補（のこっている上位）
+  const r = ranked().slice(0, 6);
+  $('pick').innerHTML = r.map(([p, i]) => `<button data-i="${i}">${ITEMS[i].em} ${CG.esc(ITEMS[i].name)}</button>`).join('');
+  $('pick').querySelectorAll('button').forEach(b => b.onclick = () => teach(ITEMS[+b.dataset.i].name));
+  $('ansIn').value = '';
+  $('teach').hidden = false; $('after').hidden = true;
+  setHeat($('potL'), 0.1);
+  show('sLose');
+}
+$('adBtn').onclick = async () => {
+  const ok = await CG.ad.reward({ kind: 'short', name: 'chikunator-more' });
+  if (!ok) { CG.toast('最後まで見ると、つづけられます'); return; }
+  G.adUsed = true; G.limit += AD_EXTRA; G.guesses = 0;
+  ask();
+};
+$('ansBtn').onclick = () => { const v = $('ansIn').value.trim(); if (!v) { CG.toast('食べ物の名前を書いてください'); return; } teach(v); };
+$('ansIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('ansBtn').click(); });
+
+/* 覚える：答えの名前ごとに、質問ごとの答えの合計と回数をためる（はい=1〜いいえ=0） */
+function learn(name, shown) {
+  const it = findItem(name);
+  const key = it ? it.name : name.normalize('NFKC').trim().slice(0, 20);
+  const L = SAVE.learned[key] || (SAVE.learned[key] = { name: key, a: {} });
+  for (const [q, a] of G.asked) {
+    if (a === null) continue;
+    const s = L.a[QS[q][0]] || (L.a[QS[q][0]] = [0, 0]);
+    s[0] = Math.round((s[0] + a) * 100) / 100; s[1]++;
+  }
+  // 覚えすぎない（最大 200 件。古いものから消す）
+  const ks = Object.keys(SAVE.learned);
+  if (ks.length > 200) delete SAVE.learned[ks[0]];
+  persist();
+}
+function teach(name) {
+  const known = findItem(name);
+  learn(name);
+  SAVE.loses++; persist(); titleStats();
+  const nm = known ? known.name : name;
+  $('teach').hidden = true; $('adBox').hidden = true; $('after').hidden = false;
+  $('lTitle').textContent = 'あなたの勝ち！';
+  $('aText').innerHTML = known
+    ? `「<b style="color:var(--yel)">${CG.esc(nm)}</b>」でしたか…！<br>今回の答え方を覚えました。次は負けません。`
+    : `「<b style="color:var(--yel)">${CG.esc(nm)}</b>」…まだ知らない食べ物でした。<br>この端末で覚えました。次は当てます！`;
+  $('lText').textContent = '';
+  confetti(['🎉', '🍢']);
+  lastShare = { msg: `チクネーターに「${nm}」で勝った！ちくわくんにも当てられなかった🍢`, tags: ['チクネーター'] };
+}
+const again = () => { SFX.tap(); startPhoto(); };
+$('againBtn1').onclick = again; $('againBtn2').onclick = again;
+const doShare = () => lastShare && CG.share.open(lastShare);
+$('shareBtn1').onclick = doShare; $('shareBtn2').onclick = doShare;
+
+/* 写真を先に読んでおく */
+PHOTOS.forEach(p => { const i = new Image(); i.src = p.src; });
+build();
+
+/* テスト用の公開 */
+window.CHIKU = { QS, FOODS, get ITEMS() { return ITEMS; }, get G() { return G; }, build, newGame, recompute, nextQuestion, ranked, like, SAVE, GUESS_P, MIN_Q, MAX_Q };
+</script>
+</body>
+</html>
