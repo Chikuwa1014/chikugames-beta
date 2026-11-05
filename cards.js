@@ -276,7 +276,7 @@ add({
   order: 110,
   href: BETA + '/chikunator/', kicker: '推理ゲーム', title: 'チクネーター', sub: '思い浮かべた食べ物を当てる',
   desc: '食べ物をひとつ思い浮かべて、ちくわくんの質問に答えよう。おでん鍋の湯気を読んで、20問以内に当ててみせる！負けたら答えを教えると、ちくわくんが覚えて強くなる。',
-  tags: ['推理', 'ひとりで遊ぶ'], version: 'β0.1.0', updated: '2026-11-04',
+  tags: ['推理', 'ひとりで遊ぶ'], version: 'β0.1.1', updated: '2026-11-05',
   /* 160×90 のサムネイル。t は秒 */
   draw(c, t) {
     const g = c.createLinearGradient(0, 0, 0, 90); g.addColorStop(0, '#3A2440'); g.addColorStop(1, '#1A1322');
