@@ -50,7 +50,7 @@ const out = process.argv[2] || '/tmp';
   // 2) 画面
   await pg.screenshot({ path: out + '/chiku-title.png' });
   await pg.click('#startBtn');
-  await pg.waitForTimeout(1900);
+  await pg.waitForTimeout(2900);
   await pg.screenshot({ path: out + '/chiku-photo.png' });
   await pg.click('#readyBtn');
   await pg.waitForTimeout(300);
@@ -72,7 +72,7 @@ const out = process.argv[2] || '/tmp';
   await pg.screenshot({ path: out + '/chiku-win.png' });
   // 負け：ありえない答え方をして 20 問へ。最後に知らない食べ物を教える
   await pg.click('#againBtn1');
-  await pg.waitForTimeout(1900);
+  await pg.waitForTimeout(2900);
   await pg.click('#readyBtn');
   for (let k = 0; k < 80; k++) {
     await pg.waitForTimeout(300);
@@ -91,7 +91,7 @@ const out = process.argv[2] || '/tmp';
   console.log('learned item', await pg.evaluate(() => { window.CHIKU.build(); return window.CHIKU.ITEMS.some(i => i.name === 'ちくわパフェ'); }));
   // 広告（?ad=test）：負けたときにボタンが出る
   await pg.goto('http://localhost:8765/chikunator/?ad=test');
-  await pg.click('#startBtn'); await pg.waitForTimeout(1900); await pg.click('#readyBtn');
+  await pg.click('#startBtn'); await pg.waitForTimeout(2900); await pg.click('#readyBtn');
   await pg.evaluate(() => { const G = window.CHIKU.G; });
   for (let k = 0; k < 80; k++) {
     await pg.waitForTimeout(300);

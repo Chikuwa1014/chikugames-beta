@@ -105,6 +105,8 @@ details p{line-height:1.7}
 .guess .nm{font-size:34px;font-weight:900;color:var(--yel);text-shadow:0 3px 0 #7a4a12;margin:4px 0}
 .guess .kind{font-size:12px;color:var(--sub)}
 .result{text-align:center}
+.chikune{display:inline-block;margin-top:6px;padding:6px 16px;border-radius:999px;background:#fff6e6;color:#a8642a;font-size:26px;font-weight:900;letter-spacing:.06em;box-shadow:0 4px 0 #c9a77a;animation:chikune 1.4s ease-in-out infinite}
+@keyframes chikune{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) scale(1.06)}}
 .result h2{font-size:30px;margin:8px 0 0;color:var(--tan)}
 .result p{line-height:1.8;font-size:14px}
 .pick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
@@ -133,6 +135,7 @@ details p{line-height:1.7}
     <button class="btn" id="startBtn">はじめる</button>
     <details><summary>セーブの引っ越し・更新履歴</summary>
       <div id="move"></div>
+      <p>β0.1.1（2026-11-05）写真の画面の文字を長めに表示。最後の画面に「ちくねぇ〜」。</p>
       <p>β0.1.0（2026-11-04）最初の試作。食べ物 110 種類・質問 48 問。ちくわの写真、おでん鍋占い、負けたときの記憶（この端末だけ）。</p>
     </details>
   </section>
@@ -173,6 +176,7 @@ details p{line-height:1.7}
   <!-- 勝ち -->
   <section class="scr result" id="sWin" hidden>
     <div class="potwrap small" id="potW"></div>
+    <div class="chikune">ちくねぇ〜</div>
     <h2>ちくわくんの勝ち！</h2>
     <p id="wText"></p>
     <div class="row"><button class="btn" id="againBtn1">もう一回</button><button class="btn sub" id="shareBtn1">シェア</button></div>
@@ -191,6 +195,7 @@ details p{line-height:1.7}
       <p class="note">教えてもらった答えと、今回の答え方は、この端末にだけ記録します（ほかの人には送りません）。</p>
     </div>
     <div id="after" hidden>
+      <div class="chikune">ちくねぇ〜</div>
       <p id="aText"></p>
       <div class="row"><button class="btn" id="againBtn2">もう一回</button><button class="btn sub" id="shareBtn2">シェア</button></div>
     </div>
@@ -205,7 +210,7 @@ details p{line-height:1.7}
 <script src="../common/v1/ad.js"></script>
 <script>
 'use strict';
-const VERSION = 'β0.1.0';
+const VERSION = 'β0.1.1';
 const KEY = 'chikunator-v1';
 CG.init({ game: 'chikunator', title: 'チクネーター', version: VERSION });
 
@@ -215,7 +220,8 @@ const AD_EXTRA = 5;        // 広告で増える質問
 const GUESS_P = 0.82;      // この確率をこえたら当てにいく
 const MIN_Q = 6;           // これより前には当てにいかない
 const SHARP = 3.6;         // 答えのずれへのきびしさ（大きいほど1回の答えで候補がしぼられる）
-const LEARN_W = 2;         // 覚えた答えを混ぜるときの、もとの表の重み（回数でわる）
+const LEARN_W = 2;
+const PHOTO_LINE_MS = 2600; // 写真の画面の文字を次へ変えるまで（Chikuwa1014 の指示で 1.6 秒から 1 秒のばした。2026-11-05）         // 覚えた答えを混ぜるときの、もとの表の重み（回数でわる）
 
 /* ちくわの写真（質問の前にランダムで1枚）。足すときはここに1行 */
 const PHOTOS = [
@@ -578,7 +584,7 @@ function startPhoto() {
   const btn = $('readyBtn'); btn.disabled = true;
   let k = 0; $('photoSay').innerHTML = lines[0];
   clearInterval(photoTimer);
-  photoTimer = setInterval(() => { k++; if (k < lines.length) $('photoSay').innerHTML = lines[k]; if (k >= 1) btn.disabled = false; if (k >= lines.length - 1) clearInterval(photoTimer); }, 1600);
+  photoTimer = setInterval(() => { k++; if (k < lines.length) $('photoSay').innerHTML = lines[k]; if (k >= 1) btn.disabled = false; if (k >= lines.length - 1) clearInterval(photoTimer); }, PHOTO_LINE_MS);
   show('sPhoto');
 }
 $('startBtn').onclick = () => { SFX.tap(); startPhoto(); };
