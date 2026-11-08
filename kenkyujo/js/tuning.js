@@ -2,7 +2,7 @@
    長さの単位はメートル。マップの 1 マスは T.cell メートル。 */
 const SY = window.SY = window.SY || {};
 
-SY.VERSION = 'β0.1.0';
+SY.VERSION = 'β0.2.0';
 SY.GAME = 'kenkyujo';
 
 SY.T = {

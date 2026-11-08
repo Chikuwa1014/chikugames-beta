@@ -10,7 +10,8 @@
   const G = SY.G = {
     running: false, char: CG.ls.get(KEY_CHAR, 'gatasu'),
     equip: { shoes: 'normal', clothes: 'normal', acc: 'none', charm: 'none' },
-    yaw: Math.PI, pitch: .05, keys: {}, mv: [0, 0], bob: 0, step: 0, room: '監禁部屋'
+    yaw: Math.PI, pitch: .05, keys: {}, mv: [0, 0], bob: 0, step: 0, room: '監禁部屋',
+    inv: [], flags: {}, paused: false
   };
   if (!SY.CHARS.find(c => c.key === G.char)) G.char = 'gatasu';
   G.stats = SY.stats(G.equip);
@@ -144,7 +145,7 @@
   }
 
   // 倉庫：ロッカー・棚
-  for (let i = 0; i < 5; i++) { p = at(1, 8, -.35, i * .32); box(.6, 2, .6, metal, p.x, 1, p.z, { solid: true, kind: 'locker' }); }
+  for (let i = 0; i < 5; i++) { p = at(1, 8, -.35, i * .32); box(.6, 2, .6, metal, p.x, 1, p.z, { solid: true, kind: i === 4 ? 'lockerBack' : 'locker' }); }
   for (const [col, row] of [[4, 8], [6, 10], [4, 10]]) {
     p = at(col, row);
     box(1.6, 1.8, .5, wood, p.x, .9, p.z, { solid: true, kind: 'shelf' });
@@ -165,6 +166,37 @@
   }
   const tankLight = new B.PointLight('tankL', new V3(p.x, 1.2, p.z), scene);
   tankLight.diffuse = hex('#5dff7a'); tankLight.range = 7; tankLight.intensity = .7;
+
+  /* ---------- 扉（マップの A〜Z。開くと蝶番を軸に回る） ---------- */
+  const doorM = mat('doorM', { color: hex('#3d3a33'), spec: new C3(.2, .2, .2) });
+  const knobM = mat('knobM', { color: hex('#9a8a6a'), spec: new C3(.6, .5, .3) });
+  const doors = {};
+  SY.MAP.forEach((line, row) => [...line].forEach((ch, col) => {
+    const d = SY.DOORS[ch]; if (!d) return;
+    const q = SY.cellPos(col, row);
+    // 扉の両わきと上の壁（通り道は幅 1.2m・高さ 2.2m）
+    for (const sx of [-1, 1]) { const w = box((C - 1.2) / 2, T.wallH, C, wallM, q.x + sx * (C + 1.2) / 4, T.wallH / 2, q.z, { solid: true, cast: false }); }
+    box(1.2, T.wallH - 2.2, C, wallM, q.x, 2.2 + (T.wallH - 2.2) / 2, q.z, { cast: false });
+    const hinge = new B.TransformNode('hinge', scene); hinge.position.set(q.x - .6, 0, q.z);
+    const panel = box(1.2, 2.2, .08, doorM, .6, 1.1, 0, { parent: hinge, solid: true });
+    const knob = B.MeshBuilder.CreateSphere('knob', { diameter: .09 }, scene); knob.parent = hinge; knob.position.set(1.05, 1.0, -.07); knob.material = knobM;
+    const knob2 = knob.clone('knob2'); knob2.position.z = .07;
+    // 札（扉の名前）
+    const plate = box(.36, .12, .01, mat('plate', { color: hex('#b9b29a') }), .6, 1.75, -.05, { parent: hinge, cast: false });
+    [panel, knob, knob2, plate].forEach(m => { m.metadata = { kind: 'door', door: ch }; });
+    doors[ch] = { hinge, panel, open: false, t: 0 };
+  }));
+
+  /* ---------- 拾える物（メモ） ---------- */
+  const pickups = {};
+  SY.PICKUPS.forEach(pk => {
+    const q = SY.cellPos(pk.col, pk.row, pk.dx, pk.dz);
+    const m = B.MeshBuilder.CreatePlane('memo', { width: .21, height: .28, sideOrientation: B.Mesh.DOUBLESIDE }, scene);
+    m.material = mat('memoM', { color: hex('#e8e0c8'), emissive: hex('#2a2618') });
+    m.position.set(q.x, pk.y + .002, q.z); m.rotation.set(Math.PI / 2, 0, Math.random() * 3);
+    m.metadata = { kind: 'pickup', item: pk.item };
+    pickups[pk.item] = m;
+  });
 
   /* ---------- 光 ---------- */
   const amb = new B.HemisphericLight('amb', new V3(0, 1, 0), scene);
@@ -239,7 +271,7 @@
   /* ---------- 操作 ---------- */
   addEventListener('keydown', e => {
     G.keys[e.code] = true;
-    if (e.code === 'KeyE' && G.running) interact();
+    if (e.code === 'KeyE' && G.running && !G.paused) interact();
     if (G.running && /^(Arrow|Space)/.test(e.code)) e.preventDefault();
   });
   addEventListener('keyup', e => { G.keys[e.code] = false; });
@@ -249,7 +281,7 @@
   const stick = $('#stick'), knob = stick.querySelector('i');
   const locked = () => document.pointerLockElement === canvas;
   canvas.addEventListener('pointerdown', e => {
-    if (!G.running) return;
+    if (!G.running || G.paused) return;
     audio.start();
     if (e.pointerType === 'mouse') {
       if (!locked() && canvas.requestPointerLock) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => { }); } catch (_) { } }
@@ -267,7 +299,7 @@
     G.yaw += dx * k; G.pitch += dy * k;
     G.pitch = Math.max(-1.3, Math.min(1.3, G.pitch));
   }
-  document.addEventListener('mousemove', e => { if (locked() && G.running) turn(e.movementX, e.movementY, T.lookPC); });
+  document.addEventListener('mousemove', e => { if (locked() && G.running && !G.paused) turn(e.movementX, e.movementY, T.lookPC); });
   canvas.addEventListener('pointermove', e => {
     if (e.pointerId === stickId) {
       let dx = e.clientX - stickO[0], dy = e.clientY - stickO[1]; const l = Math.hypot(dx, dy), m = 45;
@@ -292,18 +324,88 @@
   function findAim() {
     const hit = scene.pick(engine.getRenderWidth() / 2, engine.getRenderHeight() / 2, m => m.isPickable && m.isVisible && m !== player);
     if (!hit || !hit.hit || hit.distance > T.reach || !hit.pickedMesh.metadata) return null;
-    return hit.pickedMesh.metadata.kind;
+    return hit.pickedMesh.metadata;
+  }
+  const has = id => G.inv.includes(id);
+  function give(id) {
+    if (has(id)) return;
+    G.inv.push(id);
+    const it = SY.ITEMS[id];
+    audio.tone(1300, 2000, .25, .1);
+    say(`「${it.name}」を手に入れた。`);
+    $('#bBag').classList.add('new');
+    if (it.kind === 'memo') openMemo(id);
+  }
+  function openDoor(ch) {
+    const d = doors[ch]; if (!d || d.open) return;
+    d.open = true; d.panel.checkCollisions = false;
+    audio.tone(140, 70, 1.4, .18); audio.hit(250, .9, .35);
   }
   function interact() {
-    if (!aim) return;
+    if (!aim || G.paused) return;
+    const k = aim.kind, F = G.flags;
+    if (k === 'door') {
+      const d = doors[aim.door], info = SY.DOORS[aim.door];
+      if (d.open) return say(SY.TEXTS.doorOpen);
+      if (has(info.key)) { openDoor(aim.door); return say(`${SY.ITEMS[info.key].name}を使った。${info.name}が開いた。`); }
+      audio.hit(300, .25, .5);
+      return say(`${info.name}。鍵がかかっている。`);
+    }
+    if (k === 'pickup') {
+      const m = pickups[aim.item]; if (m) { m.dispose(); delete pickups[aim.item]; }
+      return give(aim.item);
+    }
+    if (k === 'bucket') {
+      F.bucket = (F.bucket || 0) + 1;
+      if (has('key-cell')) return say(SY.TEXTS.bucketEmpty);
+      if (F.bucket < 2) { audio.hit(900, .08, .2); return say(SY.TEXTS.bucket); }
+      say(SY.TEXTS.bucket2); audio.hit(600, .5, .3);
+      return setTimeout(() => give('key-cell'), 1200);
+    }
+    if (k === 'lockerBack') {
+      if (has('key-lab')) return say(SY.TEXTS.lockerEmpty);
+      audio.hit(700, .4, .3); say(SY.TEXTS.lockerBack);
+      return setTimeout(() => give('key-lab'), 1200);
+    }
     audio.hit(900, .08, .2);
-    say(SY.TEXTS[aim] || '……');
+    say(SY.TEXTS[k] || '……');
   }
+
+  /* ---------- 持ち物とメモの画面 ---------- */
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function pause(on) {
+    G.paused = on; G.keys = {}; G.mv = [0, 0];
+    if (on && document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
+  }
+  function openBag() {
+    pause(true); $('#bBag').classList.remove('new');
+    const keys = G.inv.filter(id => SY.ITEMS[id].kind !== 'memo'), memos = G.inv.filter(id => SY.ITEMS[id].kind === 'memo');
+    const li = id => `<li><b>${esc(SY.ITEMS[id].name)}</b><span>${esc(SY.ITEMS[id].desc || '')}</span></li>`;
+    $('#bagBody').innerHTML =
+      `<h3>持ち物</h3>${keys.length ? `<ul class="items">${keys.map(li).join('')}</ul>` : '<p class="none">まだ何も持っていない。</p>'}` +
+      `<h3>メモ</h3>${memos.length ? `<ul class="memos">${memos.map(id => `<li><button data-memo="${id}">${esc(SY.ITEMS[id].name)}</button></li>`).join('')}</ul>` : '<p class="none">まだ拾っていない。</p>'}`;
+    $('#bag').hidden = false;
+  }
+  function openMemo(id) {
+    pause(true);
+    $('#memoTitle').textContent = SY.ITEMS[id].name;
+    $('#memoText').textContent = SY.ITEMS[id].text;
+    $('#memo').hidden = false;
+  }
+  function closeAll() { $('#bag').hidden = true; $('#memo').hidden = true; pause(false); }
+  $('#bBag').addEventListener('click', () => { if (G.running) openBag(); });
+  $('#bagBody').addEventListener('click', e => { const b = e.target.closest('[data-memo]'); if (b) { $('#bag').hidden = true; openMemo(b.dataset.memo); } });
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeAll));
+  addEventListener('keydown', e => {
+    if (!G.running) return;
+    if (e.code === 'KeyI' || e.code === 'Tab') { e.preventDefault(); $('#bag').hidden && $('#memo').hidden ? openBag() : closeAll(); }
+    else if (e.code === 'Escape' && G.paused) closeAll();
+  });
 
   /* ---------- メインループ ---------- */
   scene.registerBeforeRender(() => {
     const dt = Math.min(.05, engine.getDeltaTime() / 1000), now = performance.now(), K = G.keys;
-    if (G.running) {
+    if (G.running && !G.paused) {
       let sx = (K.KeyD || K.ArrowRight ? 1 : 0) - (K.KeyA || K.ArrowLeft ? 1 : 0) + G.mv[0];
       let sz = (K.KeyW || K.ArrowUp ? 1 : 0) - (K.KeyS || K.ArrowDown ? 1 : 0) - G.mv[1];
       const l = Math.hypot(sx, sz); if (l > 1) { sx /= l; sz /= l; }
@@ -322,6 +424,9 @@
     camera.position.set(player.position.x, T.eye + Math.sin(G.bob) * .03, player.position.z);
     camera.rotation.set(G.pitch, G.yaw, Math.sin(G.bob * .5) * .006);
 
+    // 扉を開く
+    for (const ch in doors) { const d = doors[ch]; if (d.open && d.t < 1) { d.t = Math.min(1, d.t + dt * .7); d.hinge.rotation.y = -1.55 * (1 - Math.pow(1 - d.t, 3)); } }
+
     // 電球のちらつき
     bulbs.forEach(b => {
       if (b.off > 0) b.off -= dt; else if (Math.random() < b.flicker * dt * 10) b.off = rnd(.04, .25);
@@ -332,7 +437,7 @@
     const pulse = .55 + Math.sin(now * .0016) * .2;
     tankLight.intensity = pulse; tankM.emissiveColor = hex('#1f6b2c').scale(.6 + pulse);
 
-    aim = G.running ? findAim() : null;
+    aim = G.running && !G.paused ? findAim() : null;
     $('#dot').classList.toggle('hot', !!aim);
     $('#act').disabled = !aim;
     if (msgTimer > 0 && (msgTimer -= dt) <= 0) $('#msg').textContent = '';
@@ -343,6 +448,7 @@
   SY.begin = function () {
     G.running = true;
     $('#hud').hidden = false;
+    $('#bBag').hidden = false;
     $('#who').textContent = (SY.CHARS.find(c => c.key === G.char) || SY.CHARS[0]).name;
     setTimeout(() => say('……ここは、どこだ。', 4), 600);
     $('#room').textContent = G.room; $('#room').classList.add('show');

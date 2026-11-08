@@ -60,6 +60,24 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
 #hint{font-size:11px;color:var(--sub);text-shadow:0 1px 3px #000}
 #stick{position:fixed;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid var(--line);pointer-events:none}
 #stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(230,228,218,.22)}
+.hb.new{border-color:var(--accent);box-shadow:0 0 8px var(--accent)}
+.modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  -webkit-user-select:none;user-select:none;touch-action:pan-x pan-y}
+.mbox{width:100%;max-width:440px;max-height:100%;overflow:auto;background:#141412;border:1px solid var(--line);border-radius:14px;padding:16px 18px;
+  font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;display:flex;flex-direction:column;gap:10px}
+.mbox,.mbox *{touch-action:pan-y}
+.mbox h3{margin:4px 0 0;font-size:13px;letter-spacing:.2em;color:var(--sub);font-weight:700}
+.mbox ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.items li{background:#1d1d1a;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.items b{font-size:15px}.items span{font-size:12px;color:var(--sub);line-height:1.5}
+.memos button{width:100%;text-align:left;border:1px solid var(--line);background:#1d1d1a;color:var(--ink);border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer}
+.none{margin:0;font-size:13px;color:var(--sub)}
+.close{align-self:center;margin-top:6px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:9px 28px;font-size:14px;cursor:pointer}
+.paper{background:#d9d0b6;color:#2a2418;border:0;font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif}
+.paper h3{color:#5a4c32;letter-spacing:.1em;font-size:15px}
+.paper p{margin:0;white-space:pre-wrap;font-size:16px;line-height:1.9}
+.paper .close{color:#2a2418;border-color:rgba(42,36,24,.4)}
 @media (prefers-reduced-motion:reduce){#prologue p{transition:none}#room.show{animation-duration:.01s}}
 </style>
 </head>
@@ -68,6 +86,7 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
 <header>
   <a href="../">← ちくわゲームズ</a>
   <span id="who"></span>
+  <button class="hb" id="bBag" aria-label="持ち物" hidden>🎒</button>
   <button class="hb" id="bSnd" aria-label="音">🔊</button>
 </header>
 
@@ -82,11 +101,25 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
 </div>
 <div id="stick" hidden><i></i></div>
 
+<section class="modal" id="bag" hidden>
+  <div class="mbox">
+    <div id="bagBody"></div>
+    <button class="close" data-close>とじる</button>
+  </div>
+</section>
+<section class="modal" id="memo" hidden>
+  <div class="mbox paper">
+    <h3 id="memoTitle"></h3>
+    <p id="memoText"></p>
+    <button class="close" data-close>とじる</button>
+  </div>
+</section>
+
 <section class="scr" id="title">
   <h1>サイレント夜<small>SILENT NIGHT（仮）</small></h1>
   <div class="chars" id="chars"></div>
   <button class="go" id="bStart">はじめる</button>
-  <p class="how">PC：WASD で歩く・クリックしてマウスで見回す・E で調べる<br>スマホ：左下をなぞって歩く・右側をなぞって見回す</p>
+  <p class="how">PC：WASD で歩く・クリックしてマウスで見回す・E で調べる・I で持ち物<br>スマホ：左下をなぞって歩く・右側をなぞって見回す</p>
   <div class="ver" id="ver"></div>
 </section>
 
@@ -113,6 +146,7 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
   ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
   document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
   document.addEventListener('touchmove', e => { if (e.touches.length > 1 && e.target.closest && !e.target.closest('#cv')) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchstart', e => { if (e.touches.length > 1 && e.target.closest && e.target.closest('.modal')) e.preventDefault(); }, { passive: false });
 
   /* 音のボタン */
   const snd = () => { $('#bSnd').textContent = SY.audio.muted ? '🔇' : '🔊'; };
