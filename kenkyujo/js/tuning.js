@@ -2,7 +2,7 @@
    長さの単位はメートル。マップの 1 マスは T.cell メートル。 */
 const SY = window.SY = window.SY || {};
 
-SY.VERSION = 'β0.2.0';
+SY.VERSION = 'β0.2.1';
 SY.GAME = 'kenkyujo';
 
 SY.T = {
@@ -13,6 +13,7 @@ SY.T = {
   lookPC: 0.0025,     // マウスで見回す速さ
   lookTouch: 0.006,   // 指で見回す速さ
   reach: 2.2,         // 「調べる」が届く距離（m）
+  aimAngle: 0.38,     // 画面の真ん中からこの角度（ラジアン）までの物は調べられる
   fog: 0.12,          // 霧の濃さ（大きいほど先が見えない）
   flash: { intensity: 2.4, range: 16, angle: 0.84 },  // 懐中電灯（angle はラジアン。光の円の広さ）
   stepEvery: 0.48     // 足音の間かく（秒。歩く速さ 1 のとき）
