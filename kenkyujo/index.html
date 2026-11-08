@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#050506">
+<meta name="robots" content="noindex">
+<title>サイレント夜（仮）</title>
+<style>
+:root{--bg:#050506;--panel:rgba(14,14,13,.8);--line:rgba(200,220,200,.16);--ink:#E6E4DA;--sub:#8F978C;--accent:#8FD39A;--red:#C2463A}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+button{font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;-webkit-tap-highlight-color:transparent;touch-action:pan-x pan-y}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none}
+
+/* 上のバー */
+header{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;align-items:center;gap:8px;
+  padding:calc(6px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 6px max(12px,env(safe-area-inset-left,0px));
+  font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;pointer-events:none}
+header a,header button{pointer-events:auto}
+header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 3px #000}
+#who{margin-left:auto;font-size:12px;color:var(--sub)}
+.hb{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;width:34px;height:30px;font-size:14px;cursor:pointer}
+
+/* タイトル・プロローグ */
+.scr{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:radial-gradient(120% 90% at 50% 40%,rgba(20,30,22,.55),rgba(0,0,0,.92))}
+.scr h1{margin:0;font-size:clamp(34px,10vw,60px);letter-spacing:.18em;font-weight:700;color:var(--ink);text-shadow:0 0 18px rgba(143,211,154,.35)}
+.scr h1 small{display:block;font-size:13px;letter-spacing:.3em;color:var(--sub);margin-top:6px;font-weight:400}
+.chars{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.chars button{min-width:150px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:12px;padding:12px 16px;cursor:pointer;text-align:left}
+.chars button b{display:block;font-size:16px}
+.chars button span{font-size:11px;color:var(--sub)}
+.chars button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.go{border:0;border-radius:999px;padding:13px 36px;font-size:16px;font-weight:800;background:var(--accent);color:#0B1A0E;cursor:pointer}
+.go:focus-visible,.chars button:focus-visible,.hb:focus-visible,#act:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.how{font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:12px;line-height:1.8;color:var(--sub);margin:0}
+.ver{position:absolute;bottom:calc(10px + env(safe-area-inset-bottom,0px));font-family:system-ui,sans-serif;font-size:11px;color:var(--sub)}
+#prologue{cursor:pointer;background:#000}
+#prologue p{margin:0;font-size:clamp(16px,4.6vw,21px);line-height:2;opacity:0;transition:opacity 1.2s}
+#prologue p.on{opacity:1}
+#prologue .skip{font-family:system-ui,sans-serif;font-size:11px;color:var(--sub);position:absolute;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+
+/* 遊んでいる間 */
+#hud{position:fixed;inset:0;pointer-events:none;font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif}
+#dot{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--ink);opacity:.5}
+#dot.hot{background:var(--accent);opacity:1;transform:scale(1.6)}
+#room{position:fixed;left:50%;top:22%;transform:translateX(-50%);font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-size:22px;letter-spacing:.3em;opacity:0;white-space:nowrap;text-shadow:0 0 10px #000}
+#room.show{animation:room 3.2s ease forwards}
+@keyframes room{0%{opacity:0}20%{opacity:.9}70%{opacity:.9}100%{opacity:0}}
+.bottom{position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+#msg{min-height:1.6em;max-width:560px;font-size:15px;line-height:1.6;text-align:center;text-shadow:0 1px 4px #000,0 0 10px #000}
+#act{pointer-events:auto;border:0;border-radius:999px;padding:12px 28px;font-size:15px;font-weight:800;background:var(--accent);color:#0B1A0E;cursor:pointer}
+#act:disabled{opacity:.25;cursor:default}
+#hint{font-size:11px;color:var(--sub);text-shadow:0 1px 3px #000}
+#stick{position:fixed;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid var(--line);pointer-events:none}
+#stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(230,228,218,.22)}
+@media (prefers-reduced-motion:reduce){#prologue p{transition:none}#room.show{animation-duration:.01s}}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="研究施設の地下"></canvas>
+<header>
+  <a href="../">← ちくわゲームズ</a>
+  <span id="who"></span>
+  <button class="hb" id="bSnd" aria-label="音">🔊</button>
+</header>
+
+<div id="hud" hidden>
+  <div id="dot"></div>
+  <div id="room"></div>
+  <div class="bottom">
+    <div id="msg"></div>
+    <button id="act" disabled>調べる</button>
+    <div id="hint"></div>
+  </div>
+</div>
+<div id="stick" hidden><i></i></div>
+
+<section class="scr" id="title">
+  <h1>サイレント夜<small>SILENT NIGHT（仮）</small></h1>
+  <div class="chars" id="chars"></div>
+  <button class="go" id="bStart">はじめる</button>
+  <p class="how">PC：WASD で歩く・クリックしてマウスで見回す・E で調べる<br>スマホ：左下をなぞって歩く・右側をなぞって見回す</p>
+  <div class="ver" id="ver"></div>
+</section>
+
+<section class="scr" id="prologue" hidden>
+  <p>クリスマスの夜。</p>
+  <p>独身の男たちで、山へキャンプに来ていた。</p>
+  <p>悲しい男たちと、酒を飲みまくった。</p>
+  <p>……覚えているのは、そこまでだ。</p>
+  <div class="skip">タップで進む</div>
+</section>
+
+<script src="../common/v1/core.js"></script>
+<script src="../common/lib/babylon/7.54.3/babylon.js"></script>
+<script src="js/tuning.js"></script>
+<script src="js/world.js"></script>
+<script src="js/game.js"></script>
+<script>
+(function () {
+  const $ = s => document.querySelector(s);
+  CG.init({ game: SY.GAME, title: 'サイレント夜（仮）', version: SY.VERSION });
+  $('#ver').textContent = SY.VERSION;
+
+  /* 画面の拡大・縮小を止める（号口 CLAUDE.md 19 章） */
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1 && e.target.closest && !e.target.closest('#cv')) e.preventDefault(); }, { passive: false });
+
+  /* 音のボタン */
+  const snd = () => { $('#bSnd').textContent = SY.audio.muted ? '🔇' : '🔊'; };
+  snd();
+  $('#bSnd').addEventListener('click', () => { SY.audio.start(); SY.audio.mute(!SY.audio.muted); snd(); });
+
+  /* プレイする人をえらぶ */
+  const box = $('#chars');
+  const draw = () => {
+    box.innerHTML = '';
+    SY.CHARS.forEach(c => {
+      const b = document.createElement('button');
+      b.setAttribute('aria-pressed', String(c.key === SY.G.char));
+      b.innerHTML = `<b>${CG.esc ? CG.esc(c.name) : c.name}</b><span>${c.sub}</span>`;
+      b.addEventListener('click', () => { SY.setChar(c.key); draw(); });
+      box.appendChild(b);
+    });
+  };
+  draw();
+
+  /* はじめる → プロローグ → 地下 */
+  $('#bStart').addEventListener('click', () => {
+    SY.audio.start();
+    $('#title').hidden = true;
+    const pr = $('#prologue'), lines = [...pr.querySelectorAll('p')];
+    pr.hidden = false;
+    let i = 0, timer = 0;
+    const next = () => {
+      clearTimeout(timer);
+      if (i < lines.length) { lines[i++].classList.add('on'); SY.audio.hit(200, .6, .15); timer = setTimeout(next, 2200); }
+      else { pr.hidden = true; SY.audio.tone(90, 45, 2, .2); SY.begin(); }
+    };
+    pr.addEventListener('click', next);
+    setTimeout(next, 500);
+  });
+
+  $('#hint').textContent = matchMedia('(pointer:coarse)').matches ? '' : 'クリックでマウスを固定・Esc で解除';
+})();
+</script>
+</body>
+</html>

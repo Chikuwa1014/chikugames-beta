@@ -309,4 +309,30 @@ add({
   }
 });
 
+add({
+  order: 111,
+  kicker: '3D脱出ホラー', title: 'サイレント夜（仮）', sub: '研究施設の地下から脱出せよ',
+  desc: 'クリスマスの夜、キャンプで飲みすぎたがたすと雲紅亭珍光は、山の中の古い研究施設の地下で目をさます。懐中電灯ひとつで、暗い施設を逃げて、隠れて、脱出をめざす一人称ホラー。',
+  tags: ['ホラー', '3D', 'ひとりで遊ぶ'], version: 'β0.1.0', updated: '2026-11-08',
+  /* 開発に公開：ぼかして「開発中」。リンクは貼らない（URL は会話の中でだけ共有する） */
+  dev: true,
+  /* 160×90 のサムネイル。t は秒 */
+  draw(c, t) {
+    c.fillStyle = '#050607'; c.fillRect(0, 0, 160, 90);
+    // 廊下（奥へすぼまる壁）
+    c.fillStyle = '#15180f'; c.beginPath(); c.moveTo(0, 0); c.lineTo(62, 30); c.lineTo(62, 62); c.lineTo(0, 90); c.fill();
+    c.beginPath(); c.moveTo(160, 0); c.lineTo(98, 30); c.lineTo(98, 62); c.lineTo(160, 90); c.fill();
+    // 懐中電灯の光（ゆれる）
+    const fx = 80 + Math.sin(t * 1.3) * 10, fy = 50 + Math.sin(t * 2.1) * 3;
+    const g = c.createRadialGradient(fx, fy, 2, fx, fy, 40);
+    g.addColorStop(0, 'rgba(255,238,200,.55)'); g.addColorStop(1, 'rgba(255,238,200,0)');
+    c.fillStyle = g; c.fillRect(0, 0, 160, 90);
+    // 奥の培養槽の緑
+    c.fillStyle = 'rgba(93,255,122,' + (0.25 + Math.sin(t * 1.6) * 0.1).toFixed(2) + ')'; c.fillRect(72, 34, 16, 24);
+    // 奥に立つ何か（ときどき目が光る）
+    c.fillStyle = '#000'; c.fillRect(77, 38, 6, 18); c.beginPath(); c.arc(80, 36, 4, 0, 7); c.fill();
+    if ((t % 3) < 1.6) { c.fillStyle = '#ff3020'; c.fillRect(78, 35, 1, 1); c.fillRect(81, 35, 1, 1); }
+  }
+});
+
 })();
