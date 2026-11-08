@@ -55,6 +55,13 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
 .mbox .rule{text-align:left;font-size:13px;color:var(--sub);line-height:1.7;margin:10px 0}
 .mbox .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
 .mbox details{text-align:left;margin-top:10px;font-size:13px;color:var(--sub)}
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.modes .btn{padding:9px 6px;font-size:14px;line-height:1.35}
+.modes .btn small{display:block;font-size:11px;font-weight:600;opacity:.85}
+.modes .wide{grid-column:1/-1}
+.modes h3{grid-column:1/-1;margin:6px 0 0;font-size:13px;color:var(--sub);text-align:left}
+.mbox .big{font-size:40px;font-weight:800;color:var(--accent2);margin:0}
+.new{color:var(--accent);font-weight:800}
 .stars{font-size:34px;color:var(--accent2);letter-spacing:4px;margin:4px 0}
 .dex{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 .dex h3{grid-column:1/-1;margin:8px 0 0;font-size:13px;color:var(--sub);text-align:left}
@@ -71,6 +78,7 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
   <span>Lv<b id="lv">1</b></span>
   <span class="sp"></span>
   <button class="chip" id="speedBtn">×1</button>
+  <button class="chip" id="modeBtn">モード</button>
   <button class="chip" id="dexBtn">図鑑</button>
 </div>
 <div class="order" id="order"></div>
@@ -98,11 +106,13 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
       ・<b>ぬか床を指でぐるぐるなぞる</b>と、かき混ぜられます。1日に2〜3回が目安。ほうっておくと白いカビ（産膜酵母）が出ます<br>
       ・乳酸菌・塩け・水分は、緑の帯の中がちょうどいい。野菜から水が出て、塩けが減っていきます<br>
       ・漬けた野菜をタップして取り出します。<b>食べごろ</b>で、ぬか床の調子がいいほど高く売れます<br>
-      ・注文にこたえるとボーナス。レベルが上がると漬けられる食べ物が増えます（全部で100種）。図鑑を★3でうめよう
+      ・注文にこたえるとボーナス。レベルが上がると漬けられる食べ物が増えます（全部で100種）。図鑑を★3でうめよう<br>
+      ・<b>チャレンジ</b>は決まった日数で終わり、最後の所持金で記録を競います（ゲーム内の1日＝60秒）
     </div>
-    <div class="row"><button class="btn" id="startBtn">はじめる</button></div>
+    <div class="modes" id="modes"></div>
     <div id="move"></div>
     <details><summary>更新履歴</summary>
+      <p>β0.3.0（2026-11-09）フリーモードのほかに、3日・7日・30日・180日・365日チャレンジを追加。</p>
       <p>β0.2.0（2026-11-08）漬ける食べ物を100種に（実もの・葉・根・山菜・果物・卵や魚）。棚を種類別のタブに。</p>
       <p>β0.1.0（2026-11-08）最初の試作。ぬか床の3つの状態・かき混ぜ・野菜9種・注文・図鑑。</p>
     </details>
@@ -129,6 +139,20 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
   </div>
 </div>
 
+<div class="modal" id="mEnd" hidden>
+  <div class="mbox">
+    <h2 id="eTitle"></h2>
+    <p>最後の所持金</p>
+    <div class="big" id="eCoins"></div>
+    <p id="eInfo"></p>
+    <div class="row">
+      <button class="btn" id="eAgain">もう一回</button>
+      <button class="btn sub" id="eTitleBtn">モードをえらぶ</button>
+      <button class="btn sub" id="eShare">シェア</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="mDex" hidden>
   <div class="mbox">
     <h2>ぬか漬け図鑑</h2>
@@ -145,10 +169,13 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
 <script>
 (() => {
 'use strict';
-const VERSION = 'β0.2.0';
-const KEY_SAVE = 'nukadoko-save-v1';
+const VERSION = 'β0.3.0';
+const KEY_SAVE = 'nukadoko-save-v1';       // フリーモード
+const KEY_CH = 'nukadoko-challenge-v1';    // とちゅうのチャレンジ（1つだけ）
+const KEY_BEST = 'nukadoko-best-v1';       // チャレンジのベスト { 日数: { coins, sold, star3 } }
+const CHALLENGES = [3, 7, 30, 180, 365];
 CG.init({ game: 'nukadoko', title: 'ぬか床そだて', version: VERSION });
-try { CG.move.mount(document.getElementById('move'), { keys: [KEY_SAVE] }); } catch (e) {}
+try { CG.move.mount(document.getElementById('move'), { keys: [KEY_SAVE, KEY_CH, KEY_BEST] }); } catch (e) {}
 
 /* ---- 画面の拡大を止める（共通ルール 19 章） ---- */
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
@@ -255,19 +282,24 @@ const STAGES = [ // r＝経過/食べごろ の上限
 const stageOf = r => STAGES.find(s => r < s.max);
 
 /* ---- 状態 ---- */
-function fresh() {
-  return { v: 1, day: 1, hour: 6, coins: START_COINS, xp: 0, earned: 0, sold: 0,
+function fresh(mode = 0) {
+  return { v: 1, mode, day: 1, hour: mode ? 0 : 6, coins: START_COINS, xp: 0, earned: 0, sold: 0,
     bed: { lac: 30, salt: 52, water: 45, unmixed: 0, mold: false },
     slots: [null, null, null, null, null, null], dex: {}, order: null };
 }
-let S = Object.assign(fresh(), CG.ls.getJSON(KEY_SAVE, {}) || {});
-if (!S.bed || !Array.isArray(S.slots)) S = fresh();
-(function migrate() {
+/* mode：0＝フリー、3・7・30・180・365＝○日チャレンジ */
+function load(key) {
+  let S = Object.assign(fresh(), CG.ls.getJSON(key, {}) || {});
+  if (!S.bed || !Array.isArray(S.slots)) S = fresh();
   S.slots = S.slots.map(x => x && (VEG.some(v => v.id === x.id) ? x : OLD_ID[x.id] ? Object.assign(x, { id: OLD_ID[x.id] }) : null));
   for (const k of Object.keys(S.dex)) if (OLD_ID[k]) { S.dex[OLD_ID[k]] = S.dex[k]; delete S.dex[k]; }
   if (S.order && !VEG.some(v => v.id === S.order.id)) S.order = OLD_ID[S.order.id] ? Object.assign(S.order, { id: OLD_ID[S.order.id] }) : null;
-})();
-const save = () => CG.ls.set(KEY_SAVE, JSON.stringify(S));
+  return S;
+}
+let S = load(KEY_SAVE);
+S.mode = 0;
+const save = () => { if (S.mode && S.ended) return; CG.ls.set(S.mode ? KEY_CH : KEY_SAVE, JSON.stringify(S)); };
+const elapsedH = () => (S.day - 1) * 24 + S.hour;   // チャレンジの経過時間（1日目 0:00 から。○日目が終わる 24:00 で終わり）
 const level = () => { let lv = 1, need = XP_NEED(1); while (S.xp >= need) { lv++; need += XP_NEED(lv); } return lv; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -466,7 +498,7 @@ function setMeter(el, k) {
 }
 let lastShelfKey = '', tab = 'mi';
 function hud() {
-  $('day').textContent = S.day;
+  $('day').textContent = S.mode ? Math.min(S.day, S.mode) + '/' + S.mode : S.day;
   const hh = Math.floor(S.hour), mm = Math.floor((S.hour - hh) * 6) * 10;
   $('clock').textContent = hh + ':' + String(mm).padStart(2, '0');
   $('coins').textContent = S.coins; $('lv').textContent = level();
@@ -588,7 +620,54 @@ $('shareBtn').onclick = () => {
   try { CG.share.open({ msg: `ぬか床そだて ${S.day}日目、ぬか漬けを${S.sold}本売って 💰${S.earned}！ 図鑑★3 ${done}/${VEG.length}`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
 };
 $('tabs').onclick = e => { const b = e.target.closest('.tab'); if (!b) return; tab = b.dataset.cat; shelf(); $('shelf').scrollLeft = 0; };
-$('startBtn').onclick = () => { $('mTitle').hidden = true; if (!S.order) newOrder(); hud(); };
+/* ---- モード ---- */
+const bests = () => CG.ls.getJSON(KEY_BEST, {}) || {};
+let armed = 0;   // とちゅうのチャレンジがあるとき、別のチャレンジは2回押しで始める
+function begin(next) {
+  S = next; lastShelfKey = ''; trail = []; mixProg = 0; speed = 1; $('speedBtn').textContent = '×1';
+  if (!S.order) newOrder();
+  save(); $('mTitle').hidden = true; hud();
+}
+function modes() {
+  const free = load(KEY_SAVE), ch = CG.ls.getJSON(KEY_CH, null), B = bests();
+  const live = ch && ch.mode && !ch.ended ? ch : null;
+  let h = `<button class="btn wide" data-m="free">フリーモード<small>${free.day > 1 || free.sold ? `つづきから（${free.day}日目・💰${free.coins}）` : '時間を気にせず、のんびり育てる'}</small></button>`;
+  if (live) h += `<button class="btn wide" data-m="cont">${live.mode}日チャレンジのつづき<small>${live.day}日目・💰${live.coins}</small></button>`;
+  h += '<h3>チャレンジ（決まった日数で、最後の所持金を競う）</h3>';
+  for (const d of CHALLENGES) {
+    const b = B[d], label = armed === d ? 'もう一度押すと、いまのチャレンジを消して始める' : b ? `ベスト 💰${b.coins}` : 'まだ記録なし';
+    h += `<button class="btn sub${d === 3 ? ' wide' : ''}" data-m="${d}">${d}日チャレンジ<small>${label}</small></button>`;
+  }
+  $('modes').innerHTML = h;
+}
+$('modes').onclick = e => {
+  const b = e.target.closest('[data-m]'); if (!b) return;
+  const m = b.dataset.m, ch = CG.ls.getJSON(KEY_CH, null), live = ch && ch.mode && !ch.ended;
+  if (m === 'free') { armed = 0; const f = load(KEY_SAVE); f.mode = 0; begin(f); return; }
+  if (m === 'cont') { armed = 0; begin(load(KEY_CH)); return; }
+  const d = +m;
+  if (live && armed !== d) { armed = d; modes(); return; }
+  armed = 0; begin(fresh(d));
+};
+$('modeBtn').onclick = () => { save(); armed = 0; modes(); $('mTitle').hidden = false; };
+function endChallenge() {
+  S.ended = true;
+  const B = bests(), old = B[S.mode], star3 = VEG.filter(v => (S.dex[v.id] || {}).best === 3).length;
+  const rec = !old || S.coins > old.coins;
+  if (rec) { B[S.mode] = { coins: S.coins, sold: S.sold, star3 }; CG.ls.set(KEY_BEST, JSON.stringify(B)); }
+  CG.ls.del(KEY_CH);
+  $('eTitle').textContent = S.mode + '日チャレンジ 終了！';
+  $('eCoins').textContent = '💰' + S.coins;
+  $('eInfo').innerHTML = `売ったぬか漬け ${S.sold}本　Lv${level()}　図鑑★3 ${star3}種<br>` +
+    (rec ? '<span class="new">ベスト更新！</span>' + (old ? `（前は 💰${old.coins}）` : '') : `ベスト 💰${old.coins}`);
+  $('mEnd').hidden = false;
+}
+$('eAgain').onclick = () => { $('mEnd').hidden = true; begin(fresh(S.mode)); };
+$('eTitleBtn').onclick = () => { $('mEnd').hidden = true; modes(); $('mTitle').hidden = false; };
+$('eShare').onclick = () => {
+  try { CG.share.open({ msg: `ぬか床そだて ${S.mode}日チャレンジで 💰${S.coins}！ ぬか漬けを${S.sold}本売った`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
+};
+modes();
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 
 /* ---- ループ ---- */
@@ -597,6 +676,7 @@ function loop(now) {
   const dt = Math.min(0.1, (now - prev) / 1000); prev = now;
   if (!modalOpen()) {
     tick(dt * speed / SEC_PER_HOUR);
+    if (S.mode && !S.ended && elapsedH() >= S.mode * 24) endChallenge();
     saveT += dt; if (saveT > 5) { saveT = 0; save(); }
     if (!drag && mixProg > 0) mixProg = Math.max(0, mixProg - dt * 6);
     if (!drag && trail.length) trail.shift();
@@ -608,7 +688,7 @@ function loop(now) {
 hud(); requestAnimationFrame(loop);
 
 /* テスト用 */
-window.NUKA = { get S() { return S; }, CATS, tick, put, take, rate, mixDone, bedQ, level, VEG, reset() { S = fresh(); save(); } };
+window.NUKA = { get S() { return S; }, CATS, begin, fresh, endChallenge, elapsedH, tick, put, take, rate, mixDone, bedQ, level, VEG, reset() { S = fresh(); save(); } };
 })();
 </script>
 </body>
