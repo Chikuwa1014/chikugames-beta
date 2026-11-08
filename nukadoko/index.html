@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<title>ぬか床そだて</title>
+<style>
+:root{--bg:#2b2014;--panel:#3d2e1c;--panel2:#4a3822;--ink:#f8eedb;--sub:#cdb48a;--accent:#9fc75a;--accent2:#e8b54a;--bad:#e5603d;--cg-accent:#9fc75a}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden;-webkit-touch-callout:none}
+button,.modal{-webkit-user-select:none;user-select:none;touch-action:pan-x pan-y}
+.mbox,.mbox *{touch-action:pan-y}
+header{display:flex;align-items:center;gap:8px;padding:6px 12px;height:38px;flex:none}
+header a{color:var(--sub);text-decoration:none;font-size:13px}
+header .ttl{margin-left:auto;font-weight:700;font-size:14px;color:var(--accent)}
+.hud{display:flex;align-items:center;gap:8px;padding:0 12px 4px;flex:none;font-size:13px;color:var(--sub)}
+.hud b{font-size:16px;color:var(--ink)}
+.hud .sp{margin-left:auto}
+.chip{border:0;border-radius:10px;padding:5px 9px;font-size:13px;font-weight:700;background:var(--panel2);color:var(--ink);cursor:pointer}
+.order{margin:0 12px 4px;padding:6px 10px;border-radius:10px;background:var(--panel);font-size:13px;flex:none;display:flex;gap:6px;align-items:center}
+.order b{color:var(--accent2)}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 8px;position:relative}
+canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-ratio:360/320;height:auto;width:auto}
+.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(20,14,8,.85);padding:6px 12px;border-radius:10px;font-size:13px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap}
+.toast.on{opacity:1}
+.meters{padding:2px 12px;flex:none;display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:12px;color:var(--sub)}
+.meter{height:12px;border-radius:6px;background:#1d150c;position:relative;overflow:hidden;border:1px solid #5a4528}
+.meter .band{position:absolute;top:0;bottom:0;background:rgba(159,199,90,.22)}
+.meter i{position:absolute;top:1px;bottom:1px;width:4px;margin-left:-2px;border-radius:2px;background:var(--ink)}
+.meter.off i{background:var(--bad)}
+.cond{grid-column:1/3;font-size:13px;color:var(--ink);display:flex;justify-content:space-between}
+.cond b.good{color:var(--accent)} .cond b.bad{color:var(--bad)}
+.acts{display:flex;gap:6px;padding:6px 12px 4px;flex:none}
+.acts .btn{flex:1;padding:8px 4px;font-size:13px}
+.shelf{display:flex;gap:6px;overflow-x:auto;padding:4px 12px calc(8px + env(safe-area-inset-bottom));flex:none;touch-action:pan-x}
+.veg{flex:none;width:68px;border:0;border-radius:12px;background:var(--panel);color:var(--ink);padding:5px 2px;font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
+.veg canvas{width:40px;height:28px;aspect-ratio:auto}
+.veg .p{color:var(--accent2);font-weight:700}
+.veg.lock{opacity:.35}
+.veg:disabled{opacity:.45}
+.btn{border:0;border-radius:12px;padding:11px 18px;font-size:15px;font-weight:700;background:var(--accent);color:#24300f;cursor:pointer}
+.btn.sub{background:var(--panel2);color:var(--ink)}
+.btn:disabled{opacity:.4}
+.modal{position:fixed;inset:0;background:rgba(18,12,6,.82);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+.modal[hidden]{display:none}
+.mbox{background:var(--panel);border-radius:18px;padding:20px 18px;max-width:380px;width:100%;max-height:92dvh;overflow:auto;text-align:center}
+.mbox h1{margin:0 0 4px;font-size:26px;color:var(--accent)}
+.mbox h2{margin:0 0 8px;font-size:20px}
+.mbox p{margin:8px 0;font-size:14px;line-height:1.7}
+.mbox .rule{text-align:left;font-size:13px;color:var(--sub);line-height:1.7;margin:10px 0}
+.mbox .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.mbox details{text-align:left;margin-top:10px;font-size:13px;color:var(--sub)}
+.stars{font-size:34px;color:var(--accent2);letter-spacing:4px;margin:4px 0}
+.dex{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.dex div{background:var(--panel2);border-radius:10px;padding:6px 2px;font-size:12px}
+.dex .st{color:var(--accent2)}
+.dex .q{color:#7a6648}
+</style>
+</head>
+<body>
+<header><a href="../">← ちくわゲームズ</a><span class="ttl">ぬか床そだて</span></header>
+<div class="hud">
+  <span><b id="day">1</b>日目 <b id="clock">6:00</b></span>
+  <span>💰<b id="coins">0</b></span>
+  <span>Lv<b id="lv">1</b></span>
+  <span class="sp"></span>
+  <button class="chip" id="speedBtn">×1</button>
+  <button class="chip" id="dexBtn">図鑑</button>
+</div>
+<div class="order" id="order"></div>
+<div class="stage"><canvas id="cv" width="720" height="640"></canvas><div class="toast" id="toast"></div></div>
+<div class="meters">
+  <div class="cond"><span>ぬか床の調子 <b id="condTxt">よい</b></span><span id="mixTxt">混ぜてから 0時間</span></div>
+  <span>乳酸菌</span><div class="meter" id="mLac"><div class="band"></div><i></i></div>
+  <span>塩け</span><div class="meter" id="mSalt"><div class="band"></div><i></i></div>
+  <span>水分</span><div class="meter" id="mWater"><div class="band"></div><i></i></div>
+</div>
+<div class="acts">
+  <button class="btn sub" id="saltBtn">🧂 塩 <small>5</small></button>
+  <button class="btn sub" id="branBtn">🌾 ぬか足し <small>10</small></button>
+  <button class="btn sub" id="drainBtn">🧽 水を抜く</button>
+</div>
+<div class="shelf" id="shelf"></div>
+
+<div class="modal" id="mTitle">
+  <div class="mbox">
+    <h1>ぬか床そだて</h1>
+    <p>ぬか床を育てて、おいしいぬか漬けを売ろう。</p>
+    <div class="rule">
+      ・下の棚から野菜を選ぶと、ぬか床に漬かります<br>
+      ・<b>ぬか床を指でぐるぐるなぞる</b>と、かき混ぜられます。1日に2〜3回が目安。ほうっておくと白いカビ（産膜酵母）が出ます<br>
+      ・乳酸菌・塩け・水分は、緑の帯の中がちょうどいい。野菜から水が出て、塩けが減っていきます<br>
+      ・漬けた野菜をタップして取り出します。<b>食べごろ</b>で、ぬか床の調子がいいほど高く売れます<br>
+      ・注文にこたえるとボーナス。全部の野菜を★3にして図鑑をうめよう
+    </div>
+    <div class="row"><button class="btn" id="startBtn">はじめる</button></div>
+    <div id="move"></div>
+    <details><summary>更新履歴</summary>
+      <p>β0.1.0（2026-11-08）最初の試作。ぬか床の3つの状態・かき混ぜ・野菜9種・注文・図鑑。</p>
+    </details>
+  </div>
+</div>
+
+<div class="modal" id="mVeg" hidden>
+  <div class="mbox">
+    <h2 id="vName"></h2>
+    <p id="vInfo"></p>
+    <div class="row">
+      <button class="btn" id="vTake">取り出す</button>
+      <button class="btn sub" id="vBack">もどす</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="mRes" hidden>
+  <div class="mbox">
+    <h2 id="rName"></h2>
+    <div class="stars" id="rStars"></div>
+    <p id="rInfo"></p>
+    <div class="row"><button class="btn" id="rOk">OK</button></div>
+  </div>
+</div>
+
+<div class="modal" id="mDex" hidden>
+  <div class="mbox">
+    <h2>ぬか漬け図鑑</h2>
+    <p id="dexInfo"></p>
+    <div class="dex" id="dexList"></div>
+    <div class="row"><button class="btn sub" id="dexClose">とじる</button><button class="btn sub" id="shareBtn">シェア</button></div>
+  </div>
+</div>
+
+<script src="../common/v1/core.js"></script>
+<script src="../common/v1/share.js"></script>
+<script src="../common/v1/save.js"></script>
+<script src="../common/v1/move.js"></script>
+<script>
+(() => {
+'use strict';
+const VERSION = 'β0.1.0';
+const KEY_SAVE = 'nukadoko-save-v1';
+CG.init({ game: 'nukadoko', title: 'ぬか床そだて', version: VERSION });
+try { CG.move.mount(document.getElementById('move'), { keys: [KEY_SAVE] }); } catch (e) {}
+
+/* ---- 画面の拡大を止める（共通ルール 19 章） ---- */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+
+/* ---- 調整用の数値 ---- */
+const SEC_PER_HOUR = 2.5;          // ゲーム内の1時間＝実時間2.5秒（1日＝60秒）
+const BAND = { lac: [35, 65], salt: [40, 60], water: [35, 60] };  // ちょうどいい帯
+const LAC_RATE = 1.2;              // 乳酸菌の増える速さ（1時間あたり。水分が多いほど速い）
+const VEG_WATER = 0.15, VEG_SALT = 0.12;   // 野菜1本が1時間に出す水・吸う塩
+const MOLD_HOURS = 24;             // 混ぜずにこの時間たつとカビ
+const MIX_DIST = 1300;             // 1回分かき混ぜるのに必要な指の移動量（論理px）
+const MIX_LAC = 12;                // 1回混ぜると乳酸菌がこれだけ減る（空気が入る）
+const SALT_ADD = 12, SALT_COST = 5;
+const BRAN = { water: -12, salt: -4, lac: -6, cost: 10 };
+const DRAIN = 10;
+const START_COINS = 100;
+const RESCUE = 60;                 // お金も野菜もなくなったときの仕送り
+const XP_PER_LV = 6;               // ★の合計でレベルが上がる（Lv n→n+1 に XP_PER_LV×n 個）
+const slotsFor = lv => lv >= 7 ? 6 : lv >= 5 ? 5 : lv >= 3 ? 4 : 3;
+/* 野菜：h＝食べごろの時間、cost＝仕入れ、sell＝★3の売値、lv＝出てくるレベル */
+const VEG = [
+  { id: 'kyuri', name: 'きゅうり', h: 8, cost: 20, sell: 60, lv: 1 },
+  { id: 'kyabetsu', name: 'キャベツ', h: 6, cost: 15, sell: 45, lv: 1 },
+  { id: 'nasu', name: 'なす', h: 12, cost: 30, sell: 90, lv: 1 },
+  { id: 'myoga', name: 'みょうが', h: 10, cost: 25, sell: 80, lv: 2 },
+  { id: 'ninjin', name: 'にんじん', h: 24, cost: 25, sell: 100, lv: 2 },
+  { id: 'daikon', name: '大根', h: 30, cost: 30, sell: 120, lv: 3 },
+  { id: 'tamago', name: 'ゆで卵', h: 36, cost: 35, sell: 150, lv: 4 },
+  { id: 'chikuwa', name: 'ちくわ', h: 4, cost: 20, sell: 75, lv: 5 },
+  { id: 'avocado', name: 'アボカド', h: 18, cost: 60, sell: 210, lv: 6 },
+];
+const VEG_BY = Object.fromEntries(VEG.map(v => [v.id, v]));
+const STAGES = [ // r＝経過/食べごろ の上限
+  { max: 0.5, name: '生っぽい', short: '生', col: '#cfc6b0' },
+  { max: 0.85, name: '浅漬け', short: '浅', col: '#e8d25a' },
+  { max: 1.2, name: '食べごろ', short: '◎', col: '#9fc75a' },
+  { max: 1.8, name: '古漬け', short: '古', col: '#e8a14a' },
+  { max: Infinity, name: '漬かりすぎ', short: '×', col: '#e5603d' },
+];
+const stageOf = r => STAGES.find(s => r < s.max);
+
+/* ---- 状態 ---- */
+function fresh() {
+  return { v: 1, day: 1, hour: 6, coins: START_COINS, xp: 0, earned: 0, sold: 0,
+    bed: { lac: 30, salt: 52, water: 45, unmixed: 0, mold: false },
+    slots: [null, null, null, null, null, null], dex: {}, order: null };
+}
+let S = Object.assign(fresh(), CG.ls.getJSON(KEY_SAVE, {}) || {});
+if (!S.bed || !Array.isArray(S.slots)) S = fresh();
+const save = () => CG.ls.set(KEY_SAVE, JSON.stringify(S));
+const level = () => { let lv = 1, need = XP_PER_LV; while (S.xp >= need) { lv++; need += XP_PER_LV * lv; } return lv; };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ぬか床の調子（0〜1）。帯の中なら1、帯から25はなれると0 */
+function meterQ(k) { const [a, b] = BAND[k], v = S.bed[k]; return v < a ? clamp(1 - (a - v) / 25, 0, 1) : v > b ? clamp(1 - (v - b) / 25, 0, 1) : 1; }
+function bedQ() { const q = (meterQ('lac') + meterQ('salt') + meterQ('water')) / 3; return S.bed.mold ? q * 0.6 : q; }
+
+/* ---- 時間を進める（h 時間） ---- */
+function tick(h) {
+  const b = S.bed, n = S.slots.filter(Boolean).length, q = bedQ();
+  b.lac = clamp(b.lac + LAC_RATE * (0.6 + b.water / 100) * h, 0, 100);
+  b.water = clamp(b.water + VEG_WATER * n * h, 0, 100);
+  b.salt = clamp(b.salt - VEG_SALT * n * h, 0, 100);
+  b.unmixed += h;
+  if (b.unmixed > MOLD_HOURS && !b.mold) { b.mold = true; toast('白いカビが出た！かき混ぜよう'); }
+  S.slots.forEach(s => { if (s) { s.t += h; s.qs += q * h; } });
+  const before = S.day;
+  S.hour += h;
+  while (S.hour >= 24) { S.hour -= 24; S.day++; }
+  if (S.day !== before && (!S.order || S.day - S.order.day >= 2)) newOrder();
+}
+
+function mixDone() {
+  const b = S.bed;
+  b.lac = clamp(b.lac - MIX_LAC, 0, 100);
+  b.unmixed = 0;
+  if (b.mold) { b.mold = false; toast('カビを混ぜこんだ。すっきり！'); }
+  else toast(b.lac < BAND.lac[0] ? '混ぜすぎ？ 乳酸菌が少なめ' : 'よく混ぜた！');
+}
+
+/* ---- 注文 ---- */
+function newOrder() {
+  const pool = VEG.filter(v => v.lv <= level());
+  const v = pool[Math.floor(Math.random() * pool.length)];
+  S.order = { id: v.id, day: S.day, bonus: Math.round(v.sell * 0.6 / 5) * 5 };
+}
+
+/* ---- 漬ける・取り出す ---- */
+function put(id) {
+  const v = VEG_BY[id], i = S.slots.findIndex((s, k) => !s && k < slotsFor(level()));
+  if (i < 0) { toast('ぬか床がいっぱい'); return false; }
+  if (S.coins < v.cost) { toast('お金が足りない'); return false; }
+  S.coins -= v.cost;
+  S.slots[i] = { id, t: 0, qs: 0, rot: (Math.random() - 0.5) * 0.8 };
+  toast(v.name + 'を漬けた');
+  save(); return true;
+}
+function rate(s) {
+  const v = VEG_BY[s.id], r = s.t / v.h, d = Math.abs(r - 1);
+  const timing = d <= 0.15 ? 1 : clamp(1 - (d - 0.15) * 1.2, 0.1, 1);
+  const avgQ = s.t > 0 ? s.qs / s.t : bedQ();
+  const taste = timing * (0.4 + 0.6 * avgQ);
+  const stars = taste >= 0.85 ? 3 : taste >= 0.6 ? 2 : taste >= 0.35 ? 1 : 0;
+  return { r, timing, avgQ, taste, stars, kiwami: taste >= 0.97, price: Math.round(v.sell * taste) };
+}
+function comment(s, R) {
+  const b = S.bed, out = [];
+  const st = stageOf(R.r);
+  if (st.name === '生っぽい') out.push('まだほとんど生…');
+  else if (st.name === '漬かりすぎ') out.push('しょっぱくてしなしな…');
+  else if (st.name === '古漬け') out.push('しっかり漬かった古漬けの味');
+  else if (st.name === '浅漬け') out.push('さっぱりした浅漬け');
+  else out.push('ちょうどいい漬かり具合');
+  if (b.mold) out.push('ちょっとカビくさい');
+  if (b.salt > BAND.salt[1] + 8) out.push('塩がきつめ');
+  if (b.lac > BAND.lac[1] + 8) out.push('酸っぱい');
+  if (b.lac < BAND.lac[0] - 8) out.push('うまみが物足りない');
+  if (b.water > BAND.water[1] + 8) out.push('水っぽい');
+  return out.join('。') + '。';
+}
+function take(i) {
+  const s = S.slots[i]; if (!s) return null;
+  const v = VEG_BY[s.id], R = rate(s), lvBefore = level();
+  let bonus = 0;
+  if (S.order && S.order.id === s.id && R.stars >= 2) { bonus = S.order.bonus; S.order = null; }
+  S.coins += R.price + bonus; S.earned += R.price + bonus; S.sold++;
+  S.xp += R.stars;
+  const d = S.dex[s.id] || (S.dex[s.id] = { best: 0, n: 0, kiwami: false });
+  const isNew = R.stars > d.best;
+  d.best = Math.max(d.best, R.stars); d.n++; if (R.kiwami) d.kiwami = true;
+  S.slots[i] = null;
+  if (!S.order) newOrder();
+  const msg = comment(s, R);
+  if (S.coins < Math.min(...VEG.map(x => x.cost)) && !S.slots.some(Boolean)) { S.coins += RESCUE; R.rescue = true; }
+  save();
+  return { v, R, bonus, msg, isNew, lvUp: level() > lvBefore };
+}
+
+/* ---- 画面 ---- */
+const $ = id => document.getElementById(id);
+const cv = $('cv'), cx = cv.getContext('2d');
+const W = 360, H = 320, CX = 180, CY = 160, R_POT = 150, R_BRAN = 132;
+cx.scale(cv.width / W, cv.height / H);
+const SLOT_POS = [[-62, -38], [62, -38], [0, 52], [-78, 62], [78, 62], [0, -90]];
+let rnd = 7; const prand = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
+const GRAINS = Array.from({ length: 420 }, () => ({ a: prand() * Math.PI * 2, r: Math.sqrt(prand()) * (R_BRAN - 4), s: 1 + prand() * 2.2, c: prand() }));
+const MOLD = Array.from({ length: 7 }, () => ({ a: prand() * Math.PI * 2, r: 20 + prand() * 95, dots: Array.from({ length: 7 }, () => ({ x: (prand() - 0.5) * 26, y: (prand() - 0.5) * 18, s: 2 + prand() * 5 })) }));
+let mixAngle = 0, mixProg = 0, trail = [];
+
+function drawVeg(c, id, x, y, rot, prog, sc = 1) {
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc);
+  const p = clamp(prog, 0, 2), dk = a => `rgba(70,40,10,${(a * Math.min(p, 1.6) / 1.6).toFixed(2)})`;
+  const el = (rx, ry, col, ox = 0, oy = 0) => { c.fillStyle = col; c.beginPath(); c.ellipse(ox, oy, rx, ry, 0, 0, Math.PI * 2); c.fill(); };
+  switch (id) {
+    case 'kyuri': el(26, 8, '#3f8a2e'); el(22, 4, '#5fae45', 0, -2); for (let i = -18; i <= 18; i += 9) el(1.2, 1.2, '#c9e6a0', i, 3); el(26, 8, dk(.45)); break;
+    case 'kyabetsu': el(20, 15, '#c8e08a'); el(14, 10, '#a9cf6b', 2, 1); c.strokeStyle = '#eaf4c8'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-14, 0); c.lineTo(16, 0); c.stroke(); el(20, 15, dk(.4)); break;
+    case 'nasu': el(22, 11, '#4b2a6b', 3, 0); el(8, 7, '#3a6b2a', -20, 0); el(12, 4, '#7d55a3', 4, -4); el(22, 11, dk(.35), 3, 0); break;
+    case 'myoga': el(11, 15, '#e7a3b4'); el(7, 11, '#f5d5d8', 0, 1); el(11, 15, dk(.4)); break;
+    case 'ninjin': c.fillStyle = '#ec7a2a'; c.beginPath(); c.moveTo(-24, -7); c.lineTo(24, 0); c.lineTo(-24, 7); c.closePath(); c.fill(); el(5, 4, '#4f9a35', -27, 0); c.fillStyle = dk(.35); c.beginPath(); c.moveTo(-24, -7); c.lineTo(24, 0); c.lineTo(-24, 7); c.closePath(); c.fill(); break;
+    case 'daikon': el(28, 9, '#f2efe4'); el(7, 7, '#a7cf6f', -28, 0); el(24, 4, '#ffffff', 0, -3); el(28, 9, dk(.45)); break;
+    case 'tamago': el(13, 16, '#fbf6ea'); el(5, 6, '#ffffff', -4, -6); el(13, 16, dk(.6)); break;
+    case 'chikuwa': el(25, 9, '#d79a4f'); el(25, 9, 'rgba(120,70,20,.35)'); el(21, 6, '#f1d3a3'); el(3.5, 4.5, '#6b4416', 22, 0); el(25, 9, dk(.35)); break;
+    case 'avocado': el(17, 21, '#3f5e22'); el(13, 17, '#b9d36b', 0, 1); el(7, 8, '#7a4b25', 0, 4); el(17, 21, dk(.35)); break;
+  }
+  c.restore();
+}
+
+function draw() {
+  const b = S.bed;
+  cx.clearRect(0, 0, W, H);
+  // 鉢（上から見たかめ）
+  cx.fillStyle = '#6b4a2a'; cx.beginPath(); cx.arc(CX, CY, R_POT, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = '#8a6239'; cx.beginPath(); cx.arc(CX, CY, R_POT - 6, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = '#4a3119'; cx.beginPath(); cx.arc(CX, CY, R_BRAN + 3, 0, Math.PI * 2); cx.fill();
+  // ぬか（水分で色が濃くなる）
+  const wet = clamp((b.water - 30) / 50, 0, 1);
+  const g = cx.createRadialGradient(CX - 30, CY - 30, 10, CX, CY, R_BRAN);
+  g.addColorStop(0, `rgb(${196 - wet * 50},${150 - wet * 45},${92 - wet * 35})`);
+  g.addColorStop(1, `rgb(${150 - wet * 45},${105 - wet * 40},${60 - wet * 25})`);
+  cx.fillStyle = g; cx.beginPath(); cx.arc(CX, CY, R_BRAN, 0, Math.PI * 2); cx.fill();
+  cx.save(); cx.beginPath(); cx.arc(CX, CY, R_BRAN, 0, Math.PI * 2); cx.clip();
+  for (const gr of GRAINS) {
+    const a = gr.a + mixAngle * (0.4 + 0.6 * (1 - gr.r / R_BRAN));
+    cx.fillStyle = gr.c < 0.5 ? 'rgba(90,55,25,.35)' : 'rgba(235,200,140,.35)';
+    cx.fillRect(CX + Math.cos(a) * gr.r, CY + Math.sin(a) * gr.r, gr.s, gr.s);
+  }
+  if (wet > 0.6) { cx.fillStyle = `rgba(200,220,240,${(wet - 0.6) * 0.5})`; cx.beginPath(); cx.ellipse(CX + 30, CY + 40, 50, 20, 0.3, 0, Math.PI * 2); cx.fill(); }
+  // かき混ぜのあと
+  if (trail.length > 1) {
+    cx.strokeStyle = 'rgba(80,50,22,.45)'; cx.lineWidth = 10; cx.lineCap = 'round'; cx.lineJoin = 'round';
+    cx.beginPath(); trail.forEach((p, i) => i ? cx.lineTo(p.x, p.y) : cx.moveTo(p.x, p.y)); cx.stroke();
+  }
+  // カビ（混ぜない時間が長いと少しずつ見えてくる）
+  const moldA = b.mold ? 0.9 : clamp((b.unmixed - MOLD_HOURS * 0.7) / (MOLD_HOURS * 0.3), 0, 1) * 0.45;
+  if (moldA > 0) for (const m of MOLD) {
+    const mx = CX + Math.cos(m.a + mixAngle * 0.5) * m.r, my = CY + Math.sin(m.a + mixAngle * 0.5) * m.r;
+    cx.fillStyle = `rgba(248,246,232,${moldA * 0.75})`;
+    for (const d of m.dots) { cx.beginPath(); cx.arc(mx + d.x, my + d.y, d.s, 0, Math.PI * 2); cx.fill(); }
+  }
+  cx.restore();
+  // 野菜
+  const n = slotsFor(level());
+  for (let i = 0; i < n; i++) {
+    const [ox, oy] = SLOT_POS[i], x = CX + ox, y = CY + oy, s = S.slots[i];
+    if (!s) { cx.strokeStyle = 'rgba(255,240,210,.18)'; cx.setLineDash([4, 4]); cx.lineWidth = 2; cx.beginPath(); cx.arc(x, y, 26, 0, Math.PI * 2); cx.stroke(); cx.setLineDash([]); continue; }
+    const v = VEG_BY[s.id], r = s.t / v.h, st = stageOf(r);
+    cx.fillStyle = 'rgba(60,35,15,.35)'; cx.beginPath(); cx.ellipse(x + 2, y + 4, 30, 14, 0, 0, Math.PI * 2); cx.fill();
+    drawVeg(cx, s.id, x, y, s.rot, r, 1.2);
+    // ぬかが少しかぶっている
+    cx.fillStyle = 'rgba(170,120,70,.55)'; cx.beginPath(); cx.ellipse(x - 6, y + 6, 14, 5, s.rot, 0, Math.PI * 2); cx.fill();
+    // 漬かり具合の輪
+    cx.lineWidth = 4; cx.strokeStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.arc(x, y, 31, 0, Math.PI * 2); cx.stroke();
+    cx.strokeStyle = st.col; cx.beginPath(); cx.arc(x, y, 31, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(r / 1.8, 0, 1)); cx.stroke();
+    cx.fillStyle = st.col; cx.beginPath(); cx.arc(x + 24, y - 22, 9, 0, Math.PI * 2); cx.fill();
+    cx.fillStyle = '#2b2014'; cx.font = 'bold 11px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(st.short, x + 24, y - 21.5);
+  }
+  // かき混ぜゲージ
+  if (mixProg > 0) {
+    cx.lineWidth = 6; cx.strokeStyle = 'rgba(159,199,90,.9)'; cx.lineCap = 'round';
+    cx.beginPath(); cx.arc(CX, CY, R_POT - 3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * mixProg / 100); cx.stroke();
+  }
+}
+
+function setMeter(el, k) {
+  const [a, b] = BAND[k], v = S.bed[k];
+  const band = el.querySelector('.band'); band.style.left = a + '%'; band.style.width = (b - a) + '%';
+  el.querySelector('i').style.left = clamp(v, 1, 99) + '%';
+  el.classList.toggle('off', meterQ(k) < 1);
+}
+let lastShelfKey = '';
+function hud() {
+  $('day').textContent = S.day;
+  const hh = Math.floor(S.hour), mm = Math.floor((S.hour - hh) * 6) * 10;
+  $('clock').textContent = hh + ':' + String(mm).padStart(2, '0');
+  $('coins').textContent = S.coins; $('lv').textContent = level();
+  setMeter($('mLac'), 'lac'); setMeter($('mSalt'), 'salt'); setMeter($('mWater'), 'water');
+  const q = bedQ(), ct = $('condTxt');
+  ct.textContent = S.bed.mold ? 'カビ！' : q >= 0.95 ? '最高' : q >= 0.75 ? 'よい' : q >= 0.5 ? 'ふつう' : 'わるい';
+  ct.className = q >= 0.75 && !S.bed.mold ? 'good' : q < 0.5 || S.bed.mold ? 'bad' : '';
+  $('mixTxt').textContent = '混ぜてから ' + Math.floor(S.bed.unmixed) + '時間';
+  $('saltBtn').disabled = S.coins < SALT_COST; $('branBtn').disabled = S.coins < BRAN.cost;
+  const o = S.order;
+  $('order').innerHTML = o ? `📜 注文：<b>${VEG_BY[o.id].name}</b>を★2以上で → ボーナス <b>${o.bonus}</b>` : '📜 注文はまだない';
+  const key = level() + ':' + S.coins + ':' + S.slots.filter(Boolean).length;
+  if (key !== lastShelfKey) { lastShelfKey = key; shelf(); }
+}
+function shelf() {
+  const el = $('shelf'), lv = level(), full = S.slots.filter((s, k) => !s && k < slotsFor(lv)).length === 0;
+  el.innerHTML = '';
+  for (const v of VEG) {
+    const bt = document.createElement('button');
+    const locked = v.lv > lv;
+    bt.className = 'veg' + (locked ? ' lock' : '');
+    bt.dataset.id = v.id;
+    const c = document.createElement('canvas'); c.width = 80; c.height = 56;
+    const k = c.getContext('2d'); k.scale(2, 2);
+    if (!locked) drawVeg(k, v.id, 20, 14, 0, 0, 0.7);
+    bt.appendChild(c);
+    bt.insertAdjacentHTML('beforeend', locked ? `<span>？？？</span><span>Lv${v.lv}</span>` : `<span>${v.name}</span><span class="p">💰${v.cost}</span>`);
+    bt.disabled = !locked && (S.coins < v.cost || full);
+    bt.onclick = () => { if (locked) toast('Lv' + v.lv + 'で仕入れられる'); else { put(v.id); hud(); } };
+    el.appendChild(bt);
+  }
+}
+let toastT = 0;
+function toast(s) { const t = $('toast'); t.textContent = s; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1600); }
+
+/* ---- 操作 ---- */
+const modalOpen = () => [...document.querySelectorAll('.modal')].some(m => !m.hidden);
+function toLocal(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
+function hitSlot(p) {
+  const n = slotsFor(level());
+  for (let i = 0; i < n; i++) if (S.slots[i] && Math.hypot(p.x - CX - SLOT_POS[i][0], p.y - CY - SLOT_POS[i][1]) < 32) return i;
+  return -1;
+}
+let drag = null;
+cv.addEventListener('pointerdown', e => {
+  const p = toLocal(e);
+  if (Math.hypot(p.x - CX, p.y - CY) > R_POT) return;
+  cv.setPointerCapture(e.pointerId);
+  drag = { start: p, last: p, dist: 0, slot: hitSlot(p) };
+  trail = [p];
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const p = toLocal(e), d = Math.hypot(p.x - drag.last.x, p.y - drag.last.y);
+  if (Math.hypot(p.x - CX, p.y - CY) > R_BRAN + 10) { drag.last = p; return; }
+  drag.dist += d;
+  if (drag.dist > 12) {
+    const a0 = Math.atan2(drag.last.y - CY, drag.last.x - CX), a1 = Math.atan2(p.y - CY, p.x - CX);
+    let da = a1 - a0; if (da > Math.PI) da -= Math.PI * 2; if (da < -Math.PI) da += Math.PI * 2;
+    mixAngle += da;
+    mixProg += d / MIX_DIST * 100;
+    while (mixProg >= 100) { mixProg -= 100; mixDone(); }
+    trail.push(p); if (trail.length > 24) trail.shift();
+  }
+  drag.last = p;
+});
+const endDrag = () => {
+  if (drag && drag.dist <= 12 && drag.slot >= 0) openVeg(drag.slot);
+  drag = null;
+};
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', () => { drag = null; });
+
+let vegIdx = -1;
+function openVeg(i) {
+  const s = S.slots[i]; if (!s) return;
+  vegIdx = i;
+  const v = VEG_BY[s.id], R = rate(s), st = stageOf(R.r);
+  $('vName').textContent = v.name + '（' + st.name + '）';
+  $('vInfo').innerHTML = `漬けて <b>${Math.floor(s.t)}時間</b>／食べごろの目安 <b>${v.h}時間</b><br>いま取り出すと：${'★'.repeat(R.stars)}${'☆'.repeat(3 - R.stars)}　💰${R.price}`;
+  $('mVeg').hidden = false;
+}
+$('vBack').onclick = () => { $('mVeg').hidden = true; };
+$('vTake').onclick = () => {
+  $('mVeg').hidden = true;
+  const res = take(vegIdx); if (!res) return;
+  const { v, R, bonus, msg, isNew, lvUp } = res;
+  $('rName').textContent = v.name + 'のぬか漬け' + (R.kiwami ? '【極み】' : '');
+  $('rStars').textContent = '★'.repeat(R.stars) + '☆'.repeat(3 - R.stars);
+  $('rInfo').innerHTML = msg + `<br>売上 💰${R.price}` + (bonus ? `　注文ボーナス 💰${bonus}` : '') +
+    (isNew ? '<br><b>図鑑を更新！</b>' : '') + (lvUp ? `<br><b>Lv${level()}にアップ！</b>` + (VEG.some(x => x.lv === level()) ? ' 新しい野菜が棚に並んだ' : '') : '') +
+    (R.rescue ? `<br>おばあちゃんから仕送り 💰${RESCUE}` : '');
+  $('mRes').hidden = false;
+  hud();
+};
+$('rOk').onclick = () => { $('mRes').hidden = true; };
+$('saltBtn').onclick = () => { if (S.coins < SALT_COST) return; S.coins -= SALT_COST; S.bed.salt = clamp(S.bed.salt + SALT_ADD, 0, 100); toast('塩を足した'); hud(); save(); };
+$('branBtn').onclick = () => { if (S.coins < BRAN.cost) return; S.coins -= BRAN.cost; const b = S.bed; b.water = clamp(b.water + BRAN.water, 0, 100); b.salt = clamp(b.salt + BRAN.salt, 0, 100); b.lac = clamp(b.lac + BRAN.lac, 0, 100); toast('新しいぬかを足した'); hud(); save(); };
+$('drainBtn').onclick = () => { S.bed.water = clamp(S.bed.water - DRAIN, 0, 100); toast('水を抜いた'); hud(); save(); };
+let speed = 1;
+$('speedBtn').onclick = () => { speed = speed === 1 ? 3 : 1; $('speedBtn').textContent = '×' + speed; };
+$('dexBtn').onclick = () => {
+  const done = VEG.filter(v => (S.dex[v.id] || {}).best === 3).length;
+  $('dexInfo').textContent = `★3：${done} / ${VEG.length}　売った数 ${S.sold}　売上 💰${S.earned}`;
+  $('dexList').innerHTML = VEG.map(v => {
+    const d = S.dex[v.id];
+    return d ? `<div>${v.name}<br><span class="st">${'★'.repeat(d.best)}${'☆'.repeat(3 - d.best)}</span>${d.kiwami ? '<br>極み' : ''}</div>` : `<div class="q">？？？<br>Lv${v.lv}</div>`;
+  }).join('');
+  $('mDex').hidden = false;
+};
+$('dexClose').onclick = () => { $('mDex').hidden = true; };
+$('shareBtn').onclick = () => {
+  const done = VEG.filter(v => (S.dex[v.id] || {}).best === 3).length;
+  try { CG.share.open({ msg: `ぬか床そだて ${S.day}日目、ぬか漬けを${S.sold}本売って 💰${S.earned}！ 図鑑★3 ${done}/${VEG.length}`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
+};
+$('startBtn').onclick = () => { $('mTitle').hidden = true; if (!S.order) newOrder(); hud(); };
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+
+/* ---- ループ ---- */
+let prev = performance.now(), saveT = 0;
+function loop(now) {
+  const dt = Math.min(0.1, (now - prev) / 1000); prev = now;
+  if (!modalOpen()) {
+    tick(dt * speed / SEC_PER_HOUR);
+    saveT += dt; if (saveT > 5) { saveT = 0; save(); }
+    if (!drag && mixProg > 0) mixProg = Math.max(0, mixProg - dt * 6);
+    if (!drag && trail.length) trail.shift();
+    hud();
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+hud(); requestAnimationFrame(loop);
+
+/* テスト用 */
+window.NUKA = { get S() { return S; }, tick, put, take, rate, mixDone, bedQ, level, VEG, reset() { S = fresh(); save(); } };
+})();
+</script>
+</body>
+</html>
