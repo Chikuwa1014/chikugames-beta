@@ -64,6 +64,12 @@
     { item: 'memo-3', col: 10, row: 2, dx: .15, dz: -.05, y: .815 }
   ];
 
+  /* 調べるボタンに出す名前（kind ごと） */
+  SY.NAMES = {
+    bed: 'ベッド', bucket: 'バケツ', chain: '鎖', calendar: 'カレンダー', desk: '机', bottle: 'びん',
+    locker: 'ロッカー', lockerBack: 'ロッカー', shelf: '棚', tank: '培養槽'
+  };
+
   /* 調べたときの文（kind ごと） */
   SY.TEXTS = {
     bed: '汚れたマットレス。……どうやってここに来たんだっけ。',

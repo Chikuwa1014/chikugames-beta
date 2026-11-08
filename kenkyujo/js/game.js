@@ -111,6 +111,10 @@
     me.position.set(x, h / 2, z); me.isVisible = false; me.isPickable = false; me.checkCollisions = true;
   }
   const at = (col, row, dx, dz) => SY.cellPos(col, row, dx, dz);
+  function hitbox(w, h, d, x, y, z, meta) {   // 見えない「調べる」の当たり（小さい物を調べやすくする）
+    const me = B.MeshBuilder.CreateBox('hit', { width: w, height: h, depth: d }, scene);
+    me.position.set(x, y, z); me.visibility = 0; me.metadata = meta; return me;
+  }
 
   // 監禁部屋：ベッド・鎖・バケツ・カレンダー
   let p = at(1, 1, -.22, .5);
@@ -126,6 +130,7 @@
   p = at(3, 3, .2, .2);
   const bucket = B.MeshBuilder.CreateCylinder('bucket', { height: .35, diameterTop: .36, diameterBottom: .28 }, scene);
   bucket.material = metal; bucket.position.set(p.x, .175, p.z); bucket.metadata = { kind: 'bucket' }; targets.push(bucket); casters.push(bucket);
+  hitbox(.8, .7, .8, p.x, .35, p.z, { kind: 'bucket' });
   p = at(2, 1, 0, -.49);
   const cal = B.MeshBuilder.CreatePlane('cal', { width: .4, height: .55, sideOrientation: B.Mesh.DOUBLESIDE }, scene);
   cal.material = paper; cal.position.set(p.x, 1.7, p.z); cal.metadata = { kind: 'calendar' }; targets.push(cal);
@@ -195,6 +200,8 @@
     m.material = mat('memoM', { color: hex('#e8e0c8'), emissive: hex('#2a2618') });
     m.position.set(q.x, pk.y + .002, q.z); m.rotation.set(Math.PI / 2, 0, Math.random() * 3);
     m.metadata = { kind: 'pickup', item: pk.item };
+    const hb = hitbox(.5, .3, .5, q.x, pk.y + .15, q.z, m.metadata);
+    m.onDisposeObservable.add(() => hb.dispose());
     pickups[pk.item] = m;
   });
 
@@ -271,7 +278,7 @@
   /* ---------- 操作 ---------- */
   addEventListener('keydown', e => {
     G.keys[e.code] = true;
-    if (e.code === 'KeyE' && G.running && !G.paused) interact();
+    if ((e.code === 'KeyE' || e.code === 'KeyF') && G.running && !G.paused && !e.repeat) interact();
     if (G.running && /^(Arrow|Space)/.test(e.code)) e.preventDefault();
   });
   addEventListener('keyup', e => { G.keys[e.code] = false; });
@@ -280,10 +287,12 @@
   let look = null, stickId = null, stickO = null;
   const stick = $('#stick'), knob = stick.querySelector('i');
   const locked = () => document.pointerLockElement === canvas;
+  const PC = !matchMedia('(pointer:coarse)').matches;
   canvas.addEventListener('pointerdown', e => {
     if (!G.running || G.paused) return;
     audio.start();
     if (e.pointerType === 'mouse') {
+      if (locked()) { if (e.button === 0) interact(); return; }   // マウス固定中の左クリックで調べる
       if (!locked() && canvas.requestPointerLock) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => { }); } catch (_) { } }
       if (!locked()) look = { id: e.pointerId, x: e.clientX, y: e.clientY };   // マウスを固定できないときはドラッグで見回す
       return;
@@ -321,10 +330,34 @@
   let msgTimer = 0, aim = null;
   function say(t, sec = 3.5) { $('#msg').textContent = t; msgTimer = sec; }
   SY.say = say;
+  // 調べられる物（metadata を持つメッシュ）。小さい物は見えない当たり（visibility 0）を一回り大きく付けている
+  let inter = null;
+  const tmpV = new V3();
   function findAim() {
     const hit = scene.pick(engine.getRenderWidth() / 2, engine.getRenderHeight() / 2, m => m.isPickable && m.isVisible && m !== player);
-    if (!hit || !hit.hit || hit.distance > T.reach || !hit.pickedMesh.metadata) return null;
-    return hit.pickedMesh.metadata;
+    if (hit && hit.hit && hit.distance <= T.reach + .6 && hit.pickedMesh.metadata) return hit.pickedMesh.metadata;
+    // 真ん中から少しずれていても、近くて見えている物を選ぶ（いちばん真ん中に近いもの）
+    if (!inter) inter = scene.meshes.filter(m => m.metadata && m.metadata.kind);
+    const eye = camera.globalPosition, fwd = camera.getDirection(V3.Forward());
+    let best = null, bestA = T.aimAngle;
+    for (const m of inter) {
+      if (m.isDisposed() || !m.isEnabled()) continue;
+      m.getBoundingInfo().boundingSphere.centerWorld.subtractToRef(eye, tmpV);
+      const d = tmpV.length(); if (d < .01 || Math.hypot(tmpV.x, tmpV.z) > T.reach) continue;   // 床の物も届くように、横の距離で見る
+      const a = Math.acos(Math.max(-1, Math.min(1, V3.Dot(fwd, tmpV.scale(1 / d)))));
+      if (a >= bestA) continue;
+      // 間に壁などがないか
+      const r = scene.pickWithRay(new B.Ray(eye, tmpV.clone().normalize(), d), x => x.isPickable && x.isVisible && x !== player);
+      if (r && r.hit && r.pickedMesh !== m && r.distance < d - .35 && !(r.pickedMesh.metadata && r.pickedMesh.metadata.kind === m.metadata.kind)) continue;
+      best = m.metadata; bestA = a;
+    }
+    return best;
+  }
+  function aimName(a) {
+    if (!a) return '';
+    if (a.kind === 'door') return SY.DOORS[a.door].name;
+    if (a.kind === 'pickup') return SY.ITEMS[a.item].kind === 'memo' ? 'メモ' : SY.ITEMS[a.item].name;
+    return SY.NAMES[a.kind] || '';
   }
   const has = id => G.inv.includes(id);
   function give(id) {
@@ -440,6 +473,8 @@
     aim = G.running && !G.paused ? findAim() : null;
     $('#dot').classList.toggle('hot', !!aim);
     $('#act').disabled = !aim;
+    const nm = aimName(aim) + (PC ? '（E）' : '');
+    if ($('#act').dataset.nm !== nm) { $('#act').dataset.nm = nm; $('#act').textContent = aim ? '調べる：' + aimName(aim) + (PC ? '（E）' : '') : '調べる' + (PC ? '（E）' : ''); }
     if (msgTimer > 0 && (msgTimer -= dt) <= 0) $('#msg').textContent = '';
   });
   engine.runRenderLoop(() => scene.render());
