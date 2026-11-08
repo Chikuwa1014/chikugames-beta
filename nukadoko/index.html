@@ -34,6 +34,10 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
 .acts{display:flex;gap:6px;padding:6px 12px 4px;flex:none}
 .acts .btn{flex:1;padding:8px 4px;font-size:13px}
 .shelf{display:flex;gap:6px;overflow-x:auto;padding:4px 12px calc(8px + env(safe-area-inset-bottom));flex:none;touch-action:pan-x}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding:2px 12px 0;flex:none;touch-action:pan-x}
+.tab{flex:none;border:0;border-radius:8px 8px 0 0;padding:5px 10px;font-size:12px;font-weight:700;background:transparent;color:var(--sub);cursor:pointer}
+.tab.on{background:var(--panel);color:var(--ink)}
+.tab small{color:var(--accent2);margin-left:2px}
 .veg{flex:none;width:68px;border:0;border-radius:12px;background:var(--panel);color:var(--ink);padding:5px 2px;font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
 .veg canvas{width:40px;height:28px;aspect-ratio:auto}
 .veg .p{color:var(--accent2);font-weight:700}
@@ -53,6 +57,7 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
 .mbox details{text-align:left;margin-top:10px;font-size:13px;color:var(--sub)}
 .stars{font-size:34px;color:var(--accent2);letter-spacing:4px;margin:4px 0}
 .dex{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.dex h3{grid-column:1/-1;margin:8px 0 0;font-size:13px;color:var(--sub);text-align:left}
 .dex div{background:var(--panel2);border-radius:10px;padding:6px 2px;font-size:12px}
 .dex .st{color:var(--accent2)}
 .dex .q{color:#7a6648}
@@ -81,6 +86,7 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
   <button class="btn sub" id="branBtn">🌾 ぬか足し <small>10</small></button>
   <button class="btn sub" id="drainBtn">🧽 水を抜く</button>
 </div>
+<div class="tabs" id="tabs"></div>
 <div class="shelf" id="shelf"></div>
 
 <div class="modal" id="mTitle">
@@ -92,11 +98,12 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
       ・<b>ぬか床を指でぐるぐるなぞる</b>と、かき混ぜられます。1日に2〜3回が目安。ほうっておくと白いカビ（産膜酵母）が出ます<br>
       ・乳酸菌・塩け・水分は、緑の帯の中がちょうどいい。野菜から水が出て、塩けが減っていきます<br>
       ・漬けた野菜をタップして取り出します。<b>食べごろ</b>で、ぬか床の調子がいいほど高く売れます<br>
-      ・注文にこたえるとボーナス。全部の野菜を★3にして図鑑をうめよう
+      ・注文にこたえるとボーナス。レベルが上がると漬けられる食べ物が増えます（全部で100種）。図鑑を★3でうめよう
     </div>
     <div class="row"><button class="btn" id="startBtn">はじめる</button></div>
     <div id="move"></div>
     <details><summary>更新履歴</summary>
+      <p>β0.2.0（2026-11-08）漬ける食べ物を100種に（実もの・葉・根・山菜・果物・卵や魚）。棚を種類別のタブに。</p>
       <p>β0.1.0（2026-11-08）最初の試作。ぬか床の3つの状態・かき混ぜ・野菜9種・注文・図鑑。</p>
     </details>
   </div>
@@ -138,7 +145,7 @@ canvas{display:block;touch-action:none;max-width:100%;max-height:100%;aspect-rat
 <script>
 (() => {
 'use strict';
-const VERSION = 'β0.1.0';
+const VERSION = 'β0.2.0';
 const KEY_SAVE = 'nukadoko-save-v1';
 CG.init({ game: 'nukadoko', title: 'ぬか床そだて', version: VERSION });
 try { CG.move.mount(document.getElementById('move'), { keys: [KEY_SAVE] }); } catch (e) {}
@@ -161,20 +168,82 @@ const BRAN = { water: -12, salt: -4, lac: -6, cost: 10 };
 const DRAIN = 10;
 const START_COINS = 100;
 const RESCUE = 60;                 // お金も野菜もなくなったときの仕送り
-const XP_PER_LV = 6;               // ★の合計でレベルが上がる（Lv n→n+1 に XP_PER_LV×n 個）
+const XP_NEED = lv => 6 + 4 * lv;   // Lv lv→lv+1 に必要な★の数
 const slotsFor = lv => lv >= 7 ? 6 : lv >= 5 ? 5 : lv >= 3 ? 4 : 3;
-/* 野菜：h＝食べごろの時間、cost＝仕入れ、sell＝★3の売値、lv＝出てくるレベル */
-const VEG = [
-  { id: 'kyuri', name: 'きゅうり', h: 8, cost: 20, sell: 60, lv: 1 },
-  { id: 'kyabetsu', name: 'キャベツ', h: 6, cost: 15, sell: 45, lv: 1 },
-  { id: 'nasu', name: 'なす', h: 12, cost: 30, sell: 90, lv: 1 },
-  { id: 'myoga', name: 'みょうが', h: 10, cost: 25, sell: 80, lv: 2 },
-  { id: 'ninjin', name: 'にんじん', h: 24, cost: 25, sell: 100, lv: 2 },
-  { id: 'daikon', name: '大根', h: 30, cost: 30, sell: 120, lv: 3 },
-  { id: 'tamago', name: 'ゆで卵', h: 36, cost: 35, sell: 150, lv: 4 },
-  { id: 'chikuwa', name: 'ちくわ', h: 4, cost: 20, sell: 75, lv: 5 },
-  { id: 'avocado', name: 'アボカド', h: 18, cost: 60, sell: 210, lv: 6 },
+const START_ITEMS = 6, ITEMS_PER_LV = 4;   // Lv1 で棚に並ぶ数、レベルが1上がるごとに増える数
+/* 漬ける食べ物（実際にぬか漬けにされるもの 100 種）
+   [名前, 食べごろの時間, 形, 色1, 色2, めずらしさ1〜5]。めずらしさ順に、Lv1 で 6 種、以後 1 レベルごとに 4 種ずつ棚に並ぶ。
+   売値（★3）と仕入れ値は、時間とめずらしさから決める（vegPrice）。形は drawShape を参照 */
+const CATS = [
+  { id: 'mi', name: '実もの', list: [
+    ['きゅうり', 8, 'long', '#3f8a2e', '#5fae45', 1], ['なす', 12, 'fat', '#4b2a6b', '#7d55a3', 1],
+    ['水なす', 10, 'fat', '#5b2f7a', '#8a5fb0', 3], ['長なす', 14, 'long', '#4b2a6b', '#7d55a3', 3],
+    ['白うり', 12, 'long', '#b9d98a', '#e4f2c6', 3], ['加賀太きゅうり', 12, 'fat', '#4f8a35', '#8cc06a', 4],
+    ['ズッキーニ', 8, 'long', '#2f6b2a', '#6fa04a', 2], ['ゴーヤ', 10, 'long', '#4f9a35', '#8fcf62', 2],
+    ['ピーマン', 6, 'round', '#2f8a2a', '#5fc04a', 2], ['パプリカ', 8, 'round', '#e8432e', '#f58a5a', 2],
+    ['ミニトマト', 12, 'small', '#e8402e', '#ff8a6a', 3], ['オクラ', 6, 'pod', '#4f9a35', '#8fcf62', 2],
+    ['ししとう', 6, 'pod', '#3f8a2e', '#6fbf4a', 2], ['万願寺とうがらし', 8, 'pod', '#3b8a30', '#7ac05a', 4],
+    ['青唐辛子', 24, 'pod', '#2f7a28', '#5fa040', 4], ['さやいんげん', 6, 'pod', '#4a9a3a', '#7fcf5a', 3],
+    ['スナップえんどう', 6, 'pod', '#6fb04a', '#a8dc7a', 3], ['枝豆', 12, 'pod', '#6a9e3a', '#a6cf6a', 3],
+    ['ヤングコーン', 8, 'long', '#f2dd8a', '#fff3c0', 3], ['かぼちゃ', 24, 'slice', '#2f5a2a', '#f2a83a', 2],
+    ['冬瓜', 12, 'slice', '#4f7a4a', '#eef0d8', 3], ['はやとうり', 12, 'round', '#b8d88a', '#e6f2c6', 4],
+    ['すいかの皮', 8, 'slice', '#2f6a2a', '#f0f4e0', 4], ['カリフラワー', 10, 'flower', '#f2ecd8', '#b8cf8a', 3],
+    ['ブロッコリー', 8, 'flower', '#3f7a2e', '#8fbf5a', 2],
+  ] },
+  { id: 'ha', name: '葉・茎', list: [
+    ['キャベツ', 6, 'leaf', '#c8e08a', '#eaf4c8', 1], ['白菜', 10, 'leaf', '#e6efc0', '#a9cf6b', 1],
+    ['小松菜', 6, 'leaf', '#3f8a2e', '#6fbf4a', 2], ['チンゲン菜', 6, 'leaf', '#6fae45', '#d6ecb0', 2],
+    ['水菜', 4, 'stalk', '#6fbf4a', '#eaf4d8', 2], ['セロリ', 8, 'stalk', '#a6cf6a', '#d6ecb0', 2],
+    ['アスパラガス', 8, 'stalk', '#5f9a3a', '#8fbf5a', 2], ['ねぎ', 10, 'stalk', '#f2f2e4', '#6fae45', 2],
+    ['ニラ', 4, 'stalk', '#3f8a2e', '#6fbf4a', 3], ['みつば', 4, 'stalk', '#7fbf5a', '#c8e6a0', 3],
+    ['せり', 4, 'stalk', '#4f9a35', '#a6cf6a', 4], ['菜の花', 6, 'flower', '#5f9a3a', '#f2d23a', 3],
+    ['からし菜', 8, 'leaf', '#4f8a35', '#8fbf5a', 3], ['高菜', 12, 'leaf', '#3f7a2e', '#7fae55', 3],
+    ['野沢菜', 12, 'stalk', '#4f9a35', '#b8d88a', 3], ['かぶの葉', 6, 'leaf', '#3f8a2e', '#7fbf5a', 2],
+    ['大根の葉', 6, 'leaf', '#4a8a35', '#8fbf5a', 2], ['わさびの茎', 12, 'stalk', '#8fbf6a', '#e0f0c8', 4],
+  ] },
+  { id: 'ne', name: '根・いも', list: [
+    ['大根', 30, 'root', '#f2efe4', '#a7cf6f', 1], ['にんじん', 24, 'tri', '#ec7a2a', '#4f9a35', 1],
+    ['かぶ', 12, 'bulb', '#f6f4ea', '#6fae45', 1], ['赤かぶ', 18, 'bulb', '#b8304a', '#6fae45', 3],
+    ['日野菜', 18, 'root', '#efe8f2', '#a0305a', 4], ['聖護院かぶ', 18, 'bulb', '#f2f0e6', '#8fbf5a', 4],
+    ['ラディッシュ', 8, 'small', '#d8304a', '#f6f0f0', 3], ['紅芯大根', 24, 'slice', '#e8f0e0', '#e0507a', 4],
+    ['ビーツ', 24, 'bulb', '#7a1f3a', '#b8304a', 4], ['ごぼう', 36, 'root', '#7a5a3a', '#a8865a', 3],
+    ['金時にんじん', 24, 'tri', '#d8302a', '#4f9a35', 4], ['れんこん', 24, 'slice', '#e8d8c0', '#f6eee0', 3],
+    ['長いも', 24, 'root', '#e8d8b0', '#c8b080', 2], ['里いも', 24, 'round', '#e0d8c8', '#8a6a4a', 3],
+    ['じゃがいも', 24, 'round', '#e8c87a', '#f2dca0', 2], ['さつまいも', 24, 'long', '#a03a5a', '#f2d27a', 3],
+    ['菊芋', 24, 'round', '#d8b88a', '#f0dcb0', 4], ['ヤーコン', 20, 'root', '#b88a5a', '#f0e0c0', 4],
+    ['新玉ねぎ', 12, 'bulb', '#f2f0d8', '#c8d88a', 2], ['らっきょう', 48, 'small', '#f6f4e8', '#d8e8b0', 4],
+    ['にんにく', 72, 'bulb', '#f2ece0', '#d8c8b0', 4], ['新しょうが', 24, 'root', '#f2dcb0', '#e88aa0', 3],
+  ] },
+  { id: 'yama', name: '山菜・きのこ', list: [
+    ['みょうが', 10, 'bulb', '#e7a3b4', '#f5d5d8', 2], ['たけのこ', 24, 'tri', '#d8c08a', '#f2e6c0', 3],
+    ['ふき', 12, 'stalk', '#8fbf6a', '#c8e0a0', 3], ['うど', 10, 'stalk', '#f2f2e0', '#c8a0c0', 4],
+    ['ふきのとう', 8, 'round', '#8fbf5a', '#d8ecb0', 4], ['たらの芽', 6, 'tri', '#6f9a3a', '#a0305a', 5],
+    ['しいたけ', 12, 'shroom', '#7a4a2a', '#f0e6d0', 3], ['エリンギ', 12, 'shroom', '#d8c8a8', '#f6f0e2', 3],
+    ['しめじ', 8, 'shroom', '#a8906a', '#f2ece0', 3], ['まいたけ', 8, 'shroom', '#6a5a4a', '#e0d8c8', 4],
+  ] },
+  { id: 'kuda', name: '果物', list: [
+    ['りんご', 12, 'slice', '#d8302a', '#f6eed0', 3], ['梨', 10, 'slice', '#c8a05a', '#f6f2e0', 4],
+    ['柿', 24, 'round', '#f08a2a', '#f6b05a', 4], ['アボカド', 18, 'slice', '#3f5e22', '#b9d36b', 4],
+    ['キウイ', 12, 'slice', '#8a6a3a', '#8fbf3a', 5], ['金柑', 24, 'small', '#f0a02a', '#f6c85a', 5],
+    ['ゆずの皮', 24, 'slice', '#e8c83a', '#f6f0d0', 5],
+  ] },
+  { id: 'hoka', name: '卵・魚・ほか', list: [
+    ['ゆで卵', 36, 'egg', '#fbf6ea', '#ffffff', 2], ['うずらの卵', 24, 'small', '#f6f0e0', '#8a7a6a', 3],
+    ['豆腐', 24, 'block', '#f8f6ee', '#ffffff', 3], ['厚揚げ', 24, 'block', '#d89a4a', '#f6e8c8', 3],
+    ['こんにゃく', 24, 'block', '#8a8478', '#a8a296', 3], ['クリームチーズ', 24, 'block', '#fff6d8', '#f6e8b0', 4],
+    ['ちくわ', 4, 'tube', '#d79a4f', '#f1d3a3', 3], ['かまぼこ', 12, 'slice', '#f6f0f0', '#e86a8a', 4],
+    ['鶏ささみ', 24, 'meat', '#f2dccc', '#fff0e6', 5], ['豚バラ肉', 48, 'meat', '#f0b0a0', '#fff2ea', 5],
+    ['鮭', 48, 'meat', '#f08a6a', '#fff0e0', 5], ['さば', 48, 'fish', '#4a6a8a', '#e8eef0', 5],
+    ['いわし', 48, 'fish', '#3a5a7a', '#e8eef2', 5], ['にしん', 48, 'fish', '#6a7a8a', '#eef0f2', 5],
+    ['いか', 24, 'meat', '#f6efe8', '#e8c8c0', 5], ['たこ', 12, 'meat', '#c8404a', '#f6e0d8', 5],
+    ['ホタテ', 12, 'round', '#f2e6d0', '#fff6ea', 5], ['干し大根（たくあん）', 240, 'root', '#e8d88a', '#f2e8b0', 5],
+  ] },
 ];
+const vegPrice = (h, tier) => { const sell = Math.round((35 + h * 2.5) * (1 + 0.15 * (tier - 1)) / 5) * 5; return { sell, cost: Math.max(10, Math.round(sell / 3 / 5) * 5) }; };
+const VEG = CATS.flatMap(c => c.list.map(([name, h, shape, c1, c2, tier]) => Object.assign({ id: name, name, h, shape, c1, c2, tier, cat: c.id }, vegPrice(h, tier))));
+VEG.slice().sort((a, b) => a.tier - b.tier).forEach((v, i) => { v.lv = i < START_ITEMS ? 1 : 2 + Math.floor((i - START_ITEMS) / ITEMS_PER_LV); });
+/* β0.1.0 のセーブの id を読みかえる */
+const OLD_ID = { kyuri: 'きゅうり', kyabetsu: 'キャベツ', nasu: 'なす', myoga: 'みょうが', ninjin: 'にんじん', daikon: '大根', tamago: 'ゆで卵', chikuwa: 'ちくわ', avocado: 'アボカド' };
 const VEG_BY = Object.fromEntries(VEG.map(v => [v.id, v]));
 const STAGES = [ // r＝経過/食べごろ の上限
   { max: 0.5, name: '生っぽい', short: '生', col: '#cfc6b0' },
@@ -193,8 +262,13 @@ function fresh() {
 }
 let S = Object.assign(fresh(), CG.ls.getJSON(KEY_SAVE, {}) || {});
 if (!S.bed || !Array.isArray(S.slots)) S = fresh();
+(function migrate() {
+  S.slots = S.slots.map(x => x && (VEG.some(v => v.id === x.id) ? x : OLD_ID[x.id] ? Object.assign(x, { id: OLD_ID[x.id] }) : null));
+  for (const k of Object.keys(S.dex)) if (OLD_ID[k]) { S.dex[OLD_ID[k]] = S.dex[k]; delete S.dex[k]; }
+  if (S.order && !VEG.some(v => v.id === S.order.id)) S.order = OLD_ID[S.order.id] ? Object.assign(S.order, { id: OLD_ID[S.order.id] }) : null;
+})();
 const save = () => CG.ls.set(KEY_SAVE, JSON.stringify(S));
-const level = () => { let lv = 1, need = XP_PER_LV; while (S.xp >= need) { lv++; need += XP_PER_LV * lv; } return lv; };
+const level = () => { let lv = 1, need = XP_NEED(1); while (S.xp >= need) { lv++; need += XP_NEED(lv); } return lv; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ぬか床の調子（0〜1）。帯の中なら1、帯から25はなれると0 */
@@ -293,21 +367,38 @@ const GRAINS = Array.from({ length: 420 }, () => ({ a: prand() * Math.PI * 2, r:
 const MOLD = Array.from({ length: 7 }, () => ({ a: prand() * Math.PI * 2, r: 20 + prand() * 95, dots: Array.from({ length: 7 }, () => ({ x: (prand() - 0.5) * 26, y: (prand() - 0.5) * 18, s: 2 + prand() * 5 })) }));
 let mixAngle = 0, mixProg = 0, trail = [];
 
-function drawVeg(c, id, x, y, rot, prog, sc = 1) {
-  c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc);
-  const p = clamp(prog, 0, 2), dk = a => `rgba(70,40,10,${(a * Math.min(p, 1.6) / 1.6).toFixed(2)})`;
-  const el = (rx, ry, col, ox = 0, oy = 0) => { c.fillStyle = col; c.beginPath(); c.ellipse(ox, oy, rx, ry, 0, 0, Math.PI * 2); c.fill(); };
-  switch (id) {
-    case 'kyuri': el(26, 8, '#3f8a2e'); el(22, 4, '#5fae45', 0, -2); for (let i = -18; i <= 18; i += 9) el(1.2, 1.2, '#c9e6a0', i, 3); el(26, 8, dk(.45)); break;
-    case 'kyabetsu': el(20, 15, '#c8e08a'); el(14, 10, '#a9cf6b', 2, 1); c.strokeStyle = '#eaf4c8'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-14, 0); c.lineTo(16, 0); c.stroke(); el(20, 15, dk(.4)); break;
-    case 'nasu': el(22, 11, '#4b2a6b', 3, 0); el(8, 7, '#3a6b2a', -20, 0); el(12, 4, '#7d55a3', 4, -4); el(22, 11, dk(.35), 3, 0); break;
-    case 'myoga': el(11, 15, '#e7a3b4'); el(7, 11, '#f5d5d8', 0, 1); el(11, 15, dk(.4)); break;
-    case 'ninjin': c.fillStyle = '#ec7a2a'; c.beginPath(); c.moveTo(-24, -7); c.lineTo(24, 0); c.lineTo(-24, 7); c.closePath(); c.fill(); el(5, 4, '#4f9a35', -27, 0); c.fillStyle = dk(.35); c.beginPath(); c.moveTo(-24, -7); c.lineTo(24, 0); c.lineTo(-24, 7); c.closePath(); c.fill(); break;
-    case 'daikon': el(28, 9, '#f2efe4'); el(7, 7, '#a7cf6f', -28, 0); el(24, 4, '#ffffff', 0, -3); el(28, 9, dk(.45)); break;
-    case 'tamago': el(13, 16, '#fbf6ea'); el(5, 6, '#ffffff', -4, -6); el(13, 16, dk(.6)); break;
-    case 'chikuwa': el(25, 9, '#d79a4f'); el(25, 9, 'rgba(120,70,20,.35)'); el(21, 6, '#f1d3a3'); el(3.5, 4.5, '#6b4416', 22, 0); el(25, 9, dk(.35)); break;
-    case 'avocado': el(17, 21, '#3f5e22'); el(13, 17, '#b9d36b', 0, 1); el(7, 8, '#7a4b25', 0, 4); el(17, 21, dk(.35)); break;
+/* 形ごとの描き方。col(0) が色1、col(1) が色2（漬かるほど暗くするときは、同じ形を暗い色だけで重ねる） */
+function drawShape(c, shape, col) {
+  const el = (rx, ry, k, ox = 0, oy = 0, r = 0) => { c.fillStyle = col(k); c.beginPath(); c.ellipse(ox, oy, rx, ry, r, 0, Math.PI * 2); c.fill(); };
+  const poly = (pts, k) => { c.fillStyle = col(k); c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill(); };
+  switch (shape) {
+    case 'long': el(26, 8, 0); el(21, 3.5, 1, 0, -2.5); break;
+    case 'fat': el(22, 11, 0, 3, 0); el(8, 7, 2, -20, 0); el(12, 4, 1, 4, -4); break;
+    case 'round': el(15, 14, 0); el(6, 5, 1, -5, -5); break;
+    case 'small': el(9, 9, 0, -9, 3); el(9, 9, 0, 9, -3); el(3, 3, 1, -11, 0); el(3, 3, 1, 7, -6); break;
+    case 'leaf': el(21, 15, 0); el(14, 9, 1, 3, 1); poly([[-16, -1], [17, -1], [17, 1], [-16, 1]], 1); break;
+    case 'stalk': el(28, 4, 0, 0, -3); el(28, 4, 0, 2, 4); el(9, 6, 1, 24, 0); break;
+    case 'pod': el(20, 5, 0, 0, 0, 0.15); el(4, 3, 2, -20, -3); el(14, 1.6, 1, 2, -1.5, 0.15); break;
+    case 'tri': poly([[-24, -8], [24, 0], [-24, 8]], 0); el(6, 5, 1, -27, 0); break;
+    case 'root': el(28, 9, 0); el(23, 3.5, 1, 2, -3); el(7, 7, 2, -29, 0); break;
+    case 'bulb': el(15, 14, 0, 2, 2); el(5, 7, 1, -13, -6, 0.6); el(4, 5, 1, 4, -3); break;
+    case 'tube': el(25, 9, 0); el(21, 6, 1); el(3.5, 4.5, 3, 22, 0); break;
+    case 'egg': el(13, 16, 0); el(5, 6, 1, -4, -6); break;
+    case 'block': poly([[-17, -11], [17, -11], [17, 11], [-17, 11]], 0); poly([[-17, -11], [17, -11], [13, -7], [-13, -7]], 1); break;
+    case 'slice': c.fillStyle = col(0); c.beginPath(); c.arc(0, 6, 20, Math.PI, 0); c.closePath(); c.fill(); c.fillStyle = col(1); c.beginPath(); c.arc(0, 6, 16, Math.PI, 0); c.closePath(); c.fill(); break;
+    case 'flower': el(4, 9, 1, 0, 9); for (const [x, y] of [[-9, -2], [0, -6], [9, -2], [-4, 3], [5, 3]]) el(8, 8, 0, x, y); break;
+    case 'shroom': el(5, 12, 1, 0, 6); c.fillStyle = col(0); c.beginPath(); c.arc(0, -2, 15, Math.PI, 0); c.closePath(); c.fill(); break;
+    case 'meat': el(22, 12, 0, 0, 0, 0.1); el(18, 2.5, 1, 0, -3, 0.1); el(14, 2, 1, 2, 4, 0.1); break;
+    case 'fish': el(22, 8, 0); el(18, 3.5, 1, 2, 3); poly([[18, 0], [28, -8], [28, 8]], 0); el(1.8, 1.8, 3, -15, -2); break;
   }
+}
+function drawVeg(c, id, x, y, rot, prog, sc = 1) {
+  const v = VEG_BY[id]; if (!v) return;
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc);
+  const base = [v.c1, v.c2, '#3a6b2a', '#6b4416'];
+  drawShape(c, v.shape, k => base[k]);
+  const a = (0.45 * Math.min(clamp(prog, 0, 2), 1.6) / 1.6).toFixed(2);
+  if (a > 0) drawShape(c, v.shape, () => `rgba(70,40,10,${a})`);
   c.restore();
 }
 
@@ -373,7 +464,7 @@ function setMeter(el, k) {
   el.querySelector('i').style.left = clamp(v, 1, 99) + '%';
   el.classList.toggle('off', meterQ(k) < 1);
 }
-let lastShelfKey = '';
+let lastShelfKey = '', tab = 'mi';
 function hud() {
   $('day').textContent = S.day;
   const hh = Math.floor(S.hour), mm = Math.floor((S.hour - hh) * 6) * 10;
@@ -392,8 +483,13 @@ function hud() {
 }
 function shelf() {
   const el = $('shelf'), lv = level(), full = S.slots.filter((s, k) => !s && k < slotsFor(lv)).length === 0;
+  $('tabs').innerHTML = CATS.map(c => {
+    const n = VEG.filter(v => v.cat === c.id && v.lv <= lv).length;
+    return `<button class="tab${c.id === tab ? ' on' : ''}" data-cat="${c.id}">${c.name}<small>${n}</small></button>`;
+  }).join('');
   el.innerHTML = '';
-  for (const v of VEG) {
+  const list = VEG.filter(v => v.cat === tab).sort((a, b) => a.lv - b.lv);
+  for (const v of list) {
     const bt = document.createElement('button');
     const locked = v.lv > lv;
     bt.className = 'veg' + (locked ? ' lock' : '');
@@ -466,7 +562,7 @@ $('vTake').onclick = () => {
   $('rName').textContent = v.name + 'のぬか漬け' + (R.kiwami ? '【極み】' : '');
   $('rStars').textContent = '★'.repeat(R.stars) + '☆'.repeat(3 - R.stars);
   $('rInfo').innerHTML = msg + `<br>売上 💰${R.price}` + (bonus ? `　注文ボーナス 💰${bonus}` : '') +
-    (isNew ? '<br><b>図鑑を更新！</b>' : '') + (lvUp ? `<br><b>Lv${level()}にアップ！</b>` + (VEG.some(x => x.lv === level()) ? ' 新しい野菜が棚に並んだ' : '') : '') +
+    (isNew ? '<br><b>図鑑を更新！</b>' : '') + (lvUp ? `<br><b>Lv${level()}にアップ！</b>` + (VEG.some(x => x.lv === level()) ? '<br>棚に新しく並んだ：' + VEG.filter(x => x.lv === level()).map(x => x.name).join('・') : '') : '') +
     (R.rescue ? `<br>おばあちゃんから仕送り 💰${RESCUE}` : '');
   $('mRes').hidden = false;
   hud();
@@ -480,10 +576,10 @@ $('speedBtn').onclick = () => { speed = speed === 1 ? 3 : 1; $('speedBtn').textC
 $('dexBtn').onclick = () => {
   const done = VEG.filter(v => (S.dex[v.id] || {}).best === 3).length;
   $('dexInfo').textContent = `★3：${done} / ${VEG.length}　売った数 ${S.sold}　売上 💰${S.earned}`;
-  $('dexList').innerHTML = VEG.map(v => {
+  $('dexList').innerHTML = CATS.map(c => `<h3>${c.name}</h3>` + VEG.filter(v => v.cat === c.id).sort((a, b) => a.lv - b.lv).map(v => {
     const d = S.dex[v.id];
-    return d ? `<div>${v.name}<br><span class="st">${'★'.repeat(d.best)}${'☆'.repeat(3 - d.best)}</span>${d.kiwami ? '<br>極み' : ''}</div>` : `<div class="q">？？？<br>Lv${v.lv}</div>`;
-  }).join('');
+    return d ? `<div>${v.name}<br><span class="st">${'★'.repeat(d.best)}${'☆'.repeat(3 - d.best)}</span>${d.kiwami ? '<br>極み' : ''}</div>` : `<div class="q">${v.lv <= level() ? v.name : '？？？'}<br>${v.lv <= level() ? 'まだ' : 'Lv' + v.lv}</div>`;
+  }).join('')).join('');
   $('mDex').hidden = false;
 };
 $('dexClose').onclick = () => { $('mDex').hidden = true; };
@@ -491,6 +587,7 @@ $('shareBtn').onclick = () => {
   const done = VEG.filter(v => (S.dex[v.id] || {}).best === 3).length;
   try { CG.share.open({ msg: `ぬか床そだて ${S.day}日目、ぬか漬けを${S.sold}本売って 💰${S.earned}！ 図鑑★3 ${done}/${VEG.length}`, tags: ['ぬか床そだて'], url: CG.pageUrl() }); } catch (e) {}
 };
+$('tabs').onclick = e => { const b = e.target.closest('.tab'); if (!b) return; tab = b.dataset.cat; shelf(); $('shelf').scrollLeft = 0; };
 $('startBtn').onclick = () => { $('mTitle').hidden = true; if (!S.order) newOrder(); hud(); };
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 
@@ -511,7 +608,7 @@ function loop(now) {
 hud(); requestAnimationFrame(loop);
 
 /* テスト用 */
-window.NUKA = { get S() { return S; }, tick, put, take, rate, mixDone, bedQ, level, VEG, reset() { S = fresh(); save(); } };
+window.NUKA = { get S() { return S; }, CATS, tick, put, take, rate, mixDone, bedQ, level, VEG, reset() { S = fresh(); save(); } };
 })();
 </script>
 </body>
