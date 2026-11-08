@@ -18,4 +18,4 @@
 - `ugokase-chikuwa/`：うごかせ！ちくわくん。2026-10-28 に「開発に公開」から直接 1.0.0 で号口へ昇格した。号口の `/ugokase-chikuwa/` へ移動するページ（`index.html`）だけを残す。開発は号口リポジトリで行う。
 - `common/v1/move.js`：号口と同じ中身にそろえた（2026-10-28）。
 - `kenkyujo/`：サイレント夜（仮）。3D脱出ホラー（Babylon.js）。2026-11-08 に開発に公開（β0.1.0）。β公開のときは限定公開（鍵付き）。仕様は `kenkyujo/CLAUDE.md`。
-- `common/lib/`：外部ライブラリ（号口 `CLAUDE.md` 8 章）。いまは Babylon.js 7.54.3。号口のゲームで使うときは号口にも同じものを置く。
+- `common/lib/`：外部ライブラリ（号口 `CLAUDE.md` 8 章）。いまは Babylon.js 7.54.3 と three.js 0.170.0（`gomibako-shooter/` で使用。2026-11-08）。号口のゲームで使うときは号口にも同じものを置く。
