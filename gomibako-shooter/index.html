@@ -41,7 +41,19 @@ header .ttl{margin-left:auto;font-weight:900;font-style:italic;font-size:12px;ov
 .new{color:var(--yel);font-weight:900;font-style:italic;animation:pop .6s ease-in-out infinite alternate}
 @keyframes pop{to{transform:scale(1.08)}}
 details{text-align:left;margin-top:12px;font-size:13px;color:var(--sub)}
-.hint{font-size:12px;color:var(--sub);margin-top:8px}
+.hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.6}
+.prog{font-size:13px;color:#cfc9ee}
+.prog b{color:var(--yel)}
+.sgrp{margin:14px 0 6px;text-align:left;font-size:12px;font-weight:900;color:var(--sub);letter-spacing:.04em}
+.sgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.sb{border:0;border-radius:10px;padding:8px 0 5px;background:#2a2244;color:#fff;font-weight:900;font-style:italic;font-size:16px;cursor:pointer;line-height:1.1;font-family:Impact,"Arial Black",sans-serif}
+.sb small{display:block;font-size:9px;color:var(--yel);font-style:normal;font-family:system-ui,sans-serif;min-height:11px;margin-top:2px}
+.sb.boss{background:linear-gradient(160deg,#5a1424,#2a0a14);box-shadow:inset 0 0 0 1px #ff3b3b}
+.sb.clear{background:#3a2f6a}
+.sb.next{box-shadow:inset 0 0 0 2px var(--cyan)}
+.sb:disabled{opacity:.3;cursor:default}
+.stars{font-size:30px;letter-spacing:.1em;color:var(--yel);margin:4px 0}
+.stars i{font-style:normal;color:#3a3358}
 </style>
 </head>
 <body>
@@ -51,20 +63,23 @@ details{text-align:left;margin-top:12px;font-size:13px;color:var(--sub)}
 <div class="modal" id="mTitle">
   <div class="mbox">
     <h1 class="logo"><span class="a">STYLISH</span><span class="b">ゴミ箱シューター</span></h1>
-    <p>夜のおでん横丁をスケボーで爆走しながら、<br>ゴミをゴミ箱へシュートしまくれ！</p>
+    <p>夜の街をスケボーで爆走しながら、<br>ゴミをゴミ箱へシュートしまくれ！</p>
     <div class="rule">
       ・ゴミは<b>自動で前へ投げる</b>（最初は 0.7 秒に 1 回）<br>
-      ・<b>左右にドラッグ／フリック</b>、または <b>← →・A D キー</b>で動いて、ゴミ箱の前へ<br>
+      ・<b>左右にドラッグ</b>、または <b>← →・A D キー</b>で動いて、ゴミ箱の前へ<br>
       ・ゴミ箱には<b>硬さ</b>がある（数字の回数だけ当てる）。ど真ん中で <b>SWISH</b>、壁で跳ね返して <b>BANK</b><br>
-      ・入れると<b>強化アイテム</b>が落ちてくる。拾って強くなろう（連射・数+1・速さ・威力・時間）<br>
+      ・入れると<b>強化アイテム</b>が落ちてくる。連射・数・速さ・威力は <b>Lv20 で MAX</b>（時間は +1〜5 秒）<br>
+      ・道の<b>キッカー・レール・ボックス</b>に乗るとトリック。<b>タップ・上フリック・↑ W スペース</b>でジャンプ、空中でもう一度で技<br>
+      ・<b>水たまり・コーン・自転車</b>にぶつかると<b>速度ダウン</b>。トリック中なら弾き飛ばして点が入る（速度ダウンはそのまま）<br>
       ・ボスを倒すと<b>ボーナス</b>（数秒間、超連射・威力+2・時間が止まる）<br>
       ・ゴミ箱を見送ると時間がへる。かっこよく決めるほどランクが上がる（D → SSS）
     </div>
-    <p>ベスト <b id="tBest">0</b> 点 <span id="tRank"></span></p>
-    <div class="row"><button class="btn" id="startBtn">START</button></div>
-    <div class="hint">プレイ中に R キーで、すぐにやり直せます</div>
+    <p class="prog" id="tProg"></p>
+    <div class="row"><button class="btn" id="stageBtn">STAGE</button><button class="btn" id="freeBtn" style="background:linear-gradient(90deg,#2a7bff,#22e6ff);box-shadow:0 6px 20px rgba(34,230,255,.3)">FREE</button></div>
+    <div class="hint">STAGE：全 100 ステージ（10 ごとにボス）・街の見た目は 10 種類<br>FREE：時間が切れるまでどこまでも（800m ごとに街が変わる）<br>プレイ中に R キーで、すぐにやり直せます</div>
     <details><summary>セーブの引っ越し・更新履歴</summary>
       <div id="move"></div>
+      <p>β0.4.0（2026-11-09）強化を Lv20 で MAX に（1 回ずつの伸びを小さく）。STAGE（100 ステージ）と FREE を追加。街の見た目 10 種類。キッカー・レール・ボックスのトリックと、水たまり・コーン・自転車の障害物を追加。</p>
       <p>β0.3.1（2026-11-09）最初の投げる間隔を 0.95 秒から 0.7 秒に（難しすぎたため）。</p>
       <p>β0.3.0（2026-11-08）自動で投げて左右に動く遊び方に。ゴミ箱の硬さ・強化アイテム・ボスのボーナスを追加して難しく。</p>
       <p>β0.2.0（2026-11-08）three.js で立体に作り直し。ネオンの街・光のにじみ・速さで広がる視野。</p>
@@ -75,18 +90,23 @@ details{text-align:left;margin-top:12px;font-size:13px;color:var(--sub)}
 
 <div class="modal" id="mOver" hidden>
   <div class="mbox">
-    <h2>FINISH!</h2>
+    <h2 id="oHead">FINISH!</h2>
     <div class="grade" id="oGrade">S</div>
     <div id="oRankName" style="font-weight:900;font-style:italic;letter-spacing:.1em"></div>
     <p class="score" id="oScore">0</p>
     <p id="oNew"></p>
     <div class="stats" id="oStats"></div>
-    <div class="row">
-      <button class="btn" id="againBtn">RETRY</button>
-      <button class="btn sub" id="shareBtn">シェア</button>
-      <button class="btn sub" id="titleBtn">タイトル</button>
-    </div>
-    <div class="hint">スペースキーでもリトライ</div>
+    <div class="row" id="oRow"></div>
+    <div class="hint" id="oHint"></div>
+  </div>
+</div>
+
+<div class="modal" id="mStage" hidden>
+  <div class="mbox">
+    <h2 style="font-size:34px">STAGE</h2>
+    <p class="prog" id="sProg"></p>
+    <div id="sList"></div>
+    <div class="row"><button class="btn sub" id="sBack">もどる</button></div>
   </div>
 </div>
 
@@ -103,10 +123,10 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-const VERSION = 'β0.3.1';
+const VERSION = 'β0.4.0';
 const KEY = 'gomibako-shooter-v1';
 CG.init({ game: 'gomibako-shooter', title: 'スタイリッシュゴミ箱シューター', version: VERSION });
-const SAVE = Object.assign({ best: 0, bestRank: -1, plays: 0, sound: true }, CG.ls.getJSON(KEY, {}) || {});
+const SAVE = Object.assign({ best: 0, bestRank: -1, plays: 0, sound: true, stages: {} }, CG.ls.getJSON(KEY, {}) || {});   // best・bestRank は FREE の記録。stages[n] = { s: 星, b: 点 }
 const persist = () => CG.ls.setJSON(KEY, SAVE);
 try { CG.move.mount(document.getElementById('move'), { keys: [KEY] }); } catch (e) {}
 
@@ -121,15 +141,15 @@ const W = 360, H = 640;              // 平面の大きさ（画面の文字・H
 const PX = 180, PY = 584;            // ちくわくんの位置
 const WALL = 14;                     // 左右の壁（ここで跳ね返る＝BANK）
 const SPAWN_Y = -210;                // ゴミ箱が出てくる所（霧の奥）
-const START_TIME = 40, MAX_TIME = 60;
+const START_TIME = 40, MAX_TIME = 60;   // FREE の時間。STAGE はステージごと（stageInfo）
 const BALL_V = 820, BALL_R = 7;      // ボールの速さ（強化前）・大きさ（威力 1 のとき）
-const FIRE_START = 0.7, FIRE_MIN = 0.14;  // 自動で投げる間隔（秒）。連射の強化 1 回で ×0.85、これより短くはならない
+const FIRE_START = 0.7, FIRE_MIN = 0.12;  // 自動で投げる間隔（秒）。連射 Lv0 → Lv20 で FIRE_START → FIRE_MIN へ（比が一定ずつ）
 const BONUS_FIRE = 0.07;             // ボーナス中の間隔（超連射）
 const MOVE_V = 320;                  // キーで左右に動く速さ（px/秒）
 const DRAG_K = 1.3;                  // ドラッグした量 → 動く量
 const DROP_P = 0.4;                  // ゴミ箱を入れたとき強化アイテムが落ちる確率（金のゴミ箱は必ず）
 const ITEM_V = 90;                   // アイテムが道の流れより速く近づく分（px/秒）
-const UP_MAX = { rate: 8, multi: 4, speed: 5, power: 4 };
+const UP_MAX = { rate: 20, multi: 20, speed: 20, power: 20 };   // どれも Lv20 で MAX
 const ITEMS = {
   rate: { c: '#22e6ff', t: '連射', w: 3 },
   multi: { c: '#ff2e88', t: '数+1', h: '数', w: 1.6 },
@@ -138,12 +158,14 @@ const ITEMS = {
   time: { c: '#4dff9a', t: '時間', w: 3 },
   bonus: { c: '#ffffff', t: 'BONUS', w: 0 },
 };
-const fireInterval = () => G.bonus > 0 ? BONUS_FIRE : Math.max(FIRE_MIN, FIRE_START * Math.pow(0.85, G.up.rate));
-const ballV = () => BALL_V * (1 + 0.15 * G.up.speed);
-const power = () => 1 + G.up.power + (G.bonus > 0 ? 2 : 0);   // 1 回で減らせる硬さ
-const ballR = pw => BALL_R + (pw - 1) * 2.2;                   // 威力が上がるとゴミが大きくなる
-/** ゴミ箱の硬さ。時間がたつほど硬いゴミ箱が増える */
-const hpFor = kind => kind === 'gold' ? 1 : Math.min(6, 1 + Math.floor(Math.random() * Math.min(3.5, 1 + G.el / 22)) + (kind === 'big' ? 2 : 0));
+const fireInterval = () => G.bonus > 0 ? BONUS_FIRE : FIRE_START * Math.pow(FIRE_MIN / FIRE_START, G.up.rate / 20);
+const shotCount = () => 1 + Math.floor(G.up.multi / 4);       // 数：Lv4 ごとに 1 つ増える（Lv20 で 6 つ）
+const ballV = () => BALL_V * (1 + 0.04 * G.up.speed);          // 速さ：Lv20 で 1.8 倍
+const power = () => 1 + Math.floor(G.up.power / 4) + (G.bonus > 0 ? 2 : 0);   // 1 回で減らせる硬さ（Lv4 ごとに +1。Lv20 で 6）
+const ballR = () => BALL_R + G.up.power * 0.45 + (G.bonus > 0 ? 3 : 0);       // 威力が上がるとゴミが大きくなる
+const diff = () => G.el + G.elOff;   // むずかしさ（走った秒数 ＋ ステージの分）
+/** ゴミ箱の硬さ。むずかしいほど硬いゴミ箱が増える */
+const hpFor = kind => kind === 'gold' ? 1 : Math.min(8, 1 + Math.floor(Math.random() * Math.min(4.5, 1 + diff() / 20)) + (kind === 'big' ? 2 : 0));
 const RANKS = [
   { k: 'D', n: 'DIRTY', c: '#9aa0bf' },
   { k: 'C', n: 'CLEAN', c: '#3fd2ff' },
@@ -156,8 +178,18 @@ const RANKS = [
 const RANK_MUL = [1, 1.2, 1.5, 2, 2.5, 3, 4];
 const STYLE_PER_RANK = 100;
 const styleDecay = r => 5 + r * 5;                                    // 1 秒にへるスタイル
-const scrollSpeed = (el, r) => Math.min(120 + el * 1.5 + r * 18, 360); // 走る速さ（平面の px/秒）
-const spawnGap = el => Math.max(100, 240 - el * 1.6);                  // ゴミ箱の間隔（走った px）
+/** 走る速さ（平面の px/秒）。障害物にぶつかると G.spd が下がる */
+const curSpeed = () => Math.min(120 + diff() * 1.5 + G.rank * 18, 360) * G.spd;
+const spawnGap = () => Math.max(90, 235 - diff() * 1.6);             // ゴミ箱の間隔（走った px）
+const objGap = () => Math.max(230, 520 - diff() * 2.5);              // ギミック・障害物の間隔（走った px）
+/** ステージ n（1〜100）の決まり。10 ステージごとに街が変わり、10 の倍数はボス */
+function stageInfo(n) {
+  const boss = n % 10 === 0, goal = boss ? 0 : 450 + n * 8;
+  return { n, theme: Math.floor((n - 1) / 10), boss, goal, elOff: (n - 1) * 0.9, time: boss ? 60 : Math.round(32 + goal / 45), bossHp: 24 + n * 2 };
+}
+const STAGES = 100;
+const stageStars = n => (SAVE.stages[n] && SAVE.stages[n].s) || 0;
+const stageOpen = n => n === 1 || !!SAVE.stages[n - 1];
 const GAIN = { hit: 16, flick: 10, swish: 30, bank: 32, long: 14, multi: 18, gold: 24, boss: 12, bossKill: 90, miss: -32, lost: -45 };
 const TIME_GAIN = { hit: 0.8, swish: 1.4, gold: 2, bossKill: 5, trick: 0.4 };
 const TIME_LOST = 2, BOSS_LOST = 4;
@@ -209,7 +241,7 @@ function canvasTex(w, h, paint, rep) {
 const glowTex = canvasTex(64, 64, (g, w) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,.55)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, w); });
 
 /* ---- 光 ---- */
-scene.add(new THREE.HemisphereLight(0x9a7bff, 0x1a0820, 1.1));
+const hemi = new THREE.HemisphereLight(0x9a7bff, 0x1a0820, 1.1); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffe0f0, 1.6); sun.position.set(4, 10, 6); scene.add(sun);
 
 /* ---- 道（ネオンの格子が流れる） ---- */
@@ -222,7 +254,8 @@ const roadTex = canvasTex(256, 256, (g, w, h) => {
 const roadMat = new THREE.MeshStandardMaterial({ color: 0x120c22, roughness: 0.35, metalness: 0.2, emissive: 0xff2e88, emissiveMap: roadTex, emissiveIntensity: 0.9 });
 const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_W, ROAD_L), roadMat);
 road.rotation.x = -Math.PI / 2; road.position.set(0, 0, -ROAD_L / 2 + 14); scene.add(road);
-const side = new THREE.Mesh(new THREE.PlaneGeometry(60, ROAD_L), new THREE.MeshStandardMaterial({ color: 0x0b0716, roughness: 0.9 }));
+const sideMat = new THREE.MeshStandardMaterial({ color: 0x0b0716, roughness: 0.9 });
+const side = new THREE.Mesh(new THREE.PlaneGeometry(90, ROAD_L), sideMat);
 side.rotation.x = -Math.PI / 2; side.position.set(0, -0.02, -ROAD_L / 2 + 14); scene.add(side);
 // 壁のネオン（左右）
 const neonMats = [];
@@ -237,37 +270,201 @@ for (const s of [-1, 1]) {
   }
 }
 
-/* ---- 街（流れてくる建物・看板・ちょうちん）。手前を過ぎたら奥へもどす ---- */
-const SPAN = 120, deco = [];
-const winTex = () => canvasTex(64, 128, (g, w, h) => {
-  g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
-  for (let y = 6; y < h - 6; y += 12) for (let x = 5; x < w - 5; x += 12) {
-    if (Math.random() < 0.45) { g.fillStyle = ['#ffd27a', '#ff9ad0', '#9ae8ff', '#fff3c4'][Math.floor(Math.random() * 4)]; g.fillRect(x, y, 6, 7); }
-  }
-});
-const winTexes = [winTex(), winTex(), winTex()];
+/* ---- ステージの見た目（10 種類）。空・霧・地面・街の作り・天気をまとめて切りかえる ---- */
+const THEMES = [
+  { n: 'おでん横丁の夜', bg: '#090515', ground: '#0b0716', bld: '#1c1430', win: ['#ffd27a', '#ff9ad0', '#9ae8ff', '#fff3c4'], neon: '#22e6ff', sky: '#ff2e88', hemi: ['#9a7bff', '#1a0820', 1.1], h: [4, 16], prop: 'lantern', propC: '#ff4a2a', sign: 0.6, wx: 'none' },
+  { n: '夕焼け商店街', bg: '#4a2034', ground: '#2a1418', bld: '#5a3030', win: ['#ffd27a', '#ffb070'], neon: '#ffb347', sky: '#ff7a3a', hemi: ['#ffb38a', '#3a1020', 1.7], h: [3, 8], prop: 'streetlight', propC: '#ffd27a', sign: 0.8, wx: 'none' },
+  { n: '雨のネオン街', bg: '#060a18', ground: '#05080f', bld: '#121a2c', win: ['#9ae8ff', '#ff9ad0', '#c86bff'], neon: '#c86bff', sky: '#3a6bff', hemi: ['#6b8aff', '#050818', 1.0], h: [8, 22], prop: 'streetlight', propC: '#9ae8ff', sign: 0.9, wx: 'rain' },
+  { n: '港の倉庫', bg: '#06141a', ground: '#0a1418', bld: '#1a2a30', win: ['#ffe14a'], neon: '#4dff9a', sky: '#22e6ff', hemi: ['#7ad8ff', '#04121a', 1.2], h: [3, 6], prop: 'container', propC: '#ffe14a', sign: 0.2, wx: 'none' },
+  { n: '雪の温泉街', bg: '#0c1428', ground: '#b8c4dc', bld: '#3a2a24', win: ['#ffd27a', '#ffe8b0'], neon: '#ffffff', sky: '#9ad0ff', hemi: ['#c8dcff', '#2a3040', 1.3], h: [3, 7], prop: 'lantern', propC: '#ff6a3a', sign: 0.3, wx: 'snow' },
+  { n: '夜桜の並木道', bg: '#160a1c', ground: '#1a0c1c', bld: '#24142a', win: ['#ffc8e0', '#fff3c4'], neon: '#ff8ac8', sky: '#ff6ab0', hemi: ['#ffa8d8', '#1a0818', 1.2], h: [3, 6], prop: 'tree', propC: '#ff9ac8', sign: 0.2, wx: 'petal' },
+  { n: '工場地帯', bg: '#1e0e06', ground: '#120a06', bld: '#2a1c14', win: ['#ff8a2e', '#ffd27a'], neon: '#ff8a2e', sky: '#ff5a1a', hemi: ['#ff9a5a', '#1a0804', 1.2], h: [6, 14], prop: 'chimney', propC: '#ff3b3b', sign: 0.3, wx: 'ember' },
+  { n: '砂漠ハイウェイ', bg: '#3a1838', ground: '#6a4428', bld: '#7a5434', win: ['#ffd27a'], neon: '#ffe14a', sky: '#ff9a3a', hemi: ['#ffc89a', '#3a2010', 1.6], h: [1, 3], prop: 'cactus', propC: '#4dbf6a', sign: 0.1, wx: 'sand' },
+  { n: 'サイバー都市', bg: '#020608', ground: '#02080a', bld: '#06141a', win: ['#22e6ff', '#4dff9a', '#c86bff'], neon: '#4dff9a', sky: '#22e6ff', hemi: ['#4ae8ff', '#020608', 1.0], h: [14, 34], prop: 'streetlight', propC: '#22e6ff', sign: 1, wx: 'data' },
+  { n: '宇宙ハイウェイ', bg: '#000004', ground: '#04020c', bld: '#000000', win: ['#ffffff'], neon: '#c86bff', sky: '#6a3aff', hemi: ['#8a7aff', '#000000', 1.0], h: [0, 0], prop: 'ring', propC: '#c86bff', sign: 0, wx: 'star' },
+];
+const SPAN = 120;
+let deco = [];
 const signCols = [0xff2e88, 0x22e6ff, 0xffe14a, 0xc86bff, 0x4dff9a];
-const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-for (const s of [-1, 1]) {
-  for (let z = 0; z < SPAN; z += 7 + Math.random() * 4) {
-    const w = 3 + Math.random() * 3, h = 4 + Math.random() * 12, d = 4 + Math.random() * 3;
-    const m = new THREE.Mesh(boxGeo, new THREE.MeshStandardMaterial({ color: 0x1c1430, roughness: 0.8, emissive: 0xffffff, emissiveMap: winTexes[Math.floor(Math.random() * 3)], emissiveIntensity: 0.7 }));
-    m.scale.set(w, h, d); m.position.set(s * (ROAD_W / 2 + 2.2 + w / 2 + Math.random() * 1.5), h / 2, 14 - z);
-    scene.add(m); deco.push(m);
-    if (Math.random() < 0.6) { // 看板
-      const sg = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: signCols[Math.floor(Math.random() * signCols.length)] }));
-      const sh = 0.6 + Math.random() * 1.6;
-      sg.scale.set(0.12, sh, 1.2 + Math.random() * 1.5); sg.position.set(s * (ROAD_W / 2 + 2.0), 2.5 + Math.random() * 5, m.position.z);
-      scene.add(sg); deco.push(sg);
+const boxGeo = new THREE.BoxGeometry(1, 1, 1), sphGeo = new THREE.SphereGeometry(1, 14, 10), cylGeo = new THREE.CylinderGeometry(1, 1, 1, 14);
+const winCache = {};
+function winTexes(i, T) {
+  if (!winCache[i]) winCache[i] = [0, 1, 2].map(() => canvasTex(64, 128, (g, w, h) => {
+    g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+    for (let y = 6; y < h - 6; y += 12) for (let x = 5; x < w - 5; x += 12) {
+      if (Math.random() < 0.45) { g.fillStyle = T.win[Math.floor(Math.random() * T.win.length)]; g.fillRect(x, y, 6, 7); }
+    }
+  }));
+  return winCache[i];
+}
+const rnd = (a, b) => a + Math.random() * (b - a);
+function addDeco(m, x, y, z) { m.position.set(x, y, z); scene.add(m); deco.push(m); return m; }
+const basic = c => new THREE.MeshBasicMaterial({ color: c });
+const std = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.7 }, o));
+const glowSprite = (c, s, op = 0.55) => { const g = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: c, blending: THREE.AdditiveBlending, depthWrite: false, opacity: op })); g.scale.set(s, s, 1); return g; };
+function clearCity() {
+  for (const m of deco) { scene.remove(m); m.traverse(o => { if (o.material) o.material.dispose(); }); }
+  deco = [];
+}
+/** 街を作る（道の左右に、奥行き SPAN の分だけ並べる。流れて手前を過ぎたら奥へもどす） */
+function buildCity(i) {
+  clearCity();
+  const T = THEMES[i], E = ROAD_W / 2, wt = winTexes(i, T);
+  for (const s of [-1, 1]) {
+    if (T.h[1] > 0) for (let z = 0; z < SPAN; z += rnd(7, 11)) { // 建物と看板
+      const w = rnd(3, 6), h = rnd(T.h[0], T.h[1]), d = rnd(4, 7);
+      const m = new THREE.Mesh(boxGeo, std(T.bld, { roughness: 0.8, emissive: 0xffffff, emissiveMap: wt[Math.floor(Math.random() * 3)], emissiveIntensity: 0.7 }));
+      m.scale.set(w, h, d); addDeco(m, s * (E + 2.4 + w / 2 + Math.random() * 1.5), h / 2, 14 - z);
+      if (Math.random() < T.sign) {
+        const sg = new THREE.Mesh(boxGeo, basic(signCols[Math.floor(Math.random() * signCols.length)]));
+        sg.scale.set(0.12, rnd(0.6, 2.2), rnd(1.2, 2.7)); addDeco(sg, s * (E + 2.2), rnd(2.5, Math.max(3, Math.min(h, 9))), 14 - z);
+      }
+    }
+    if (T.prop === 'lantern') for (let z = 0; z < SPAN; z += 6) {
+      const l = new THREE.Mesh(sphGeo, basic(T.propC)); l.scale.set(0.28, 0.38, 0.28); addDeco(l, s * (E + 0.6), 2.3, 14 - z);
+      addDeco(glowSprite(T.propC, 1.6), s * (E + 0.6), 2.3, 14 - z);
+    }
+    if (T.prop === 'streetlight') for (let z = 0; z < SPAN; z += 10) {
+      const g = new THREE.Group();
+      const pole = new THREE.Mesh(cylGeo, std('#2a2a34', { metalness: 0.6 })); pole.scale.set(0.08, 4.4, 0.08); pole.position.y = 2.2; g.add(pole);
+      const arm = new THREE.Mesh(boxGeo, std('#2a2a34')); arm.scale.set(1.2, 0.08, 0.08); arm.position.set(-s * 0.6, 4.35, 0); g.add(arm);
+      const bulb = new THREE.Mesh(sphGeo, basic(T.propC)); bulb.scale.setScalar(0.18); bulb.position.set(-s * 1.15, 4.25, 0); g.add(bulb);
+      const gl = glowSprite(T.propC, 3, 0.6); gl.position.copy(bulb.position); g.add(gl);
+      addDeco(g, s * (E + 0.9), 0, 14 - z);
+    }
+    if (T.prop === 'container') for (let z = 0; z < SPAN; z += rnd(6.5, 9)) {
+      const cols = ['#b8402c', '#2a6fdb', '#d89a20', '#2a9a5a', '#8a3ab8'], n = 1 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < n; k++) {
+        const c = new THREE.Mesh(boxGeo, std(cols[Math.floor(Math.random() * cols.length)], { roughness: 0.5, metalness: 0.4 }));
+        c.scale.set(2.4, 2.4, 5.8); addDeco(c, s * (E + 2.2), 1.2 + k * 2.45, 14 - z);
+      }
+      if (Math.random() < 0.5) addDeco(glowSprite(T.propC, 2.2, 0.7), s * (E + 0.8), 3.2, 14 - z);
+    }
+    if (T.prop === 'tree') for (let z = 0; z < SPAN; z += 5) {
+      const g = new THREE.Group();
+      const tr = new THREE.Mesh(cylGeo, std('#3a2018')); tr.scale.set(0.16, 2.2, 0.16); tr.position.y = 1.1; g.add(tr);
+      for (let k = 0; k < 3; k++) {
+        const cn = new THREE.Mesh(sphGeo, std(T.propC, { emissive: T.propC, emissiveIntensity: 0.35, roughness: 0.9 }));
+        cn.scale.setScalar(rnd(0.9, 1.4)); cn.position.set(rnd(-0.6, 0.6), rnd(2.4, 3.2), rnd(-0.6, 0.6)); g.add(cn);
+      }
+      addDeco(g, s * (E + 1.3 + Math.random() * 0.6), 0, 14 - z);
+    }
+    if (T.prop === 'chimney') for (let z = 0; z < SPAN; z += rnd(12, 18)) {
+      const h = rnd(12, 22), g = new THREE.Group();
+      const c = new THREE.Mesh(cylGeo, std('#4a3a34')); c.scale.set(0.9, h, 0.9); c.position.y = h / 2; g.add(c);
+      for (let k = 1; k < 4; k++) { const b = new THREE.Mesh(cylGeo, basic(k % 2 ? '#d8d8d8' : '#c8401a')); b.scale.set(0.95, 0.5, 0.95); b.position.y = h - k * 1.1; g.add(b); }
+      const l = glowSprite(T.propC, 2.5, 0.9); l.position.y = h + 0.6; g.add(l);
+      addDeco(g, s * (E + rnd(8, 14)), 0, 14 - z);
+    }
+    if (T.prop === 'cactus') for (let z = 0; z < SPAN; z += rnd(5, 9)) {
+      const g = new THREE.Group(), h = rnd(1.4, 2.6), m = std(T.propC);
+      const c = new THREE.Mesh(cylGeo, m); c.scale.set(0.22, h, 0.22); c.position.y = h / 2; g.add(c);
+      for (const a of [-1, 1]) if (Math.random() < 0.7) { const ar = new THREE.Mesh(cylGeo, m); ar.scale.set(0.14, 0.7, 0.14); ar.position.set(a * 0.36, h * 0.6, 0); g.add(ar); }
+      addDeco(g, s * (E + rnd(1.5, 9)), 0, 14 - z);
     }
   }
-  for (let z = 0; z < SPAN; z += 6) { // ちょうちん
-    const l = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), new THREE.MeshBasicMaterial({ color: 0xff4a2a }));
-    l.scale.y = 1.35; l.position.set(s * (ROAD_W / 2 + 0.6), 2.3, 14 - z); scene.add(l); deco.push(l);
-    const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff6a3a, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.55 }));
-    gl.scale.set(1.6, 1.6, 1); gl.position.copy(l.position); scene.add(gl); deco.push(gl);
+  if (T.prop === 'ring') {
+    for (let z = 0; z < SPAN; z += 20) {
+      const r = new THREE.Mesh(new THREE.TorusGeometry(E + 1.6, 0.12, 8, 48), basic(T.propC)); r.rotation.z = Math.random(); addDeco(r, 0, 1, 14 - z);
+    }
+    for (let k = 0; k < 26; k++) {
+      const a = new THREE.Mesh(new THREE.IcosahedronGeometry(rnd(0.5, 2), 0), std('#4a4458', { flatShading: true }));
+      a.rotation.set(Math.random() * 6, Math.random() * 6, 0); addDeco(a, (Math.random() < 0.5 ? -1 : 1) * rnd(E + 3, E + 20), rnd(-2, 12), 14 - Math.random() * SPAN);
+    }
   }
 }
+// 空の光（霧に隠れない）
+const skyGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2e88, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: 0.55 }));
+skyGlow.scale.set(120, 46, 1); skyGlow.position.set(0, 4, -110); scene.add(skyGlow);
+// 天気（雨・雪・花びら・火の粉・砂・光の粒・星）
+const WXN = 420;
+const wxGeo = new THREE.BufferGeometry(), wxPos = new Float32Array(WXN * 3);
+wxGeo.setAttribute('position', new THREE.BufferAttribute(wxPos, 3));
+const wxMat = new THREE.PointsMaterial({ size: 0.2, map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xffffff });
+const wxPts = new THREE.Points(wxGeo, wxMat); wxPts.frustumCulled = false; scene.add(wxPts);
+const WXCFG = {
+  rain: { c: '#9ad0ff', s: 0.12, vy: -26, vx: -1, wob: 0 }, snow: { c: '#ffffff', s: 0.3, vy: -2.4, vx: 0.4, wob: 1 },
+  petal: { c: '#ff9ac8', s: 0.32, vy: -1.5, vx: 1.2, wob: 1.6 }, ember: { c: '#ff8a2e', s: 0.24, vy: 2.6, vx: 0.4, wob: 0.8 },
+  sand: { c: '#e8c08a', s: 0.16, vy: -0.4, vx: -7, wob: 0.3 }, data: { c: '#4dff9a', s: 0.18, vy: 3, vx: 0, wob: 0 },
+  star: { c: '#ffffff', s: 0.5, vy: 0, vx: 0, wob: 0, far: true },
+};
+let WXC = null;
+function wxSeed(i, any) {
+  const far = WXC && WXC.far;
+  wxPos[i * 3] = (Math.random() - 0.5) * (far ? 120 : 30);
+  wxPos[i * 3 + 1] = far ? rnd(-4, 40) : Math.random() * 14;
+  wxPos[i * 3 + 2] = far ? -rnd(30, 110) : any ? 10 - Math.random() * 70 : -55 - Math.random() * 15;
+}
+let TH = THEMES[0];
+const hemiCol = new THREE.Color();
+function applyTheme(i) {
+  TH = THEMES[i]; G.theme = i;
+  BG.set(TH.bg); scene.fog.color.set(TH.bg);
+  sideMat.color.set(TH.ground);
+  hemi.color.set(TH.hemi[0]); hemi.groundColor.set(TH.hemi[1]); hemi.intensity = TH.hemi[2];
+  skyGlow.material.color.set(TH.sky);
+  WXC = WXCFG[TH.wx] || null; wxPts.visible = !!WXC;
+  if (WXC) { wxMat.color.set(WXC.c); wxMat.size = WXC.s; for (let k = 0; k < WXN; k++) wxSeed(k, true); wxGeo.attributes.position.needsUpdate = true; }
+  buildCity(i);
+}
+function wxUpdate(dt, dz) {
+  if (!WXC) return;
+  for (let i = 0; i < WXN; i++) {
+    const j = i * 3;
+    wxPos[j] += (WXC.vx + Math.sin(G.rt * 1.3 + i) * WXC.wob) * dt;
+    wxPos[j + 1] += WXC.vy * dt;
+    wxPos[j + 2] += dz * (WXC.far ? 0.05 : 1);
+    if (!WXC.far && (wxPos[j + 1] < 0 || wxPos[j + 1] > 14)) wxPos[j + 1] = WXC.vy < 0 ? 14 : 0;
+    if (wxPos[j + 2] > 12) wxSeed(i, false);
+  }
+  wxGeo.attributes.position.needsUpdate = true;
+}
+
+/* ---- 道のギミック（キッカー・パイプ・ボックス）と障害物（水たまり・自転車・コーン） ---- */
+const OBJ = {
+  kicker: { w: 74, len: 46 }, rail: { w: 14, len: 230 }, box: { w: 56, len: 120 },
+  puddle: { w: 84, len: 58 }, bike: { w: 40, len: 34 }, cone: { w: 24, len: 20 },
+};
+const CLEAR = { puddle: 0.2, cone: 0.8, bike: 1.7 };       // この高さより上なら飛びこえられる
+const HIT = { puddle: { spd: 0.6, t: 'SPLASH!', pt: 200 }, cone: { spd: 0.72, t: 'BONK!', pt: 300 }, bike: { spd: 0.45, t: 'CRASH!', pt: 600 } };
+const TRICK_AIR = ['KICKFLIP', 'HEELFLIP', '360 FLIP', 'HARDFLIP', 'VARIAL', 'IMPOSSIBLE', 'DARKSLIDE', 'LASER FLIP', 'BIGSPIN', 'CASPER'];
+const TRICK_GRIND = { rail: ['50-50 GRIND', '5-0 GRIND', 'CROOKED GRIND', 'SMITH GRIND', 'FEEBLE GRIND'], box: ['BOARDSLIDE', 'LIPSLIDE', 'NOSESLIDE', 'TAILSLIDE'] };
+function makeObjMesh(o) {
+  const g = new THREE.Group(), L = o.len * SZ, Wd = o.w * SX;
+  if (o.type === 'kicker') {
+    const Hh = 0.95, a = Math.atan2(Hh, L), sl = Math.hypot(L, Hh);
+    const top = new THREE.Mesh(boxGeo, std('#3a3048', { roughness: 0.5, metalness: 0.3 })); top.scale.set(Wd, 0.12, sl); top.rotation.x = a; top.position.set(0, Hh / 2, -L / 2); g.add(top);
+    const back = new THREE.Mesh(boxGeo, std('#241c30')); back.scale.set(Wd, Hh, 0.12); back.position.set(0, Hh / 2, -L); g.add(back);
+    const edge = new THREE.Mesh(boxGeo, basic('#ffe14a')); edge.scale.set(Wd, 0.06, 0.08); edge.position.set(0, Hh + 0.04, -L); g.add(edge);
+    for (const s of [-1, 1]) { const e = new THREE.Mesh(boxGeo, basic('#ffe14a')); e.scale.set(0.05, 0.05, sl); e.rotation.x = a; e.position.set(s * Wd / 2, Hh / 2 + 0.06, -L / 2); g.add(e); }
+  } else if (o.type === 'rail') {
+    const bar = new THREE.Mesh(cylGeo, std('#c5cde0', { metalness: 0.9, roughness: 0.25, emissive: '#22e6ff', emissiveIntensity: 0.35 })); bar.scale.set(0.07, L, 0.07); bar.rotation.x = Math.PI / 2; bar.position.set(0, 0.68, -L / 2); g.add(bar);
+    for (let k = 0; k <= 4; k++) { const p = new THREE.Mesh(cylGeo, std('#3a4258', { metalness: 0.6 })); p.scale.set(0.05, 0.68, 0.05); p.position.set(0, 0.34, -L * k / 4); g.add(p); }
+    const gl = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: '#22e6ff', transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false })); gl.scale.set(0.5, 0.02, L); gl.position.set(0, 0.02, -L / 2); g.add(gl);
+  } else if (o.type === 'box') {
+    const b = new THREE.Mesh(boxGeo, std('#4a3a6a', { roughness: 0.5 })); b.scale.set(Wd, 0.6, L); b.position.set(0, 0.3, -L / 2); g.add(b);
+    for (const s of [-1, 1]) { const e = new THREE.Mesh(boxGeo, std('#d8dce8', { metalness: 0.9, roughness: 0.2, emissive: '#ff2e88', emissiveIntensity: 0.4 })); e.scale.set(0.07, 0.07, L); e.position.set(s * Wd / 2, 0.62, -L / 2); g.add(e); }
+  } else if (o.type === 'puddle') {
+    const p = new THREE.Mesh(new THREE.CircleGeometry(1, 28), std('#1a3a6a', { metalness: 0.95, roughness: 0.05, emissive: '#0a2a5a', emissiveIntensity: 0.6, transparent: true, opacity: 0.88 }));
+    p.rotation.x = -Math.PI / 2; p.scale.set(Wd / 2, L / 2, 1); p.position.set(0, 0.02, -L / 2); g.add(p);
+  } else if (o.type === 'bike') {
+    const col = ['#ff3b3b', '#22e6ff', '#ffe14a', '#4dff9a', '#ff8ac8'][Math.floor(Math.random() * 5)];
+    const wm = std('#111', { roughness: 0.4 }), fm = std(col, { metalness: 0.5, roughness: 0.3 });
+    o.wheels = [];
+    for (const z of [-0.55, 0.55]) { const w = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.05, 6, 20), wm); w.rotation.y = Math.PI / 2; w.position.set(0, 0.4, z - L / 2); g.add(w); o.wheels.push(w); }
+    const f1 = new THREE.Mesh(boxGeo, fm); f1.scale.set(0.06, 0.06, 1.1); f1.position.set(0, 0.75, -L / 2); g.add(f1);
+    const f2 = new THREE.Mesh(boxGeo, fm); f2.scale.set(0.06, 0.6, 0.06); f2.position.set(0, 0.6, 0.2 - L / 2); g.add(f2);
+    const seat = new THREE.Mesh(boxGeo, wm); seat.scale.set(0.16, 0.06, 0.3); seat.position.set(0, 0.95, 0.2 - L / 2); g.add(seat);
+    const hb = new THREE.Mesh(boxGeo, fm); hb.scale.set(0.6, 0.05, 0.05); hb.position.set(0, 1.05, -0.5 - L / 2); g.add(hb);
+    const lamp = glowSprite('#ffffff', 0.8, 0.8); lamp.position.set(0, 0.9, -0.62 - L / 2); g.add(lamp);
+  } else if (o.type === 'cone') {
+    const c = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.75, 14), std('#ff6a1a', { emissive: '#ff4a00', emissiveIntensity: 0.3 })); c.position.set(0, 0.42, -L / 2); g.add(c);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.19, 0.12, 14), basic('#ffffff')); band.position.set(0, 0.45, -L / 2); g.add(band);
+    const base = new THREE.Mesh(boxGeo, std('#ff6a1a')); base.scale.set(0.55, 0.06, 0.55); base.position.set(0, 0.03, -L / 2); g.add(base);
+  }
+  o.mesh = g; scene.add(g);
+}
+function dropObjMesh(o) { if (!o.mesh) return; scene.remove(o.mesh); o.mesh.traverse(m => m.material && m.material.dispose()); o.mesh = null; }
 // 速さの線
 const STREAKS = 70;
 const streakGeo = new THREE.BufferGeometry(); streakGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(STREAKS * 6), 3));
@@ -443,6 +640,10 @@ const SFX = {
   boss() { [0, 0.18, 0.36].forEach(a => tone(110, 0.15, { type: 'sawtooth', vol: 0.12, at: a })); },
   bossHit() { tone(180, 0.1, { type: 'square', to: 90, vol: 0.12 }); noise(0.08, { lp: 1200, vol: 0.2 }); },
   boom() { noise(0.9, { lp: 700, vol: 0.4 }); tone(90, 0.8, { type: 'sine', to: 30, vol: 0.4 }); [0, 4, 7, 12, 16].forEach((s, i) => tone(660 * Math.pow(2, s / 12), 0.5, { type: 'triangle', vol: 0.07, at: 0.1 + i * 0.06 })); },
+  jump(big) { tone(big ? 300 : 420, big ? 0.3 : 0.15, { type: 'triangle', to: big ? 1200 : 900, vol: 0.07 }); noise(0.08, { hp: 1500, vol: 0.06 }); },
+  trick(n) { [0, 5, 9].slice(0, n).forEach((s, i) => tone(740 * Math.pow(2, (s + n * 2) / 12), 0.12, { type: 'square', vol: 0.05, at: i * 0.04 })); noise(0.12, { hp: 4000, vol: 0.05 }); },
+  grind() { noise(0.35, { hp: 3500, vol: 0.07 }); tone(1900, 0.3, { type: 'sawtooth', to: 1500, vol: 0.02 }); },
+  crash(k) { if (k === 'puddle') noise(0.35, { lp: 1800, vol: 0.25 }); else { noise(0.25, { lp: 900, vol: 0.3 }); tone(k === 'bike' ? 260 : 520, 0.2, { type: 'square', to: 120, vol: 0.08 }); } },
   end() { [12, 7, 4, 0].forEach((s, i) => tone(440 * Math.pow(2, s / 12), 0.3, { type: 'triangle', vol: 0.1, at: i * 0.09 })); },
 };
 /* BGM：キック・ハット・ベース。テンポはランクで上がる。ランク A から上はアルペジオが乗る */
@@ -471,17 +672,23 @@ sndBtn.onclick = () => { SAVE.sound = !SAVE.sound; persist(); showSnd(); ac(); i
 showSnd();
 
 /* ---- 状態 ---- */
-const G = { mode: 'title', paused: false, t: 0, rt: 0, el: 0, rank: 0, style: 0, scroll: 0, cans: [], balls: [], items: [], texts: [], px: PX, lean: 0, bonus: 0, up: { rate: 0, multi: 0, speed: 0, power: 0 }, recoil: 0, shake: 0, flash: 0, punch: 0 };
-function reset() {
-  G.cans.forEach(dropCanMesh); G.balls.forEach(b => b.mesh && scene.remove(b.mesh)); G.items.forEach(dropItemMesh);
+const G = { mode: 'title', gm: 'free', stage: 1, paused: false, t: 0, rt: 0, el: 0, elOff: 0, spd: 1, rank: 0, style: 0, scroll: 0, cans: [], balls: [], items: [], objs: [], texts: [], px: PX, lean: 0, bonus: 0, up: { rate: 0, multi: 0, speed: 0, power: 0 }, recoil: 0, shake: 0, flash: 0, punch: 0, ph: 0, spinA: 0, spinT: 0, grindRot: 0, theme: -1 };
+/** gm：'free' か 'stage'。n：ステージの番号 */
+function reset(gm, n) {
+  G.cans.forEach(dropCanMesh); G.balls.forEach(b => b.mesh && scene.remove(b.mesh)); G.items.forEach(dropItemMesh); G.objs.forEach(dropObjMesh);
+  const S = gm === 'stage' ? stageInfo(n) : null;
   Object.assign(G, {
+    gm, stage: n || 0, info: S, elOff: S ? S.elOff : 0, spd: 1, maxTime: S ? 99 : MAX_TIME,
+    objs: [], objAcc: 0, air: null, grind: null, ph: 0, spinA: 0, spinT: 0, grindRot: 0, tricksDone: 0, objHits: 0, smashes: 0,
+    cleared: false, clearIn: 0,
     mode: 'play', paused: false, t: 0, rt: 0, el: 0, time: START_TIME, score: 0, disp: 0, combo: 0, maxCombo: 0,
-    style: 0, rank: 0, maxRank: 0, dist: 0, spawnAcc: 150, nextBoss: BOSS_FIRST, bossN: 0, bossKills: 0,
+    style: 0, rank: 0, maxRank: 0, dist: 0, spawnAcc: 150, nextBoss: S ? (S.boss ? 5 : Infinity) : BOSS_FIRST, bossN: 0, bossKills: 0,
     cans: [], balls: [], texts: [], banner: null, shake: 0, flash: 0, flashC: '#fff', slow: 0, punch: 0,
     lastShot: -9, lastHit: -9, multi: 0, swishes: 0, banks: 0, shots: 0, hits: 0, comboPop: 0, recoil: 0, aim: -Math.PI / 2,
     endT: 0, lost: 0, redEdge: 0,
     px: PX, pxPrev: PX, lean: 0, items: [], bonus: 0, bonusMax: 0, fireT: 0.5, up: { rate: 0, multi: 0, speed: 0, power: 0 }, items_got: 0,
   });
+  if (S) G.time = S.time;
   P.length = 0;
 }
 
@@ -515,7 +722,7 @@ function mk(x, o = {}) {
   G.cans.push(c); makeCanMesh(c);
 }
 function spawnPattern() {
-  const el = G.el, r = Math.random();
+  const el = diff(), r = Math.random();
   if (el < 7) { mk(rx(), r < 0.35 ? { r: 22, kind: 'big' } : {}); return; }
   if (r < 0.12) mk(rx(), { r: 11, kind: 'gold', vx: sgn() * (150 + Math.min(el, 120)) });
   else if (r < 0.42) mk(rx(), { vx: sgn() * (50 + Math.min(el, 100)) });
@@ -524,23 +731,23 @@ function spawnPattern() {
   else if (r < 0.74) mk(rx(), { r: 22, kind: 'big', vx: sgn() * 30 });
   else mk(rx());
 }
-function spawnBoss() {
+function spawnBoss(hpSet) {
   G.bossN++;
-  const hp = 26 + G.bossN * 14;
+  const hp = hpSet || 26 + G.bossN * 14;
   mk(W / 2, { dy: -30, r: 32, kind: 'boss', hp, max: hp });
   text(W / 2, 250, 'WARNING', '#ff3b3b', 34, 1.3, 0); text(W / 2, 288, 'ボスゴミ箱 接近！', '#fff', 18, 1.3, 0);
   SFX.boss(); flash('#ff3b3b', 0.25);
 }
 
 /* ---- シュート（自動で前へ投げる。数が増えると扇のように広がる） ---- */
-const canSpeed = c => scrollSpeed(G.el, G.rank) * (c.kind === 'boss' ? 0.38 : 1);
+const canSpeed = c => curSpeed() * (c.kind === 'boss' ? 0.38 : 1);
 const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
 const OY = PY - 16;
 function autoFire() {
-  const n = 1 + G.up.multi, step = 0.09, v = ballV(), pw = power();
+  const n = shotCount(), step = 0.09, v = ballV(), pw = power(), br = ballR();
   for (let i = 0; i < n; i++) {
     const a = -Math.PI / 2 + (i - (n - 1) / 2) * step;
-    const b = { x: G.px, y: OY, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, bounces: 0, spin: Math.random() * 6, kind: Math.random() < 0.5 ? 0 : 1, done: false, pw, r: ballR(pw) };
+    const b = { x: G.px, y: OY, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, bounces: 0, spin: Math.random() * 6, kind: Math.random() < 0.5 ? 0 : 1, done: false, pw, r: br };
     makeBallMesh(b); G.balls.push(b);
   }
   G.shots += n; G.recoil = 1; SFX.shoot(G.bonus > 0);
@@ -560,12 +767,18 @@ function dropItem(x, y, kind) {
 function getItem(it) {
   const I = ITEMS[it.kind], s = scr(G.px, PY, 2);
   let label = I.t;
-  if (it.kind === 'time') { const sec = 1 + Math.floor(Math.random() * 5); G.time = Math.min(MAX_TIME, G.time + sec); label = '時間 +' + sec + 's'; }
+  if (it.kind === 'time') { const sec = 1 + Math.floor(Math.random() * 5); G.time = Math.min(G.maxTime, G.time + sec); label = '時間 +' + sec + 's'; }
   else if (it.kind === 'bonus') {
     G.bonus = G.bonusMax = 5 + Math.random() * 3;
     G.banner = { t: 0, bonus: true }; G.slow = 0.25; flash('#ffffff', 0.6); shake(10); G.punch = 1.2; SFX.rankUp(); buzz([40, 30, 80]);
     label = 'BONUS TIME!!';
-  } else { G.up[it.kind]++; label = I.t + ' Lv' + G.up[it.kind] + (G.up[it.kind] >= UP_MAX[it.kind] ? ' MAX' : ''); }
+  } else {
+    const k = it.kind, n0 = shotCount(), p0 = power();
+    G.up[k] = Math.min(UP_MAX[k], G.up[k] + 1);
+    label = (I.h || I.t) + (G.up[k] >= UP_MAX[k] ? ' MAX!!' : ' Lv' + G.up[k]);
+    if (k === 'multi' && shotCount() > n0) label += '  ' + shotCount() + 'つ投げ！';
+    if (k === 'power' && power() > p0) label += '  威力' + power() + '！';
+  }
   G.items_got++;
   text(s.x, s.y - 40, label, I.c, it.kind === 'bonus' ? 30 : 22, 0.9, -60);
   burst(G.px, PY, 1, I.c, 30, 7); ring(G.px, PY, 0.2, I.c, 0.5, 8, 0.4);
@@ -595,7 +808,8 @@ function hitCan(c, b) {
     text(s.x, s.y - 30, '+' + pts, '#fff', 18, 0.6); shake(5); SFX.bossHit(); buzz(15);
     if (c.hp <= 0) {
       c.dead = true; G.bossKills++;
-      const bonus = Math.round(3000 * RANK_MUL[G.rank]); G.score += bonus; G.time = Math.min(MAX_TIME, G.time + TIME_GAIN.bossKill);
+      const bonus = Math.round(3000 * RANK_MUL[G.rank]); G.score += bonus; G.time = Math.min(G.maxTime, G.time + TIME_GAIN.bossKill);
+      if (G.gm === 'stage' && G.info.boss) G.clearIn = 1.3;
       addStyle(GAIN.bossKill);
       for (let i = 0; i < 4; i++) burst(c.x + (Math.random() - 0.5) * 50, c.y + (Math.random() - 0.5) * 30, top * (0.3 + Math.random()), ['#ff3b3b', '#ffe14a', '#ffffff', col][i], 60, 16);
       ring(c.x, c.y, 0.1, '#ffe14a', 1, 22, 0.7); ring(c.x, c.y, top, '#ffffff', 1, 14, 0.5);
@@ -615,7 +829,7 @@ function hitCan(c, b) {
   if (c.kind === 'gold') { tags.push('GOLDEN'); st += GAIN.gold; tg = Math.max(tg, TIME_GAIN.gold); big = true; }
   G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo); G.comboPop = 1;
   const pts = Math.round(base * (1 + G.combo * 0.05) * RANK_MUL[G.rank]);
-  G.score += pts; G.time = Math.min(MAX_TIME, G.time + tg);
+  G.score += pts; G.time = Math.min(G.maxTime, G.time + tg);
   addStyle(st);
   const fc = c.kind === 'gold' ? '#ffe14a' : col;
   burst(c.x, c.y, top, fc, big ? 70 : 34, big ? 13 : 9);
@@ -640,6 +854,109 @@ function lostCan(c) {
   text(s.x, s.y - 70, G.bonus > 0 ? 'MISS' : '-' + lt + 's', '#ff3b3b', 26, 0.8, -30); shake(6); SFX.lost(); buzz(60);
 }
 
+/* ---- ギミック・障害物 ---- */
+function pickW(w) { let r = Math.random() * Object.values(w).reduce((a, b) => a + b, 0); for (const k in w) { r -= w[k]; if (r <= 0) return k; } return Object.keys(w)[0]; }
+function spawnObj(type, x) {
+  const D = diff();
+  if (!type) type = Math.random() < Math.min(0.62, 0.3 + D / 200)
+    ? pickW({ puddle: 3, cone: 3, bike: D > 8 ? 2.6 : 0.6 })
+    : pickW({ kicker: 3, rail: 2.2, box: 2 });
+  const S = OBJ[type];
+  const o = { type, w: S.w, len: S.len, x: x ?? WALL + S.w / 2 + 8 + Math.random() * (W - 2 * WALL - S.w - 16), y: SPAWN_Y + 40, vx: 0, fly: null };
+  if (type === 'bike') o.vx = sgn() * (25 + Math.random() * 45);
+  makeObjMesh(o); G.objs.push(o);
+  return o;
+}
+const airH = a => { const k = Math.min(1, a.t / a.dur); return a.h0 * (1 - k) + 4 * a.hgt * k * (1 - k); };
+function kick() {
+  G.air = { t: 0, dur: 1.05, hgt: 2.5, h0: 0.95, tricks: 0 };
+  const s = scr(G.px, PY, 2); text(s.x, s.y - 60, 'AIR!!', '#ffe14a', 28, 0.7, -40);
+  addStyle(10); G.punch = Math.max(G.punch, 0.5); SFX.jump(true); buzz(15);
+}
+function land() {
+  const a = G.air; G.air = null;
+  G.spinA -= G.spinT; G.spinT = 0;
+  burst(G.px, PY, 0.1, '#ffffff', 10, 4);
+  if (a.tricks > 0) {
+    const pts = Math.round(150 * a.tricks * RANK_MUL[G.rank]); G.score += pts; addStyle(6 * a.tricks);
+    const s = scr(G.px, PY, 2); text(s.x, s.y - 40, 'LANDED! +' + pts, '#4dff9a', 18, 0.7, -40);
+  }
+}
+function startGrind(o) {
+  o.used = true;
+  if (G.air) land();
+  const L = TRICK_GRIND[o.type];
+  G.grind = { o, t: 0, pts: 0, sw: false, name: L[Math.floor(Math.random() * L.length)] };
+  const s = scr(G.px, PY, 2); text(s.x, s.y - 60, G.grind.name, '#22e6ff', 24, 0.8, -30);
+  SFX.grind(); buzz(10);
+}
+function endGrind(ok) {
+  const g = G.grind; G.grind = null; G.tricksDone++;
+  const s = scr(G.px, PY, 2);
+  text(s.x, s.y - 40, (ok ? '' : 'BAIL  ') + '+' + Math.round(g.pts), ok ? '#fff' : '#9aa0bf', 18, 0.7, -40);
+  if (ok) addStyle(10);
+}
+/** トリックの入力（タップ・上フリック・↑ W スペース）：地面ならジャンプ、空中なら技、グラインド中は SWITCH */
+function trickInput() {
+  if (G.mode !== 'play') return;
+  const s = scr(G.px, PY, 2), mul = RANK_MUL[G.rank];
+  if (G.grind) {
+    if (G.grind.sw) return;
+    G.grind.sw = true; const pts = Math.round(300 * mul); G.score += pts; G.grind.pts += pts; addStyle(12); G.tricksDone++;
+    G.grindRot += Math.PI; text(s.x, s.y - 90, 'SWITCH!', '#ff8ac8', 22, 0.7, -30); SFX.trick(1);
+  } else if (G.air) {
+    if (G.air.tricks >= 3 || G.air.t > G.air.dur - 0.18) return;
+    const n = ++G.air.tricks, pts = Math.round(250 * n * mul); G.score += pts; G.tricksDone++;
+    addStyle(12 + n * 4); G.spinT += Math.PI * 2;
+    text(s.x, s.y - 70 - n * 26, TRICK_AIR[Math.floor(Math.random() * TRICK_AIR.length)] + ' +' + pts, ['#ffe14a', '#ff8a2e', '#ff2e88'][n - 1], 20 + n * 2, 0.8, -40);
+    SFX.trick(n); buzz(12);
+  } else {
+    G.air = { t: 0, dur: 0.6, hgt: 1.35, h0: 0, tricks: 0 }; SFX.jump(false);
+  }
+}
+function hitObstacle(o) {
+  o.hit = true; G.objHits++;
+  const Hh = HIT[o.type], trick = !!(G.air || G.grind), s = scr(o.x, PY, 1), mul = RANK_MUL[G.rank];
+  G.spd = Math.min(G.spd, Hh.spd);   // 速度ダウン（トリック中でも同じ）
+  if (o.type === 'puddle') { for (let i = 0; i < 26; i++) spark(wx(o.x) + (Math.random() - 0.5) * 2, 0.2, 0, (Math.random() - 0.5) * 6, 3 + Math.random() * 5, (Math.random() - 0.5) * 4, 0.6, '#9ad0ff', -16); }
+  else { o.fly = { vx: (o.x < G.px ? -1 : 1) * (160 + Math.random() * 120), h: 0, vh: 7 + Math.random() * 3, rot: 0 }; burst(o.x, PY, 0.6, '#ffffff', 16, 7); }
+  if (trick) {
+    const pts = Math.round(Hh.pt * mul); G.score += pts; G.smashes++; addStyle(14);
+    text(s.x, s.y - 80, 'TRICK SMASH! +' + pts, '#ffe14a', 22, 0.8, -40);
+  } else addStyle(-20);
+  text(s.x, s.y - 50, Hh.t, '#ff6a6a', 26, 0.7, -30);
+  text(W / 2, PY - 130, 'SPEED DOWN', '#ff3b3b', 18, 0.8, 0);
+  shake(o.type === 'bike' ? 12 : 7); G.redEdge = Math.max(G.redEdge, 0.35); SFX.crash(o.type); buzz(o.type === 'bike' ? 70 : 35);
+}
+function updateObjs(dt, v) {
+  let ramp = 0;
+  for (const o of G.objs) {
+    o.y += v * dt * (o.type === 'bike' && !o.fly ? 0.7 : 1);
+    if (o.fly) { o.x += o.fly.vx * dt; o.fly.h += o.fly.vh * dt; o.fly.vh -= 22 * dt; o.fly.rot += dt * 9; }
+    else if (o.type === 'bike') { o.x += o.vx * dt; if (o.x < WALL + 24 || o.x > W - WALL - 24) { o.vx = -o.vx; o.x = Math.max(WALL + 24, Math.min(W - WALL - 24, o.x)); } }
+    if (o.y - o.len > PY + 80 || (o.fly && o.fly.h < -3)) { o.dead = true; continue; }
+    if (G.mode !== 'play' || o.fly || o.hit) continue;
+    const inY = o.y + 4 >= PY && o.y - o.len - 4 <= PY, inX = Math.abs(G.px - o.x) < o.w / 2 + (o.type === 'rail' ? 10 : 12);
+    if (o.type === 'kicker') {
+      if (o.used) continue;
+      if (o.on && o.y - o.len >= PY - 2) { o.used = true; kick(); continue; }
+      o.on = inY && inX && !G.air && !G.grind;
+      if (o.on) ramp = Math.max(ramp, 0.95 * Math.max(0, Math.min(1, (o.y - PY) / o.len)));
+    } else if (o.type === 'rail' || o.type === 'box') {
+      if (G.grind && G.grind.o === o) { if (!inX) endGrind(false); else if (o.y - o.len > PY) endGrind(true); continue; }
+      if (!G.grind && !o.used && inY && inX && (!G.air || (G.air.t > G.air.dur * 0.4 && airH(G.air) < 1.4))) startGrind(o);
+    } else if (inY && inX) {
+      if (G.ph > CLEAR[o.type]) {
+        o.hit = true; const pts = Math.round(120 * RANK_MUL[G.rank]); G.score += pts; addStyle(6);
+        const s = scr(o.x, PY, 1); text(s.x, s.y - 50, 'JUMP OVER +' + pts, '#4dff9a', 16, 0.6, -30);
+      } else hitObstacle(o);
+    }
+  }
+  for (const o of G.objs) if (o.dead) dropObjMesh(o);
+  G.objs = G.objs.filter(o => !o.dead);
+  return ramp;
+}
+
 /* ---- 進行 ---- */
 function update(rdt) {
   const playing = G.mode === 'play' || G.mode === 'end';
@@ -653,9 +970,14 @@ function update(rdt) {
     G.el += dt;
     if (G.bonus > 0) G.bonus = Math.max(0, G.bonus - dt); else G.time -= dt;   // ボーナス中は時間が止まる
     G.fireT -= dt; if (G.fireT <= 0) { autoFire(); G.fireT = fireInterval(); }
-    if (G.time <= 0) { G.time = 0; endGame(); }
+    G.spd += (1 - G.spd) * Math.min(1, dt * 0.55);   // 速度ダウンから少しずつもどる
+    if (G.gm === 'stage' && !G.info.boss && G.dist / 10 >= G.info.goal) stageClear();
+    else if (G.clearIn > 0 && (G.clearIn -= rdt) <= 0) stageClear();
+    else if (G.time <= 0) { G.time = 0; endGame(); }
+    // FREE は 800m ごとに街が変わる
+    if (G.gm === 'free') { const a = Math.floor(G.dist / 8000) % THEMES.length; if (a !== G.theme) { applyTheme(a); flash('#fff', 0.5); text(W / 2, 230, 'AREA ' + (Math.floor(G.dist / 8000) + 1), '#fff', 34, 1.4, 0); text(W / 2, 264, TH.n, TH.neon, 18, 1.4, 0); } }
   }
-  const v = playing || G.mode === 'over' ? scrollSpeed(G.el, G.rank) : 150;
+  const v = playing || G.mode === 'over' ? curSpeed() : 150;
   G.scroll += v * dt; if (playing) G.dist += v * dt;
   if (playing) {
     // スタイルは何もしないと少しずつへる
@@ -664,8 +986,11 @@ function update(rdt) {
     if (G.mode === 'play') {
       G.spawnAcc += v * dt;
       const boss = G.cans.some(c => c.kind === 'boss');
-      if (G.spawnAcc >= spawnGap(G.el) * (boss ? 1.8 : 1)) { G.spawnAcc = 0; spawnPattern(); }
-      if (G.el >= G.nextBoss && !boss) { G.nextBoss = G.el + BOSS_EVERY; spawnBoss(); }
+      if (G.spawnAcc >= spawnGap() * (boss ? 1.8 : 1)) { G.spawnAcc = 0; spawnPattern(); }
+      if (G.el >= G.nextBoss && !boss && G.clearIn <= 0) {
+        if (G.gm === 'stage') { G.nextBoss = Infinity; spawnBoss(G.info.bossHp); } else { G.nextBoss = G.el + BOSS_EVERY; spawnBoss(); }
+      }
+      if (G.el > 2.5) { G.objAcc += v * dt; if (G.objAcc >= objGap() * (boss ? 1.6 : 1)) { G.objAcc = 0; spawnObj(); } }
     }
     // ゴミ箱
     for (const c of G.cans) {
@@ -673,6 +998,7 @@ function update(rdt) {
       if (c.kind === 'boss') {
         const sp = 1.1 + G.bossN * 0.15, nx = W / 2 + Math.sin(c.ph + dt * sp) * 105;
         c.vxNow = (nx - c.x) / Math.max(dt, 1e-4); c.ph += dt * sp; c.x = nx; c.y += canSpeed(c) * dt;
+        if (G.gm === 'stage') c.y = Math.min(c.y, PY - 240);   // ボスステージのボスは、倒すまで目の前に居すわる
       } else {
         c.x += c.vx * dt; c.vxNow = c.vx;
         if (c.x < WALL + c.r + 4) { c.x = WALL + c.r + 4; c.vx = Math.abs(c.vx); }
@@ -717,6 +1043,18 @@ function update(rdt) {
       else if (it.y > PY + 60) it.dead = true;
     }
   }
+  // ギミック・障害物・トリック
+  const ramp = playing ? updateObjs(dt, v) : 0;
+  if (G.mode === 'play') {
+    if (G.air) { G.air.t += dt; if (G.air.t >= G.air.dur) land(); }
+    if (G.grind) {
+      const g = G.grind, p = 420 * dt * RANK_MUL[G.rank]; g.t += dt; g.pts += p; G.score += p; addStyle(16 * dt);
+      G.px += (g.o.x - G.px) * Math.min(1, dt * 5);
+      if (Math.random() < 0.7) spark(wx(G.px) + (Math.random() - 0.5) * 0.4, g.o.type === 'rail' ? 0.7 : 0.62, 0.6, (Math.random() - 0.5) * 3, 1 + Math.random() * 3, 2 + Math.random() * 4, 0.35, Math.random() < 0.5 ? '#ffe14a' : '#ffffff', -10);
+    }
+  } else { G.air = null; G.grind = null; }
+  G.ph = G.grind ? (G.grind.o.type === 'rail' ? 0.72 : 0.62) : G.air ? airH(G.air) : ramp;
+  G.score = Math.round(G.score * 100) / 100;
   for (const it of G.items) if (it.dead) dropItemMesh(it);
   G.items = G.items.filter(it => !it.dead);
   for (const b of G.balls) if (b.done && b.mesh) { scene.remove(b.mesh); b.mesh = null; }
@@ -734,6 +1072,7 @@ function update(rdt) {
   if (G.banner) { G.banner.t += rdt; if (G.banner.t > 1.1) G.banner = null; }
   // 街を流す
   for (const m of deco) { m.position.z += dz; if (m.position.z > 16) m.position.z -= SPAN; }
+  wxUpdate(rdt, dz);
   roadTex.offset.y = (roadTex.offset.y + dz / TILE) % 1;
   for (const s of streaks) { s.z += dz * 3.2; if (s.z > 12) newStreak(s, false); }
   G.shake *= Math.pow(0.002, rdt); G.flash = Math.max(0, G.flash - rdt * 2.2); G.redEdge = Math.max(0, G.redEdge - rdt);
@@ -752,7 +1091,7 @@ function sync3d(rdt) {
   // 色をランクに合わせる
   roadMat.emissive.copy(fever ? new THREE.Color().setHSL(hue, 1, 0.55) : rc).multiplyScalar(1);
   roadMat.emissiveIntensity = 0.6 + G.rank * 0.12;
-  neonMats.forEach(m => m.color.set(fever ? new THREE.Color().setHSL((hue + 0.5) % 1, 1, 0.6) : '#22e6ff'));
+  neonMats.forEach(m => m.color.set(fever ? new THREE.Color().setHSL((hue + 0.5) % 1, 1, 0.6) : TH.neon));
   boardNeonMat.color.copy(rc); lensMat.color.copy(rc); under.material.color.copy(rc); pLight.color.copy(rc);
   bloom.strength = 0.75 + G.rank * 0.12 + G.flash * 1.2 + G.punch * 0.4;
   // ゴミ箱
@@ -768,9 +1107,23 @@ function sync3d(rdt) {
   for (const b of G.balls) if (b.mesh) { b.mesh.position.set(wx(b.x), ballH(b), wz(b.y)); b.mesh.rotation.set(b.spin, b.spin * 0.7, 0); b.mesh.scale.setScalar(b.r / BALL_R); }
   // アイテム
   for (const it of G.items) if (it.mesh) { it.mesh.position.set(wx(it.x), 1.1 + Math.sin(G.rt * 5 + it.x) * 0.2, wz(it.y)); it.core.rotation.set(G.rt * 2, G.rt * 3, 0); }
-  // ちくわくん
-  const bob = Math.sin(G.rt * 14) * 0.03, tilt = playing ? Math.max(-1, Math.min(1, G.lean)) * 0.6 : 0;
-  player.position.set(wx(G.px), bob, 0); player.rotation.z = -tilt * 0.3;
+  // ギミック・障害物
+  for (const o of G.objs) {
+    if (!o.mesh) continue;
+    o.mesh.position.set(wx(o.x), o.fly ? Math.max(0, o.fly.h) : 0, wz(o.y));
+    if (o.fly) o.mesh.rotation.set(o.fly.rot * 0.7, o.fly.rot, o.fly.rot * 0.4);
+    if (o.wheels && !o.fly) o.wheels.forEach(w => w.rotation.x -= rdt * 12);
+    if (o.type === 'bike' && !o.fly) o.mesh.rotation.y = -Math.atan2(o.vx, 120) * 0.6;
+  }
+  // ちくわくん（ジャンプで浮く・技で回る・グラインドで横を向く）
+  const bob = G.ph > 0 ? 0 : Math.sin(G.rt * 14) * 0.03, tilt = playing ? Math.max(-1, Math.min(1, G.lean)) * 0.6 : 0;
+  G.spinA += (G.spinT - G.spinA) * Math.min(1, rdt * 14);
+  const gTarget = G.grind ? (G.grind.o.type === 'box' ? Math.PI / 2 : 0.35) : 0;
+  if (!G.grind && Math.abs(G.grindRot) > 3) G.grindRot = G.grindRot % (Math.PI * 2);
+  G.grindRot += ((G.grind && G.grind.sw ? gTarget + Math.PI : gTarget) - G.grindRot) * Math.min(1, rdt * 12);
+  player.position.set(wx(G.px), bob + G.ph, 0); player.rotation.z = -tilt * 0.3;
+  player.rotation.y = G.spinA + G.grindRot;
+  board.rotation.z = G.air && G.air.tricks ? Math.sin(G.spinA * 2) * 0.6 : 0;
   body.rotation.y = -tilt * 0.4; body.rotation.x = -G.recoil * 0.35;
   body.scale.set(1 + G.recoil * 0.08, 1 - G.recoil * 0.12, 1 + G.recoil * 0.08);
   // 粒
@@ -782,7 +1135,7 @@ function sync3d(rdt) {
   }
   pGeo.setDrawRange(0, n); pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
   // 速さの線（速いほど長く濃く）
-  const v = playing ? scrollSpeed(G.el, G.rank) : 150, f = Math.min(1, (v - 100) / 260);
+  const v = playing ? curSpeed() : 150, f = Math.min(1, (v - 100) / 260);
   const sp = streakGeo.attributes.position.array, len = 1 + f * 5;
   streaks.forEach((s, i) => { sp.set([s.x, s.y, s.z, s.x, s.y, s.z - len], i * 6); });
   streakGeo.attributes.position.needsUpdate = true; streakMat.opacity = 0.15 + f * 0.5;
@@ -790,7 +1143,7 @@ function sync3d(rdt) {
   camera.fov = 58 + f * 16 + G.punch * 6; camera.updateProjectionMatrix();
   const sh = G.shake * 0.02;
   const cx = wx(G.px) * 0.35;
-  camera.position.set(cx + Math.sin(G.rt * 0.7) * 0.2 + (Math.random() - 0.5) * sh, 7.2 + (Math.random() - 0.5) * sh, 8.6 - G.punch * 0.8);
+  camera.position.set(cx + Math.sin(G.rt * 0.7) * 0.2 + (Math.random() - 0.5) * sh, 7.2 + G.ph * 0.45 + (Math.random() - 0.5) * sh, 8.6 - G.punch * 0.8);
   camera.lookAt(cx * 0.6, 0.6, -17);
   camera.rotation.z += -tilt * 0.04 + Math.sin(G.rt * 0.5) * 0.01;
 }
@@ -823,12 +1176,31 @@ function drawHud() {
   ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(-70, 57, 70, 4); ctx.fillStyle = R.c; ctx.fillRect(-70, 57, 70 * frac, 4);
   ctx.restore();
   ctx.textAlign = 'left'; ctx.font = 'italic 700 10px system-ui,sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.textAlign = 'left'; ctx.fillText(Math.floor(G.dist / 10) + ' m   ' + Math.round(scrollSpeed(G.el, G.rank) * 0.8) + ' km/h', 20, H - 20);
+  ctx.textAlign = 'left'; ctx.fillText(Math.floor(G.dist / 10) + ' m   ' + Math.round(curSpeed() * 0.8) + ' km/h', 20, H - 20);
+  if (G.spd < 0.93) {
+    ctx.textAlign = 'right'; ctx.font = 'italic 900 13px system-ui,sans-serif'; ctx.fillStyle = Math.floor(G.rt * 6) % 2 ? '#ff3b3b' : '#ffb0b0';
+    ctx.fillText('SPEED DOWN ' + Math.round(G.spd * 100) + '%', W - 20, H - 22);
+  }
+  // 上のまん中：ステージ・進み具合（FREE は街の名前）
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  if (G.gm === 'stage') {
+    const S = G.info;
+    ctx.font = 'italic 900 13px Impact,"Arial Black",sans-serif'; ctx.fillStyle = S.boss ? '#ff6a6a' : '#fff';
+    ctx.fillText('STAGE ' + S.n + (S.boss ? '  BOSS' : ''), W / 2, 14);
+    if (!S.boss) {
+      const k = Math.min(1, G.dist / 10 / S.goal);
+      ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(W / 2 - 50, 33, 100, 5); ctx.fillStyle = TH.neon; ctx.fillRect(W / 2 - 50, 33, 100 * k, 5);
+      ctx.font = 'italic 700 9px system-ui,sans-serif'; ctx.fillStyle = '#c9c3f0'; ctx.fillText(Math.floor(G.dist / 10) + ' / ' + S.goal + ' m', W / 2, 42);
+    } else { ctx.font = 'italic 700 9px system-ui,sans-serif'; ctx.fillStyle = '#c9c3f0'; ctx.fillText('ボスを倒せばクリア', W / 2, 33); }
+  } else {
+    ctx.font = 'italic 900 12px Impact,"Arial Black",sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('FREE', W / 2, 14);
+    ctx.font = 'italic 700 9px system-ui,sans-serif'; ctx.fillStyle = '#c9c3f0'; ctx.fillText(TH.n, W / 2, 30);
+  }
   // 強化の段階
   ctx.textAlign = 'left'; ctx.font = 'italic 900 11px system-ui,sans-serif';
   let x = 20;
   for (const k of ['rate', 'multi', 'speed', 'power']) {
-    const t = (ITEMS[k].h || ITEMS[k].t) + (G.up[k] >= UP_MAX[k] ? ' MAX' : ' ' + (k === 'multi' ? 1 + G.up[k] : G.up[k]));
+    const t = (ITEMS[k].h || ITEMS[k].t) + (G.up[k] >= UP_MAX[k] ? ' MAX' : ' ' + G.up[k]);
     ctx.fillStyle = 'rgba(0,0,0,.45)'; const w = ctx.measureText(t).width + 10; ctx.fillRect(x - 2, H - 42, w, 16);
     ctx.fillStyle = ITEMS[k].c; ctx.fillText(t, x + 3, H - 39); x += w + 4;
   }
@@ -841,8 +1213,9 @@ function drawHud() {
   // アイテムの名前
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'italic 900 12px system-ui,sans-serif';
   for (const it of G.items) {
-    const s = scr(it.x, it.y, 2.1); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(ITEMS[it.kind].t, s.x, s.y);
-    ctx.fillStyle = ITEMS[it.kind].c; ctx.fillText(ITEMS[it.kind].t, s.x, s.y);
+    const I = ITEMS[it.kind], lb = it.kind === 'multi' ? '数' : I.t;
+    const s = scr(it.x, it.y, 2.1); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(lb, s.x, s.y);
+    ctx.fillStyle = I.c; ctx.fillText(lb, s.x, s.y);
   }
   // ゴミ箱の硬さ（残りの数）
   ctx.font = 'italic 900 14px Impact,"Arial Black",sans-serif';
@@ -903,7 +1276,8 @@ function drawUi() {
   if (G.mode === 'end') {
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(0, 0, W, H);
     ctx.save(); ctx.translate(W / 2, H / 2 - 20); ctx.transform(1, 0, -0.2, 1, 0, 0); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 900 64px Impact,"Arial Black",sans-serif'; ctx.fillStyle = '#22e6ff'; ctx.fillText('FINISH', -4, 0); ctx.fillStyle = '#ff2e88'; ctx.fillText('FINISH', 4, 0); ctx.fillStyle = '#fff'; ctx.fillText('FINISH', 0, 0);
+    const ft = G.gm === 'stage' ? (G.cleared ? 'CLEAR!!' : 'FAILED') : 'FINISH';
+    ctx.font = 'italic 900 64px Impact,"Arial Black",sans-serif'; ctx.fillStyle = '#22e6ff'; ctx.fillText(ft, -4, 0); ctx.fillStyle = '#ff2e88'; ctx.fillText(ft, 4, 0); ctx.fillStyle = G.cleared ? '#ffe14a' : '#fff'; ctx.fillText(ft, 0, 0);
     ctx.restore();
   }
   if (G.paused) {
@@ -917,7 +1291,7 @@ function drawUi() {
 /* ---- ループ ---- */
 let last = performance.now();
 function loop(now) {
-  const rdt = Math.min(0.05, (now - last) / 1000); last = now;
+  const rdt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;   // 始めた直後は now が last より前のことがある
   try { update(rdt); sync3d(rdt); composer.render(); drawUi(); } catch (e) { console.error(e); }
   requestAnimationFrame(loop);
 }
@@ -929,14 +1303,21 @@ cv.addEventListener('pointerdown', e => {
   e.preventDefault(); ac();
   if (G.paused) { G.paused = false; last = performance.now(); return; }
   if (G.mode !== 'play') return;
-  const p = toLocal(e); ptrs.clear(); ptrs.set(e.pointerId, { x: p.x, px: G.px });
+  const p = toLocal(e); ptrs.clear(); ptrs.set(e.pointerId, { x: p.x, y: p.y, px: G.px, t: performance.now(), up: false });
   try { cv.setPointerCapture(e.pointerId); } catch (er) {}
 });
 cv.addEventListener('pointermove', e => {
   const s = ptrs.get(e.pointerId); if (!s || G.mode !== 'play') return;
-  G.px = Math.max(WALL + 20, Math.min(W - WALL - 20, s.px + (toLocal(e).x - s.x) * DRAG_K));
+  const p = toLocal(e), dy = p.y - s.y;
+  if (!s.up && dy < -40 && Math.abs(p.x - s.x) < -dy) { s.up = true; trickInput(); }   // 上へフリック＝トリック
+  G.px = Math.max(WALL + 20, Math.min(W - WALL - 20, s.px + (p.x - s.x) * DRAG_K));
 });
-cv.addEventListener('pointerup', e => ptrs.delete(e.pointerId));
+cv.addEventListener('pointerup', e => {
+  const s = ptrs.get(e.pointerId); ptrs.delete(e.pointerId);
+  if (!s || s.up || G.mode !== 'play') return;
+  const p = toLocal(e);
+  if (performance.now() - s.t < 260 && Math.abs(p.x - s.x) < 14 && Math.abs(p.y - s.y) < 14) trickInput();   // タップ＝トリック
+});
 cv.addEventListener('pointercancel', e => ptrs.delete(e.pointerId));
 const keyDir = k => (k === 'ArrowLeft' || k === 'a' || k === 'A') ? 'l' : (k === 'ArrowRight' || k === 'd' || k === 'D') ? 'r' : null;
 document.addEventListener('keyup', e => { const d = keyDir(e.key); if (d) KEYS[d] = false; });
@@ -944,53 +1325,119 @@ window.addEventListener('blur', () => { KEYS.l = KEYS.r = false; });
 document.addEventListener('visibilitychange', () => { if (document.hidden && G.mode === 'play') G.paused = true; });
 document.addEventListener('keydown', e => {
   const kd = keyDir(e.key); if (kd) { KEYS[kd] = true; e.preventDefault(); return; }
+  if (G.mode === 'play' && (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ')) { e.preventDefault(); if (!e.repeat) trickInput(); return; }
   if ((e.key === 'r' || e.key === 'R') && (G.mode === 'play' || G.mode === 'over')) { start(); }
-  else if ((e.key === ' ' || e.key === 'Enter') && G.mode === 'over') { e.preventDefault(); start(); }
+  else if ((e.key === ' ' || e.key === 'Enter') && G.mode === 'over') { e.preventDefault(); overMain(); }
 });
 
 /* ---- 画面の流れ ---- */
 const $ = id => document.getElementById(id);
+function clearField() { G.cans.forEach(dropCanMesh); G.cans = []; G.items.forEach(dropItemMesh); G.items = []; G.objs.forEach(dropObjMesh); G.objs = []; }
 function showTitle() {
-  G.cans.forEach(dropCanMesh); G.cans = []; G.items.forEach(dropItemMesh); G.items = [];
-  G.mode = 'title'; G.rank = 0; G.style = 0; bgmStop();
-  $('tBest').textContent = SAVE.best; $('tRank').textContent = SAVE.bestRank >= 0 ? '（最高 ' + RANKS[SAVE.bestRank].k + '）' : '';
-  $('mOver').hidden = true; $('mTitle').hidden = false;
+  clearField();
+  G.mode = 'title'; G.rank = 0; G.style = 0; G.spd = 1; bgmStop();
+  const cl = Object.keys(SAVE.stages).length, st = Object.values(SAVE.stages).reduce((a, v) => a + (v.s || 0), 0);
+  $('tProg').innerHTML = 'STAGE <b>' + cl + '</b> / ' + STAGES + ' クリア　★ <b>' + st + '</b> / ' + STAGES * 3 + '<br>FREE ベスト <b>' + SAVE.best.toLocaleString() + '</b> 点' + (SAVE.bestRank >= 0 ? '（最高 ' + RANKS[SAVE.bestRank].k + '）' : '');
+  $('mOver').hidden = true; $('mStage').hidden = true; $('mTitle').hidden = false;
 }
-function start() {
-  ac(); reset(); $('mTitle').hidden = true; $('mOver').hidden = true; last = performance.now(); bgmStart();
+function showStages() {
+  const L = $('sList'); L.innerHTML = '';
+  let next = 0;
+  for (let t = 0; t < THEMES.length; t++) {
+    const h = document.createElement('div'); h.className = 'sgrp'; h.textContent = (t * 10 + 1) + '〜' + (t * 10 + 10) + '　' + THEMES[t].n; L.appendChild(h);
+    const g = document.createElement('div'); g.className = 'sgrid'; L.appendChild(g);
+    for (let n = t * 10 + 1; n <= t * 10 + 10; n++) {
+      const S = stageInfo(n), b = document.createElement('button'), st = stageStars(n), open = stageOpen(n);
+      b.className = 'sb' + (S.boss ? ' boss' : '') + (SAVE.stages[n] ? ' clear' : '');
+      b.innerHTML = (open ? n : '🔒') + '<small>' + (SAVE.stages[n] ? '★'.repeat(st) + '☆'.repeat(3 - st) : S.boss && open ? 'BOSS' : '') + '</small>';
+      b.disabled = !open; b.dataset.n = n;
+      if (open && !SAVE.stages[n] && !next) { next = n; b.classList.add('next'); }
+      b.onclick = () => startMode('stage', n);
+      g.appendChild(b);
+    }
+  }
+  const cl = Object.keys(SAVE.stages).length;
+  $('sProg').innerHTML = 'クリア <b>' + cl + '</b> / ' + STAGES + '　★ = クリア・ランク A・ランク SS';
+  $('mTitle').hidden = true; $('mOver').hidden = true; $('mStage').hidden = false;
+  const nb = next && L.querySelector('[data-n="' + next + '"]');
+  if (nb) setTimeout(() => nb.scrollIntoView({ block: 'center' }), 0);
+}
+/** gm：'free' か 'stage'。n：ステージの番号 */
+function startMode(gm, n) {
+  ac(); reset(gm, n);
+  const th = gm === 'stage' ? G.info.theme : 0;
+  if (G.theme !== th) applyTheme(th);
+  $('mTitle').hidden = true; $('mOver').hidden = true; $('mStage').hidden = true; last = performance.now(); bgmStart();
   SAVE.plays++; persist();
-  text(W / 2, 300, 'GO!!', '#fff', 64, 0.9, 0); flash('#fff', 0.3); G.punch = 1;
+  if (gm === 'stage') {
+    text(W / 2, 250, 'STAGE ' + n, '#fff', 48, 1.3, 0);
+    text(W / 2, 292, G.info.boss ? 'BOSS STAGE' : TH.n, G.info.boss ? '#ff3b3b' : TH.neon, 18, 1.3, 0);
+    text(W / 2, 322, G.info.boss ? 'ボスを倒せ！' : G.info.goal + 'm 走りきれ！', '#fff', 15, 1.3, 0);
+  } else text(W / 2, 300, 'GO!!', '#fff', 64, 0.9, 0);
+  flash('#fff', 0.3); G.punch = 1;
 }
+const start = () => startMode(G.gm, G.stage);   // いまのモードでやり直す
 function endGame() { G.mode = 'end'; G.endT = 0; bgmStop(); SFX.end(); }
+function stageClear() {
+  G.cleared = true; G.mode = 'end'; G.endT = -0.6; bgmStop(); SFX.boom(); flash('#ffe14a', 0.6); shake(10);
+  for (let i = 0; i < 4; i++) burst(W / 2 + (Math.random() - 0.5) * 200, PY - 200 - Math.random() * 200, 2 + Math.random() * 2, ['#ffe14a', '#ff2e88', '#22e6ff', '#ffffff'][i], 50, 14);
+}
+function overBtn(label, fn, sub) { const b = document.createElement('button'); b.className = 'btn' + (sub ? ' sub' : ''); b.textContent = label; b.onclick = fn; $('oRow').appendChild(b); }
+let overMain = start;
 function showOver() {
-  G.mode = 'over'; G.cans.forEach(dropCanMesh); G.cans = []; G.items.forEach(dropItemMesh); G.items = [];
-  const rec = G.score > SAVE.best, prev = SAVE.best;
-  if (rec) SAVE.best = G.score;
-  if (G.maxRank > SAVE.bestRank) SAVE.bestRank = G.maxRank;
-  persist();
+  const bossLeft = Math.max(0, ...G.cans.filter(c => c.kind === 'boss').map(c => c.hp));
+  G.mode = 'over'; clearField();
   const R = RANKS[G.maxRank];
   $('oGrade').textContent = R.k; $('oGrade').style.color = R.c; $('oGrade').style.textShadow = '-4px 0 #22e6ff,4px 0 #ff2e88';
   $('oRankName').textContent = '最高ランク ' + R.n;
-  $('oScore').textContent = G.score.toLocaleString();
-  $('oNew').innerHTML = rec ? '<span class="new">NEW RECORD!!</span>' : 'ベストまで あと <b>' + (prev - G.score + 1).toLocaleString() + '</b> 点';
+  $('oScore').textContent = Math.round(G.score).toLocaleString();
+  $('oRow').innerHTML = '';
+  if (G.gm === 'stage') {
+    const n = G.stage, prev = SAVE.stages[n];
+    $('oHead').textContent = G.cleared ? 'STAGE ' + n + ' CLEAR!' : 'STAGE ' + n + ' FAILED';
+    if (G.cleared) {
+      const st = 1 + (G.maxRank >= 3 ? 1 : 0) + (G.maxRank >= 5 ? 1 : 0);
+      const rec = !prev || G.score > prev.b;
+      SAVE.stages[n] = { s: Math.max(st, prev ? prev.s : 0), b: Math.round(Math.max(G.score, prev ? prev.b : 0)) };
+      $('oNew').innerHTML = '<div class="stars">' + '★'.repeat(st) + '<i>' + '★'.repeat(3 - st) + '</i></div>' + (rec && prev ? '<span class="new">NEW RECORD!!</span>' : '') + (n === STAGES ? '<span class="new">ALL STAGE CLEAR!!</span>' : '');
+      if (n < STAGES) { overBtn('次のステージ', () => startMode('stage', n + 1)); overBtn('RETRY', start, true); overMain = () => startMode('stage', n + 1); }
+      else { overBtn('RETRY', start); overMain = start; }
+    } else {
+      $('oNew').innerHTML = G.info.boss ? 'ボスの残り <b>' + (G.bossN ? bossLeft : G.info.bossHp) + '</b>' : 'ゴールまで あと <b>' + Math.max(0, G.info.goal - Math.floor(G.dist / 10)) + '</b> m';
+      overBtn('RETRY', start); overMain = start;
+    }
+    overBtn('ステージ選択', showStages, true);
+    $('oHint').textContent = G.cleared && n < STAGES ? 'スペースキーで次のステージ' : 'スペースキーでリトライ';
+  } else {
+    const rec = G.score > SAVE.best, prev = SAVE.best;
+    if (rec) SAVE.best = Math.round(G.score);
+    if (G.maxRank > SAVE.bestRank) SAVE.bestRank = G.maxRank;
+    $('oHead').textContent = 'FINISH!';
+    $('oNew').innerHTML = rec ? '<span class="new">NEW RECORD!!</span>' : 'ベストまで あと <b>' + Math.round(prev - G.score + 1).toLocaleString() + '</b> 点';
+    overBtn('RETRY', start); overBtn('シェア', share, true); overBtn('タイトル', showTitle, true); overMain = start;
+    $('oHint').textContent = 'スペースキーでもリトライ';
+  }
+  persist();
   const acc = G.shots ? Math.round(G.hits / G.shots * 100) : 0;
   $('oStats').innerHTML = [
     ['最大コンボ', G.maxCombo], ['SWISH', G.swishes], ['BANK', G.banks], ['ボス撃破', G.bossKills],
-    ['命中率', acc + '%'], ['アイテム', G.items_got], ['走った距離', Math.floor(G.dist / 10) + 'm'], ['ボーナス', G.bossKills ? 'あり' : '—'],
+    ['トリック', G.tricksDone], ['弾き飛ばし', G.smashes], ['ぶつかった', G.objHits - G.smashes], ['アイテム', G.items_got],
+    ['命中率', acc + '%'], ['走った距離', Math.floor(G.dist / 10) + 'm'],
   ].map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('');
   $('mOver').hidden = false;
 }
-$('startBtn').onclick = start;
-$('againBtn').onclick = start;
-$('titleBtn').onclick = showTitle;
-$('shareBtn').onclick = () => {
-  try { CG.share.open({ msg: 'スタイリッシュゴミ箱シューターで ' + G.score + '点！最高ランク ' + RANKS[G.maxRank].k + '！', tags: ['スタイリッシュゴミ箱シューター'], url: CG.pageUrl() }); } catch (e) {}
-};
+function share() {
+  const what = G.gm === 'stage' ? 'STAGE ' + G.stage + (G.cleared ? ' クリア！' : '') + ' ' + Math.round(G.score) + '点' : 'FREE で ' + Math.round(G.score) + '点';
+  try { CG.share.open({ msg: 'スタイリッシュゴミ箱シューターの ' + what + '！最高ランク ' + RANKS[G.maxRank].k + '！', tags: ['スタイリッシュゴミ箱シューター'], url: CG.pageUrl() }); } catch (e) {}
+}
+$('stageBtn').onclick = () => { ac(); showStages(); };
+$('freeBtn').onclick = () => startMode('free');
+$('sBack').onclick = showTitle;
 
-fit(); showTitle(); requestAnimationFrame(loop);
+applyTheme(0); fit(); showTitle(); requestAnimationFrame(loop);
 
 /* テスト用 */
-window.GOMI = { G, start, autoFire, dropItem, getItem, addStyle, scr, canTop, RANKS, ITEMS, W, H, PX, PY, endGame, camera };
+window.GOMI = { G, start, startMode, stageInfo, applyTheme, spawnObj, trickInput, showStages, THEMES, autoFire, dropItem, getItem, addStyle, scr, canTop, RANKS, ITEMS, W, H, PX, PY, endGame, camera, SAVE };
 </script>
 </body>
 </html>
