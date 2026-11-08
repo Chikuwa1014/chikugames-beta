@@ -1,5 +1,6 @@
 // スタイリッシュゴミ箱シューターのテスト：リポジトリ直下で python3 -m http.server 8765 を起動してから
 // node gomibako-shooter/dev/test.cjs [スクリーンショットの保存先]
+// 自動で 30 秒遊ぶ（いちばん近いゴミ箱かアイテムの前へ動く）・キーとドラッグで動く・ボーナス・結果画面・リトライ・エラー
 const { chromium } = require('playwright');
 const out = process.argv[2] || '/tmp';
 (async () => {
@@ -12,34 +13,44 @@ const out = process.argv[2] || '/tmp';
   await pg.waitForTimeout(400);
   await pg.screenshot({ path: out + '/gomi-title.png' });
   await pg.click('#startBtn');
-  // 自動で遊ぶ：一番近いゴミ箱へ、フリック（ぴったりの向き）とタップを交互に
+  await pg.waitForTimeout(300);
+  // キーで動く
+  const x0 = await pg.evaluate('GOMI.G.px');
+  await pg.keyboard.down('ArrowLeft'); await pg.waitForTimeout(300); await pg.keyboard.up('ArrowLeft');
+  const x1 = await pg.evaluate('GOMI.G.px');
+  await pg.keyboard.down('d'); await pg.waitForTimeout(300); await pg.keyboard.up('d');
+  const x2 = await pg.evaluate('GOMI.G.px');
+  console.log('keys', Math.round(x0), Math.round(x1), Math.round(x2));
+  // ドラッグで動く
+  const box = await pg.locator('#cv').boundingBox();
+  await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.85); await pg.mouse.down();
+  await pg.mouse.move(box.x + box.width / 2 + 60, box.y + box.height * 0.85, { steps: 4 }); await pg.mouse.up();
+  console.log('drag', Math.round(x2), '->', Math.round(await pg.evaluate('GOMI.G.px')));
+  // 自動で遊ぶ
   await pg.evaluate(() => {
-    const M = window.GOMI; let n = 0;
+    const M = window.GOMI;
     window._bot = setInterval(() => {
       const G = M.G; if (G.mode !== 'play') return;
-      const cs = G.cans.filter(c => c.y > -150 && c.y < M.PY - 60 && !(c._t > G.t - 0.6) && c.kind !== 'boss' || c.kind === 'boss' && c.y > 40).sort((a, b) => b.y - a.y);
-      if (!cs.length) return;
-      const c = cs[0]; c._t = G.t;
-      if (n++ % 2) { const s = M.scr(c.x, c.y, M.canTop(c) * 0.6); M.tapAt(s.x, s.y); }
-      else { const pp = M.scr(M.PX, M.PY, 1.2), s = M.scr(c.x, c.y, M.canTop(c)); M.flickDir(Math.atan2(s.y - pp.y, s.x - pp.x)); }
-    }, 140);
+      const it = G.items.filter(i => i.y > M.PY - 260).sort((a, b) => b.y - a.y)[0];
+      const c = G.cans.filter(c => c.y > -120 && c.y < M.PY - 80).sort((a, b) => b.y - a.y)[0];
+      const tx = it ? it.x : c ? c.x : null;
+      if (tx !== null) G.px += Math.max(-14, Math.min(14, tx - G.px));
+    }, 30);
   });
-  await pg.waitForTimeout(6000);
+  await pg.waitForTimeout(8000);
   await pg.screenshot({ path: out + '/gomi-play1.png' });
-  await pg.waitForTimeout(25000);
+  await pg.waitForTimeout(22000);
   await pg.screenshot({ path: out + '/gomi-play2.png' });
-  const mid = await pg.evaluate(() => { const G = window.GOMI.G; return { el: G.el.toFixed(1), time: G.time.toFixed(1), score: G.score, rank: G.rank, maxRank: G.maxRank, combo: G.maxCombo, swish: G.swishes, hits: G.hits, shots: G.shots, lost: G.lost, boss: G.bossN, kills: G.bossKills }; });
+  const mid = await pg.evaluate(() => { const G = window.GOMI.G; return { el: G.el.toFixed(1), time: G.time.toFixed(1), score: G.score, rank: G.rank, combo: G.maxCombo, swish: G.swishes, hits: G.hits, shots: G.shots, lost: G.lost, items: G.items_got, up: G.up, boss: G.bossN }; });
   console.log('bot', JSON.stringify(mid));
-  // 手で操作：タップとフリック
+  // ボーナス
+  await pg.evaluate(() => { const M = window.GOMI; M.getItem({ kind: 'bonus' }); });
+  await pg.waitForTimeout(1500);
+  await pg.screenshot({ path: out + '/gomi-bonus.png' });
+  const t1 = await pg.evaluate('GOMI.G.time'); await pg.waitForTimeout(1000); const t2 = await pg.evaluate('GOMI.G.time');
+  console.log('bonus: time not decreasing', t2 >= t1, t1.toFixed(2), t2.toFixed(2), 'bonus', (await pg.evaluate('GOMI.G.bonus')).toFixed(1));
   await pg.evaluate(() => clearInterval(window._bot));
-  const box = await pg.locator('#cv').boundingBox();
-  const s0 = await pg.evaluate('GOMI.G.shots');
-  await pg.mouse.click(box.x + box.width / 2, box.y + box.height * 0.3);
-  await pg.waitForTimeout(200);
-  await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.8); await pg.mouse.down();
-  await pg.mouse.move(box.x + box.width / 2 + 10, box.y + box.height * 0.7, { steps: 3 }); await pg.mouse.up();
-  console.log('manual shots', await pg.evaluate('GOMI.G.shots') - s0);
-  await pg.evaluate(() => { window.GOMI.G.time = 0.01; });
+  await pg.evaluate(() => { window.GOMI.G.bonus = 0; window.GOMI.G.time = 0.01; });
   await pg.waitForTimeout(2500);
   console.log('over shown', await pg.isVisible('#mOver'));
   await pg.screenshot({ path: out + '/gomi-over.png' });
