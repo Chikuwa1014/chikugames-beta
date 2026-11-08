@@ -11,3 +11,4 @@ worker
 node_modules
 .wrangler
 .gitignore
+.claude
