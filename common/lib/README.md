@@ -6,5 +6,7 @@
 | ライブラリ | 版 | ファイル | ライセンス | 使っているゲーム |
 |---|---|---|---|---|
 | Babylon.js（3D） | 7.54.3 | `babylon/7.54.3/babylon.js`（npm の `babylonjs` そのまま） | Apache-2.0（`license.md`・`NOTICE.md`） | `kenkyujo`（サイレント夜（仮）） |
+| three.js（3D） | 0.170.0 | `three/0.170.0/three.module.min.js`（npm の `three` そのまま）と `addons/`（光のにじみに使う分だけ） | MIT（`LICENSE`） | `gomibako-shooter`（スタイリッシュゴミ箱シューター） |
 
 読み込み：`<script src="../common/lib/babylon/7.54.3/babylon.js"></script>`（グローバルの `BABYLON` ができる）。
+three.js は ES モジュール。importmap で `"three": "../common/lib/three/0.170.0/three.module.min.js"` と `"three/addons/": "../common/lib/three/0.170.0/addons/"` を書いて `import * as THREE from 'three'`。

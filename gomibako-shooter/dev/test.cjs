@@ -17,11 +17,11 @@ const out = process.argv[2] || '/tmp';
     const M = window.GOMI; let n = 0;
     window._bot = setInterval(() => {
       const G = M.G; if (G.mode !== 'play') return;
-      const cs = G.cans.filter(c => c.y > 40 && c.y < M.PY - 60 && !(c._t > G.t - 0.6) && c.kind !== 'boss' || c.kind === 'boss' && c.y > 40).sort((a, b) => b.y - a.y);
+      const cs = G.cans.filter(c => c.y > -150 && c.y < M.PY - 60 && !(c._t > G.t - 0.6) && c.kind !== 'boss' || c.kind === 'boss' && c.y > 40).sort((a, b) => b.y - a.y);
       if (!cs.length) return;
       const c = cs[0]; c._t = G.t;
-      if (n++ % 2) M.tapAt(c.x, c.y);
-      else { const p = M.intercept(c, M.PX, M.PY - 16); if (p) M.flickDir(Math.atan2(p.y - (M.PY - 16), p.x - M.PX)); }
+      if (n++ % 2) { const s = M.scr(c.x, c.y, M.canTop(c) * 0.6); M.tapAt(s.x, s.y); }
+      else { const pp = M.scr(M.PX, M.PY, 1.2), s = M.scr(c.x, c.y, M.canTop(c)); M.flickDir(Math.atan2(s.y - pp.y, s.x - pp.x)); }
     }, 140);
   });
   await pg.waitForTimeout(6000);
