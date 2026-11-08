@@ -19,7 +19,7 @@
 - `chikuwa-dopamine/`：ちくわでるでる！ドーパミン（`β0.2.1`。開発に公開。ミニゲーム集。仕様と引き継ぎは `CLAUDE.md`）
 - `gomibako-shooter/`：スタイリッシュゴミ箱シューター（`β0.3.0`。開発に公開。three.js で立体。仕様と引き継ぎは `CLAUDE.md`）
 - `chikunator/`：チクネーター（`β0.3.1`。β公開。思い浮かべた食べ物を質問で当てる推理ゲーム。仕様と引き継ぎは `CLAUDE.md`）
-- `kenkyujo/`：サイレント夜（仮）（`β0.2.0`。開発に公開。3D脱出ホラー。Babylon.js。仕様と引き継ぎは `CLAUDE.md`）
+- `kenkyujo/`：サイレント夜（仮）（`β0.2.1`。開発に公開。3D脱出ホラー。Babylon.js。仕様と引き継ぎは `CLAUDE.md`）
 - `common/v1/`：共通部品（本番と同じ中身）
 - `common/lib/`：外部ライブラリ（Babylon.js・three.js など。`common/lib/README.md`）
 - `worker/index.js`：マルチの仲介（本番と同じ `MultiRoom`）
