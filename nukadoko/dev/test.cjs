@@ -12,7 +12,10 @@ const OUT = process.argv[2] || '/tmp';
   await pg.screenshot({ path: OUT + '/nuka-title.png' });
   await pg.click('#startBtn');
   // 棚から3つ漬ける
-  for (const id of ['kyuri', 'nasu', 'kyabetsu']) await pg.click(`.veg[data-id="${id}"]`);
+  await pg.click('.veg[data-id="きゅうり"]'); await pg.click('.veg[data-id="なす"]');
+  await pg.click('.tab[data-cat="ha"]'); await pg.click('.veg[data-id="キャベツ"]');
+  const info = await pg.evaluate(() => { const V = NUKA.VEG; return { n: V.length, uniq: new Set(V.map(v => v.id)).size, maxLv: Math.max(...V.map(v => v.lv)), lv1: V.filter(v => v.lv === 1).map(v => v.name).join(','), shapes: [...new Set(V.map(v => v.shape))].length, price: [Math.min(...V.map(v => v.cost)), Math.max(...V.map(v => v.sell))] }; });
+  console.log('veg', JSON.stringify(info));
   console.log('slots', await pg.evaluate(() => NUKA.S.slots.filter(Boolean).map(s => s.id).join(',')), 'coins', await pg.evaluate('NUKA.S.coins'));
   // 8時間進める
   await pg.evaluate(() => NUKA.tick(8));
@@ -55,6 +58,18 @@ const OUT = process.argv[2] || '/tmp';
     return { day: S.day, lv: NUKA.level(), coins: S.coins, stars: st, sold: S.sold };
   });
   console.log('sim', JSON.stringify(sim));
+  // 全部の食べ物を描いてみる（レベルを上げて、各タブの棚を撮る）
+  await pg.evaluate(() => { NUKA.reset(); NUKA.S.xp = 99999; NUKA.S.coins = 99999; });
+  await pg.reload(); await pg.click('#startBtn');
+  for (const c of ['mi', 'ha', 'ne', 'yama', 'kuda', 'hoka']) await pg.click(`.tab[data-cat="${c}"]`);
+  await pg.evaluate(() => { const S = NUKA.S, V = NUKA.VEG; for (let i = 0; i < 6; i++) S.slots[i] = { id: V[(i * 17 + 3) % V.length].id, t: i * 5, qs: 0, rot: 0.2 }; });
+  await pg.click('#dexBtn'); await pg.screenshot({ path: OUT + '/nuka-dex.png' }); await pg.click('#dexClose');
+  await pg.waitForTimeout(200); await pg.screenshot({ path: OUT + '/nuka-all.png' });
+  // β0.1.0 のセーブを読みかえられるか
+  await pg.goto('http://localhost:8765/');
+  await pg.evaluate(() => localStorage.setItem('nukadoko-save-v1', JSON.stringify({ v: 1, day: 3, hour: 8, coins: 50, xp: 5, earned: 0, sold: 0, bed: { lac: 40, salt: 50, water: 45, unmixed: 0, mold: false }, slots: [{ id: 'kyuri', t: 3, qs: 3, rot: 0 }, null, null, null, null, null], dex: { nasu: { best: 2, n: 1 } }, order: { id: 'daikon', day: 3, bonus: 40 } })));
+  await pg.goto('http://localhost:8765/nukadoko/');
+  console.log('migrate', await pg.evaluate(() => JSON.stringify([NUKA.S.slots[0].id, Object.keys(NUKA.S.dex), NUKA.S.order.id])));
   await pg.evaluate(() => NUKA.reset());
   console.log('errors', errs.length ? errs : 'none');
   await b.close();
