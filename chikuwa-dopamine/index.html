@@ -353,7 +353,7 @@ const MJ = (() => {
   }
   /* ---- 牌の絵（SVG。60×80 の座標で描く） ----
      画像に差し替えるときは TILE_IMG を true にし、img/tiles/ に 34 枚の PNG を置く（chikuwa-dopamine/CLAUDE.md 付録） */
-  const TILE_IMG = true;   // 2026-11-03 SEIJI の画像（ドット絵、150×190。厚みつき）
+  const TILE_IMG = true;   // 2026-11-03 Chikuwa1014 の画像（ドット絵、150×190。厚みつき）
   const TILE_FILES = [...'123456789'].map(n => 'm' + n).concat([...'123456789'].map(n => 'p' + n), [...'123456789'].map(n => 's' + n), [...'1234567'].map(n => 'z' + n));
   const BL = '#1d4ea6', RD = '#c8262c', GR = '#137a3c', SERIF = "'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif";
   const svgCache = {};

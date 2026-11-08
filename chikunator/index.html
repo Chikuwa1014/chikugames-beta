@@ -224,7 +224,7 @@ const GUESS_P = 0.82;      // この確率をこえたら当てにいく
 const MIN_Q = 6;           // これより前には当てにいかない
 const SHARP = 3.6;         // 答えのずれへのきびしさ（大きいほど1回の答えで候補がしぼられる）
 const LEARN_W = 2;
-const PHOTO_LINE_MS = 2600; // 写真の画面の文字を次へ変えるまで（SEIJI の指示で 1.6 秒から 1 秒のばした。2026-11-05）         // 覚えた答えを混ぜるときの、もとの表の重み（回数でわる）
+const PHOTO_LINE_MS = 2600; // 写真の画面の文字を次へ変えるまで（Chikuwa1014 の指示で 1.6 秒から 1 秒のばした。2026-11-05）         // 覚えた答えを混ぜるときの、もとの表の重み（回数でわる）
 
 /* ちくわの写真（質問の前にランダムで1枚）。足すときはここに1行 */
 const PHOTOS = [
@@ -1088,7 +1088,7 @@ function potSVG(u) {
     <circle cx="301.4" cy="60.6" r="1.3" fill="#fff"/><circle cx="323.4" cy="60.6" r="1.3" fill="#fff"/>
     <ellipse cx="293" cy="71" rx="4" ry="2.5" fill="#f2a0a0" opacity=".8"/><ellipse cx="330" cy="71" rx="4" ry="2.5" fill="#f2a0a0" opacity=".8"/>
     <path class="mouth" d="M305 72 q6 6 12 0" stroke="#2a1a10" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <!-- 触角（左へのびる茶色の1本。もとは鍋へかざす手のつもりだったが、SEIJI の指示で「キモ可愛い触角」ということにした。2026-11-05） -->
+    <!-- 触角（左へのびる茶色の1本。もとは鍋へかざす手のつもりだったが、Chikuwa1014 の指示で「キモ可愛い触角」ということにした。2026-11-05） -->
     <path d="M272 82 q-14 12 -30 10" stroke="#c58a45" stroke-width="5" fill="none" stroke-linecap="round"/>
     <circle cx="240" cy="92" r="5" fill="#e9b46a" stroke="#8a5a24" stroke-width="1.5"/>
   </g>
