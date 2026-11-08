@@ -53,7 +53,7 @@ details{text-align:left;margin-top:12px;font-size:13px;color:var(--sub)}
     <h1 class="logo"><span class="a">STYLISH</span><span class="b">ゴミ箱シューター</span></h1>
     <p>夜のおでん横丁をスケボーで爆走しながら、<br>ゴミをゴミ箱へシュートしまくれ！</p>
     <div class="rule">
-      ・ゴミは<b>自動で前へ投げる</b>（最初は 0.95 秒に 1 回）<br>
+      ・ゴミは<b>自動で前へ投げる</b>（最初は 0.7 秒に 1 回）<br>
       ・<b>左右にドラッグ／フリック</b>、または <b>← →・A D キー</b>で動いて、ゴミ箱の前へ<br>
       ・ゴミ箱には<b>硬さ</b>がある（数字の回数だけ当てる）。ど真ん中で <b>SWISH</b>、壁で跳ね返して <b>BANK</b><br>
       ・入れると<b>強化アイテム</b>が落ちてくる。拾って強くなろう（連射・数+1・速さ・威力・時間）<br>
@@ -65,6 +65,7 @@ details{text-align:left;margin-top:12px;font-size:13px;color:var(--sub)}
     <div class="hint">プレイ中に R キーで、すぐにやり直せます</div>
     <details><summary>セーブの引っ越し・更新履歴</summary>
       <div id="move"></div>
+      <p>β0.3.1（2026-11-09）最初の投げる間隔を 0.95 秒から 0.7 秒に（難しすぎたため）。</p>
       <p>β0.3.0（2026-11-08）自動で投げて左右に動く遊び方に。ゴミ箱の硬さ・強化アイテム・ボスのボーナスを追加して難しく。</p>
       <p>β0.2.0（2026-11-08）three.js で立体に作り直し。ネオンの街・光のにじみ・速さで広がる視野。</p>
       <p>β0.1.0（2026-11-04）最初の試作。タップ・フリック・SWISH・BANK・ランク・ボスゴミ箱。</p>
@@ -102,7 +103,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-const VERSION = 'β0.3.0';
+const VERSION = 'β0.3.1';
 const KEY = 'gomibako-shooter-v1';
 CG.init({ game: 'gomibako-shooter', title: 'スタイリッシュゴミ箱シューター', version: VERSION });
 const SAVE = Object.assign({ best: 0, bestRank: -1, plays: 0, sound: true }, CG.ls.getJSON(KEY, {}) || {});
@@ -122,7 +123,7 @@ const WALL = 14;                     // 左右の壁（ここで跳ね返る＝B
 const SPAWN_Y = -210;                // ゴミ箱が出てくる所（霧の奥）
 const START_TIME = 40, MAX_TIME = 60;
 const BALL_V = 820, BALL_R = 7;      // ボールの速さ（強化前）・大きさ（威力 1 のとき）
-const FIRE_START = 0.95, FIRE_MIN = 0.16; // 自動で投げる間隔（秒）。連射の強化 1 回で ×0.85、これより短くはならない
+const FIRE_START = 0.7, FIRE_MIN = 0.14;  // 自動で投げる間隔（秒）。連射の強化 1 回で ×0.85、これより短くはならない
 const BONUS_FIRE = 0.07;             // ボーナス中の間隔（超連射）
 const MOVE_V = 320;                  // キーで左右に動く速さ（px/秒）
 const DRAG_K = 1.3;                  // ドラッグした量 → 動く量
