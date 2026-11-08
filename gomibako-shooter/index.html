@@ -53,16 +53,19 @@ details{text-align:left;margin-top:12px;font-size:13px;color:var(--sub)}
     <h1 class="logo"><span class="a">STYLISH</span><span class="b">ゴミ箱シューター</span></h1>
     <p>夜のおでん横丁をスケボーで爆走しながら、<br>ゴミをゴミ箱へシュートしまくれ！</p>
     <div class="rule">
-      ・<b>ゴミ箱をタップ</b>：ねらってシュート（確実に入る）<br>
-      ・<b>上へフリック</b>：スタイリッシュに投げる。ど真ん中で <b>SWISH</b>、壁に当てて入れると <b>BANK</b><br>
-      ・入れるたびに時間がのびる。ゴミ箱を見送ると時間がへる<br>
-      ・かっこよく決めるほどランクが上がる（D → SSS）。ランクが高いほど速く、点も大きい
+      ・ゴミは<b>自動で前へ投げる</b>（最初は 0.95 秒に 1 回）<br>
+      ・<b>左右にドラッグ／フリック</b>、または <b>← →・A D キー</b>で動いて、ゴミ箱の前へ<br>
+      ・ゴミ箱には<b>硬さ</b>がある（数字の回数だけ当てる）。ど真ん中で <b>SWISH</b>、壁で跳ね返して <b>BANK</b><br>
+      ・入れると<b>強化アイテム</b>が落ちてくる。拾って強くなろう（連射・数+1・速さ・威力・時間）<br>
+      ・ボスを倒すと<b>ボーナス</b>（数秒間、超連射・威力+2・時間が止まる）<br>
+      ・ゴミ箱を見送ると時間がへる。かっこよく決めるほどランクが上がる（D → SSS）
     </div>
     <p>ベスト <b id="tBest">0</b> 点 <span id="tRank"></span></p>
     <div class="row"><button class="btn" id="startBtn">START</button></div>
     <div class="hint">プレイ中に R キーで、すぐにやり直せます</div>
     <details><summary>セーブの引っ越し・更新履歴</summary>
       <div id="move"></div>
+      <p>β0.3.0（2026-11-08）自動で投げて左右に動く遊び方に。ゴミ箱の硬さ・強化アイテム・ボスのボーナスを追加して難しく。</p>
       <p>β0.2.0（2026-11-08）three.js で立体に作り直し。ネオンの街・光のにじみ・速さで広がる視野。</p>
       <p>β0.1.0（2026-11-04）最初の試作。タップ・フリック・SWISH・BANK・ランク・ボスゴミ箱。</p>
     </details>
@@ -99,7 +102,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-const VERSION = 'β0.2.0';
+const VERSION = 'β0.3.0';
 const KEY = 'gomibako-shooter-v1';
 CG.init({ game: 'gomibako-shooter', title: 'スタイリッシュゴミ箱シューター', version: VERSION });
 const SAVE = Object.assign({ best: 0, bestRank: -1, plays: 0, sound: true }, CG.ls.getJSON(KEY, {}) || {});
@@ -118,7 +121,28 @@ const PX = 180, PY = 584;            // ちくわくんの位置
 const WALL = 14;                     // 左右の壁（ここで跳ね返る＝BANK）
 const SPAWN_Y = -210;                // ゴミ箱が出てくる所（霧の奥）
 const START_TIME = 40, MAX_TIME = 60;
-const BALL_V = 1100, BALL_R = 7, COOLDOWN = 0.13;
+const BALL_V = 820, BALL_R = 7;      // ボールの速さ（強化前）・大きさ（威力 1 のとき）
+const FIRE_START = 0.95, FIRE_MIN = 0.16; // 自動で投げる間隔（秒）。連射の強化 1 回で ×0.85、これより短くはならない
+const BONUS_FIRE = 0.07;             // ボーナス中の間隔（超連射）
+const MOVE_V = 320;                  // キーで左右に動く速さ（px/秒）
+const DRAG_K = 1.3;                  // ドラッグした量 → 動く量
+const DROP_P = 0.4;                  // ゴミ箱を入れたとき強化アイテムが落ちる確率（金のゴミ箱は必ず）
+const ITEM_V = 90;                   // アイテムが道の流れより速く近づく分（px/秒）
+const UP_MAX = { rate: 8, multi: 4, speed: 5, power: 4 };
+const ITEMS = {
+  rate: { c: '#22e6ff', t: '連射', w: 3 },
+  multi: { c: '#ff2e88', t: '数+1', h: '数', w: 1.6 },
+  speed: { c: '#ffe14a', t: '速さ', w: 2.4 },
+  power: { c: '#ff8a2e', t: '威力', w: 2.4 },
+  time: { c: '#4dff9a', t: '時間', w: 3 },
+  bonus: { c: '#ffffff', t: 'BONUS', w: 0 },
+};
+const fireInterval = () => G.bonus > 0 ? BONUS_FIRE : Math.max(FIRE_MIN, FIRE_START * Math.pow(0.85, G.up.rate));
+const ballV = () => BALL_V * (1 + 0.15 * G.up.speed);
+const power = () => 1 + G.up.power + (G.bonus > 0 ? 2 : 0);   // 1 回で減らせる硬さ
+const ballR = pw => BALL_R + (pw - 1) * 2.2;                   // 威力が上がるとゴミが大きくなる
+/** ゴミ箱の硬さ。時間がたつほど硬いゴミ箱が増える */
+const hpFor = kind => kind === 'gold' ? 1 : Math.min(6, 1 + Math.floor(Math.random() * Math.min(3.5, 1 + G.el / 22)) + (kind === 'big' ? 2 : 0));
 const RANKS = [
   { k: 'D', n: 'DIRTY', c: '#9aa0bf' },
   { k: 'C', n: 'CLEAN', c: '#3fd2ff' },
@@ -132,13 +156,11 @@ const RANK_MUL = [1, 1.2, 1.5, 2, 2.5, 3, 4];
 const STYLE_PER_RANK = 100;
 const styleDecay = r => 5 + r * 5;                                    // 1 秒にへるスタイル
 const scrollSpeed = (el, r) => Math.min(120 + el * 1.5 + r * 18, 360); // 走る速さ（平面の px/秒）
-const spawnGap = el => Math.max(120, 205 - el * 1.1);                 // ゴミ箱の間隔（走った px）
+const spawnGap = el => Math.max(100, 240 - el * 1.6);                  // ゴミ箱の間隔（走った px）
 const GAIN = { hit: 16, flick: 10, swish: 30, bank: 32, long: 14, multi: 18, gold: 24, boss: 12, bossKill: 90, miss: -32, lost: -45 };
 const TIME_GAIN = { hit: 0.8, swish: 1.4, gold: 2, bossKill: 5, trick: 0.4 };
 const TIME_LOST = 2, BOSS_LOST = 4;
 const BOSS_FIRST = 28, BOSS_EVERY = 34;
-const FLICK_PICK = 0.32;             // フリックの向きと、画面上のゴミ箱の向きのずれがこれ以内なら、そのゴミ箱をねらう（ラジアン）
-const FLICK_ERR = 0.15;              // そのずれを、平面の向きのずれにする倍率（小さいほど入りやすい。SWISH はずれが小さいときだけ）
 const SX = 1 / 30, SZ = 1 / 16;      // 平面→立体の縮尺（横・奥行き）
 const wx = x => (x - W / 2) * SX, wz = y => (y - PY) * SZ;
 const canR = c => c.r / 17;          // 立体のゴミ箱の半径
@@ -326,6 +348,17 @@ function dropCanMesh(c) {
 /* ---- 投げるゴミ ---- */
 const paperGeo = new THREE.IcosahedronGeometry(0.22, 0), paperMat = new THREE.MeshStandardMaterial({ color: 0xf2f0ea, roughness: 0.9, flatShading: true });
 const tinGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.32, 12), tinMat = new THREE.MeshStandardMaterial({ color: 0xe63a3a, metalness: 0.6, roughness: 0.3 });
+const itemGeo = new THREE.OctahedronGeometry(0.42, 0);
+function makeItemMesh(it) {
+  const I = ITEMS[it.kind], g = new THREE.Group();
+  const core = new THREE.Mesh(it.kind === 'bonus' ? new THREE.IcosahedronGeometry(0.55, 0) : itemGeo, new THREE.MeshBasicMaterial({ color: I.c, wireframe: false }));
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: I.c, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.8 }));
+  glow.scale.set(2.4, 2.4, 1); g.add(core); g.add(glow);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.3, 6, 8, 1, true), new THREE.MeshBasicMaterial({ color: I.c, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false }));
+  beam.position.y = 2.5; g.add(beam);
+  it.mesh = g; it.core = core; scene.add(g);
+}
+function dropItemMesh(it) { if (!it.mesh) return; scene.remove(it.mesh); it.mesh.traverse(o => o.material && o.material.dispose()); it.mesh = null; }
 function makeBallMesh(b) { const m = new THREE.Mesh(b.kind ? tinGeo : paperGeo, b.kind ? tinMat : paperMat); b.mesh = m; scene.add(m); }
 
 /* ---- 粒（光の点。足し算で光る） ---- */
@@ -394,13 +427,15 @@ function noise(dur, o = {}) {
 }
 const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 const SFX = {
-  shoot(flick) { noise(0.09, { hp: flick ? 3000 : 2000, vol: 0.12 }); tone(flick ? 1200 : 800, 0.09, { type: 'triangle', to: 300, vol: 0.08 }); },
+  shoot(fast) { noise(0.06, { hp: 2500, vol: fast ? 0.05 : 0.09 }); tone(fast ? 1300 : 900, 0.07, { type: 'triangle', to: 300, vol: fast ? 0.03 : 0.06 }); },
   hit(combo) {
     const f = 440 * Math.pow(2, Math.min(combo, 24) / 12);
     tone(f, 0.12, { vol: 0.1 }); tone(f * 1.5, 0.16, { type: 'triangle', vol: 0.08, at: 0.03 }); noise(0.05, { lp: 900, vol: 0.18 });
   },
   swish() { [0, 4, 7, 12].forEach((s, i) => tone(880 * Math.pow(2, s / 12), 0.25, { type: 'triangle', vol: 0.07, at: i * 0.025 })); noise(0.2, { hp: 6000, vol: 0.06 }); },
   bank() { tone(1500, 0.05, { type: 'triangle', vol: 0.06 }); },
+  clang() { tone(700, 0.05, { type: 'square', to: 400, vol: 0.05 }); noise(0.03, { hp: 3000, vol: 0.06 }); },
+  item() { [0, 7, 12].forEach((s, i) => tone(660 * Math.pow(2, s / 12), 0.15, { type: 'square', vol: 0.06, at: i * 0.05 })); },
   miss() { tone(220, 0.12, { type: 'sawtooth', to: 140, vol: 0.05 }); },
   lost() { tone(160, 0.3, { type: 'sawtooth', to: 50, vol: 0.12 }); noise(0.2, { lp: 400, vol: 0.15 }); },
   rankUp() { tone(220, 0.45, { type: 'sawtooth', to: 1400, vol: 0.07 }); [0, 4, 7, 11, 14].forEach((s, i) => tone(523 * Math.pow(2, s / 12), 0.4, { type: 'square', vol: 0.05, at: 0.18 + i * 0.05 })); },
@@ -435,15 +470,16 @@ sndBtn.onclick = () => { SAVE.sound = !SAVE.sound; persist(); showSnd(); ac(); i
 showSnd();
 
 /* ---- 状態 ---- */
-const G = { mode: 'title', paused: false, t: 0, rt: 0, el: 0, rank: 0, style: 0, scroll: 0, cans: [], balls: [], texts: [], aim: -Math.PI / 2, recoil: 0, shake: 0, flash: 0, punch: 0 };
+const G = { mode: 'title', paused: false, t: 0, rt: 0, el: 0, rank: 0, style: 0, scroll: 0, cans: [], balls: [], items: [], texts: [], px: PX, lean: 0, bonus: 0, up: { rate: 0, multi: 0, speed: 0, power: 0 }, recoil: 0, shake: 0, flash: 0, punch: 0 };
 function reset() {
-  G.cans.forEach(dropCanMesh); G.balls.forEach(b => b.mesh && scene.remove(b.mesh));
+  G.cans.forEach(dropCanMesh); G.balls.forEach(b => b.mesh && scene.remove(b.mesh)); G.items.forEach(dropItemMesh);
   Object.assign(G, {
     mode: 'play', paused: false, t: 0, rt: 0, el: 0, time: START_TIME, score: 0, disp: 0, combo: 0, maxCombo: 0,
     style: 0, rank: 0, maxRank: 0, dist: 0, spawnAcc: 150, nextBoss: BOSS_FIRST, bossN: 0, bossKills: 0,
     cans: [], balls: [], texts: [], banner: null, shake: 0, flash: 0, flashC: '#fff', slow: 0, punch: 0,
     lastShot: -9, lastHit: -9, multi: 0, swishes: 0, banks: 0, shots: 0, hits: 0, comboPop: 0, recoil: 0, aim: -Math.PI / 2,
     endT: 0, lost: 0, redEdge: 0,
+    px: PX, pxPrev: PX, lean: 0, items: [], bonus: 0, bonusMax: 0, fireT: 0.5, up: { rate: 0, multi: 0, speed: 0, power: 0 }, items_got: 0,
   });
   P.length = 0;
 }
@@ -474,6 +510,7 @@ const sgn = () => Math.random() < 0.5 ? -1 : 1;
 function mk(x, o = {}) {
   const c = Object.assign({ x, y: SPAWN_Y, r: 16, vx: 0, kind: 'n', hp: 1, max: 1, hit: 0, ph: Math.random() * 6, vxNow: 0 }, o);
   if (o.dy) c.y += o.dy;
+  if (!o.hp) c.hp = c.max = hpFor(c.kind);
   G.cans.push(c); makeCanMesh(c);
 }
 function spawnPattern() {
@@ -488,59 +525,50 @@ function spawnPattern() {
 }
 function spawnBoss() {
   G.bossN++;
-  const hp = 5 + G.bossN * 2;
+  const hp = 26 + G.bossN * 14;
   mk(W / 2, { dy: -30, r: 32, kind: 'boss', hp, max: hp });
   text(W / 2, 250, 'WARNING', '#ff3b3b', 34, 1.3, 0); text(W / 2, 288, 'ボスゴミ箱 接近！', '#fff', 18, 1.3, 0);
   SFX.boss(); flash('#ff3b3b', 0.25);
 }
 
-/* ---- シュート ---- */
+/* ---- シュート（自動で前へ投げる。数が増えると扇のように広がる） ---- */
 const canSpeed = c => scrollSpeed(G.el, G.rank) * (c.kind === 'boss' ? 0.38 : 1);
-function intercept(c, ox, oy) {
-  const vy = canSpeed(c), vx = c.vxNow;
-  const dx = c.x - ox, dy = c.y - oy, a = vx * vx + vy * vy - BALL_V * BALL_V, b = 2 * (dx * vx + dy * vy), cc = dx * dx + dy * dy;
-  const disc = b * b - 4 * a * cc;
-  if (disc < 0) return null;
-  const t1 = (-b - Math.sqrt(disc)) / (2 * a), t2 = (-b + Math.sqrt(disc)) / (2 * a);
-  const t = Math.min(...[t1, t2].filter(v => v > 0));
-  if (!isFinite(t)) return null;
-  return { x: c.x + vx * t, y: c.y + vy * t, t };
-}
 const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
-const OX = PX, OY = PY - 16;
-function fire(ang, flick) {
-  if (G.mode !== 'play' || G.paused || G.rt - G.lastShot < COOLDOWN) return false;
-  const up = -Math.PI / 2; let d = angDiff(ang, up);
-  d = Math.max(-1.45, Math.min(1.45, d)); ang = up + d;
-  G.lastShot = G.rt; G.shots++; G.recoil = 1; G.aim = ang;
-  const b = { x: OX, y: OY, vx: Math.cos(ang) * BALL_V, vy: Math.sin(ang) * BALL_V, t: 0, flick, bounces: 0, spin: Math.random() * 6, kind: Math.random() < 0.5 ? 0 : 1, done: false };
-  makeBallMesh(b); G.balls.push(b);
-  SFX.shoot(flick);
-  return true;
-}
-/** タップ：画面で近いゴミ箱があれば、動きを読んでぴったりねらう */
-function tapAt(x, y) {
-  let best = null, bd = 1e9;
-  for (const c of G.cans) {
-    if (c.y > PY - 30) continue;
-    const s = scr(c.x, c.y, canTop(c) * 0.6), d = Math.hypot(s.x - x, s.y - y);
-    if (d < 44 && d < bd) { bd = d; best = c; }
+const OY = PY - 16;
+function autoFire() {
+  const n = 1 + G.up.multi, step = 0.09, v = ballV(), pw = power();
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i - (n - 1) / 2) * step;
+    const b = { x: G.px, y: OY, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, bounces: 0, spin: Math.random() * 6, kind: Math.random() < 0.5 ? 0 : 1, done: false, pw, r: ballR(pw) };
+    makeBallMesh(b); G.balls.push(b);
   }
-  if (best) { const p = intercept(best, OX, OY); if (p) return fire(Math.atan2(p.y - OY, p.x - OX), false); }
-  // 何もない所：画面の向きをそのまま平面の向きにする（だいたい）
-  const pp = scr(PX, PY, 1.2);
-  return fire(-Math.PI / 2 + angDiff(Math.atan2(y - pp.y, x - pp.x), -Math.PI / 2) * 0.6, false);
+  G.shots += n; G.recoil = 1; SFX.shoot(G.bonus > 0);
 }
-/** フリック：画面での向きに近いゴミ箱をねらう。ずれが小さいほど真ん中（SWISH）に近づく */
-function flickDir(sa) {
-  const pp = scr(PX, PY, 1.2); let best = null, bd = 1e9;
-  for (const c of G.cans) {
-    if (c.y > PY - 40) continue;
-    const s = scr(c.x, c.y, canTop(c)), d = angDiff(sa, Math.atan2(s.y - pp.y, s.x - pp.x));
-    if (Math.abs(d) < FLICK_PICK && Math.abs(d) < Math.abs(bd)) { bd = d; best = c; }
-  }
-  if (best) { const p = intercept(best, OX, OY); if (p) return fire(Math.atan2(p.y - OY, p.x - OX) + bd * FLICK_ERR, true); }
-  return fire(-Math.PI / 2 + angDiff(sa, -Math.PI / 2) * 0.6, true);
+
+/* ---- 強化アイテム ---- */
+function pickItem() {
+  const ks = Object.keys(ITEMS).filter(k => k !== 'bonus' && (k === 'time' || G.up[k] < UP_MAX[k]));
+  let r = Math.random() * ks.reduce((a, k) => a + ITEMS[k].w, 0);
+  for (const k of ks) { r -= ITEMS[k].w; if (r <= 0) return k; }
+  return 'time';
+}
+function dropItem(x, y, kind) {
+  const it = { x: Math.max(WALL + 24, Math.min(W - WALL - 24, x)), y, kind: kind || pickItem(), t: 0 };
+  makeItemMesh(it); G.items.push(it);
+}
+function getItem(it) {
+  const I = ITEMS[it.kind], s = scr(G.px, PY, 2);
+  let label = I.t;
+  if (it.kind === 'time') { const sec = 1 + Math.floor(Math.random() * 5); G.time = Math.min(MAX_TIME, G.time + sec); label = '時間 +' + sec + 's'; }
+  else if (it.kind === 'bonus') {
+    G.bonus = G.bonusMax = 5 + Math.random() * 3;
+    G.banner = { t: 0, bonus: true }; G.slow = 0.25; flash('#ffffff', 0.6); shake(10); G.punch = 1.2; SFX.rankUp(); buzz([40, 30, 80]);
+    label = 'BONUS TIME!!';
+  } else { G.up[it.kind]++; label = I.t + ' Lv' + G.up[it.kind] + (G.up[it.kind] >= UP_MAX[it.kind] ? ' MAX' : ''); }
+  G.items_got++;
+  text(s.x, s.y - 40, label, I.c, it.kind === 'bonus' ? 30 : 22, 0.9, -60);
+  burst(G.px, PY, 1, I.c, 30, 7); ring(G.px, PY, 0.2, I.c, 0.5, 8, 0.4);
+  SFX.item(); buzz(20);
 }
 
 /* ---- 当たり ---- */
@@ -550,13 +578,19 @@ function hitCan(c, b) {
   const d = Math.abs((rvx * (c.y - b.y) - rvy * (c.x - b.x)) / rl), col = RANKS[G.rank].c, top = canTop(c);
   const s = scr(c.x, c.y, top);
   b.done = true; c.hit = 0.15; G.hits++;
+  // 硬いゴミ箱：まだ残っていればへこむだけ
+  if (c.kind !== 'boss' && c.hp > b.pw) {
+    c.hp -= b.pw; G.score += 10;
+    burst(c.x, c.y, top, '#c5cde0', 8, 5); SFX.clang();
+    return;
+  }
   const multiNames = ['', 'DOUBLE', 'TRIPLE', 'QUAD', 'PENTA', 'HEXA', 'MEGA'];
   if (G.t - G.lastHit < 0.75) G.multi++; else G.multi = 0;
   G.lastHit = G.t;
   if (c.kind === 'boss') {
-    c.hp--; G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo); G.comboPop = 1;
+    c.hp -= b.pw; G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo); G.comboPop = 1;
     const pts = Math.round(150 * RANK_MUL[G.rank] * (1 + G.combo * 0.05)); G.score += pts;
-    addStyle(GAIN.boss + (b.flick ? GAIN.flick : 0)); burst(c.x, c.y, top, '#ff3b3b', 20, 9); ring(c.x, c.y, top, '#ffffff', 1, 6);
+    addStyle(GAIN.boss); burst(c.x, c.y, top, '#ff3b3b', 20, 9); ring(c.x, c.y, top, '#ffffff', 1, 6);
     text(s.x, s.y - 30, '+' + pts, '#fff', 18, 0.6); shake(5); SFX.bossHit(); buzz(15);
     if (c.hp <= 0) {
       c.dead = true; G.bossKills++;
@@ -566,15 +600,14 @@ function hitCan(c, b) {
       ring(c.x, c.y, 0.1, '#ffe14a', 1, 22, 0.7); ring(c.x, c.y, top, '#ffffff', 1, 14, 0.5);
       text(W / 2, 196, 'JACKPOT!!', '#ffe14a', 44, 1.4, -10); text(W / 2, 236, '+' + bonus + '  +' + TIME_GAIN.bossKill + 's', '#fff', 20, 1.4, -10);
       G.slow = 0.6; flash('#fff', 0.7); shake(18); G.punch = 1.5; SFX.boom(); buzz([60, 40, 120]);
+      dropItem(c.x, c.y, 'bonus');
     }
     return;
   }
   c.dead = true;
   const tags = []; let st = GAIN.hit, tg = TIME_GAIN.hit, base = c.kind === 'gold' ? 300 : c.kind === 'big' ? 60 : 100, big = false;
-  if (b.flick) {
-    st += GAIN.flick;
-    if (d < c.r * 0.45 + 1) { tags.push('SWISH'); st += GAIN.swish; tg = TIME_GAIN.swish; base *= 1.5; G.swishes++; big = true; }
-  }
+  if (d < c.r * 0.35 + 1) { tags.push('SWISH'); st += GAIN.swish; tg = TIME_GAIN.swish; base *= 1.5; G.swishes++; big = true; }
+  if (c.max >= 3) { tags.push('HARD BREAK'); st += 6 * c.max; base += 40 * c.max; }
   if (b.bounces) { tags.push(b.bounces > 1 ? 'BANK ×' + b.bounces : 'BANK'); st += GAIN.bank * b.bounces; base += 150 * b.bounces; tg += TIME_GAIN.trick; G.banks++; big = true; }
   if (PY - c.y > 420) { tags.push('LONG SHOT'); st += GAIN.long; base += 80; tg += TIME_GAIN.trick; }
   if (G.multi >= 1) { tags.push(multiNames[Math.min(G.multi, 6)]); st += GAIN.multi * G.multi; base += 60 * G.multi; }
@@ -594,18 +627,16 @@ function hitCan(c, b) {
   if (G.combo % 25 === 0) { text(W / 2, 220, G.combo + ' COMBO!!', '#fff', 40, 1.2, -20); flash(fc, 0.3); }
   if (big) { G.slow = Math.max(G.slow, 0.1); flash(fc, 0.22); shake(7); G.punch = Math.max(G.punch, 0.6); SFX.swish(); buzz(25); } else { shake(3); G.punch = Math.max(G.punch, 0.25); buzz(8); }
   SFX.hit(G.combo);
+  if (c.kind === 'gold' || Math.random() < DROP_P) dropItem(c.x, c.y);
 }
-function missBall(b) {
-  b.done = true;
-  if (G.combo >= 5) text(W / 2, 150, 'COMBO BREAK', '#9aa0bf', 14, 0.7, 20);
-  G.combo = 0; addStyle(GAIN.miss); SFX.miss();
-}
+function missBall(b) { b.done = true; }   // 自動で投げるので、はずれは罰なし（見送りだけが罰）
 function lostCan(c) {
   c.dead = true;
   const lt = c.kind === 'boss' ? BOSS_LOST : TIME_LOST;
-  G.time -= lt; G.combo = 0; G.lost++; addStyle(GAIN.lost); G.redEdge = 0.6;
+  if (G.bonus <= 0) G.time -= lt;   // ボーナス中は時間がへらない
+  G.combo = 0; G.lost++; addStyle(GAIN.lost); G.redEdge = 0.6;
   const s = scr(c.x, PY, 1);
-  text(s.x, s.y - 70, '-' + lt + 's', '#ff3b3b', 26, 0.8, -30); shake(6); SFX.lost(); buzz(60);
+  text(s.x, s.y - 70, G.bonus > 0 ? 'MISS' : '-' + lt + 's', '#ff3b3b', 26, 0.8, -30); shake(6); SFX.lost(); buzz(60);
 }
 
 /* ---- 進行 ---- */
@@ -618,7 +649,9 @@ function update(rdt) {
   const dt = rdt * ts;
   G.t += dt; G.rt += rdt;
   if (G.mode === 'play') {
-    G.el += dt; G.time -= dt;
+    G.el += dt;
+    if (G.bonus > 0) G.bonus = Math.max(0, G.bonus - dt); else G.time -= dt;   // ボーナス中は時間が止まる
+    G.fireT -= dt; if (G.fireT <= 0) { autoFire(); G.fireT = fireInterval(); }
     if (G.time <= 0) { G.time = 0; endGame(); }
   }
   const v = playing || G.mode === 'over' ? scrollSpeed(G.el, G.rank) : 150;
@@ -656,20 +689,35 @@ function update(rdt) {
       for (let k = 0; k < n && !b.done; k++) {
         b.x += b.vx * dt / n; b.y += b.vy * dt / n;
         const bounce = side => { b.bounces++; ring(side, b.y, 1.2, '#22e6ff', 0.3, 5, 0.3); burst(side, b.y, 1.2, '#22e6ff', 10, 5); SFX.bank(); };
-        if (b.x < WALL + BALL_R) { b.x = 2 * (WALL + BALL_R) - b.x; b.vx = Math.abs(b.vx); bounce(WALL); }
-        if (b.x > W - WALL - BALL_R) { b.x = 2 * (W - WALL - BALL_R) - b.x; b.vx = -Math.abs(b.vx); bounce(W - WALL); }
+        if (b.x < WALL + b.r) { b.x = 2 * (WALL + b.r) - b.x; b.vx = Math.abs(b.vx); bounce(WALL); }
+        if (b.x > W - WALL - b.r) { b.x = 2 * (W - WALL - b.r) - b.x; b.vx = -Math.abs(b.vx); bounce(W - WALL); }
         for (const c of G.cans) {
           if (c.dead) continue;
-          if (Math.hypot(b.x - c.x, b.y - c.y) < c.r + BALL_R * 0.5) { hitCan(c, b); break; }
+          if (Math.hypot(b.x - c.x, b.y - c.y) < c.r + b.r * 0.6) { hitCan(c, b); break; }
         }
       }
       if (!b.done) {
         const h = ballH(b);
-        spark(wx(b.x), h, wz(b.y), 0, 0, 0, 0.22, b.flick ? rc : '#ffffff', 0);
-        if (b.y < SPAWN_Y - 40 || b.y > H + 30 || b.t > 1.4) missBall(b);
+        spark(wx(b.x), h, wz(b.y), 0, 0, 0, 0.22, G.bonus > 0 ? '#ffffff' : rc, 0);
+        if (b.y < SPAWN_Y - 40 || b.y > H + 30 || b.t > 1.6) missBall(b);
       }
     }
   }
+  // 左右に動く（キー）
+  if (G.mode === 'play') {
+    const k = (KEYS.l ? -1 : 0) + (KEYS.r ? 1 : 0);
+    if (k) G.px += k * MOVE_V * rdt;
+    G.px = Math.max(WALL + 20, Math.min(W - WALL - 20, G.px));
+    G.lean += ((G.px - (G.pxPrev ?? G.px)) / Math.max(rdt, 1e-3) / 400 - G.lean) * Math.min(1, rdt * 10); G.pxPrev = G.px;
+    // アイテム（近づいてくる。ちくわくんが触れたら拾う）
+    for (const it of G.items) {
+      it.t += dt; it.y += (v + ITEM_V) * dt;
+      if (Math.abs(it.x - G.px) < 34 && Math.abs(it.y - PY) < 36) { it.dead = true; getItem(it); }
+      else if (it.y > PY + 60) it.dead = true;
+    }
+  }
+  for (const it of G.items) if (it.dead) dropItemMesh(it);
+  G.items = G.items.filter(it => !it.dead);
   for (const b of G.balls) if (b.done && b.mesh) { scene.remove(b.mesh); b.mesh = null; }
   G.balls = G.balls.filter(b => !b.done);
   for (const c of G.cans) if (c.dead) dropCanMesh(c);
@@ -699,7 +747,7 @@ const tmpCol = new THREE.Color();
 function sync3d(rdt) {
   const playing = G.mode !== 'title';
   const R = RANKS[G.rank], rc = tmpCol.set(R.c);
-  const fever = G.rank >= 6, hue = (G.rt * 0.33) % 1;
+  const fever = G.rank >= 6 || G.bonus > 0, hue = (G.rt * (G.bonus > 0 ? 1.2 : 0.33)) % 1;
   // 色をランクに合わせる
   roadMat.emissive.copy(fever ? new THREE.Color().setHSL(hue, 1, 0.55) : rc).multiplyScalar(1);
   roadMat.emissiveIntensity = 0.6 + G.rank * 0.12;
@@ -716,11 +764,13 @@ function sync3d(rdt) {
     if (c.kind === 'boss') { const k = 1 + c.hit * 1.5; c.mesh.scale.set(canR(c) * k, canR(c) / k, canR(c) * k); }
   }
   // ボール
-  for (const b of G.balls) if (b.mesh) { b.mesh.position.set(wx(b.x), ballH(b), wz(b.y)); b.mesh.rotation.set(b.spin, b.spin * 0.7, 0); }
+  for (const b of G.balls) if (b.mesh) { b.mesh.position.set(wx(b.x), ballH(b), wz(b.y)); b.mesh.rotation.set(b.spin, b.spin * 0.7, 0); b.mesh.scale.setScalar(b.r / BALL_R); }
+  // アイテム
+  for (const it of G.items) if (it.mesh) { it.mesh.position.set(wx(it.x), 1.1 + Math.sin(G.rt * 5 + it.x) * 0.2, wz(it.y)); it.core.rotation.set(G.rt * 2, G.rt * 3, 0); }
   // ちくわくん
-  const bob = Math.sin(G.rt * 14) * 0.03, tilt = playing ? angDiff(G.aim, -Math.PI / 2) : 0;
-  player.position.y = bob; player.rotation.z = -tilt * 0.12;
-  body.rotation.y = -tilt * 0.6; body.rotation.x = -G.recoil * 0.35;
+  const bob = Math.sin(G.rt * 14) * 0.03, tilt = playing ? Math.max(-1, Math.min(1, G.lean)) * 0.6 : 0;
+  player.position.set(wx(G.px), bob, 0); player.rotation.z = -tilt * 0.3;
+  body.rotation.y = -tilt * 0.4; body.rotation.x = -G.recoil * 0.35;
   body.scale.set(1 + G.recoil * 0.08, 1 - G.recoil * 0.12, 1 + G.recoil * 0.08);
   // 粒
   const n = P.length;
@@ -738,8 +788,9 @@ function sync3d(rdt) {
   // カメラ（速いほど視野が広がる。決めると一瞬ぐっと寄る）
   camera.fov = 58 + f * 16 + G.punch * 6; camera.updateProjectionMatrix();
   const sh = G.shake * 0.02;
-  camera.position.set(Math.sin(G.rt * 0.7) * 0.2 + (Math.random() - 0.5) * sh, 7.2 + (Math.random() - 0.5) * sh, 8.6 - G.punch * 0.8);
-  camera.lookAt(0, 0.6, -17);
+  const cx = wx(G.px) * 0.35;
+  camera.position.set(cx + Math.sin(G.rt * 0.7) * 0.2 + (Math.random() - 0.5) * sh, 7.2 + (Math.random() - 0.5) * sh, 8.6 - G.punch * 0.8);
+  camera.lookAt(cx * 0.6, 0.6, -17);
   camera.rotation.z += -tilt * 0.04 + Math.sin(G.rt * 0.5) * 0.01;
 }
 
@@ -771,7 +822,35 @@ function drawHud() {
   ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(-70, 57, 70, 4); ctx.fillStyle = R.c; ctx.fillRect(-70, 57, 70 * frac, 4);
   ctx.restore();
   ctx.textAlign = 'left'; ctx.font = 'italic 700 10px system-ui,sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(Math.floor(G.dist / 10) + ' m   ' + Math.round(scrollSpeed(G.el, G.rank) * 0.8) + ' km/h', 20, H - 20);
+  ctx.textAlign = 'left'; ctx.fillText(Math.floor(G.dist / 10) + ' m   ' + Math.round(scrollSpeed(G.el, G.rank) * 0.8) + ' km/h', 20, H - 20);
+  // 強化の段階
+  ctx.textAlign = 'left'; ctx.font = 'italic 900 11px system-ui,sans-serif';
+  let x = 20;
+  for (const k of ['rate', 'multi', 'speed', 'power']) {
+    const t = (ITEMS[k].h || ITEMS[k].t) + (G.up[k] >= UP_MAX[k] ? ' MAX' : ' ' + (k === 'multi' ? 1 + G.up[k] : G.up[k]));
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; const w = ctx.measureText(t).width + 10; ctx.fillRect(x - 2, H - 42, w, 16);
+    ctx.fillStyle = ITEMS[k].c; ctx.fillText(t, x + 3, H - 39); x += w + 4;
+  }
+  // ボーナスの残り
+  if (G.bonus > 0) {
+    ctx.textAlign = 'center'; ctx.font = 'italic 900 22px Impact,"Arial Black",sans-serif';
+    ctx.fillStyle = `hsl(${(G.rt * 400) % 360},100%,65%)`; ctx.fillText('BONUS ' + G.bonus.toFixed(1), W / 2, 104);
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(W / 2 - 60, 132, 120, 4); ctx.fillStyle = '#fff'; ctx.fillRect(W / 2 - 60, 132, 120 * G.bonus / G.bonusMax, 4);
+  }
+  // アイテムの名前
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'italic 900 12px system-ui,sans-serif';
+  for (const it of G.items) {
+    const s = scr(it.x, it.y, 2.1); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(ITEMS[it.kind].t, s.x, s.y);
+    ctx.fillStyle = ITEMS[it.kind].c; ctx.fillText(ITEMS[it.kind].t, s.x, s.y);
+  }
+  // ゴミ箱の硬さ（残りの数）
+  ctx.font = 'italic 900 14px Impact,"Arial Black",sans-serif';
+  for (const c of G.cans) {
+    if (c.kind === 'boss' || c.max < 2) continue;
+    const s = scr(c.x, c.y, canTop(c) + 0.55); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)'; ctx.strokeText(c.hp, s.x, s.y);
+    ctx.fillStyle = c.hp >= 3 ? '#ff6a6a' : '#ffe14a'; ctx.fillText(c.hp, s.x, s.y);
+  }
+  ctx.textBaseline = 'top';
   // ボスの体力
   for (const c of G.cans) {
     if (c.kind !== 'boss') continue;
@@ -795,7 +874,7 @@ function drawTexts() {
 }
 function drawBanner() {
   const b = G.banner; if (!b) return;
-  const R = RANKS[b.rank], t = b.t, inT = Math.min(1, t / 0.12), outT = t > 0.85 ? (t - 0.85) / 0.25 : 0;
+  const R = b.bonus ? { k: 'BONUS', n: 'TIME STOP・超連射・威力+2', c: '#ffffff' } : RANKS[b.rank], t = b.t, inT = Math.min(1, t / 0.12), outT = t > 0.85 ? (t - 0.85) / 0.25 : 0;
   const off = (1 - inT) * -W + outT * W;
   ctx.save(); ctx.translate(off, 0);
   ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.moveTo(0, 300); ctx.lineTo(W, 270); ctx.lineTo(W, 370); ctx.lineTo(0, 400); ctx.fill();
@@ -842,29 +921,28 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-/* ---- 入力（タップ＝ねらう／フリック＝スタイリッシュに投げる） ---- */
-const ptrs = new Map();
+/* ---- 入力（左右にドラッグ・フリック、← →・A D キーで動く。投げるのは自動） ---- */
+const ptrs = new Map(), KEYS = { l: false, r: false };
 function toLocal(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
 cv.addEventListener('pointerdown', e => {
   e.preventDefault(); ac();
   if (G.paused) { G.paused = false; last = performance.now(); return; }
   if (G.mode !== 'play') return;
-  const p = toLocal(e); ptrs.set(e.pointerId, { x: p.x, y: p.y, fired: false });
+  const p = toLocal(e); ptrs.clear(); ptrs.set(e.pointerId, { x: p.x, px: G.px });
   try { cv.setPointerCapture(e.pointerId); } catch (er) {}
 });
 cv.addEventListener('pointermove', e => {
-  const s = ptrs.get(e.pointerId); if (!s || s.fired) return;
-  const p = toLocal(e), dx = p.x - s.x, dy = p.y - s.y;
-  if (Math.hypot(dx, dy) > 26 && dy < 0) { s.fired = true; flickDir(Math.atan2(dy, dx)); }
+  const s = ptrs.get(e.pointerId); if (!s || G.mode !== 'play') return;
+  G.px = Math.max(WALL + 20, Math.min(W - WALL - 20, s.px + (toLocal(e).x - s.x) * DRAG_K));
 });
-cv.addEventListener('pointerup', e => {
-  const s = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (!s || s.fired) return;
-  const p = toLocal(e), dx = p.x - s.x, dy = p.y - s.y;
-  if (Math.hypot(dx, dy) < 14) tapAt(s.x, s.y); else if (dy < 0) flickDir(Math.atan2(dy, dx));
-});
+cv.addEventListener('pointerup', e => ptrs.delete(e.pointerId));
 cv.addEventListener('pointercancel', e => ptrs.delete(e.pointerId));
+const keyDir = k => (k === 'ArrowLeft' || k === 'a' || k === 'A') ? 'l' : (k === 'ArrowRight' || k === 'd' || k === 'D') ? 'r' : null;
+document.addEventListener('keyup', e => { const d = keyDir(e.key); if (d) KEYS[d] = false; });
+window.addEventListener('blur', () => { KEYS.l = KEYS.r = false; });
 document.addEventListener('visibilitychange', () => { if (document.hidden && G.mode === 'play') G.paused = true; });
 document.addEventListener('keydown', e => {
+  const kd = keyDir(e.key); if (kd) { KEYS[kd] = true; e.preventDefault(); return; }
   if ((e.key === 'r' || e.key === 'R') && (G.mode === 'play' || G.mode === 'over')) { start(); }
   else if ((e.key === ' ' || e.key === 'Enter') && G.mode === 'over') { e.preventDefault(); start(); }
 });
@@ -872,7 +950,7 @@ document.addEventListener('keydown', e => {
 /* ---- 画面の流れ ---- */
 const $ = id => document.getElementById(id);
 function showTitle() {
-  G.cans.forEach(dropCanMesh); G.cans = [];
+  G.cans.forEach(dropCanMesh); G.cans = []; G.items.forEach(dropItemMesh); G.items = [];
   G.mode = 'title'; G.rank = 0; G.style = 0; bgmStop();
   $('tBest').textContent = SAVE.best; $('tRank').textContent = SAVE.bestRank >= 0 ? '（最高 ' + RANKS[SAVE.bestRank].k + '）' : '';
   $('mOver').hidden = true; $('mTitle').hidden = false;
@@ -884,7 +962,7 @@ function start() {
 }
 function endGame() { G.mode = 'end'; G.endT = 0; bgmStop(); SFX.end(); }
 function showOver() {
-  G.mode = 'over'; G.cans.forEach(dropCanMesh); G.cans = [];
+  G.mode = 'over'; G.cans.forEach(dropCanMesh); G.cans = []; G.items.forEach(dropItemMesh); G.items = [];
   const rec = G.score > SAVE.best, prev = SAVE.best;
   if (rec) SAVE.best = G.score;
   if (G.maxRank > SAVE.bestRank) SAVE.bestRank = G.maxRank;
@@ -897,7 +975,7 @@ function showOver() {
   const acc = G.shots ? Math.round(G.hits / G.shots * 100) : 0;
   $('oStats').innerHTML = [
     ['最大コンボ', G.maxCombo], ['SWISH', G.swishes], ['BANK', G.banks], ['ボス撃破', G.bossKills],
-    ['命中率', acc + '%'], ['走った距離', Math.floor(G.dist / 10) + 'm'],
+    ['命中率', acc + '%'], ['アイテム', G.items_got], ['走った距離', Math.floor(G.dist / 10) + 'm'], ['ボーナス', G.bossKills ? 'あり' : '—'],
   ].map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('');
   $('mOver').hidden = false;
 }
@@ -911,7 +989,7 @@ $('shareBtn').onclick = () => {
 fit(); showTitle(); requestAnimationFrame(loop);
 
 /* テスト用 */
-window.GOMI = { G, start, fire, tapAt, flickDir, intercept, addStyle, scr, canTop, RANKS, W, H, PX, PY, endGame, camera };
+window.GOMI = { G, start, autoFire, dropItem, getItem, addStyle, scr, canTop, RANKS, ITEMS, W, H, PX, PY, endGame, camera };
 </script>
 </body>
 </html>
