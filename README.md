@@ -20,7 +20,7 @@
 - `gomibako-shooter/`：スタイリッシュゴミ箱シューター。2026-11-09 に号口へ昇格（1.0.0）。号口の `/gomibako-shooter/` へ移動するページだけ残している。開発は号口リポジトリで行う
 - `nukadoko/`：ぬか床そだて。2026-11-09 に号口へ昇格（1.0.0）。号口の `/nukadoko/` へ移動するページだけ残している。開発は号口リポジトリで行う
 - `chikunator/`：チクネーター。2026-11-09 に号口へ昇格（1.0.0）。号口の `/chikunator/` へ移動するページだけ残している。開発は号口リポジトリで行う
-- `kenkyujo/`：サイレント夜（仮）（`β0.2.1`。開発に公開。3D脱出ホラー。Babylon.js。仕様と引き継ぎは `CLAUDE.md`）
+- `kenkyujo/`：サイレント夜（仮）（`β0.3.0`。開発に公開。3D脱出ホラー。Babylon.js。仕様と引き継ぎは `CLAUDE.md`）
 - `common/v1/`：共通部品（本番と同じ中身）
 - `common/lib/`：外部ライブラリ（Babylon.js・three.js など。`common/lib/README.md`）
 - `worker/index.js`：マルチの仲介（本番と同じ `MultiRoom`）

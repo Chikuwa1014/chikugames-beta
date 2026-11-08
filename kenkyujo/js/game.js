@@ -11,7 +11,8 @@
     running: false, char: CG.ls.get(KEY_CHAR, 'gatasu'),
     equip: { shoes: 'normal', clothes: 'normal', acc: 'none', charm: 'none' },
     yaw: Math.PI, pitch: .05, keys: {}, mv: [0, 0], bob: 0, step: 0, room: '監禁部屋',
-    inv: [], flags: {}, paused: false
+    inv: [], flags: {}, paused: false,
+    on: null, footY: 0, footVis: 0, actHeld: false, moving: false, run: false
   };
   if (!SY.CHARS.find(c => c.key === G.char)) G.char = 'gatasu';
   G.stats = SY.stats(G.equip);
@@ -109,7 +110,11 @@
   function solid(w, h, d, x, z) {            // 見えない当たり判定の箱
     const me = B.MeshBuilder.CreateBox('col', { width: w, height: h, depth: d }, scene);
     me.position.set(x, h / 2, z); me.isVisible = false; me.isPickable = false; me.checkCollisions = true;
+    return me;
   }
+  // 乗れる物：横の広がり（x0〜x1・z0〜z1）と上面の高さ top、乗っているあいだ当たりを切る mesh
+  const plats = [];
+  function platform(key, x, z, w, d, top, meshes) { plats.push({ key, x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, top, meshes }); }
   const at = (col, row, dx, dz) => SY.cellPos(col, row, dx, dz);
   function hitbox(w, h, d, x, y, z, meta) {   // 見えない「調べる」の当たり（小さい物を調べやすくする）
     const me = B.MeshBuilder.CreateBox('hit', { width: w, height: h, depth: d }, scene);
@@ -118,8 +123,9 @@
 
   // 監禁部屋：ベッド・鎖・バケツ・カレンダー
   let p = at(1, 1, -.22, .5);
-  box(1, .35, 2, metal, p.x, .2, p.z, { solid: true });
+  const bedBase = box(1, .35, 2, metal, p.x, .2, p.z, { solid: true });
   box(.9, .12, 1.9, cloth, p.x, .43, p.z, { kind: 'bed' });
+  platform('bed', p.x, p.z, 1, 2, .49, [bedBase]);
   p = at(1, 3, -.45, 0);
   box(.06, .3, .3, metal, p.x, .6, p.z, { kind: 'chain' });
   for (let i = 0; i < 5; i++) {
@@ -141,7 +147,7 @@
     p = at(col, row);
     box(1.6, .06, .8, metal, p.x, .78, p.z, { kind: 'desk' });
     for (const [x, z] of [[-.75, -.35], [.75, -.35], [-.75, .35], [.75, .35]]) box(.05, .78, .05, metal, p.x + x, .39, p.z + z);
-    solid(1.6, .85, .8, p.x, p.z);
+    platform('desk', p.x, p.z, 1.6, .8, .81, [solid(1.6, .85, .8, p.x, p.z)]);
     for (let i = 0; i < 3; i++) {
       const b = B.MeshBuilder.CreateCylinder('bottle', { height: rnd(.16, .26), diameter: .08 }, scene);
       b.material = glassG; b.position.set(p.x + rnd(-.6, .6), .9, p.z + rnd(-.25, .25)); b.metadata = { kind: 'bottle' }; targets.push(b);
@@ -279,10 +285,11 @@
   addEventListener('keydown', e => {
     G.keys[e.code] = true;
     if ((e.code === 'KeyE' || e.code === 'KeyF') && G.running && !G.paused && !e.repeat) interact();
+    if (e.code === 'Space' && G.running && !G.paused && !e.repeat) actionDown();
     if (G.running && /^(Arrow|Space)/.test(e.code)) e.preventDefault();
   });
-  addEventListener('keyup', e => { G.keys[e.code] = false; });
-  addEventListener('blur', () => { G.keys = {}; });
+  addEventListener('keyup', e => { G.keys[e.code] = false; if (e.code === 'Space') actionUp(); });
+  addEventListener('blur', () => { G.keys = {}; actionUp(); });
 
   let look = null, stickId = null, stickO = null;
   const stick = $('#stick'), knob = stick.querySelector('i');
@@ -325,6 +332,56 @@
   };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   $('#act').addEventListener('click', () => { audio.start(); interact(); });
+  const bAct = $('#bAct');
+  bAct.addEventListener('pointerdown', e => { e.preventDefault(); audio.start(); try { bAct.setPointerCapture(e.pointerId); } catch (_) { } if (G.running && !G.paused) actionDown(); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => bAct.addEventListener(t, actionUp));
+  bAct.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* ---------- アクション（乗る・降りる・押したまま歩くと走る） ----------
+     入り口は doAction() の 1 つ。あとで「走ったまま視線を向けるだけで効く」形にするときは、ここを呼ぶ条件だけ変える */
+  const near = (pl, x, z) => Math.hypot(Math.max(pl.x0 - x, 0, x - pl.x1), Math.max(pl.z0 - z, 0, z - pl.z1));
+  function findMount() {
+    const px = player.position.x, pz = player.position.z, fx = Math.sin(G.yaw), fz = Math.cos(G.yaw);
+    let best = null, bd = T.mountReach;
+    for (const pl of plats) {
+      const d = near(pl, px, pz); if (d >= bd) continue;
+      const cx = Math.min(Math.max(px, pl.x0), pl.x1) - px, cz = Math.min(Math.max(pz, pl.z0), pl.z1) - pz, l = Math.hypot(cx, cz);
+      if (l > .05 && Math.acos(Math.max(-1, Math.min(1, (cx * fx + cz * fz) / l))) > T.mountAngle) continue;   // 正面になければ乗らない
+      best = pl; bd = d;
+    }
+    return best;
+  }
+  const softOff = new Set();      // 乗っているあいだ当たりを切っている物
+  function setSolid(pl, on) { pl.meshes.forEach(m => { m.checkCollisions = on; }); if (on) softOff.delete(pl); else softOff.add(pl); }
+  function mount(pl) {
+    const r = T.radius;
+    player.position.x = pl.x1 - pl.x0 > 2 * r ? Math.min(Math.max(player.position.x, pl.x0 + r), pl.x1 - r) : (pl.x0 + pl.x1) / 2;
+    player.position.z = pl.z1 - pl.z0 > 2 * r ? Math.min(Math.max(player.position.z, pl.z0 + r), pl.z1 - r) : (pl.z0 + pl.z1) / 2;
+    setSolid(pl, false); G.on = pl; G.footY = pl.top;
+    audio.hit(500, .15, .3); audio.tone(220, 330, .15, .06);
+  }
+  const freeAt = (x, z) => [[-1, -1], [1, -1], [-1, 1], [1, 1]].every(([a, b]) => {
+    const ch = (SY.MAP[Math.floor(-(z + b * T.radius) / C)] || '')[Math.floor((x + a * T.radius) / C)];
+    return ch && ch !== '#';
+  });
+  function dismount() {
+    const pl = G.on, r = T.radius + .06;
+    for (const turnBy of [0, Math.PI / 2, -Math.PI / 2, Math.PI]) {   // 正面 → 左右 → 後ろの順に、壁でない所へ降りる
+      const fx = Math.sin(G.yaw + turnBy), fz = Math.cos(G.yaw + turnBy);
+      let x = player.position.x, z = player.position.z;
+      for (let i = 0; i < 40 && x > pl.x0 - r && x < pl.x1 + r && z > pl.z0 - r && z < pl.z1 + r; i++) { x += fx * .1; z += fz * .1; }
+      if (!freeAt(x, z)) continue;
+      player.position.x = x; player.position.z = z;
+      G.on = null; G.footY = 0; audio.hit(400, .15, .3);
+      return;
+    }
+  }
+  function doAction() {
+    if (G.on) return dismount();
+    const pl = findMount(); if (pl) mount(pl);
+  }
+  function actionDown() { G.actHeld = true; if (!G.moving) doAction(); }   // 止まっているときは乗り降り。歩いているときは押している間 走る
+  function actionUp() { G.actHeld = false; }
 
   /* ---------- 調べる（画面の真ん中に何があるか） ---------- */
   let msgTimer = 0, aim = null;
@@ -407,7 +464,7 @@
   /* ---------- 持ち物とメモの画面 ---------- */
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function pause(on) {
-    G.paused = on; G.keys = {}; G.mv = [0, 0];
+    G.paused = on; G.keys = {}; G.mv = [0, 0]; G.actHeld = false;
     if (on && document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
   }
   function openBag() {
@@ -442,19 +499,31 @@
       let sx = (K.KeyD || K.ArrowRight ? 1 : 0) - (K.KeyA || K.ArrowLeft ? 1 : 0) + G.mv[0];
       let sz = (K.KeyW || K.ArrowUp ? 1 : 0) - (K.KeyS || K.ArrowDown ? 1 : 0) - G.mv[1];
       const l = Math.hypot(sx, sz); if (l > 1) { sx /= l; sz /= l; }
-      const sp = G.stats.speed * dt, s = Math.sin(G.yaw), c = Math.cos(G.yaw);
+      G.moving = l > .1; G.run = G.moving && G.actHeld;
+      const rm = G.run ? T.run : 1, sp = G.stats.speed * rm * dt, s = Math.sin(G.yaw), c = Math.cos(G.yaw);
+      player.position.y = G.footY + .86;
       if (l > .05) player.computeWorldMatrix(true), player.moveWithCollisions(new V3((sz * s + sx * c) * sp, 0, (sz * c - sx * s) * sp));
-      player.position.y = .86;
-      if (l > .1) {
-        G.bob += dt * 9 * Math.min(1, l); G.step += dt * Math.min(1, l);
-        if (G.step > T.stepEvery) { G.step = 0; audio.hit(rnd(420, 560), .12, .22, rnd(-.2, .2)); }
+      player.position.y = G.footY + .86;
+      // 乗っている物から外れたら落ちる／降りたら当たりを戻す／物の中にいたら外へ出す（はまって動けなくなる不具合の対策）
+      const px = player.position.x, pz = player.position.z, r = T.radius;
+      if (G.on && (px < G.on.x0 - .05 || px > G.on.x1 + .05 || pz < G.on.z0 - .05 || pz > G.on.z1 + .05)) { G.on = null; G.footY = 0; }
+      for (const pl of [...softOff]) if (pl !== G.on && near(pl, px, pz) > r + .02) setSolid(pl, true);
+      if (!G.on) for (const pl of plats) {
+        if (softOff.has(pl) || G.footY > 0 || px <= pl.x0 + .02 || px >= pl.x1 - .02 || pz <= pl.z0 + .02 || pz >= pl.z1 - .02) continue;
+        const d = [px - pl.x0, pl.x1 - px, pz - pl.z0, pl.z1 - pz], m = Math.min(...d), i = d.indexOf(m), o = r + .05;
+        if (i === 0) player.position.x = pl.x0 - o; else if (i === 1) player.position.x = pl.x1 + o; else if (i === 2) player.position.z = pl.z0 - o; else player.position.z = pl.z1 + o;
+      }
+      if (G.moving) {
+        G.bob += dt * 9 * rm * Math.min(1, l); G.step += dt * rm * (G.run ? T.runStep / T.run : 1) * Math.min(1, l);
+        if (G.step > T.stepEvery) { G.step = 0; audio.hit(rnd(420, 560), .12, G.run ? .34 : .22, rnd(-.2, .2)); }
       }
       // いまいる部屋の名前
       const col = Math.floor(player.position.x / C), row = Math.floor(-player.position.z / C);
-      const r = SY.roomAt(col, row);
-      if (r && r !== G.room) { G.room = r; $('#room').textContent = r; $('#room').classList.remove('show'); void $('#room').offsetWidth; $('#room').classList.add('show'); }
+      const rn = SY.roomAt(col, row);
+      if (rn && rn !== G.room) { G.room = rn; $('#room').textContent = rn; $('#room').classList.remove('show'); void $('#room').offsetWidth; $('#room').classList.add('show'); }
     }
-    camera.position.set(player.position.x, T.eye + Math.sin(G.bob) * .03, player.position.z);
+    G.footVis += (G.footY - G.footVis) * Math.min(1, dt * 12);
+    camera.position.set(player.position.x, G.footVis + T.eye + Math.sin(G.bob) * .03 * (G.run ? 1.6 : 1), player.position.z);
     camera.rotation.set(G.pitch, G.yaw, Math.sin(G.bob * .5) * .006);
 
     // 扉を開く
@@ -475,6 +544,10 @@
     $('#act').disabled = !aim;
     const nm = aimName(aim) + (PC ? '（E）' : '');
     if ($('#act').dataset.nm !== nm) { $('#act').dataset.nm = nm; $('#act').textContent = aim ? '調べる：' + aimName(aim) + (PC ? '（E）' : '') : '調べる' + (PC ? '（E）' : ''); }
+    const mp = G.running && !G.paused && !G.on ? findMount() : null;
+    const al = G.on ? '降りる' : mp ? '乗る：' + SY.CLIMB[mp.key] : 'アクション';
+    if (bAct.dataset.l !== al) { bAct.dataset.l = al; bAct.textContent = al; }
+    bAct.classList.toggle('run', G.run);
     if (msgTimer > 0 && (msgTimer -= dt) <= 0) $('#msg').textContent = '';
   });
   engine.runRenderLoop(() => scene.render());
@@ -483,7 +556,7 @@
   SY.begin = function () {
     G.running = true;
     $('#hud').hidden = false;
-    $('#bBag').hidden = false;
+    $('#bBag').hidden = false; $('#bAct').hidden = false;
     $('#who').textContent = (SY.CHARS.find(c => c.key === G.char) || SY.CHARS[0]).name;
     setTimeout(() => say('……ここは、どこだ。', 4), 600);
     $('#room').textContent = G.room; $('#room').classList.add('show');

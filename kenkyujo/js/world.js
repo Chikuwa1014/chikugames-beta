@@ -64,6 +64,10 @@
     { item: 'memo-3', col: 10, row: 2, dx: .15, dz: -.05, y: .815 }
   ];
 
+  /* 乗れる物（アクションで乗り降り。背の高いロッカー・棚・培養槽は乗れない）
+     中身は game.js が置くときに SY.CLIMB の名前で登録する */
+  SY.CLIMB = { bed: 'ベッド', desk: '机' };
+
   /* 調べるボタンに出す名前（kind ごと） */
   SY.NAMES = {
     bed: 'ベッド', bucket: 'バケツ', chain: '鎖', calendar: 'カレンダー', desk: '机', bottle: 'びん',

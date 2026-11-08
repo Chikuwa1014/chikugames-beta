@@ -60,6 +60,8 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
 #hint{font-size:11px;color:var(--sub);text-shadow:0 1px 3px #000}
 #stick{position:fixed;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid var(--line);pointer-events:none}
 #stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(230,228,218,.22)}
+#bAct{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px));pointer-events:auto;width:84px;height:84px;border-radius:50%;border:2px solid var(--line);background:rgba(20,22,20,.62);color:var(--ink);font-size:13px;font-weight:700;line-height:1.3;padding:6px;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif}
+#bAct.run,#bAct:active{background:rgba(143,211,154,.35);border-color:var(--accent)}
 .hb.new{border-color:var(--accent);box-shadow:0 0 8px var(--accent)}
 .modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);
   padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
@@ -98,6 +100,7 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
     <button id="act" disabled>調べる</button>
     <div id="hint"></div>
   </div>
+  <button id="bAct" hidden>アクション</button>
 </div>
 <div id="stick" hidden><i></i></div>
 
@@ -119,7 +122,7 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
   <h1>サイレント夜<small>SILENT NIGHT（仮）</small></h1>
   <div class="chars" id="chars"></div>
   <button class="go" id="bStart">はじめる</button>
-  <p class="how">PC：WASD で歩く・クリックしてマウスで見回す・E／F／左クリックで調べる・I で持ち物<br>スマホ：左下をなぞって歩く・右側をなぞって見回す</p>
+  <p class="how">PC：WASD で歩く・クリックしてマウスで見回す・E／F／左クリックで調べる・Space で乗り降り（押したまま歩くと走る）・I で持ち物<br>スマホ：左下をなぞって歩く・右側をなぞって見回す・右の丸いボタンで乗り降り（押したまま歩くと走る）</p>
   <div class="ver" id="ver"></div>
 </section>
 
@@ -183,7 +186,7 @@ header a{color:var(--sub);text-decoration:none;font-size:13px;text-shadow:0 1px 
     setTimeout(next, 500);
   });
 
-  $('#hint').textContent = matchMedia('(pointer:coarse)').matches ? '' : 'クリックでマウスを固定・Esc で解除';
+  $('#hint').textContent = matchMedia('(pointer:coarse)').matches ? '' : 'クリックでマウスを固定・Esc で解除・Space で乗り降り／押したまま歩くと走る';
 })();
 </script>
 </body>
