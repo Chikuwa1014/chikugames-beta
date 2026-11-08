@@ -135,6 +135,7 @@ details p{line-height:1.7}
     <button class="btn" id="startBtn">はじめる</button>
     <details><summary>セーブの引っ越し・更新履歴</summary>
       <div id="move"></div>
+      <p>β0.3.1（2026-11-08）ちくわの写真を 7 枚に（ドット絵も 1 枚）。</p>
       <p>β0.3.0（2026-11-05）食べ物を 611 種類に（2000年代〜2026年の流行を中心に 310 種類追加）。質問を 85 問に（2000年代に流行った・塩味・炭酸・ぷるぷる・包んである・商品名など）。</p>
       <p>β0.2.0（2026-11-05）食べ物を 300 種類に（2010〜2026年の流行の食べ物を中心に）。質問を 67 問に（韓国・流行・チーズ・肉の種類・しょうゆ／みそ味・お酒など）。</p>
       <p>β0.1.1（2026-11-05）写真の画面の文字を長めに表示。最後の画面に「ちくねぇ〜」。</p>
@@ -212,7 +213,7 @@ details p{line-height:1.7}
 <script src="../common/v1/ad.js"></script>
 <script>
 'use strict';
-const VERSION = 'β0.3.0';
+const VERSION = 'β0.3.1';
 const KEY = 'chikunator-v1';
 CG.init({ game: 'chikunator', title: 'チクネーター', version: VERSION });
 
@@ -230,6 +231,10 @@ const PHOTOS = [
   { src: 'img/chikuwa1.webp', cap: '焼きたて・その一' },
   { src: 'img/chikuwa2.webp', cap: '焼きたて・その二' },
   { src: 'img/chikuwa3.webp', cap: '焼きたて・その三' },
+  { src: 'img/chikuwa4.webp', cap: 'ドット絵のちくわ' },
+  { src: 'img/chikuwa5.webp', cap: '焼きたて・その五' },
+  { src: 'img/chikuwa6.webp', cap: '焼きたて・その六' },
+  { src: 'img/chikuwa7.webp', cap: '夜のちくわ' },
 ];
 
 /* ===== 質問 ===== */
