@@ -53,7 +53,8 @@
         async open(s, file) {
             const text = CG.share.text(s);
             const withFile = file ? { text, files: [file] } : null;
-            const plain = { title: s.title || CG.info.title || document.title, text: s.msg + '\n' + tagList(s).map(t => '#' + t).join(' '), url: urlOf(s) };
+            /* 端末の共有メニューには、リンクも文面の中に入れた 1 つの text だけを渡す（url を別に渡すと、iPhone の X アプリがリンクだけを使い、文面とタグが消える。2026-11-09） */
+            const plain = { title: s.title || CG.info.title || document.title, text };
             const data = withFile && navigator.canShare && navigator.canShare(withFile) ? withFile : (navigator.share && !file ? plain : null);
             if (data) {
                 try {
