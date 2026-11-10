@@ -88,8 +88,6 @@ a{color:inherit}
 .yatai-chalk{position:absolute;left:0;right:0;text-align:center;font-family:var(--f-dot);font-size:12px;color:#F3E7CF;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 18px}
 .yatai-kagi{position:absolute;display:inline-flex;align-items:center;gap:4px;background:#2B2440;color:#E8DDF5;border:1px solid #6E5A96;font-family:var(--f-dot);font-size:12px;padding:2px 6px;white-space:nowrap}
 .yatai-kagi svg{width:12px;height:12px}
-.yatai-mihon,.mihon{font-family:var(--f-dot);font-size:12px;line-height:1.3;color:#B8261A;background:rgba(255,246,230,.94);border:2px solid #B8261A;padding:0 4px;transform:rotate(6deg)}
-.yatai-mihon{position:absolute}
 
 /* 案内役のちくわくんとふきだし */
 .annai{position:absolute;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -128,8 +126,8 @@ a{color:inherit}
 .harigami-tag{flex:none;font-family:var(--f-dot);font-size:12px;color:var(--yk-chochin-dark);border:2px solid var(--yk-chochin);padding:0 5px;margin-top:2px}
 .harigami-t b{font-weight:700;word-break:break-all}
 .harigami svg{flex:none;width:16px;height:16px;margin-top:4px}
-.mihon-note{margin:0 0 18px;padding:9px 12px;border:2px dashed var(--yk-chochin-glow);color:var(--yk-dashi-hi);font-size:14px;line-height:1.6}
-.mihon-note b{color:var(--yk-chochin-glow)}
+.utsushi-note{margin:0 0 18px;padding:9px 12px;border:2px dashed var(--yk-chochin-glow);color:var(--yk-dashi-hi);font-size:14px;line-height:1.6}
+.utsushi-note b{color:var(--yk-chochin-glow)}
 .intro h1{margin:0;font-family:var(--f-head);font-weight:800;font-size:clamp(25px,6.4vw,42px);line-height:1.3;color:var(--yk-dashi-hi);letter-spacing:.01em;text-wrap:balance}
 .intro h1 em{font-style:normal;color:var(--yk-yaki-hi)}
 .intro p.lead{margin:12px 0 0;color:var(--yk-moji-soft);font-size:16px;max-width:36em}
@@ -172,7 +170,6 @@ a{color:inherit}
 .shina.is-dev .shina-e canvas,.shina.is-lock .shina-e canvas{opacity:.62}
 .nefuda{position:absolute;left:-6px;bottom:-11px;font-family:var(--f-dot);font-size:12px;line-height:1.35;background:var(--yk-dashi-hi);color:var(--yk-ink);border:1.5px solid var(--yk-ink);padding:0 6px;transform:rotate(-3deg)}
 .nefuda.beta{background:var(--yk-yaki-hi)}
-.shina-e .mihon{position:absolute;top:4px;right:4px}
 .shirushi{position:absolute;inset:0;display:grid;place-items:center}
 .shirushi span{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-dot);font-size:14px;background:var(--yk-dashi-hi);color:var(--yk-chochin-dark);border:2px solid var(--yk-ink);padding:3px 9px;transform:rotate(-3deg)}
 .shirushi.kagi span{background:#2B2440;color:#E8DDF5;border-color:#8E7AB8}
@@ -314,7 +311,7 @@ footer a:hover{color:var(--yk-dashi-hi);text-decoration:underline}
     <span class="harigami-t" id="notice-t">ちくわゲームズは新しいアドレス <b>games.chikuwa-hookah.com</b> に引っ越しました。前のアドレスで遊んでいたセーブデータの引っ越し方法はこちら</span>
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </a>
-  <p class="mihon-note" id="mihon-note" role="status" hidden></p>
+  <p class="utsushi-note" id="utsushi-note" role="status" hidden></p>
   <h1 id="intro-h">開いたら、<em>すぐ遊べる。</em><br>ちいさなゲームのあつまり。</h1>
   <p class="lead">インストールもログインもいりません。スマホでもPCでも、ブラウザだけで動きます。遊んだ記録はあなたのブラウザに保存されます。</p>
   <ul class="kifuda-row">
@@ -430,16 +427,16 @@ footer a:hover{color:var(--yk-dashi-hi);text-decoration:underline}
 <script src="../../common/v1/core.js"></script>
 <script src="../../common/v1/chara.js"></script>
 <script>window.YK_LOAD_NG = 0;</script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/shop-sim/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/stage-kobo/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/roulette/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/battle-othello/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/hayaoshi-chikupon/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/horimogu/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/ugokase-chikuwa/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/nukadoko/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/gomibako-shooter/card.js" onerror="YK_LOAD_NG++"></script>
-<script src="https://chikuwa-games.chikuwa-hookah.workers.dev/chikunator/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/shop-sim/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/stage-kobo/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/roulette/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/battle-othello/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/hayaoshi-chikupon/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/horimogu/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/ugokase-chikuwa/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/nukadoko/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/gomibako-shooter/card.js" onerror="YK_LOAD_NG++"></script>
+<script src="https://games.chikuwa-hookah.com/chikunator/card.js" onerror="YK_LOAD_NG++"></script>
 <!-- βのゲーム（このリポジトリの cards.js） -->
 <script src="../../cards.js" onerror="YK_LOAD_NG++"></script>
 
@@ -477,7 +474,7 @@ function drawKonnyan(ctx, x, y, scale, pose, t) {
   ctx.restore();
 }
 
-(() => {
+function ykMain() {
 /* ============================================================
    設定とデータ
    ============================================================ */
@@ -491,127 +488,15 @@ document.querySelectorAll('a[data-site]').forEach(a => a.href = toUrl(a.getAttri
 if (/\.workers\.dev$/.test(location.hostname))
   document.getElementById('notice-t').innerHTML = 'ここは前のアドレスです。新しいアドレス <b>games.chikuwa-hookah.com</b> へ、セーブデータを引っ越してください（手順はこちら）';
 
-/* 読み込めなかったとき用の見本（号口の10本）。見本の印（sample）つき。この場合だけ使う */
-const SAMPLE = (() => {
-  const R = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
-  const pix = (c, rows, x, y, s, col) => rows.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === '#') R(c, x + i * s, y + j * s, s, s, col); }));
-  const Q = ['.###.', '#...#', '....#', '...#.', '..#..', '.....', '..#..'];
-  const base = { version: '1.0.0', sample: true };
-  return [
-    { ...base, order: 1, href: './shop-sim/', kicker: 'お店経営', title: 'ちいさなお店', sub: 'ちいさなお店を切り盛りしよう', updated: '2026-10-20',
-      desc: 'お客さんの注文にこたえて、ちいさなお店を少しずつ大きくしていく経営ゲーム。', tags: ['経営', 'ひとりで遊ぶ'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#F2D9A8'); R(c, 0, 66, 160, 24, '#9A6A42'); R(c, 0, 66, 160, 2, '#B98A5E');
-        R(c, 24, 22, 96, 44, '#7A4A2A'); for (let i = 0; i < 10; i++) R(c, 20 + i * 10.4, 12, 11, 11, i % 2 ? '#FFF3DD' : '#D2402C');
-        R(c, 32, 32, 36, 26, '#BFE3F0'); R(c, 34, 34, 6, 22, 'rgba(255,255,255,.55)'); R(c, 80, 30, 30, 36, '#5A3A24'); R(c, 104, 46, 3, 4, '#F2B23A');
-        const p = (t * 0.8) % 1; R(c, 92, 22 - p * 16, 7, 7, '#F6C945'); R(c, 94, 23 - p * 16, 2, 5, '#FFE98A');
-        drawKonnyan(c, 140, 80, 2, 'walkL', t);
-      } },
-    { ...base, order: 2, href: './stage-kobo/', kicker: 'ステージ作りアクション', title: 'つくれ！おでん横丁', sub: 'ステージを作って遊ぼう', updated: '2026-10-22',
-      desc: 'ブロックを置いてステージを作り、ちくわくんで遊べるアクション。作ったステージで友だちと遊べる。', tags: ['アクション', 'ステージ作り'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#8FC9EC'); R(c, 0, 60, 160, 6, '#FCE6B8');
-        for (let i = 0; i < 10; i++) { R(c, i * 16, 76, 16, 14, i % 2 ? '#9A6A42' : '#8A5A36'); } R(c, 0, 76, 160, 2, '#5DA45A');
-        [[60, 52], [76, 52], [76, 36]].forEach(([x, y]) => { R(c, x, y, 16, 16, '#8A4B1C'); R(c, x + 1, y + 1, 14, 14, '#C9772E'); R(c, x + 3, y + 3, 4, 2, '#E9A55B'); });
-        if (Math.floor(t * 2) % 2) { R(c, 108, 40, 16, 16, 'rgba(255,255,255,.55)'); }
-        const jy = 76 - Math.round(Math.abs(Math.sin(t * 3)) * 18); drawChikuwakun(c, 34, jy, 2, 'happy', t);
-        R(c, 134, 56 + Math.sin(t * 3) * 2, 6, 8, '#F2B23A');
-      } },
-    { ...base, order: 3, href: './roulette/', kicker: 'ルーレット', title: 'まわせ！ちくわルーレット', sub: 'なにが出るかな', updated: '2026-10-21',
-      desc: 'ちくわの輪をまわして、止まったところで決める。みんなで決めごとをするときにも。', tags: ['ルーレット', 'みんなで遊ぶ'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#2A1B3F');
-        c.save(); c.translate(80, 48); c.rotate(t * 1.6);
-        const cols = ['#D2402C', '#F6EBD0', '#C9772E', '#F2B23A'];
-        for (let i = 0; i < 8; i++) { c.fillStyle = cols[i % 4]; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 36, i * Math.PI / 4, (i + 1) * Math.PI / 4); c.closePath(); c.fill(); }
-        c.restore();
-        c.strokeStyle = '#8A4B1C'; c.lineWidth = 4; c.beginPath(); c.arc(80, 48, 37, 0, 7); c.stroke();
-        c.fillStyle = '#E9A55B'; c.beginPath(); c.arc(80, 48, 13, 0, 7); c.fill(); c.fillStyle = '#2A1B3F'; c.beginPath(); c.arc(80, 48, 7, 0, 7); c.fill();
-        R(c, 77, 4, 6, 4, '#FFF6EA'); R(c, 78, 8, 4, 3, '#FFF6EA'); R(c, 79, 11, 2, 2, '#FFF6EA');
-      } },
-    { ...base, order: 4, href: './battle-othello/', kicker: 'ボードゲーム', title: 'バトルオセロ', sub: 'ひっくり返して、たたかう', updated: '2026-10-23',
-      desc: 'おなじみのオセロに、ちょっとしたバトルを足した対戦ゲーム。', tags: ['ボードゲーム', '対戦'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#1E3A2A'); R(c, 38, 3, 84, 84, '#2B1A10'); R(c, 40, 5, 80, 80, '#2F7A4A');
-        for (let i = 1; i < 8; i++) { R(c, 40 + i * 10, 5, 1, 80, '#22603A'); R(c, 40, 5 + i * 10, 80, 1, '#22603A'); }
-        const st = (cx, cy, w, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(45 + cx * 10, 10 + cy * 10, Math.max(.6, w), 4, 0, 0, 7); c.fill(); };
-        [[3, 3, 1], [4, 4, 1], [3, 4, 0], [4, 3, 0], [2, 3, 1], [5, 4, 0], [2, 2, 0], [5, 5, 1]].forEach(([x, y, b]) => st(x, y, 4, b ? '#1C1D24' : '#F4F1E8'));
-        const f = Math.cos(t * 2.4); st(5, 3, Math.abs(f) * 4, f > 0 ? '#1C1D24' : '#F4F1E8');
-        R(c, 8, 20, 20, 12, '#D2402C'); R(c, 8, 20, 2, 50, '#6B3F25'); R(c, 132, 20, 20, 12, '#3F6FD8'); R(c, 150, 20, 2, 50, '#6B3F25');
-      } },
-    { ...base, order: 5, href: './hayaoshi-chikupon/', kicker: '早押しクイズ', title: '早押し！ちくぽん！', sub: 'みんなで早押し', updated: '2026-10-24',
-      desc: 'スマホがそのまま早押しボタンになる、みんなで遊ぶクイズ。', tags: ['クイズ', 'みんなで遊ぶ'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#20284A'); R(c, 0, 70, 160, 20, '#151A33');
-        const on = Math.floor(t * 1.4) % 3;
-        for (let i = 0; i < 3; i++) {
-          const x = 18 + i * 46; R(c, x, 58, 32, 32, '#6B3F25'); R(c, x, 58, 32, 2, '#A8683A');
-          R(c, x + 8, 50, 16, 8, i === on ? '#FF5A3C' : '#8E2A1C'); R(c, x + 10, 50, 12, 2, i === on ? '#FFB09A' : '#B04A3A');
-          if (i === on) { R(c, x + 15, 34, 2, 10, '#FFE38A'); R(c, x + 4, 40, 6, 2, '#FFE38A'); R(c, x + 22, 40, 6, 2, '#FFE38A'); }
-        }
-        pix(c, Q, 72, 6 + Math.sin(t * 3) * 2, 3, '#F6EBD0');
-      } },
-    { ...base, order: 6, href: './horimogu/', kicker: '掘りすすむアクション', title: 'ほりほりもぐもぐ', sub: 'みんなで地面をほりすすめ', updated: '2026-10-28',
-      desc: 'スマホをかたむけて、地面の下へどんどんほりすすむ。みんなで遊べる。', tags: ['アクション', 'みんなで遊ぶ'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 22, '#8FC9EC'); R(c, 0, 22, 160, 4, '#5DA45A'); R(c, 0, 26, 160, 22, '#9A6A42'); R(c, 0, 48, 160, 22, '#7A4E30'); R(c, 0, 70, 160, 20, '#5A3622');
-        [[20, 34], [130, 40], [60, 60], [110, 76], [30, 80]].forEach(([x, y]) => R(c, x, y, 5, 3, '#B8A08A'));
-        const p = (t * 0.22) % 1, n = Math.floor(p * 90);
-        for (let k = 0; k <= n; k += 2) R(c, 30 + k, 30 + k * 0.42 + Math.sin(k * 0.15) * 4, 7, 7, '#3A2216');
-        const mx = 30 + n, my = 30 + n * 0.42 + Math.sin(n * 0.15) * 4;
-        R(c, mx - 1, my - 1, 10, 9, '#6B4A3A'); R(c, mx + 7, my + 2, 3, 3, '#F2A0B4'); R(c, mx + 4, my + 1, 1, 2, '#1C1D24');
-        if (Math.floor(t * 8) % 2) { R(c, mx - 4, my - 3, 2, 2, '#B98A5E'); R(c, mx - 6, my + 5, 2, 2, '#B98A5E'); }
-      } },
-    { ...base, order: 7, href: './ugokase-chikuwa/', kicker: 'おもちゃ', title: 'うごかせ！ちくわくん', sub: 'ちくわくんを動かそう', updated: '2026-10-28',
-      desc: 'ちくわくんを思いのままに動かして遊ぶ、ちいさなおもちゃ。', tags: ['おもちゃ', 'ひとりで遊ぶ'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#FCE6B8'); R(c, 0, 72, 160, 18, '#E9C88A'); R(c, 0, 72, 160, 2, '#C9A468');
-        const x = 80 + Math.sin(t * 1.5) * 44, dir = Math.cos(t * 1.5) > 0 ? 1 : -1;
-        for (let i = 0; i < 3; i++) R(c, x - dir * (22 + i * 4) - (dir < 0 ? 10 : 0), 46 + i * 8, 10, 2, '#C9772E');
-        drawChikuwakun(c, x, 76, 2, 'happy', t);
-      } },
-    { ...base, order: 8, href: './nukadoko/', kicker: '育成', title: 'ぬか床そだて', sub: '毎日かきまぜて育てる', updated: '2026-11-09',
-      desc: 'ぬか床を毎日かきまぜて、おいしい漬物ができるまで育てる。', tags: ['育成', 'ひとりで遊ぶ'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#E9D8B4'); R(c, 0, 78, 160, 12, '#B98A5E');
-        R(c, 40, 32, 80, 52, '#8A5A32'); R(c, 40, 40, 80, 3, '#4A2A16'); R(c, 40, 70, 80, 3, '#4A2A16'); R(c, 44, 30, 72, 6, '#D8B878');
-        const w = Math.sin(t * 2) * 2;
-        R(c, 54, 22 + w, 20, 7, '#4E8A3A'); R(c, 56, 23 + w, 16, 2, '#76B35A'); R(c, 84, 18 - w, 11, 12, '#5A3A6A'); R(c, 86, 16 - w, 5, 3, '#3E7A3A');
-        R(c, 100, 24, 8, 8, '#E8742E');
-        for (let i = 0; i < 3; i++) { const p = (t * 0.6 + i / 3) % 1; R(c, 60 + i * 18, 28 - p * 14, 3, 3, 'rgba(255,255,255,' + (0.7 - p * 0.7).toFixed(2) + ')'); }
-      } },
-    { ...base, order: 9, href: './gomibako-shooter/', kicker: '3D投げ入れ', title: 'スタイリッシュゴミ箱シューター', sub: 'かっこよく投げ入れろ', updated: '2026-11-09',
-      desc: 'ゴミをスタイリッシュにゴミ箱へ投げ入れる3Dゲーム。', tags: ['3D', 'アクション'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#2A2F45'); R(c, 0, 62, 160, 28, '#3A405A');
-        c.strokeStyle = 'rgba(160,180,230,.18)'; c.lineWidth = 1; for (let i = -6; i <= 6; i++) { c.beginPath(); c.moveTo(80 + i * 8, 62); c.lineTo(80 + i * 22, 90); c.stroke(); }
-        R(c, 112, 50, 24, 30, '#8A9AA8'); R(c, 110, 48, 28, 4, '#C8D4DE'); R(c, 116, 56, 2, 20, '#6E7E8C'); R(c, 124, 56, 2, 20, '#6E7E8C');
-        const p = (t * 0.7) % 1, bx = 18 + p * 104, by = 64 - Math.sin(p * Math.PI) * 50;
-        for (let k = 1; k < 4; k++) { const q = Math.max(0, p - k * 0.04); R(c, 18 + q * 104 + 2, 64 - Math.sin(q * Math.PI) * 50 + 2, 2, 2, 'rgba(255,255,255,.3)'); }
-        R(c, bx, by, 7, 7, '#F4F1E8'); R(c, bx + 2, by + 2, 2, 2, '#C8C2B0');
-        if (p > 0.9) { R(c, 108, 38, 3, 3, '#FFE38A'); R(c, 138, 40, 3, 3, '#FFE38A'); R(c, 123, 32, 3, 3, '#FFE38A'); }
-      } },
-    { ...base, order: 10, href: './chikunator/', kicker: 'あてっこ', title: 'チクネーター', sub: '思い浮かべたものを当てる', updated: '2026-11-09',
-      desc: '思い浮かべたものを、ちくわくんが「はい・いいえ」の質問で当てる。', tags: ['あてっこ', 'ひとりで遊ぶ'],
-      draw(c, t) {
-        R(c, 0, 0, 160, 90, '#33264F'); R(c, 0, 80, 160, 10, '#241A38');
-        drawChikuwakun(c, 46, 80, 2, 'front', t);
-        for (let i = 0; i < 3; i++) { const p = (t * 0.5 + i / 3) % 1; c.globalAlpha = 1 - p; pix(c, Q, 14 + i * 22, 28 - p * 22, 2, '#F2B23A'); c.globalAlpha = 1; }
-        const on = Math.floor(t * 1.2) % 3;
-        ['#3FB86B', '#E8483A', '#F2B23A'].forEach((col, i) => { R(c, 96, 24 + i * 18, 52, 12, i === on ? '#FFF6EA' : col); R(c, 96, 24 + i * 18, 4, 12, col); });
-      } }
-  ];
-})();
-
 /* ---------- カードを集める（成人向けは出さない。2026-10-26） ---------- */
-let RAW = (window.CHIKUWA_GAMES || []).filter(g => g && !g.adult);
-const USE_SAMPLE = RAW.filter(g => !g.beta).length === 0;
-if (USE_SAMPLE) RAW = SAMPLE.concat(RAW);
-const ALL = RAW.slice().sort((a, b) => a.order - b.order);
-if (USE_SAMPLE) {
-  const n = document.getElementById('mihon-note');
-  n.innerHTML = '<b>見本で表示しています。</b>号口のカード（card.js）を読み込めなかったため、号口の10本は仮のデータ（「見本」の印つき）で並べています。';
-  n.hidden = false;
+const RAW = (window.CHIKUWA_GAMES || []).filter(g => g && !g.adult);
+/* order が同じなら正式版を先に（号口のカードを写しから読んだときも並びが変わらないように） */
+const ALL = RAW.slice().sort((a, b) => (a.order - b.order) || ((a.beta ? 1 : 0) - (b.beta ? 1 : 0)));
+{
+  /* 号口のカードを読み込めなかったときのお知らせ（作りもののデータは使わない） */
+  const n = document.getElementById('utsushi-note');
+  if (window.YK_SOURCE === 'utsushi') { n.textContent = '号口のカードを読み込めなかったため、2026-11-10 時点の写しで表示しています。'; n.hidden = false; }
+  else if (window.YK_SOURCE === 'none') { n.textContent = '号口のカードを読み込めませんでした'; n.hidden = false; }
 }
 
 /* ---------- 屋台の個性 ----------
@@ -702,9 +587,8 @@ const thumbIO = 'IntersectionObserver' in window ? new IntersectionObserver(es =
 
 function itemHTML(g) {
   const m = mode(g);
-  const mihon = g.sample ? '<span class="mihon">見本</span>' : '';
   const shirushi = m === 'dev' ? '<div class="shirushi"><span>開発中</span></div>' : m === 'lock' ? `<div class="shirushi kagi"><span>${lockIcon}限定公開</span></div>` : '';
-  const e = `<div class="shina-e"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="nefuda${g.beta ? ' beta' : ''}">${esc(verText(g))}</span>${mihon}${shirushi}</div>`;
+  const e = `<div class="shina-e"><canvas width="160" height="90" aria-hidden="true"></canvas><span class="nefuda${g.beta ? ' beta' : ''}">${esc(verText(g))}</span>${shirushi}</div>`;
   const head = t => `<div class="shina-h"><p class="shina-k">${esc(g.kicker)}</p><h3>${t}</h3>${g.sub ? `<p class="shina-sub">${esc(g.sub)}</p>` : ''}</div>`;
   if (m === 'dev') return e + head(esc(g.title)) + `
     <p class="shina-d">開発中のゲームです。公開されるまでお待ちください。</p>
@@ -814,17 +698,16 @@ function renderScene() {
     const lc = len <= 4 ? 'l1' : len <= 6 ? 'l2' : len <= 8 ? 'l3' : 'l4';
     const left = s.x * P - 6, top = (G - 92) * P, w = SW * P + 12, h = 92 * P;
     const cls = 'yatai' + (s.roji ? ' is-roji' : '');
-    const mihon = g.sample ? `<span class="yatai-mihon" style="right:${4 * P + 10}px;top:${10 * P + 4}px">見本</span>` : '';
     const noren = `<span class="yatai-noren ${lc}" style="left:${3 * P + 6}px;top:${43 * P}px;width:${56 * P}px;height:${13 * P}px">${name}</span>`;
     if (m === 'open') {
-      html += `<a class="${cls}" data-i="${i}" href="${esc(g._url)}" aria-label="${esc(g.title)}（${esc(g.kicker)}）の屋台。${g.beta ? '試す' : '遊ぶ'}" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">${noren}${mihon}</a>`;
+      html += `<a class="${cls}" data-i="${i}" href="${esc(g._url)}" aria-label="${esc(g.title)}（${esc(g.kicker)}）の屋台。${g.beta ? '試す' : '遊ぶ'}" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">${noren}</a>`;
     } else if (m === 'dev') {
       html += `<a class="${cls} is-dev" data-i="${i}" href="#${g._id}" aria-label="${esc(g.title)}（開発中）。下の一覧へ移動" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">
         <span class="yatai-chalk" style="top:${44 * P}px">${name}</span>
-        <span class="yatai-fuda" style="top:${52 * P}px">開発中<small>しこみ中</small></span>${mihon}</a>`;
+        <span class="yatai-fuda" style="top:${52 * P}px">開発中<small>しこみ中</small></span></a>`;
     } else {
       html += `<a class="${cls} is-lock" data-i="${i}" href="#${g._id}" aria-label="${esc(g.title)}（裏路地・鍵付き）。下の一覧のパスワード欄へ移動" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">${noren}
-        <span class="yatai-kagi" style="right:${6 * P + 6}px;top:${70 * P}px">${lockIcon}合言葉</span>${mihon}</a>`;
+        <span class="yatai-kagi" style="right:${6 * P + 6}px;top:${70 * P}px">${lockIcon}合言葉</span></a>`;
     }
   });
   if (alleyX) html += `<span class="e-moji roji" aria-hidden="true" style="left:${px(alleyX + 9)};top:${px(G - 70)};width:${px(26)};height:${px(9)}">裏路地</span>`;
@@ -1163,6 +1046,33 @@ if ('ResizeObserver' in window) new ResizeObserver(sizeScene).observe(sceneEl); 
 sizeParts();
 renderAll();
 sizeScene();
+
+/* チェック用の入口（check-cards.cjs が使う）。画面に出したカードと、一覧のサムネイル */
+window.YK_ALL = ALL;
+window.YK_THUMBS = listThumbs.map(th => ({
+  canvas: th.cv, game: th.g,
+  mode: mode(th.g),
+  /* 一覧のキャンバスを t = 0 で描き直す */
+  redraw0() { th.g._t = -1; drawThumb(th.g, 0); th.ctx.imageSmoothingEnabled = false; if (mode(th.g) === 'open') th.ctx.drawImage(th.g._cv, 0, 0); else th.ctx.drawImage(th.g._mos, 0, 0, 160, 90); }
+}));
+document.documentElement.dataset.ykReady = '1';
+}
+
+/* 号口のカードが1件も読めなかったときだけ、写し（utsushi/）を順に読み込んでから画面を作る */
+(() => {
+  const GAMES = ['shop-sim', 'stage-kobo', 'roulette', 'battle-othello', 'hayaoshi-chikupon', 'horimogu', 'ugokase-chikuwa', 'nukadoko', 'gomibako-shooter', 'chikunator'];
+  const liveCount = () => (window.CHIKUWA_GAMES || []).filter(g => g && !g.beta).length;
+  const go = src => { window.YK_SOURCE = src; ykMain(); };
+  if (liveCount() > 0) return go('live');
+  let i = 0;
+  const next = () => {
+    if (i >= GAMES.length) return go(liveCount() > 0 ? 'utsushi' : 'none');
+    const sc = document.createElement('script');
+    sc.src = './utsushi/' + GAMES[i++] + '.card.js';
+    sc.onload = sc.onerror = next;
+    document.body.appendChild(sc);
+  };
+  next();
 })();
 </script>
 </body>
