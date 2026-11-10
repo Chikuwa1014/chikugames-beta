@@ -1,0 +1,90 @@
+/*
+ * ちくわゲームズ 共通部品 v1 — yokocho.css（おでん横丁の色・書体と、のれん型の戻るボタンの見た目）
+ *
+ * 読み込み：<link rel="stylesheet" href="../common/v1/yokocho.css">
+ * 書体は変数（font-family の並び）だけを定義する。Web フォントの読み込みはゲーム側の link に任せる（共通部品は外部を読み込まない）。使うなら次を head に足す：
+ *   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@700;800&display=swap" rel="stylesheet">
+ * 読み込まなくても、変数の後ろに並べた端末の書体で表示される。
+ *
+ * ゲームの配色に合わせたいときは、ゲーム側で変数を上書きする（common.css と同じ考え方。この css より後に書く）：
+ *   --yk-*（横丁の色）・--f-head / --f-body / --f-dot（書体）
+ *   のれんだけ変えるなら --n（のれんの布の色。cg-noren の上で上書きする）
+ */
+:root {
+  /* 夜空の紺 */
+  --yk-yozora: #1B2140; --yk-yozora-deep: #12162C; --yk-yozora-hi: #252B55; --yk-yozora-line: #3A427A;
+  /* だし色 */
+  --yk-dashi: #F5E6C4; --yk-dashi-hi: #FBF3DE; --yk-dashi-lo: #E6CF9E;
+  /* 焼き目の茶 */
+  --yk-yaki: #C9772E; --yk-yaki-hi: #E9A55B; --yk-yaki-dark: #8A4B1C; --yk-yaki-deep: #4E2A12; --yk-yaki-sumi: #26150A;
+  /* ちょうちんの赤 */
+  --yk-chochin: #D2402C; --yk-chochin-dark: #9E2A1C; --yk-chochin-glow: #FFC46B;
+  /* 文字 */
+  --yk-ink: #2B1A0E; --yk-ink-soft: #5E4128;     /* だし色の上 */
+  --yk-moji: #F5E6C4; --yk-moji-soft: #CFC3A8;   /* 夜空の上 */
+  /* のれんの色（見出し用） */
+  --yk-ai: #2F4C7A; --yk-sumi: #2B2B38;
+
+  /* 書体：見出し（丸ゴシック）・本文・ドット文字 */
+  --f-head: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+  --f-body: "M PLUS 1", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+  --f-dot: "DotGothic16", "M PLUS 1", "Hiragino Sans", ui-monospace, monospace;
+}
+
+/* のれん型の戻るボタン（noren.js の CG.noren.mount が入れる。手書きでもよい）
+ *   <a class="cg-noren" href="../"><span class="cg-noren__nuno">← 横丁へ</span></a>
+ *   夜の地の上では cg-noren--ai を足すと藍色になる */
+.cg-noren {
+  display: inline-block;
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  padding-top: 6px;
+  text-decoration: none;
+  transform-origin: 50% 0;
+  transition: transform .3s ease;
+}
+/* 上の竿 */
+.cg-noren::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  right: -7px;
+  top: 0;
+  height: 6px;
+  background: var(--yk-yaki-sumi);
+}
+/* 布（下に2本の切れ目） */
+.cg-noren__nuno {
+  display: block;
+  position: relative;
+  padding: 9px 20px 21px 16px;
+  background-color: var(--n, var(--yk-chochin));
+  background-image: linear-gradient(180deg, rgba(0, 0, 0, .22) 0 4px, transparent 4px), linear-gradient(0deg, rgba(0, 0, 0, .18) 0 3px, transparent 3px);
+  color: #FFF7E6;
+  font-family: var(--f-head);
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: .06em;
+  white-space: nowrap;
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% 66% no-repeat,
+    linear-gradient(90deg, #000 calc(33.33% - 1.5px), transparent 0 calc(33.33% + 1.5px), #000 0 calc(66.66% - 1.5px), transparent 0 calc(66.66% + 1.5px), #000 0) bottom / 100% 34.5% no-repeat;
+          mask: linear-gradient(#000 0 0) top / 100% 66% no-repeat,
+    linear-gradient(90deg, #000 calc(33.33% - 1.5px), transparent 0 calc(33.33% + 1.5px), #000 0 calc(66.66% - 1.5px), transparent 0 calc(66.66% + 1.5px), #000 0) bottom / 100% 34.5% no-repeat;
+}
+.cg-noren:hover {
+  transform: rotate(-1.8deg);
+}
+.cg-noren:focus-visible {
+  outline: 3px solid var(--yk-chochin-glow);
+  outline-offset: 4px;
+}
+/* 夜の地の上で使う藍の変種 */
+.cg-noren--ai .cg-noren__nuno {
+  --n: var(--yk-ai);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cg-noren { transition: none; }
+  .cg-noren:hover { transform: none; }
+}
