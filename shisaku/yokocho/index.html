@@ -515,8 +515,11 @@ function hexMix(a, b, k) {
   const p = h => { h = h.replace('#', ''); if (h.length === 3) h = [...h].map(x => x + x).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
   const A = p(a), B = p(b); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(',') + ')';
 }
+/* のれんの名前を省略しないゲーム（2026-11-11 Chikuwa1014 の指示）。題名をそのまま出す */
+const NOREN_FULL = ['つくれ！おでん横丁', 'うごかせ！ちくわくん'];
 function shortName(g) {
   if (g.stall && g.stall.name) return g.stall.name;
+  if (NOREN_FULL.includes(g.title)) return g.title;
   let s = String(g.title).replace(/[（(][^）)]*[）)]/g, '').trim();
   const parts = s.split(/[！!？?]/).map(x => x.trim()).filter(Boolean);
   if (parts.length > 1) s = parts[parts.length - 1];
