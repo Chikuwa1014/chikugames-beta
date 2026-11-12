@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1c1d17">
+<meta name="robots" content="noindex">
+<title>荒野開拓記（仮）</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ちくわゲームズβ">
+<meta property="og:title" content="荒野開拓記（仮）">
+<meta property="og:description" content="荒野にぽつんと建つ小屋から、木を切り、鉱脈を掘り、道具と材料をつくって道と家を建てよう。移住者がやってきて、集落から街へ育っていく3Dまちづくり。">
+<style>
+:root{--bg:#1c1d17;--panel:rgba(26,25,19,.9);--line:rgba(235,225,190,.2);--ink:#F1ECDC;--sub:#A9A58F;--accent:#9BC56B;--red:#E0665C;--warn:#E8B84E}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;touch-action:pan-x pan-y}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+button{font-family:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none}
+
+/* 上のバー */
+header{position:fixed;left:0;right:0;top:0;z-index:11;display:flex;align-items:center;gap:8px;pointer-events:none;
+  padding:calc(6px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 6px max(12px,env(safe-area-inset-left,0px))}
+header a,header button{pointer-events:auto}
+header a{color:var(--ink);text-decoration:none;font-size:13px;opacity:.95;background:rgba(24,22,16,.55);border-radius:8px;padding:6px 10px}
+header .sp{flex:1}
+.hb{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;min-width:60px;height:34px;padding:0 12px;font-size:13px;cursor:pointer}
+.hb:focus-visible,.go:focus-visible,.act:focus-visible,.rb:focus-visible,#tabs button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* タイトル */
+.scr{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:linear-gradient(#B9CDD6 0%,#D6E0DC 48%,#8A7C55 49%,#5E5535 100%)}
+.scr h1{margin:0;font-size:clamp(34px,9vw,58px);letter-spacing:.12em;font-weight:800;color:#2D281A;text-shadow:0 2px 0 rgba(255,255,255,.45)}
+.scr h1 small{display:block;font-size:13px;letter-spacing:.2em;color:#4A4430;margin-top:6px;font-weight:500}
+.tbtn{display:flex;flex-direction:column;gap:10px;align-items:center}
+.go{border:0;border-radius:999px;padding:13px 40px;font-size:17px;font-weight:800;background:#3F6B2A;color:#fff;cursor:pointer;min-width:200px}
+.go.sub{background:rgba(255,255,255,.55);color:#2D281A;font-weight:700;font-size:14px;padding:10px 28px;min-width:160px}
+.how{font-size:12px;line-height:1.8;color:#2D281A;margin:0;background:rgba(255,255,255,.5);padding:8px 14px;border-radius:10px;max-width:640px}
+.tmsg{margin:0;font-size:13px;color:#7A2A20;font-weight:700;max-width:520px}
+.ver{position:absolute;bottom:calc(10px + env(safe-area-inset-bottom,0px));font-size:11px;color:#3B3622}
+.touch-only{display:none}body.touch .touch-only{display:inline}body.touch .pc-only{display:none}
+
+/* 遊んでいる間 */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:4}
+#topbox{position:fixed;left:0;right:0;top:calc(44px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:0 max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px))}
+#goal{align-self:center;max-width:min(92vw,640px);width:max-content;text-align:center;
+  background:rgba(24,22,16,.72);border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-size:14px;font-weight:700;line-height:1.5}
+#goal::before{content:"目標　";color:var(--accent);font-size:11px}
+#pop{font-size:12px;line-height:1.6;background:rgba(24,22,16,.62);border-radius:8px;padding:4px 10px;max-width:92vw}
+#pop .low{color:var(--warn);font-weight:800}
+#pop em{color:var(--red);font-style:normal;font-weight:700}
+#dot{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;opacity:.55;box-shadow:0 0 3px #000}
+#dot.hot{background:var(--accent);opacity:1;transform:scale(1.7)}
+#aim{position:fixed;left:50%;bottom:calc(20% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);text-align:center;font-size:15px;text-shadow:0 1px 4px #000,0 0 8px #000;min-width:120px}
+#aim .bar{height:5px;border-radius:3px;background:rgba(0,0,0,.5);margin-top:5px;overflow:hidden}
+#aim .bar i{display:block;height:100%;background:var(--accent)}
+#aim .cant{color:var(--warn);font-weight:800;margin-top:3px}
+#hint{position:fixed;left:50%;bottom:calc(10% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);text-align:center;font-size:13px;background:rgba(24,22,16,.75);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:94vw}
+body.touch #hint{left:max(12px,env(safe-area-inset-left,0px));transform:none;bottom:calc(26px + env(safe-area-inset-bottom,0px));white-space:normal;max-width:calc(100vw - 240px);border-radius:14px;text-align:left}
+#hint em{color:#FF9A90;font-style:normal;font-weight:800}
+#notes{display:flex;flex-direction:column;gap:4px;max-width:60vw}
+.note{background:rgba(24,22,16,.78);border-left:3px solid var(--accent);border-radius:6px;padding:4px 10px;font-size:13px;animation:fade 3.8s forwards}
+.note.warn{border-left-color:var(--warn);color:#FFE2A0}
+@keyframes fade{0%{opacity:0;transform:translateX(-8px)}8%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+#banner{position:fixed;left:50%;top:32%;transform:translate(-50%,-50%);font-size:clamp(20px,5vw,32px);font-weight:800;text-align:center;max-width:90vw;opacity:0;text-shadow:0 2px 6px #000,0 0 14px #000;line-height:1.5}
+#banner.show{animation:ban 5s forwards}
+@keyframes ban{0%{opacity:0;transform:translate(-50%,-40%)}8%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0}}
+#stick{position:fixed;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid var(--line);pointer-events:none;z-index:6}
+#stick i{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:rgba(240,235,220,.28)}
+
+/* スマホの丸いボタン */
+.rb{position:fixed;display:none;pointer-events:auto;border-radius:50%;border:2px solid var(--line);background:rgba(28,27,20,.66);color:var(--ink);font-size:15px;font-weight:800;touch-action:none;-webkit-user-select:none;user-select:none;z-index:6;cursor:pointer}
+.rb:active{background:rgba(155,197,107,.45);border-color:var(--accent)}
+#bHit,#bPlace{width:96px;height:96px;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+#bRot{width:66px;height:66px;right:calc(max(16px,env(safe-area-inset-right,0px)) + 112px);bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+#bCancel{width:66px;height:66px;right:calc(max(16px,env(safe-area-inset-right,0px)) + 15px);bottom:calc(134px + env(safe-area-inset-bottom,0px))}
+body.touch #bHit{display:block}
+body.touch.building #bHit{display:none}
+body.touch.building #bPlace,body.touch.building #bRot,body.touch.building #bCancel{display:block}
+body.touch.removing #bRot{display:none}
+body.panelopen .rb{display:none!important}
+@media (orientation:landscape){body.panelopen #topbox{right:min(46vw,420px)}body.panelopen #goal{max-width:calc(100vw - min(46vw,420px) - 24px)}}
+
+/* パネル：縦持ちは下半分、横持ちは右側 */
+#panel{position:fixed;z-index:15;display:flex;flex-direction:column;background:var(--panel);backdrop-filter:blur(3px);
+  right:0;top:0;bottom:0;width:min(46vw,420px);border-left:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) 10px}
+@media (orientation:portrait){#panel{left:0;right:0;top:auto;bottom:0;width:auto;height:50%;border-left:0;border-top:1px solid var(--line);padding:8px max(10px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}}
+#tabs{display:flex;gap:4px;flex:none}
+#tabs button{flex:1;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:8px 8px 0 0;padding:8px 2px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+#tabs button[aria-selected="true"]{background:rgba(155,197,107,.2);color:var(--ink);border-color:var(--accent)}
+#pbody{flex:1;overflow:auto;padding:8px 2px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#pbody h4{margin:10px 0 6px;font-size:12px;letter-spacing:.15em;color:var(--sub)}
+.rl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rl li{background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+.rt{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+.rt b{font-size:14px}.rt span{font-size:11px;color:var(--sub)}
+.cs{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11px;background:rgba(0,0,0,.28);border-radius:999px;padding:2px 8px}
+.chip.no{color:#FF9A90;background:rgba(224,102,92,.18)}
+.at{grid-column:1/2;font-size:11px;color:var(--accent)}.at.no{color:#FF9A90}
+.why{grid-column:1/-1;font-size:11px;color:var(--warn)}
+.okk{color:var(--accent)!important}
+.act{border:0;border-radius:999px;padding:8px 18px;font-size:13px;font-weight:800;background:var(--accent);color:#17210E;cursor:pointer;min-height:36px}
+.act:disabled{opacity:.3;cursor:default}
+.act.wide{width:100%;margin-bottom:8px;background:#C77B4A;color:#fff}
+.inv{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.inv li{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);border-radius:8px;padding:6px 10px;font-size:13px}
+.inv.tl{grid-template-columns:1fr}
+.small{margin:0;font-size:13px;color:var(--sub)}
+#pfoot{flex:none;display:flex;gap:8px;justify-content:space-between;padding-top:6px;border-top:1px solid var(--line)}
+#pfoot button{border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:999px;padding:7px 16px;font-size:12px;cursor:pointer;min-height:34px}
+#pfoot #pClose{color:var(--ink)}
+.modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:16px}
+.mbox{background:#26241B;border:1px solid var(--line);border-radius:14px;padding:18px;max-width:340px;display:flex;flex-direction:column;gap:14px;text-align:center;font-size:14px;line-height:1.6}
+.mbox .row{display:flex;gap:10px;justify-content:center}
+@media (orientation:landscape) and (max-height:500px){.note{font-size:12px;padding:2px 8px}.note:nth-last-child(n+4){display:none}}
+@media (prefers-reduced-motion:reduce){.note,#banner.show{animation-duration:.01s}}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="荒野"></canvas>
+<header>
+  <a href="../">← ちくわゲームズ</a>
+  <span class="sp"></span>
+  <button class="hb" id="bBag" hidden>持ち物</button>
+  <button class="hb" id="bView" hidden>視点</button>
+</header>
+
+<div id="hud" hidden>
+  <div id="topbox">
+    <div id="goal"></div>
+    <div id="pop"></div>
+    <div id="notes"></div>
+  </div>
+  <div id="dot"></div>
+  <div id="aim" hidden></div>
+  <div id="hint" hidden></div>
+  <div id="banner"></div>
+</div>
+<div id="stick" hidden><i></i></div>
+<button class="rb" id="bHit">たたく</button>
+<button class="rb" id="bPlace">置く</button>
+<button class="rb" id="bRot">回す</button>
+<button class="rb" id="bCancel">やめる</button>
+
+<section id="panel" hidden>
+  <div id="tabs">
+    <button data-tab="inv" aria-selected="true">持ち物</button>
+    <button data-tab="mat" aria-selected="false">材料</button>
+    <button data-tab="tool" aria-selected="false">道具</button>
+    <button data-tab="build" aria-selected="false">建てる</button>
+  </div>
+  <div id="pbody"></div>
+  <div id="pfoot"><button id="pReset">さいしょから</button><button id="pClose">とじる</button></div>
+</section>
+
+<div class="modal" id="dlg" hidden>
+  <div class="mbox"><div id="dlgText"></div><div class="row"><button class="go sub" id="dlgNo" style="min-width:110px">やめる</button><button class="go" id="dlgOk" style="min-width:110px;padding:10px 24px;font-size:15px">はい</button></div></div>
+</div>
+
+<section class="scr" id="title">
+  <h1>荒野開拓記<small>（仮）</small></h1>
+  <div class="tbtn" id="tbtn"></div>
+  <p class="tmsg" id="tmsg" hidden></p>
+  <p class="how">
+    <span class="pc-only">WASD 歩く・Shift 走る・クリックでマウス固定して見回す・E／左クリック たたく<br>Tab／I 持ち物・V 視点・建てるとき R 回す・E／左クリック 置く・Q やめる</span>
+    <span class="touch-only">左下をなぞって歩く（倒しきると走る）・ほかをなぞって見回す・右下の「たたく」で採集<br>右上の「持ち物」でつくる・建てる、「視点」で一人称／三人称</span>
+  </p>
+  <div class="ver" id="ver"></div>
+</section>
+
+<script src="../common/v1/core.js"></script>
+<script src="../common/v1/save.js"></script>
+<script src="../common/lib/babylon/7.54.3/babylon.js"></script>
+<script src="js/data.js"></script>
+<script src="js/models.js"></script>
+<script src="js/world.js"></script>
+<script src="js/player.js"></script>
+<script src="js/town.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/save.js"></script>
+<script src="js/main.js"></script>
+<script>
+(function () {
+  const $ = s => document.querySelector(s), MZ = window.MZ;
+  CG.init({ game: 'machizukuri', title: '荒野開拓記（仮）', version: MZ.VERSION });
+  $('#ver').textContent = MZ.VERSION;
+  document.body.classList.toggle('touch', matchMedia('(pointer:coarse)').matches);
+
+  /* 画面の拡大・縮小を止める（kenkyujo と同じ） */
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1 && e.target.closest && !e.target.closest('#cv')) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchstart', e => { if (e.touches.length > 1 && e.target.closest && e.target.closest('.modal')) e.preventDefault(); }, { passive: false });
+
+  const box = $('#tbtn'), msg = $('#tmsg');
+  const mk = (txt, cls, fn) => { const b = document.createElement('button'); b.className = cls; b.textContent = txt; b.addEventListener('click', fn); box.appendChild(b); return b; };
+  const start = (state, note) => {
+    $('#title').hidden = true; $('#hud').hidden = false; $('#bBag').hidden = false; $('#bView').hidden = false;
+    try { MZ.begin(state); } catch (e) {
+      console.error(e); $('#title').hidden = false; $('#hud').hidden = true; box.innerHTML = '';
+      msg.hidden = false; msg.textContent = '画面を準備できませんでした（3D に対応していない可能性があります）。'; return;
+    }
+    if (note) MZ.ui.notice(note, 'warn');
+  };
+  const r = MZ.loadSave();
+  if (r.status === 'ok') {
+    mk('つづきから', 'go', () => start(r.state));
+    mk('さいしょから', 'go sub', () => MZ.ui.confirm('保存してある街を消して、さいしょからはじめます。よろしいですか？', () => { CG.ls.del(MZ.SAVE_KEY); start(MZ.newState()); }));
+  } else if (r.status === 'newer') {
+    msg.hidden = false; msg.textContent = '新しい版のデータです。ページを読み直してください';
+    MZ.noSave = true;
+  } else {
+    if (r.status === 'broken') { msg.hidden = false; msg.textContent = '保存データが壊れていたので、さいしょからはじめます'; }
+    mk('はじめる', 'go', () => start(MZ.newState(), r.status === 'broken' ? '保存データが壊れていたので、さいしょからはじめた' : ''));
+  }
+})();
+</script>
+</body>
+</html>

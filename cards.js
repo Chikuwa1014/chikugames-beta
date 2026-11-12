@@ -263,5 +263,39 @@ add({
   }
 });
 
+add({
+  order: 112,
+  kicker: '3Dまちづくり', title: '荒野開拓記（仮）', sub: '荒野の小屋から、街をつくろう',
+  desc: '荒野にぽつんと建つ小屋から、木を切り、鉱脈を掘り、道具と材料をつくって道と家を建てよう。移住者がやってきて、集落から街へ育っていく3Dまちづくり。',
+  tags: ['まちづくり', '3D', 'ひとりで遊ぶ'], version: 'β0.1.0', updated: '2026-11-12',
+  /* 開発に公開：ぼかして「開発中」。リンクは貼らない（URL は会話の中でだけ共有する） */
+  dev: true,
+  /* 160×90 のサムネイル。t は秒 */
+  draw(c, t) {
+    const r = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+    // 空と荒野（地平線は y≈52）
+    const g = c.createLinearGradient(0, 0, 0, 52); g.addColorStop(0, '#A9C4D2'); g.addColorStop(1, '#DCE6E2');
+    c.fillStyle = g; c.fillRect(0, 0, 160, 52);
+    const d = c.createLinearGradient(0, 52, 0, 90); d.addColorStop(0, '#9C8A5C'); d.addColorStop(1, '#6E6038');
+    c.fillStyle = d; c.fillRect(0, 52, 160, 38);
+    // 遠くの低い山の影
+    c.fillStyle = '#93A1A4'; c.beginPath(); c.moveTo(0, 52); c.lineTo(22, 40); c.lineTo(44, 52); c.lineTo(70, 44); c.lineTo(96, 52); c.lineTo(122, 41); c.lineTo(160, 52); c.closePath(); c.fill();
+    // 小屋から右手前へのびる土の道
+    for (let y = 60; y < 90; y++) { const x = 30 + (y - 60) * 3.4, w = 8 + (y - 60) * 0.5; r(Math.round(x), y, Math.round(w), 1, y % 2 ? '#B8A07A' : '#AD9570'); }
+    // 小屋（左寄り）
+    r(14, 50, 30, 16, '#8A6C4A'); r(12, 46, 34, 4, '#4F3C2A'); r(16, 42, 26, 4, '#4F3C2A'); r(20, 39, 18, 3, '#4F3C2A');
+    r(26, 56, 8, 10, '#43301F'); r(37, 54, 5, 5, '#6F8A96');
+    // 道ぞいの家
+    r(84, 56, 20, 13, '#C4A272'); r(82, 52, 24, 4, '#8E4A36'); r(86, 49, 16, 3, '#8E4A36'); r(90, 61, 5, 8, '#5E3E22'); r(98, 59, 4, 4, '#6F8A96');
+    // 右の木
+    [[124, 62, 1], [140, 58, 1.2], [150, 66, 0.9]].forEach(([x, y, k]) => {
+      r(x, y - 4 * k, 3 * k, 8 * k, '#5E4228'); r(x - 4 * k, y - 14 * k, 11 * k, 7 * k, '#35683A'); r(x - 2 * k, y - 20 * k, 7 * k, 7 * k, '#437A45');
+    });
+    // 道の上を行き来する人
+    const u = Math.abs(((t * 0.12) % 2) - 1), py = 66 + Math.round(u * 20), px = 30 + (py - 60) * 3.4 + 4;
+    r(Math.round(px), py - 6, 3, 3, '#4E6A8E'); r(Math.round(px), py - 3, 3, 4, '#3E3A30'); r(Math.round(px), py - 8, 3, 2, '#E2B896');
+  }
+});
+
 
 })();

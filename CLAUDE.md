@@ -24,6 +24,7 @@
 - `chikunator/`：チクネーター。2026-11-09 に β0.3.1 から 1.0.0 で号口へ昇格した。号口の `/chikunator/` へ移動するページ（`index.html`）だけを残す。開発は号口リポジトリで行う。
 - `shisaku/yokocho/`：号口トップを「おでん横丁」にする試作（2026-11-10）。どこからもリンクしない。号口のカードは `https://games.chikuwa-hookah.com/<ゲーム>/card.js` を読み、読めないときは `utsushi/` の写し（号口の `card.js` をそのままコピーしたもの）を使う。作りものの見本データは使わない。**試作やトップを変えたら、完了の前に `node shisaku/yokocho/dev/check-cards.cjs <号口のclone>` を通して、既存のカード内容と差異がないことを確かめる（2026-11-10 Chikuwa1014 の指示）。** 号口でカードを足したり変えたりしたら、写しをコピーし直す。
 - `common/v1/yokocho.css`・`chara.js`・`noren.js`：おでん横丁の色・書体、ちくわくんの絵（`CG.chara`）、のれん型の戻るボタン（`CG.noren`）。2026-11-10 に β に先に足した。号口にはまだ無い。号口へ入れるのは push の指示があってから。
+- `machizukuri/`：荒野開拓記（仮）。3Dまちづくり（Babylon.js）。2026-11-12 に開発に公開（β0.1.0）。仕様は `machizukuri/CLAUDE.md`。ちくわくん・おでん横丁の部品（`yokocho.css`・`chara.js`・`noren.js`）は使わない。
 
 ## 検索の分担
 
