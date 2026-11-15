@@ -6,6 +6,7 @@
 | ライブラリ | 版 | ファイル | ライセンス | 使っているゲーム |
 |---|---|---|---|---|
 | Babylon.js（3D） | 7.54.3 | `babylon/7.54.3/babylon.js`（npm の `babylonjs` そのまま） | Apache-2.0（`license.md`・`NOTICE.md`） | `kenkyujo`（サイレント夜（仮）） |
+| Babylon.js のモデル読み込み（loaders） | 7.54.3 | `babylon/7.54.3/babylonjs.loaders.min.js`（npm の `babylonjs-loaders` そのまま。`BABYLON.SceneLoader` で `.glb` を読む。`babylon.js` の後に読む） | Apache-2.0（同じ `license.md`） | `machizukuri`（荒野開拓記（仮）。号口へ昇格するときに号口にも置く） |
 | three.js（3D） | 0.170.0 | `three/0.170.0/three.module.min.js`（npm の `three` そのまま）と `addons/`（光のにじみに使う分だけ） | MIT（`LICENSE`） | `gomibako-shooter`（号口へ昇格。号口にも同じものを置いた） |
 
 読み込み：`<script src="../common/lib/babylon/7.54.3/babylon.js"></script>`（グローバルの `BABYLON` ができる）。

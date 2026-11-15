@@ -9,6 +9,8 @@ const OUT = (process.argv[2] || path.join(require('os').tmpdir(), 'machizukuri-s
 require('fs').mkdirSync(OUT, { recursive: true });
 const URL = process.env.URL || 'http://localhost:8000/machizukuri/';
 const results = [], errs = [];
+/* ふだんは速さのために低で回す（swiftshader では高の SSAO2 などが重い）。画質の項目だけ高・中も使う */
+const LOW = () => { try { if (!localStorage.getItem('machizukuri-gfx')) localStorage.setItem('machizukuri-gfx', 'low'); } catch (e) { /* なし */ } };
 const ok = (name, cond, detail) => { results.push({ name, ok: !!cond, detail: detail === undefined ? '' : String(detail) }); console.log((cond ? '通った  ' : '通らない') + ' ' + name + (detail !== undefined ? '  [' + detail + ']' : '')); };
 
 /* ページの中で使う補助（テスト用。ゲームの状態は MZ の関数で動かす） */
@@ -60,7 +62,7 @@ const HELPERS = () => {
 };
 
 (async () => {
-  const br = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+  const br = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const watch = page => {
     page.on('pageerror', e => errs.push('pageerror ' + e.message));
     page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.type() + ' ' + m.text()); });
@@ -70,6 +72,7 @@ const HELPERS = () => {
 
   /* ================= PC ================= */
   const ctx = await br.newContext({ viewport: { width: 1200, height: 750 } });
+  await ctx.addInitScript(LOW);
   const page = await ctx.newPage(); watch(page);
   await page.goto(URL);
   ok('タイトルに「はじめる」（保存なし）', (await page.textContent('#tbtn')).includes('はじめる'));
@@ -80,7 +83,7 @@ const HELPERS = () => {
   await frames(page, 3);
   ok('荒野に立てる（はじめる）', await ev(page, () => MZ.started && MZ.state.player.z === -7));
   const st = await ev(page, () => MZ.stats());
-  ok('描く呼び出し（active メッシュ）が種類の数ぐらい', st.activeMeshes < 45 && st.nodes === 444, JSON.stringify(st));
+  ok('描く呼び出し（active メッシュ）が種類の数ぐらい（低。空・遠景・草が増えるので 70 未満）', st.activeMeshes < 70 && st.nodes === 444, JSON.stringify(st));
   ok('目標の 1 行が出る', (await page.textContent('#goal')).includes('草'));
 
   const goalIs = async (name, sub) => { const t = await ev(page, () => MZ.currentGoal()); ok('目標：' + name, t.includes(sub), t); };
@@ -181,7 +184,7 @@ const HELPERS = () => {
   ok('上限＝家 10・水 10・食料 12 の最小 10', info1.homeSum === 10 && info1.water === 10 && info1.food === 12 && info1.cap === 10, JSON.stringify(info1));
   /* 道につながらない家・こわす（半分もどる） */
   const un = await ev(page, () => { TT.ensureCost(MZ.BUILDS.house.cost); TT.home(); const ok = MZ.place('house', 80, 70, 0); return { ok, unc: MZ.town.info.unconnected, cap: MZ.town.info.cap }; });
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => document.querySelector('#pop').textContent.includes('つながっていない家がある'), null, { timeout: 15000 }).catch(() => {});   // 低でも 1 フレームが重いので、出るまで待つ
   ok('道につながらない家は数えず、HUD に出る', un.ok && un.unc === 1 && un.cap === 10 && (await page.textContent('#pop')).includes('つながっていない家がある'), JSON.stringify(un));
   const rm = await ev(page, () => {
     const L = MZ.state.chunks['0,0'].layers.ground, b = L.find(x => x.x === 80 && x.z === 70), before = Object.assign({}, MZ.state.inv), c = MZ.BUILDS.house.cost;
@@ -324,10 +327,224 @@ const HELPERS = () => {
   await page.click('#dlgOk'); await page.waitForTimeout(800);
   ok('さいしょからで保存が消える（読み直し後は「はじめる」）', (await ev(page, () => localStorage.getItem('machizukuri-save'))) === null && (await page.textContent('#tbtn')).includes('はじめる'));
 
+  /* ================= 描画の層（β0.2.0 で足した項目） ================= */
+  /* 速さのため、これらは小さい画面（480×300）で回す。高・中は swiftshader だと 1 フレームがとても重い */
+  const SMALL = { width: 480, height: 300 };
+  const BAD_RES = e => !/^error Failed to load resource/.test(e);   // 資産を止めたときに出てよいのは「読み込み失敗」だけ
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const open2 = async (opt) => {
+    opt = opt || {};
+    const c = await br.newContext({ viewport: opt.viewport || SMALL });
+    if (opt.pref) await c.addInitScript(q => { try { localStorage.setItem('machizukuri-gfx', q); } catch (e) { /* なし */ } }, opt.pref);
+    else await c.addInitScript(LOW);
+    if (opt.route) await opt.route(c);
+    const pg = await c.newPage(), list = [];
+    pg.on('pageerror', e => list.push('pageerror ' + e.message));
+    pg.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') list.push(m.type() + ' ' + m.text()); });
+    return { c, pg, list };
+  };
+  const begin2 = async (pg) => {
+    await pg.goto(URL);
+    await pg.click('#tbtn .go', { timeout: 60000 });
+    await pg.waitForFunction(() => window.MZ && MZ.started, null, { timeout: 120000 });
+    await ev(pg, HELPERS);
+  };
+  const settle = (pg, n) => frames(pg, n || 3);   // 実際に描かせる（シェーダーのエラーは描いたときに出る）
+  const loaded = pg => pg.waitForFunction(() => { const a = MZ.gfx.assets; return a.done >= a.total; }, null, { timeout: 180000 });
+  const snap = pg => ev(pg, () => JSON.stringify({ inv: MZ.state.inv, pop: MZ.state.pop, b: MZ.chunk().layers.ground.map(b => [b.id, b.t, b.x, b.z, b.r]) }));
+
+  /* 配置が変わっていない（β0.1.0 の採れる物の位置のハッシュと同じ。ここまでで「さいしょから」を押して題名の画面に戻っているので、新しく始める） */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const hsh = await ev(a.pg, () => {
+      let h = 2166136261;
+      const str = MZ.world.nodes.map(n => [n.idx, n.k, n.x, n.z, n.s.toFixed(6), n.ry.toFixed(6), n.k === 'tree' ? n.g.vi : 0].join(',')).join(';');
+      for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+      return (h >>> 0).toString(16) + ':' + MZ.world.nodes.length;
+    });
+    ok('配置が変わっていない（採れる物 444 個の位置のハッシュが β0.1.0 と同じ）', hsh === '79e4b006:444', hsh);
+    await a.c.close();
+  }
+
+  /* 読み込みの表示：8 秒以内に「はじめる」が押せる（資産が遅くても 8 秒で押せる） */
+  {
+    const a = await open2({});
+    const t0 = Date.now();
+    await a.pg.goto(URL, { waitUntil: 'domcontentloaded' });
+    const prepTxt = await a.pg.textContent('#prepTxt');
+    await a.pg.waitForSelector('#tbtn .go:not([disabled])', { timeout: 9000 });
+    const dt = Date.now() - t0;
+    ok('読み込みの表示：「準備中 n／m」が出て、8 秒以内に「はじめる」が押せる', /準備中 \d+／\d+/.test(prepTxt) && dt < 8000, prepTxt + ' / ' + dt + 'ms');
+    await a.c.close();
+    const b = await open2({ route: c => c.route('**/assets/**', async r => { await sleep(14000); try { await r.continue(); } catch (e) { /* 閉じた */ } }) });
+    const t1 = Date.now();
+    await b.pg.goto(URL, { waitUntil: 'domcontentloaded' });
+    const dis = await ev(b.pg, () => document.querySelector('#tbtn .go').disabled);
+    await b.pg.waitForSelector('#tbtn .go:not([disabled])', { timeout: 12000 });
+    const d2 = Date.now() - t1;
+    ok('資産がとても遅くても、8 秒たてば「はじめる」が押せる（それまでは押せない）', dis && d2 >= 7000 && d2 < 11500, dis + ' / ' + d2 + 'ms');
+    await b.c.close();
+  }
+
+  /* 資産が読めないとき・loaders が読めないとき：低でも中でも同じに遊べる */
+  for (const cfg of [
+    { name: '資産が読めない', route: c => c.route('**/assets/**', r => r.abort()) },
+    { name: 'loaders が読めない', route: c => c.route('**/babylonjs.loaders.min.js', r => r.abort()), pref: 'mid' }
+  ]) {
+    const a = await open2({ route: cfg.route, pref: cfg.pref });
+    await begin2(a.pg);
+    await settle(a.pg, 3);
+    await ev(a.pg, () => { MZ.noSave = false; TT.gather('grass', 3); TT.gather('log', 4); TT.gather('stone', 6); });
+    const built = await ev(a.pg, () => { const r = TT.build('road', 56, 56, 0); MZ.saveNow(); return r; });
+    const saved = await ev(a.pg, () => { const d = JSON.parse(localStorage.getItem('machizukuri-save')); return d.data.chunks['0,0'].layers.ground.some(b => b.t === 'road'); });
+    if (cfg.pref) { await ev(a.pg, () => MZ.gfx.setQuality('high')); await settle(a.pg, 2); await ev(a.pg, () => MZ.gfx.setQuality('mid')); await settle(a.pg, 2); }
+    ok(cfg.name + '：はじめる→採集→建てる→保存が通る', built && saved, built + ' ' + saved);
+    const q = await ev(a.pg, () => MZ.gfx.assets.failed.length);
+    ok(cfg.name + '：エラーは「Failed to load resource」のほかに 0', a.list.filter(BAD_RES).length === 0, a.list.filter(BAD_RES).slice(0, 4).join(' | '));
+    if (cfg.pref) ok(cfg.name + '：木・岩はコードの形のまま', (await ev(a.pg, () => Object.keys(MZ.gfx.nodes.stats()).every(k => k.startsWith('code:') || k === 'stones' || k === 'pebble' || k === 'clayhd'))), JSON.stringify(await ev(a.pg, () => MZ.gfx.nodes.stats())));
+    await a.c.close();
+  }
+
+  /* 画質の切りかえ：高→中→低→高 で pageerror・error が 0。保存キーが変わる。持ち物・建物・人口が変わらない */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    await ev(a.pg, () => { MZ.noSave = true; Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 99; }); TT.build('road', 56, 56, 0); TT.build('house', 52, 56, 0); });
+    const s0 = await snap(a.pg), keys = [];
+    const seq = [['high', true, true], ['mid', true, true], ['low', false, false], ['high', true, true]], info = [];
+    for (const [q, pipe, shadow] of seq) {
+      await ev(a.pg, q => MZ.gfx.setQuality(q), q);
+      await loaded(a.pg); await settle(a.pg, 3);
+      keys.push(await ev(a.pg, () => localStorage.getItem('machizukuri-gfx')));
+      info.push(await ev(a.pg, () => ({ key: MZ.gfx.key, pipe: !!MZ.gfx.post.state.pipe || !!MZ.gfx.post.state.ip, full: !!MZ.gfx.post.state.pipe, shadow: !!MZ.gfx.post.state.shadow })));
+      const i = info[info.length - 1];
+      ok('画質を「' + q + '」に切りかえられる（影・後処理が画質どおり）', i.key === q && i.full === pipe && i.shadow === shadow, JSON.stringify(i));
+    }
+    ok('画質の切りかえ：高→中→低→高で pageerror・error が 0', a.list.filter(e => !/^warning/.test(e)).length === 0, a.list.slice(0, 4).join(' | '));
+    ok('画質の切りかえ：console の警告も 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    ok('画質の切りかえ：保存キーが変わる', keys.join(',') === 'high,mid,low,high', keys.join(','));
+    ok('画質の切りかえ：持ち物・建物・人口が変わらない', (await snap(a.pg)) === s0);
+    /* 木の LOD の境目でちらつかない（同じ場所で並べ直しても、1.5m 動いても、中身が同じ） */
+    const lodSame = await ev(a.pg, () => {
+      const G = MZ.gfx, s = MZ.state.player; s.x = 0; s.z = -30; G.nodes.flush();
+      const a1 = JSON.stringify(G.nodes.stats()); G.nodes.flush(); const a2 = JSON.stringify(G.nodes.stats());
+      s.z += 1.5; G.nodes.update(1, s.x, s.z); const a3 = JSON.stringify(G.nodes.stats());
+      return [a1 === a2, a2 === a3, G.nodes.stats()];
+    });
+    ok('木の LOD：同じ場所で並べ直しても、少し動いても入れ替わらない（ちらつかない）', lodSame[0] && lodSame[1], JSON.stringify(lodSame[2]));
+    await a.c.close();
+  }
+
+  /* 画質のボタン（上のバーとパネルの下）と、自動で 1 段下げる処理 */
+  {
+    const a = await open2({ pref: 'mid' });
+    await begin2(a.pg);
+    const t0 = await a.pg.textContent('#bQual');
+    await a.pg.click('#bQual');
+    const t1 = await a.pg.textContent('#bQual'), k1 = await ev(a.pg, () => [MZ.gfx.key, localStorage.getItem('machizukuri-gfx')]);
+    await a.pg.click('#bBag'); await a.pg.waitForSelector('#pQual', { state: 'visible' });
+    const t2 = await a.pg.textContent('#pQual');
+    await a.pg.click('#pQual');
+    const t3 = await a.pg.textContent('#pQual'), t4 = await a.pg.textContent('#bQual');
+    ok('画質のボタン：押すたびに 高→中→低→自動（上のバーとパネルの下が同じ表示）', t0 === '画質：中' && t1 === '画質：低' && t2 === '画質：低' && /^画質：自動（[高中低]）$/.test(t3) && t3 === t4 && k1[0] === 'low' && k1[1] === 'low', [t0, t1, t2, t3, t4, k1].join(' / '));
+    await ev(a.pg, () => MZ.gfx.setQuality('low'));
+    await a.c.close();
+    const b = await open2({ pref: 'auto' });
+    await begin2(b.pg);
+    const k0 = await ev(b.pg, () => MZ.gfx.key);
+    await b.pg.waitForFunction(() => MZ.gfx.downgraded, null, { timeout: 240000 });
+    const k2 = await ev(b.pg, () => [MZ.gfx.key, MZ.gfx.pref, localStorage.getItem('machizukuri-gfx')]);
+    const notes = await ev(b.pg, () => TT.notes());
+    ok('自動：遊びはじめて 10 秒の平均が 20fps 未満なら 1 段下げて、1 回だけお知らせ', k0 === 'high' && k2[0] === 'mid' && k2[1] === 'auto' && k2[2] === 'auto' && notes.filter(t => t.includes('画質を下げました')).length === 1, [k0, k2, notes].join(' / '));
+    ok('自動の切りかえでエラー・警告が 0', b.list.length === 0, b.list.slice(0, 3).join(' | '));
+    await b.c.close();
+  }
+
+  /* 三角形の上限：小屋のまわりに建物 20 軒と住民 60 人 → 高 170 万・中 90 万・低 30 万以下。道・畑のマスに草が無い。地面は平ら */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const res = await ev(a.pg, () => {
+      MZ.noSave = true;
+      MZ.world.nodes.forEach(nd => { if (nd.gx >= 38 && nd.gx <= 60 && nd.gz >= 36 && nd.gz <= 58) MZ.world.take(nd.idx, -1); });
+      Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 9999; });   // 試験用：材料を持たせる
+      let n = 0;
+      for (let j = 0; j < 5 && n < 20; j++) for (let i = 0; i < 6 && n < 20; i++) if (MZ.place('house', 40 + i * 3, 38 + j * 3, 0)) n++;
+      for (let g = 38; g <= 58; g++) MZ.place('road', 58, g, 0);
+      MZ.place('field', 50, 54, 0); MZ.place('fire', 56, 57, 0); MZ.place('well', 56, 59, 0);
+      MZ.state.timers.migrate = 0; MZ.state.pop = 60; MZ.town.resDirty = true; MZ.tick(1); MZ.town.render(1);
+      const s = MZ.state.player; s.x = -4; s.z = -12; s.yaw = 0.4; s.pitch = 0;
+      return { houses: n, people: MZ.town.pgroups.reduce((a, g) => a + g.n, 0) };
+    });
+    ok('三角形の試験の場面：建物 20 軒・住民 60 人', res.houses === 20 && res.people === 60, JSON.stringify(res));
+    const lim = { low: 300000, mid: 900000, high: 1700000 }, tr = {};
+    for (const q of ['low', 'mid', 'high']) {
+      await ev(a.pg, q => MZ.gfx.setQuality(q), q);
+      await loaded(a.pg); await settle(a.pg, 2);
+      tr[q] = await ev(a.pg, () => { const G = MZ.gfx, s = MZ.state.player; G.nodes.flush(); G.grass.layout(s.x, s.z); MZ.town.render(1); return G.tris(); });
+      ok('三角形の上限（' + q + '）：' + lim[q] + ' 以下', tr[q] <= lim[q], tr[q]);
+    }
+    console.log('  三角形（建物 20・住民 60 の場面）', JSON.stringify(tr));
+    await ev(a.pg, () => MZ.gfx.setQuality('low'));
+    await settle(a.pg, 3);
+    const gr = await ev(a.pg, () => {
+      const G = MZ.gfx, s = MZ.state.player, N = 120; s.x = 0; s.z = 0; G.grass.layout(0, 0);
+      const cnt = (gx, gz) => G.grass.countInCell(gx, gz);
+      let open = 0, openCells = 0; for (let gz = 50; gz < 56; gz++) for (let gx = 44; gx < 56; gx++) if (!MZ.world.owner[gz * N + gx]) { open += cnt(gx, gz); openCells++; }
+      const rd = []; for (let g = 38; g <= 58; g++) rd.push(cnt(58, g));
+      const hs = []; MZ.chunk().layers.ground.filter(b => b.t === 'house').forEach(b => { for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) hs.push(cnt(b.x + i, b.z + j)); });
+      const fd = [cnt(50, 54), cnt(51, 55)];
+      const mk = (gx, gz) => G.ground.data.data[(gz * N + gx) * 4];
+      const before = [mk(58, 45), mk(58, 20)];
+      const id = Object.values(MZ.town.byId).find(b => b.t === 'road' && b.x === 58 && b.z === 45).id;
+      MZ.remove(id); const after = mk(58, 45); G.grass.layout(0, 0); const regrown = cnt(58, 45);
+      const pos = G.ground.hi.getVerticesData('position'); let flat = true, n = 0;
+      for (let i = 0; i < pos.length; i += 3) if (Math.abs(pos[i]) <= 126 && Math.abs(pos[i + 2]) <= 126) { n++; if (pos[i + 1] !== 0) flat = false; }
+      return { road: rd.reduce((a, b) => a + b, 0), house: hs.reduce((a, b) => a + b, 0), field: fd.reduce((a, b) => a + b, 0), open, openCells, before, after, regrownMax: regrown, flat, n };
+    });
+    ok('建物・道・畑のマスに草が生えない（それ以外には生える）', gr.road === 0 && gr.house === 0 && gr.field === 0 && gr.open > 0, JSON.stringify(gr));
+    ok('マスの塗り分けの表：道を建てると R が立ち、こわすと戻る', gr.before[0] === 255 && gr.before[1] === 0 && gr.after === 0, JSON.stringify([gr.before, gr.after]));
+    ok('土地の中（±126m）は y = 0 の平らな地面', gr.flat && gr.n > 100, gr.n);
+    ok('描画の層で出たエラー・警告が 0（三角形・草の場面）', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+
+  /* 作業台が GLB で出る・見本の緑と赤が GLB でも出る・こわすと消える（中） */
+  {
+    const a = await open2({ pref: 'mid' });
+    await begin2(a.pg);
+    await ev(a.pg, () => { MZ.noSave = true; Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 99; }); });
+    await loaded(a.pg);
+    await a.pg.waitForFunction(() => { const g = MZ.gfx.looks.state.glb.bench; return g && g.near; }, null, { timeout: 120000 });
+    await ev(a.pg, () => { MZ.state.player.x = 0; MZ.state.player.z = -12; TT.build('bench', 62, 50, 0); });
+    await settle(a.pg, 2);
+    const r = await ev(a.pg, () => {
+      const o = Object.values(MZ.town.meshes).find(m => m.key === 'bench'), src = o.inst[0].sourceMesh, lod = src.getLODLevels();
+      return { src: MZ.gfx.look('bench').src, inst: o.inst.length, tris: Math.round(src.getTotalIndices() / 3), lod: lod.length };
+    });
+    ok('作業台が GLB で出る（LOD は近く用→遠く用→見えなくなる）', r.src === 'glb' && r.inst >= 1 && r.tris > 10000 && r.lod === 2, JSON.stringify(r));
+    const pv = await ev(a.pg, () => {
+      MZ.startBuild('bench'); MZ.player.updateAim(); MZ.town.updatePreview();
+      const parts = MZ.world.scene.getTransformNodeByName('previewRoot').metadata.parts;
+      return { n: parts.length, mat: MZ.world.scene.getMeshByName('preview').material.name, rg: parts.every(p => p.renderingGroupId === 1) };
+    });
+    ok('見本の緑・赤が出る（見本は遠く用の形を複製・手前に描く）', pv.n >= 1 && /^pv(Ok|Bad)$/.test(pv.mat) && pv.rg, JSON.stringify(pv));
+    await ev(a.pg, () => MZ.cancelBuild());
+    const gone = await ev(a.pg, () => {
+      const b = MZ.chunk().layers.ground.find(x => x.t === 'bench'); MZ.remove(b.id);
+      return MZ.world.scene.meshes.filter(m => m.name.startsWith('bench_')).length;
+    });
+    ok('こわすと建物のメッシュが消える（dispose）', gone === 0, gone);
+    ok('作業台・見本の場面でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+
   /* ================= スマホ ================= */
   const saved = before;
   const mobile = async (name, w, h) => {
     const mc = await br.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    await mc.addInitScript(LOW);
     await mc.addInitScript(s => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('machizukuri-save', s); sessionStorage.setItem('seeded', '1'); } }, saved);
     const p = await mc.newPage(); watch(p);
     await p.goto(URL); await p.waitForTimeout(400);

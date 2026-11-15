@@ -5,7 +5,6 @@
 (function () {
   const MZ = window.MZ, B = BABYLON, T = MZ.T;
   const N = T.chunk, C = T.cell;
-  const SKY = '#C6D6DC';
 
   MZ.cellOf = v => Math.floor(v / C) + N / 2;         // 世界の座標 → マスの番号
   MZ.cellPos = g => (g - N / 2) * C + C / 2;          // マスの番号 → マスの中心の座標
@@ -29,55 +28,20 @@
   };
 
   /* ---------- 場面 ---------- */
+  /* 光・空・霧・地面・草・柵は MZ.gfx（js/gfx/）が作る。ここは、エンジン・場面・カメラを作って呼ぶだけ */
   W.init = function (canvas) {
-    const engine = W.engine = new B.Engine(canvas, true, { stencil: false, preserveDrawingBuffer: false });
-    engine.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, 1.5));
-    const scene = W.scene = new B.Scene(engine);
+    const G = MZ.gfx;
+    const engine = G.engine = W.engine = new B.Engine(canvas, true, { stencil: false, preserveDrawingBuffer: false });
+    const scene = G.scene = W.scene = new B.Scene(engine);
     scene.skipPointerMovePicking = true;
-    scene.clearColor = B.Color4.FromHexString(SKY + 'FF');
-    scene.fogMode = B.Scene.FOGMODE_LINEAR;
-    scene.fogColor = B.Color3.FromHexString(SKY);
-    scene.fogStart = T.fogStart; scene.fogEnd = T.fogEnd;
-    MZ.initModels(scene);
-
-    const hemi = new B.HemisphericLight('hemi', new B.Vector3(0, 1, 0), scene);
-    hemi.intensity = 0.8; hemi.diffuse = new B.Color3(1, 0.98, 0.92); hemi.groundColor = new B.Color3(0.45, 0.42, 0.34);
-    const sun = new B.DirectionalLight('sun', new B.Vector3(-0.45, -1, 0.35), scene);
-    sun.intensity = 0.65; sun.diffuse = new B.Color3(1, 0.95, 0.85); sun.specular = new B.Color3(0, 0, 0);
-
-    const cam = W.camera = new B.FreeCamera('cam', new B.Vector3(0, T.eye, 0), scene);
-    cam.inputs.clear(); cam.minZ = 0.1; cam.maxZ = T.fogEnd + 10; cam.fov = 1.0;
+    const cam = G.cam = W.camera = new B.FreeCamera('cam', new B.Vector3(0, T.eye, 0), scene);
+    cam.inputs.clear(); cam.minZ = 0.1; cam.maxZ = 3200; cam.fov = 1.0;
     scene.activeCamera = cam;
-
-    /* 地面は 1 枚。頂点カラーで土の色むら */
-    const sub = 60;
-    const g = B.MeshBuilder.CreateGround('ground', { width: N * C, height: N * C, subdivisions: sub }, scene);
-    const rng = mulberry32(T.seed + 7), nv = g.getTotalVertices(), col = new Float32Array(nv * 4);
-    const base = [[0.55, 0.52, 0.33], [0.6, 0.5, 0.33], [0.48, 0.5, 0.3], [0.62, 0.56, 0.38]];
-    const grid = [];
-    for (let i = 0; i < (sub + 1) * (sub + 1); i++) grid.push(base[Math.floor(rng() * base.length)]);
-    for (let i = 0; i < nv; i++) {
-      const c = grid[i], k = 0.92 + rng() * 0.16;
-      col[i * 4] = c[0] * k; col[i * 4 + 1] = c[1] * k; col[i * 4 + 2] = c[2] * k; col[i * 4 + 3] = 1;
-    }
-    g.setVerticesData(B.VertexBuffer.ColorKind, col);
-    g.material = MZ.modelMat; g.isPickable = false; g.freezeWorldMatrix(); g.doNotSyncBoundingInfo = true;
-    /* 土地の外（境目の向こう）の地面 */
-    const o = B.MeshBuilder.CreateGround('outer', { width: 900, height: 900 }, scene);
-    o.position.y = -0.04;
-    const oc = new Float32Array(o.getTotalVertices() * 4); for (let i = 0; i < oc.length; i += 4) { oc[i] = 0.4; oc[i + 1] = 0.4; oc[i + 2] = 0.27; oc[i + 3] = 1; }
-    o.setVerticesData(B.VertexBuffer.ColorKind, oc);
-    o.material = MZ.modelMat; o.isPickable = false; o.freezeWorldMatrix();
-
-    /* 土地の境目：柵（thin instance 1 つ） */
-    const post = MZ.getModel('post'), pm = [], q = (x, z, ry) => {
-      const m = B.Matrix.Compose(new B.Vector3(1, 1, 1), B.Quaternion.RotationAxis(B.Axis.Y, ry), new B.Vector3(x, 0, z)); pm.push(...m.m);
-    };
-    const e = T.half;
-    for (let v = -e; v <= e; v += 4) { q(-e, v, 0); q(e, v, 0); q(v, -e, Math.PI / 2); q(v, e, Math.PI / 2); }
-    post.isVisible = true; post.alwaysSelectAsActiveMesh = true;
-    post.thinInstanceSetBuffer('matrix', new Float32Array(pm), 16, true);
-    post.freezeWorldMatrix();
+    G.sky.init();            // 太陽・半球光・空・光の回りこみ。AirPlugin の登録もここ（材質を作る前）
+    MZ.initModels(scene);    // コードの形の材質（PBR）
+    G.ground.init();         // 平らな地面（土地の外だけ起伏）・遠景の山なみ・柵
+    G.grass.init();
+    G.fire.init();
     return W;
   };
 
@@ -92,7 +56,7 @@
     Object.keys(MZ.NODES).forEach(k => {
       const d = MZ.NODES[k];
       (VARIANTS[k] || [k]).forEach((mk, vi) => {
-        const gr = { k, mk, vi, mesh: MZ.getModel(mk), nodes: [], buf: null };
+        const gr = { k, mk, vi, nodes: [] };   // 見た目は gfx/nodes.js が決める（ここは種類とばらつきの番号だけ）
         groups[k + vi] = gr; W.groups.push(gr);
       });
       let placed = 0, tries = 0;
@@ -107,22 +71,10 @@
         W.nodes.push(nd); W.cellNode[gz * N + gx] = nd.idx; placed++;
       }
     });
-    W.groups.forEach(gr => {
-      gr.buf = new Float32Array(Math.max(1, gr.nodes.length) * 16);
-      gr.nodes.forEach(nd => writeNode(nd, true));
-      gr.mesh.isVisible = true; gr.mesh.alwaysSelectAsActiveMesh = true; gr.mesh.freezeWorldMatrix();
-      gr.mesh.thinInstanceSetBuffer('matrix', gr.buf, 16, false);
-    });
+    MZ.gfx.nodes.init(W.nodes);
   };
-  function writeNode(nd, vis) {
-    const s = vis ? nd.s : 0;
-    B.Matrix.Compose(new B.Vector3(s, s, s), B.Quaternion.RotationAxis(B.Axis.Y, nd.ry), new B.Vector3(nd.x, 0, nd.z)).copyToArray(nd.g.buf, nd.slot * 16);
-  }
   W.nodeActive = idx => !(idx in W.taken);
-  W.setNode = function (idx, vis) {
-    const nd = W.nodes[idx]; writeNode(nd, vis);
-    nd.g.mesh.thinInstanceBufferUpdated('matrix');
-  };
+  W.setNode = function (idx, vis) { MZ.gfx.nodes.show(idx, vis); };
 
   /* 採れた：消して、back 秒後にまた出る（back < 0 は二度と出ない） */
   W.take = function (idx, back) {
@@ -131,8 +83,8 @@
   /* 保存から読んだ「消えている物」を描く。範囲の外の番号は捨てる */
   W.applyTaken = function () {
     W.taken = MZ.chunk().taken;
-    Object.keys(W.taken).forEach(k => { const i = +k; if (!(i >= 0 && i < W.nodes.length)) delete W.taken[k]; else writeNode(W.nodes[i], false); });
-    W.groups.forEach(gr => gr.mesh.thinInstanceBufferUpdated('matrix'));
+    Object.keys(W.taken).forEach(k => { const i = +k; if (!(i >= 0 && i < W.nodes.length)) delete W.taken[k]; });
+    MZ.gfx.nodes.flush();
   };
   /* 時間をすすめる（また出る処理）。遊んでいない間は進まない（残り秒を保存するだけ） */
   W.regrow = function (dt) {

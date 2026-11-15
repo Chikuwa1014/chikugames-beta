@@ -111,6 +111,11 @@ body.panelopen .rb{display:none!important}
 .inv li{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);border-radius:8px;padding:6px 10px;font-size:13px}
 .inv.tl{grid-template-columns:1fr}
 .small{margin:0;font-size:13px;color:var(--sub)}
+#prep{display:flex;flex-direction:column;align-items:center;gap:4px;margin:2px 0 4px}
+#prepBar{width:min(260px,70vw);height:5px;border-radius:3px;background:rgba(0,0,0,.18);overflow:hidden}
+#prepBar i{display:block;height:100%;width:0;background:#6B8A44;transition:width .2s}
+#prepTxt{font-size:12px;color:#4A4430}
+#gfxFail{flex:none;font-size:11px;color:var(--sub);text-align:center;padding-top:3px}
 #pfoot{flex:none;display:flex;gap:8px;justify-content:space-between;padding-top:6px;border-top:1px solid var(--line)}
 #pfoot button{border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:999px;padding:7px 16px;font-size:12px;cursor:pointer;min-height:34px}
 #pfoot #pClose{color:var(--ink)}
@@ -128,6 +133,7 @@ body.panelopen .rb{display:none!important}
   <span class="sp"></span>
   <button class="hb" id="bBag" hidden>持ち物</button>
   <button class="hb" id="bView" hidden>視点</button>
+  <button class="hb" id="bQual" data-gfx-q hidden>画質</button>
 </header>
 
 <div id="hud" hidden>
@@ -155,7 +161,8 @@ body.panelopen .rb{display:none!important}
     <button data-tab="build" aria-selected="false">建てる</button>
   </div>
   <div id="pbody"></div>
-  <div id="pfoot"><button id="pReset">さいしょから</button><button id="pClose">とじる</button></div>
+  <div id="pfoot"><button data-gfx-q id="pQual">画質</button><button id="pReset">さいしょから</button><button id="pClose">とじる</button></div>
+  <div id="gfxFail" hidden>一部の絵を読み込めませんでした</div>
 </section>
 
 <div class="modal" id="dlg" hidden>
@@ -166,6 +173,7 @@ body.panelopen .rb{display:none!important}
   <h1>荒野開拓記<small>（仮）</small></h1>
   <div class="tbtn" id="tbtn"></div>
   <p class="tmsg" id="tmsg" hidden></p>
+  <div id="prep" hidden><div id="prepBar"><i></i></div><span id="prepTxt">準備中 0／0</span></div>
   <p class="how">
     <span class="pc-only">WASD 歩く・Shift 走る・クリックでマウス固定して見回す・E／左クリック たたく<br>Tab／I 持ち物・V 視点・建てるとき R 回す・E／左クリック 置く・Q やめる</span>
     <span class="touch-only">左下をなぞって歩く（倒しきると走る）・ほかをなぞって見回す・右下の「たたく」で採集<br>右上の「持ち物」でつくる・建てる、「視点」で一人称／三人称</span>
@@ -176,8 +184,21 @@ body.panelopen .rb{display:none!important}
 <script src="../common/v1/core.js"></script>
 <script src="../common/v1/save.js"></script>
 <script src="../common/lib/babylon/7.54.3/babylon.js"></script>
+<script src="../common/lib/babylon/7.54.3/babylonjs.loaders.min.js"></script>
 <script src="js/data.js"></script>
 <script src="js/models.js"></script>
+<script src="js/gfx/util.js"></script>
+<script src="js/gfx/air.js"></script>
+<script src="js/gfx/sky.js"></script>
+<script src="js/gfx/photo.js"></script>
+<script src="js/gfx/ground.js"></script>
+<script src="js/gfx/grass.js"></script>
+<script src="js/gfx/assets.js"></script>
+<script src="js/gfx/looks.js"></script>
+<script src="js/gfx/nodes.js"></script>
+<script src="js/gfx/fire.js"></script>
+<script src="js/gfx/post.js"></script>
+<script src="js/gfx/quality.js"></script>
 <script src="js/world.js"></script>
 <script src="js/player.js"></script>
 <script src="js/town.js"></script>
@@ -200,13 +221,14 @@ body.panelopen .rb{display:none!important}
   const box = $('#tbtn'), msg = $('#tmsg');
   const mk = (txt, cls, fn) => { const b = document.createElement('button'); b.className = cls; b.textContent = txt; b.addEventListener('click', fn); box.appendChild(b); return b; };
   const start = (state, note) => {
-    $('#title').hidden = true; $('#hud').hidden = false; $('#bBag').hidden = false; $('#bView').hidden = false;
+    $('#title').hidden = true; $('#hud').hidden = false; $('#bBag').hidden = false; $('#bView').hidden = false; $('#bQual').hidden = false;
     try { MZ.begin(state); } catch (e) {
       console.error(e); $('#title').hidden = false; $('#hud').hidden = true; box.innerHTML = '';
       msg.hidden = false; msg.textContent = '画面を準備できませんでした（3D に対応していない可能性があります）。'; return;
     }
     if (note) MZ.ui.notice(note, 'warn');
   };
+  const G = MZ.gfx;
   const r = MZ.loadSave();
   if (r.status === 'ok') {
     mk('つづきから', 'go', () => start(r.state));
@@ -218,6 +240,23 @@ body.panelopen .rb{display:none!important}
     if (r.status === 'broken') { msg.hidden = false; msg.textContent = '保存データが壊れていたので、さいしょからはじめます'; }
     mk('はじめる', 'go', () => start(MZ.newState(), r.status === 'broken' ? '保存データが壊れていたので、さいしょからはじめた' : ''));
   }
+
+  /* 読み込み中の表示：タイトルはすぐ出し、題名の下に進み具合を出す。「はじめる」「つづきから」は、必須（空の表・地面の写真・草）が
+     そろうか 8 秒たつまで押せない。残り（木・岩・建物の GLB）は裏で読み続け、届いた組から入れかえる（ゲームは止めない） */
+  G.setQuality(G.readPref());
+  const btns = () => [...box.querySelectorAll('button')];
+  if (btns().length) {
+    btns().forEach(b => { b.disabled = true; });
+    $('#prep').hidden = false;
+    const upd = (d, t) => { $('#prepTxt').textContent = '準備中 ' + d + '／' + t; $('#prepBar i').style.width = (t ? d / t * 100 : 0) + '%'; };
+    G.assets.onProgress = upd; upd(G.assets.done, G.assets.total);
+    let released = false;
+    const release = () => { if (released) return; released = true; $('#prep').hidden = true; btns().forEach(b => { b.disabled = false; }); G.assets.onProgress = null; };
+    G.assets.loadTier(G.key).then(() => G.sky.prepare()).then(release, release);
+    setTimeout(release, 8000);
+  }
+  /* 読めなかった組があれば、パネルの下に小さく出す */
+  setInterval(() => { $('#gfxFail').hidden = !G.assets.failed.length; }, 1500);
 })();
 </script>
 </body>

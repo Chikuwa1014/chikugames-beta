@@ -10,7 +10,7 @@
   /* ---------- 準備 ---------- */
   P.init = function () {
     const scene = MZ.world.scene;
-    P.model = MZ.getModel('player'); P.model.setEnabled(false);
+    P.model = MZ.gfx.looks.playerModel(); P.model.setEnabled(false);
     P.hands = { axe: MZ.getModel('axeHand'), pick: MZ.getModel('pickHand') };
     ['axe', 'pick'].forEach(k => {
       const h = P.hands[k]; h.parent = MZ.world.camera; h.isVisible = false;
@@ -112,6 +112,7 @@
     P.swing = 1;
     if (nd.hp < 0) nd.hp = d.hp;
     nd.hp -= dmg;
+    MZ.gfx.nodes.hit(nd.idx);          // たたいたゆれ（根もとを中心に 0.25 秒）
     if (nd.hp <= 0) {
       const txt = [];
       Object.keys(d.drops).forEach(k => { s.inv[k] += d.drops[k]; txt.push('＋' + d.drops[k] + ' ' + MZ.ITEMS[k]); });

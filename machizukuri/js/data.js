@@ -3,7 +3,7 @@
 (function () {
   const MZ = window.MZ = window.MZ || {};
   MZ.GAME = 'machizukuri';
-  MZ.VERSION = 'β0.1.0';
+  MZ.VERSION = 'β0.2.0';
   MZ.SAVE_KEY = 'machizukuri-save';
   MZ.SAVE_V = 1;
 

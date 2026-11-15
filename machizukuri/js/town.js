@@ -25,14 +25,8 @@
     W.owner.fill(0); W.solid.fill(0); Tn.byId = {};
     Object.values(Tn.meshes).forEach(m => m.dispose()); Tn.meshes = {};
     list().forEach(b => addBuilding(b));
-    /* 人の thin instance（服の色ちがいが 4 種） */
-    Tn.pgroups = [0, 1, 2, 3].map(i => {
-      const mesh = MZ.getModel('person' + i);
-      const buf = new Float32Array(T.maxPeople * 16);
-      mesh.isVisible = true; mesh.alwaysSelectAsActiveMesh = true;
-      mesh.thinInstanceSetBuffer('matrix', buf, 16, false); mesh.thinInstanceCount = 0;
-      return { mesh, buf };
-    });
+    /* 住民：部品ごとの thin instance の入れ物（服の色ちがいが 4 種。近い人だけ近く用）。決まりは gfx/looks.js */
+    Tn.pgroups = MZ.gfx.people.init(T.maxPeople);
     Tn.recalc(true); Tn.stageCheck(true);
   };
 
@@ -40,10 +34,9 @@
     const W = MZ.world, d = MZ.BUILDS[b.t];
     Tn.byId[b.id] = b;
     cellsOf(b, ci => { W.owner[ci] = b.id; if (d.solid) W.solid[ci] = 1; });
-    const m = MZ.getModel(b.t).createInstance('b' + b.id), c = center(b);
-    m.position.set(c[0], 0, c[1]); m.rotation.y = b.r * Math.PI / 2;
-    m.isPickable = false; m.freezeWorldMatrix();
-    Tn.meshes[b.id] = m;
+    const c = center(b);
+    Tn.meshes[b.id] = MZ.gfx.put(b.t, c[0], c[1], b.r * Math.PI / 2);   // .dispose() で消える
+    MZ.gfx.ground.mark(b);                                              // 道・畑・踏み固めの塗り分け、草のマス
     /* 建物と重なる採れる物は、二度と出ない */
     cellsOf(b, ci => { const ni = W.cellNode[ci]; if (ni >= 0 && W.taken && W.taken[ni] !== undefined) W.taken[ni] = -1; });
   }
@@ -99,6 +92,7 @@
     Object.keys(d.cost).forEach(k => { const n = Math.floor(d.cost[k] / 2); if (n > 0) { s.inv[k] += n; back.push(MZ.ITEMS[k] + n); } });
     cellsOf(b, ci => { W.owner[ci] = 0; W.solid[ci] = 0; });
     Tn.meshes[id].dispose(); delete Tn.meshes[id]; delete Tn.byId[id];
+    MZ.gfx.ground.mark(b);
     const L = list(); L.splice(L.indexOf(b), 1);
     delete s.timers.jobs[id];
     Tn.recalc(); MZ.saveNow();
@@ -241,28 +235,23 @@
   /* 毎フレームの描き直し */
   const _s = new B.Vector3(1, 1, 1), _t = new B.Vector3(), _q = new B.Quaternion(), _m = new B.Matrix();   // 毎フレーム作らない作業用
   Tn.render = function (time) {
+    const G = MZ.gfx, cam = MZ.world.camera.position;
     Tn.pgroups.forEach(g => { g.n = 0; });
     Tn.residents.forEach(r => {
-      const g = Tn.pgroups[r.v], bob = r.mv ? Math.abs(Math.sin(time * 7 + r.ph)) * 0.05 : 0;
+      const dx = r.x - cam.x, dz = r.z - cam.z, g = G.people.pick(r.v, dx * dx + dz * dz), bob = r.mv ? Math.abs(Math.sin(time * 7 + r.ph)) * 0.05 : 0;
       B.Quaternion.RotationAxisToRef(B.Axis.Y, r.ry, _q); _t.set(r.x, bob, r.z);
       B.Matrix.ComposeToRef(_s, _q, _t, _m); _m.copyToArray(g.buf, g.n * 16); g.n++;
     });
-    Tn.pgroups.forEach(g => { g.mesh.thinInstanceCount = g.n; g.mesh.thinInstanceBufferUpdated('matrix'); });
+    Tn.pgroups.forEach(g => { g.meshes.forEach(m => { m.thinInstanceCount = g.n; if (g.n) m.thinInstanceBufferUpdated('matrix'); }); });
   };
 
   /* ---------- 建築モード（見本・回す・置く・こわす） ---------- */
-  let pvOk, pvBad, pv = null, pvKey = '';
-  function pvMat(name, hex) {
-    const m = new B.StandardMaterial(name, MZ.world.scene), c = B.Color3.FromHexString(hex);
-    m.diffuseColor = c; m.emissiveColor = c.scale(0.5); m.specularColor = new B.Color3(0, 0, 0); m.alpha = 0.55; m.backFaceCulling = false;
-    return m;
-  }
+  let pv = null, pvKey = '';
+  /* 見本（緑＝置ける、赤＝置けない）。形は gfx/looks.js の preview が作る（根の TransformNode） */
   function pvMesh(key) {
-    if (!pvOk) { pvOk = pvMat('pvOk', '#5FBF5F'); pvBad = pvMat('pvBad', '#D9534F'); }
     if (pvKey !== key) {
       if (pv) pv.dispose();
-      pv = MZ.getModel(key).clone('preview'); pv.useVertexColors = false; pv.isVisible = true; pv.isPickable = false;
-      pv.alwaysSelectAsActiveMesh = true; pv.renderingGroupId = 1; pvKey = key;   // 手前の建物に隠れない
+      pv = MZ.gfx.preview(key); pvKey = key;
     }
     pv.setEnabled(true);
     return pv;
@@ -304,14 +293,14 @@
       const r = Tn.canPlace(b.key, b.gx, b.gz); b.ok = r.ok; b.reason = r.reason;
       const m = pvMesh(b.key);
       m.position.set((b.gx - N / 2) * C + w * C / 2, 0.02, (b.gz - N / 2) * C + w * C / 2); m.rotation.y = b.r * Math.PI / 2; m.scaling.setAll(1);
-      m.material = b.ok ? pvOk : pvBad;
+      MZ.gfx.setPreviewOk(m, b.ok);
     } else {
       const gx = MZ.cellOf(p.x), gz = MZ.cellOf(p.z);
       const id = (gx >= 0 && gz >= 0 && gx < N && gz < N) ? W.owner[gz * N + gx] : 0;
       b.target = id;
       if (id) {
         const bd = Tn.byId[id], m = pvMesh(bd.t), c = center(bd);
-        m.position.set(c[0], 0.02, c[1]); m.rotation.y = bd.r * Math.PI / 2; m.scaling.setAll(1.03); m.material = pvBad;
+        m.position.set(c[0], 0.02, c[1]); m.rotation.y = bd.r * Math.PI / 2; m.scaling.setAll(1.03); MZ.gfx.setPreviewOk(m, false);
       } else hidePreview();
     }
   };

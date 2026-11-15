@@ -1,0 +1,38 @@
+荒野開拓記（仮） β0.2.0 高精細の絵に使った素材（assets/ の出どころ）
+Poly Haven（https://polyhaven.com/）と ambientCG（https://ambientcg.com/）の CC0（パブリックドメイン）素材。
+1K の JPG／HDR を Pillow で再圧縮・変換して使っている（ORM の B＝金属は 0 に置きかえ）。
+
+assetId                     用途                                         作者（Poly Haven の表記）                       ライセンス  URL
+park_dirt                   地面の土と枯れ草（ground_*）                 Christopher Melani                              CC0  https://polyhaven.com/a/park_dirt
+brown_mud_dry               道・踏み固めた庭（path_col*）                Rob Tuytel                                      CC0  https://polyhaven.com/a/brown_mud_dry
+farm_soil                   畑の土・畝（farm_*）                         Amal Kumar                                      CC0  https://polyhaven.com/a/farm_soil
+rough_wood                  丸太・板・屋根板・戸・壁板（log_*）          Rob Tuytel                                      CC0  https://polyhaven.com/a/rough_wood
+pine_bark                   樹皮（幹・切り株・薪）（bark_*）             Dimitrios Savva                                 CC0  https://polyhaven.com/a/pine_bark
+rock_boulder_dry            石（煙突・井戸・たき火の石・岩）（stone_*）  Dimitrios Savva (photo), Rico Cilliers (proc.)  CC0  https://polyhaven.com/a/rock_boulder_dry
+hilly_terrain_01_puresky    空のドームと光の回りこみ（sky.jpg・sky_ibl.png） Sergej Majboroda (original), Jarod Guest (sky edits)  CC0  https://polyhaven.com/a/hilly_terrain_01_puresky
+
+ambientCG（https://ambientcg.com/、CC0）は木の葉の画像にだけ使っている（下の「木」）。
+
+--- 3D モデル（assets/models/*.glb。Poly Haven の gltf 1k を Blender で Decimate・テクスチャ縮小したもの） ---
+assetId                   ファイル              用途                     作者（Poly Haven の表記）                                   ライセンス  URL
+boulder_01                assets/models/rock_a         岩（ごつごつ）           Rico Cilliers                                              CC0  https://polyhaven.com/a/boulder_01
+namaqualand_boulder_03    assets/models/rock_b         大きな岩（角ばった）     Jenelle van Heerden (modeling), Dario Barresi (photography)  CC0  https://polyhaven.com/a/namaqualand_boulder_03
+namaqualand_boulder_05    assets/models/rock_c         平たい岩                 Jenelle van Heerden (modeling), Dario Barresi (photography)  CC0  https://polyhaven.com/a/namaqualand_boulder_05
+tree_stump_01             assets/models/stump          切り株                   Rob Tuytel                                                 CC0  https://polyhaven.com/a/tree_stump_01
+dead_tree_trunk           assets/models/deadlog        倒木                     Rob Tuytel                                                 CC0  https://polyhaven.com/a/dead_tree_trunk
+wild_rooibos_bush         assets/models/bush           乾いた低木               James Ray Cock (modeling), Jenelle van Heerden (photography) CC0  https://polyhaven.com/a/wild_rooibos_bush
+dry_branches_medium_01    assets/models/twigs          枯れ枝                   Rico Cilliers                                              CC0  https://polyhaven.com/a/dry_branches_medium_01
+
+--- 木（assets/models/tree_*.glb と assets/tex/tree_leaves.webp・assets/tex/bark2_*） ---
+木の形（幹・枝・葉のカード）は自作（Blender の Python で生成）。葉の画像は下の写真素材から葉・針葉を切りぬいて並べ、色を整えたもの。
+assetId                 ファイル                     用途                                   作者・提供元                                              ライセンス  URL
+bark_brown_02           assets/tex/bark2_*                広葉樹の樹皮                           Rob Tuytel（Poly Haven）                                  CC0  https://polyhaven.com/a/bark_brown_02
+island_tree_02          assets/tex/tree_leaves.webp（右下） 広葉樹の葉（小さい葉）                 Rob Tuytel (scanning, processing), Rico Cilliers (cleanup, processing)（Poly Haven）  CC0  https://polyhaven.com/a/island_tree_02
+PineNeedles001          assets/tex/tree_leaves.webp（上段） 松・トウヒの針葉（色を緑に変えて使用） ambientCG                                                  CC0  https://ambientcg.com/view?id=PineNeedles001
+LeafSet005              assets/tex/tree_leaves.webp（左下） 広葉樹の葉（大きい葉）                 ambientCG                                                  CC0  https://ambientcg.com/view?id=LeafSet005
+針葉樹の樹皮は pine_bark（bark_*）、枯れ木は rough_wood（log_*）を使いまわしている。
+
+--- 作業台（assets/models/workbench.glb） ---
+作業台のモデルは自作（Blender で作成）。テクスチャは上の rough_wood・rock_boulder_dry などの写真素材を使っている。
+
+建物（小屋・木の家・井戸・たき火・かまど・炉）の b_*.glb／b_*_far.glb：自作（Blender。第三者の素材は使っていない）。

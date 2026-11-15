@@ -1,11 +1,11 @@
 /* 荒野開拓記（仮） — モデル（見た目）
    いまは箱・円柱・球・三角柱を組み合わせたローポリを、コードで作っている。
-   ゆくゆくハイポリにするときは、ここの MZ.models の関数の中身を、読み込んだ 3D モデル（glTF など）に
-   差し替えるだけでよい作りにしてある。ゲーム側は MZ.getModel(種類の名前) だけを使い、作り方を知らない。
+   β0.2.0 から、高精細の絵は gfx/ が担当する（GLB があればそれを使う）。ここは、GLB が無いとき・読めないとき・画質「低」のときの
+   戻り先（今のコードの形）。ゲーム側は MZ.gfx.look／put／preview を通して使い、作り方を知らない。
 
    【どのモデルも守る約束】
    - 足もとが y=0、建物の中心が原点、正面は -z（人と主人公は +z）、1 単位 = 1m
-   - 部品ごとの色は頂点カラーに入れ、材質は全体で 1 つ（MZ.modelMat）にして 1 つのメッシュにまとめる（描く呼び出しを減らすため）
+   - 部品ごとの色は頂点カラー（リニア）に入れ、材質は全体で 1 つ（MZ.modelMat。PBR）にして 1 つのメッシュにまとめる（描く呼び出しを減らすため）
    - 返すのは「元のメッシュ」（非表示）。ゲーム側が createInstance か thinInstance で並べる
    - 例外：player は手足を動かすので TransformNode（根）を返す。根の metadata.parts に legL・legR・armL・armR がある */
 (function () {
@@ -14,7 +14,7 @@
   const colorCache = {};
 
   function col(hex) {
-    if (!colorCache[hex]) { const c = B.Color3.FromHexString(hex); colorCache[hex] = [c.r, c.g, c.b]; }
+    if (!colorCache[hex]) { const c = B.Color3.FromHexString(hex).toLinearSpace(); colorCache[hex] = [c.r, c.g, c.b]; }   // PBR の頂点カラーはリニアなので、sRGB の色を直して入れる
     return colorCache[hex];
   }
   /* 頂点カラーを入れる */
@@ -84,6 +84,9 @@
   M.iron = () => merge('iron', [
     sph(1.8, 0, 0.65, 0, '#5A5755', 0.85, 3),
     box(0.3, 0.3, 0.3, 0.5, 0.9, 0.3, '#A86A42', 0.5), box(0.26, 0.26, 0.26, -0.45, 0.7, 0.5, '#A86A42', 0.2), box(0.24, 0.24, 0.24, 0.1, 1.0, -0.5, '#B77A50', 0.9)]);
+  /* 鉄の鉱脈の粒（高・中で、さび色にした岩の上に足す。gfx/nodes.js） */
+  M.ironOre = () => merge('ironOre', [
+    box(0.3, 0.3, 0.3, 0.5, 0.9, 0.3, '#A86A42', 0.5), box(0.26, 0.26, 0.26, -0.45, 0.7, 0.5, '#A86A42', 0.2), box(0.24, 0.24, 0.24, 0.1, 1.0, -0.5, '#B77A50', 0.9)]);
   M.post = () => merge('post', [box(0.16, 1.1, 0.16, 0, 0.55, 0, '#6F5435'), box(0.1, 0.1, 1.9, 0, 0.9, 0.95, '#7C6140')]);
 
   /* 建物（原点が建物の中心。正面は -z。w マス四方に収まる） */
@@ -102,8 +105,7 @@
     box(0.7, 0.7, 0.1, -1.0, 3.2, -1.62, '#6F8A96'), box(0.7, 0.7, 0.1, 0, 3.2, -1.62, '#6F8A96'), box(0.7, 0.7, 0.1, 1.0, 3.2, -1.62, '#6F8A96')]);
   M.fire = () => merge('fire', [
     cyl(1.1, 1.2, 0.16, 0, 0.08, 0, '#77726A', 8),
-    box(0.9, 0.16, 0.16, 0, 0.22, 0, '#4F3620', 0.6), box(0.9, 0.16, 0.16, 0, 0.22, 0, '#4F3620', -0.8),
-    cyl(0, 0.55, 0.8, 0, 0.62, 0, '#E8812E', 6), cyl(0, 0.3, 0.5, 0.05, 0.5, 0.05, '#F6C650', 5)]);
+    box(0.9, 0.16, 0.16, 0, 0.22, 0, '#4F3620', 0.6), box(0.9, 0.16, 0.16, 0, 0.22, 0, '#4F3620', -0.8)]);   // 炎は fire.js が足す
   M.bench = () => merge('bench', [
     box(1.5, 0.12, 0.9, 0, 0.86, 0, '#A98050'),
     box(0.12, 0.8, 0.12, -0.65, 0.4, -0.35, '#6F5232'), box(0.12, 0.8, 0.12, 0.65, 0.4, -0.35, '#6F5232'),
@@ -170,10 +172,10 @@
   /* 初期化：場面（Scene）を渡す。材質は全体で 1 つ */
   MZ.initModels = function (scene) {
     S = scene;
-    MAT = new B.StandardMaterial('modelMat', S);
-    MAT.diffuseColor = new B.Color3(1, 1, 1);
-    MAT.specularColor = new B.Color3(0, 0, 0);
-    MAT.backFaceCulling = false;
+    MAT = new B.PBRMaterial('modelMat', S);   // 頂点カラー（リニア）・metallic 0・roughness 0.9。AirPlugin（高さの霧）が効く
+    MAT.albedoColor = new B.Color3(1, 1, 1);
+    MAT.metallic = 0; MAT.roughness = 0.9;
+    MAT.backFaceCulling = false; MAT.maxSimultaneousLights = 4;
     MZ.modelMat = MAT;
     MZ.modelCache = {};
   };
