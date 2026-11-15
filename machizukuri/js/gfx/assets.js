@@ -74,7 +74,7 @@
   };
 
   const MP = {};   // 名前 → 読んで作り直したメッシュの Promise（A.model）
-  const A = G.assets = { done: 0, total: 0, reqDone: 0, reqTotal: 0, failed: [], okMap: {}, started: {}, onProgress: null, onBg: null, tierAsked: {}, conc: 5, idle: 20000, retryWait: [3000, 8000] };
+  const A = G.assets = { reqKeys: {}, done: 0, total: 0, reqDone: 0, reqTotal: 0, failed: [], okMap: {}, started: {}, onProgress: null, onBg: null, tierAsked: {}, conc: 5, idle: 20000, retryWait: [3000, 8000] };
   const P = {};   // path → Promise<boolean>
   const QU = [];  // 待ち行列：{ path, prio, seq, tries, res, req }
   let active = 0, seq = 0;
@@ -109,7 +109,7 @@
   }
   function finish(it, ok) {
     A.done++; A.okMap[it.path] = ok; if (!ok) A.failed.push(it.path);
-    if (it.req) A.reqDone++;
+    if (it.req) { A.reqDone++; A.reqKeys[it.path] = true; }
     progress(); it.res(ok);
   }
   function pump() {
@@ -152,6 +152,7 @@
     delete P[path]; delete A.okMap[path];
     const i = A.failed.indexOf(path); if (i >= 0) A.failed.splice(i, 1);
     A.done--; A.total--;
+    if (A.reqKeys[path]) { A.reqDone--; A.reqTotal--; delete A.reqKeys[path]; }
     const n = path.replace(/^.*\//, '').replace(/\.glb$/, '');
     delete MP[n]; delete MP[n + ':raw'];
     return true;
@@ -170,6 +171,17 @@
   /* 画質に必要な組を取りに行く（足りない分だけ）。必須がそろったら解決する Promise を返す */
   A.loadTier = function (tier) {
     const gs = A.groupsFor(tier), req = [];
+    /* 新しい画質の一覧に無くて、まだ取りに行っていない物は、待ち行列から外す（低に下げたとき、高・中の GLB を取り続けない）。
+       failed には入れず、total も引く。待っている Promise は false で解く */
+    const want = new Set(); gs.forEach(g => filesOf(g, tier).forEach(f => want.add(f)));
+    for (let i = QU.length - 1; i >= 0; i--) {
+      const it = QU[i];
+      if (want.has(it.path) || it.tries > 0) continue;
+      QU.splice(i, 1); delete P[it.path]; A.total--; if (it.req) A.reqTotal--;
+      A.forget2(it.path.replace(/^.*\//, '').replace(/\.glb$/, ''));
+      it.res(false);
+    }
+    progress();
     gs.forEach(g => {
       const pr = g.required ? 0 : A.prioOf(g);
       filesOf(g, tier).forEach(f => { A.forget(f); const p = need(f, pr); if (g.required) req.push(p); });

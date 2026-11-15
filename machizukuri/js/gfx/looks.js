@@ -38,7 +38,7 @@
     const g = L.glb[key] = L.glb[key] || { near: null, far: null };
     L.pend = L.pend || {};
     const low = L.key === 'low', todo = [];
-    if (!g.near && !low && !L.pend[key + ':n']) { L.pend[key + ':n'] = true; todo.push(A.model(d.near).then(m => { fixFoot(m, key, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); }); g.near = m; })); }
+    if (!g.near && !low && !L.pend[key + ':n']) { L.pend[key + ':n'] = true; todo.push(A.model(d.near).then(m => { fixFoot(m, key, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); }); g.near = m; if (L.key === 'low') releaseNear(); })); }
     if (!g.far && d.far && !L.pend[key + ':f']) { L.pend[key + ':f'] = true; todo.push(A.model(d.far).then(m => { fixFoot(m, key, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); }); g.far = m; })); }
     todo.forEach(p => p.then(repose, () => { /* コードの形のまま。画質を変えたとき、読み直せるように印をもどす */ L.pend[key + ':n'] = L.pend[key + ':f'] = false; }));
   }
@@ -155,7 +155,7 @@
     L.pend = L.pend || {};
     if (tier === 'near' && !g.near && L.key !== 'low' && !L.pend[key + ':n']) {
       L.pend[key + ':n'] = true;
-      A.model('b_' + key).then(ms => { ms.forEach(m => { if (G.post) G.post.addCaster(m); }); g.near = ms; g.piv = pivots(key, ms); onChars(); }, () => { L.pend[key + ':n'] = false; });
+      A.model('b_' + key).then(ms => { ms.forEach(m => { if (G.post) G.post.addCaster(m); }); g.near = ms; g.piv = pivots(key, ms); onChars(); if (L.key === 'low') releaseNear(); }, () => { L.pend[key + ':n'] = false; });
     }
     if (tier === 'far' && !g.far && !L.pend[key + ':f']) {
       L.pend[key + ':f'] = true;
@@ -200,7 +200,7 @@
       const k = n + lv;
       if (L.tool[k] || (L.pend && L.pend['t' + k])) return;
       L.pend = L.pend || {}; L.pend['t' + k] = true;
-      A.model('b_tool_' + k).then(ms => { ms.forEach(m => { m.receiveShadows = false; }); L.tool[k] = ms; }, () => { L.pend['t' + k] = false; });
+      A.model('b_tool_' + k).then(ms => { ms.forEach(m => { m.receiveShadows = false; }); L.tool[k] = ms; if (L.key === 'low') releaseNear(); }, () => { L.pend['t' + k] = false; });
     }));
   }
   /* 道具 1 本（段 lv）の複製を parent の下に作る。まだ読めていなければ null。複製は非表示で返す */
@@ -296,6 +296,7 @@
   /* 画質を「低」に下げたとき、使わない近く用の GLB（建物・人・道具・採れる物）を片づけてメモリを空ける。
      置いてある物は、先に repose で遠く用に置き直してある */
   function releaseNear() {
+    if (MZ.player && MZ.player.releaseHands) MZ.player.releaseHands();
     const names = [], unlod = m => { while (m.getLODLevels().length) m.removeLODLevel(m.getLODLevels()[0].mesh); };   // 遠く用が次の元メッシュでも使えるよう、LOD の結びつきを外す
     Object.keys(L.glb).forEach(k => { const g = L.glb[k]; if (g.near) { g.near.forEach(m => { unlod(m); L.lodDone.delete(m); m.dispose(false, true); }); g.near = null; if (G.BUILD_MODELS[k]) names.push(G.BUILD_MODELS[k].near); if (L.pend) L.pend[k + ':n'] = false; } });
     Object.keys(L.chr).forEach(k => { const g = L.chr[k]; if (g.near) { g.near.forEach(m => m.dispose(false, true)); g.near = null; names.push('b_' + k); if (L.pend) L.pend[k + ':n'] = false; } });

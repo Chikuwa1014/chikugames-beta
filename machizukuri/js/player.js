@@ -15,7 +15,7 @@
     P.hands = {};
     ['axe', 'pick'].forEach(k => {
       const h = new B.TransformNode('hand_' + k, scene); h.parent = MZ.world.camera;
-      h.position.set(0.34, -0.30, 0.55); h.rotation.set(0.7, -0.2, -0.6);
+      h.position.set(0.34, -0.30, 0.55); h.rotation.set(0.7, 0.0, P.HAND_RZ);
       const code = MZ.getModel(k + 'Hand'); code.parent = h; code.scaling.setAll(0.4); code.isVisible = true; code.renderingGroupId = 1;
       P.hands[k] = { root: h, code, glb: {}, on: false };
       h.setEnabled(false);
@@ -36,7 +36,31 @@
     H.code.setEnabled(!g);
     [1, 2, 3].forEach(l => { if (H.glb[l]) H.glb[l].forEach(c => c.setEnabled(on && l === lv && !!g)); });
   };
-  P.TOOL_SCALE = 0.38;
+  P.TOOL_SCALE = 0.38; P.HAND_RZ = 0.5;
+  /* 手の位置は、画面の縦横比で決める（視野は縦固定なので、縦持ちは幅が狭く、そのままだと画面の外に出る）。向きが変わったら追従 */
+  const HB = { x: 0.34, y: -0.30, s: 1, aspect: 0 };
+  P.handBase = HB;
+  P.layoutHand = function () {
+    const e = MZ.world.engine, cam = MZ.world.camera;
+    if (!e || !cam) return;
+    const asp = e.getRenderWidth() / Math.max(1, e.getRenderHeight());
+    if (Math.abs(asp - HB.aspect) < 1e-3) return;
+    HB.aspect = asp;
+    const hw = Math.tan(cam.fov / 2) * 0.55 * asp;   // 手の奥行き 0.55m での画面の半幅
+    HB.x = Math.min(0.34, hw * 0.72);
+    HB.y = asp < 1 ? -0.255 : -0.30;
+    HB.s = asp < 0.8 ? 0.85 : 1;
+    ['axe', 'pick'].forEach(k => { P.hands[k].root.scaling.setAll(HB.s); });
+  };
+  /* 画質を低に下げて近く用の道具を片づけるとき：一人称の手の複製も片づける（材質が無くなって白く描かれないように）。コードの形にもどる */
+  P.releaseHands = function () {
+    if (!P.hands) return;
+    ['axe', 'pick'].forEach(k => {
+      const H = P.hands[k];
+      Object.keys(H.glb).forEach(l => H.glb[l].forEach(c => c.dispose(false, false)));
+      H.glb = {}; H.key = null;
+    });
+  };
 
   const fwd = () => { const p = MZ.state.player; return [Math.sin(p.yaw), Math.cos(p.yaw)]; };
 
@@ -101,7 +125,8 @@
     if (P.swing > 0) P.swing = Math.max(0, P.swing - dt / 0.28);
     const h = P.hands[k].root, bob = P.moving ? Math.sin(P.walkPh) * 0.012 : 0;
     const sw = Math.sin(P.swing * Math.PI);   // 振るときは、頭が画面の中央へ来る弧
-    h.rotation.x = 0.7 + sw * 0.9; h.rotation.z = -0.6 + sw * 0.5; h.position.x = 0.34 - sw * 0.14; h.position.y = -0.30 + bob;
+    P.layoutHand();
+    h.rotation.x = 0.7 + sw * 0.9; h.rotation.z = P.HAND_RZ + sw * 0.5; h.position.x = HB.x - sw * 0.14 * Math.min(1, HB.aspect); h.position.y = HB.y + bob;
   };
 
   /* ---------- ねらい（数式で選ぶ。scene.pick は使わない） ---------- */

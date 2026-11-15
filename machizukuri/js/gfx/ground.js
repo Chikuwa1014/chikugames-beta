@@ -126,6 +126,14 @@
               col *= 1.0 - 0.18 * (1.0 - smoothstep(0.0, 0.2, abs(mk.r - 0.78))) * step(0.5, mk.r);
               /* 土地の外はすこし野性味（暗めのオリーブ寄り） */
               col = mix(col, col * vec3(0.9, 0.95, 0.8), smoothstep(125.0, 330.0, max(abs(wp.x), abs(wp.y))));
+              /* 柵の外の丘：大きな模様の土の写真と色むらを薄く重ねて、のっぺりした帯に見えないようにする */
+              float outer = smoothstep(125.0, 230.0, max(abs(wp.x), abs(wp.y)));
+              #ifdef GPHOTO
+              vec3 bigA = gTex(gDirtSampler, wp * (1.0 / 29.0)), bigB = gTex(gDirtSampler, wr * (1.0 / 71.0) + vec2(0.4, 0.2));
+              col = mix(col, mix(bigA, bigB, 0.5) * vec3(1.1, 1.02, 0.88), outer * 0.55);
+              #endif
+              float pat = gN(wp * 0.018 + 5.0) * 0.6 + gN(wp * 0.05) * 0.4;
+              col *= mix(vec3(1.0), mix(vec3(0.85, 0.9, 0.7), vec3(1.12, 1.02, 0.86), smoothstep(0.35, 0.7, pat)), outer * 0.7);
               surfaceAlbedo = col;
             }
 `
@@ -262,8 +270,8 @@
       m.freezeWorldMatrix();
       out.push(m);
     };
-    mk('tree', 450, HALF + 24, 330, 1.0, 1.9, -0.1);
-    mk('tree2', 50, HALF + 24, 330, 1.0, 1.9, -0.1);
+    mk('outPine', 320, HALF + 24, 330, 0.9, 1.5, -0.1);
+    mk('outLeaf', 130, HALF + 24, 330, 0.9, 1.5, -0.1);
     mk('bush', 70, HALF + 14, 280, 1.0, 2.2, 0);
     mk('rock', 40, HALF + 16, 330, 0.8, 2.4, -0.3);
     out.forEach(m => { m.metadata = { cap: m.thinInstanceCount }; });

@@ -42,7 +42,7 @@
     const on = f.n > 0;
     f.meshes.forEach(m => {
       m.thinInstanceCount = f.n;
-      if (on) { m.thinInstanceBufferUpdated('matrix'); }
+      if (on) { m.thinInstanceBufferUpdated('matrix'); m.thinInstanceRefreshBoundingInfo(false); }   // 範囲を書き直さないと、石ころなどの範囲が NaN のままで描かれない
       m.setEnabled(on);
     });
   }
@@ -85,9 +85,9 @@
   function stoneWriter(nd, buf, slot, sh) {
     const n = 3 + Math.floor(hs(nd.idx, 20) * 3);
     for (let i = 0; i < n; i++) {
-      const a = hs(nd.idx, 21 + i) * 6.283, r = 0.05 + hs(nd.idx, 30 + i) * 0.2, s0 = 0.06 + hs(nd.idx, 40 + i) * 0.07;
-      put(buf, slot + i, nd.x + Math.cos(a) * r + sh * 0.22, -s0 * 0.2, nd.z + Math.sin(a) * r,
-        s0 * (0.8 + hs(nd.idx, 50 + i) * 0.6), s0 * 0.75, s0 * (0.8 + hs(nd.idx, 60 + i) * 0.6), hs(nd.idx, 70 + i) * 6.283, (hs(nd.idx, 80 + i) - 0.5) * 0.4, (hs(nd.idx, 90 + i) - 0.5) * 0.4);
+      const a = hs(nd.idx, 21 + i) * 6.283, r = 0.05 + hs(nd.idx, 30 + i) * 0.2, s0 = 0.10 + hs(nd.idx, 40 + i) * 0.09;
+      put(buf, slot + i, nd.x + Math.cos(a) * r + sh * 0.22, s0 * 0.3, nd.z + Math.sin(a) * r,
+        s0 * (0.8 + hs(nd.idx, 50 + i) * 0.6), s0 * 1.0, s0 * (0.8 + hs(nd.idx, 60 + i) * 0.6), hs(nd.idx, 70 + i) * 6.283, (hs(nd.idx, 80 + i) - 0.5) * 0.4, (hs(nd.idx, 90 + i) - 0.5) * 0.4);
     }
     return n;
   }
@@ -130,9 +130,9 @@
       _tt[file] = A.need('assets/tex/' + file).then(ok => new Promise((res, rej) => {
         if (!ok) return rej(new Error(file));
         const t = new B.Texture('assets/tex/' + file, G.scene, false, false, B.Texture.TRILINEAR_SAMPLINGMODE, () => res(t), () => rej(new Error(file)));
-        t.gammaSpace = srgb; t.anisotropicFilteringLevel = 4;
+        t.gammaSpace = srgb; t.anisotropicFilteringLevel = 4; (S.texList = S.texList || []).push(t);
       }));
-      _tt[file].catch(() => {});
+      _tt[file].catch(() => { delete _tt[file]; });
     }
     return _tt[file];
   }
@@ -156,11 +156,14 @@
     loading[g] = Promise.all(parts).then(ms => {
       GROUPS[g].forEach((n, i) => { S.models[n] = ms[i]; });
       if (g === 'trees') setupTrees(ms[GROUPS.trees.length]);
-      if (g === 'rocks') ms.slice(0, 3).forEach(arr => arr.forEach(m => { if (m.material && m.material.albedoColor) m.material.albedoColor = new B.Color3(1.0, 1.0, 1.0); }));
-      if (g === 'plants') (S.models.bush || []).forEach(m => { if (m.material && m.material.albedoColor) m.material.albedoColor = new B.Color3(1.0, 1.0, 1.0); });
+      /* 岩：ORM の AO（赤）の効きを弱める（高で SSAO と重なって黒くなるため） */
+      if (g === 'rocks') ms.slice(0, 3).forEach(arr => arr.forEach(m => { const mt = m.material; if (!mt) return; if (mt.albedoColor) mt.albedoColor = new B.Color3(1.0, 1.0, 1.0); mt.ambientTextureStrength = 0.35; }));
+      /* 低木：暗くなりすぎないよう明るく、葉は両面を照らす */
+      if (g === 'plants') (S.models.bush || []).forEach(m => { const mt = m.material; if (!mt) return; if (mt.albedoColor) mt.albedoColor = new B.Color3(1.35, 1.35, 1.3); mt.backFaceCulling = false; mt.twoSidedLighting = true; mt.environmentIntensity = 1.4; mt.ambientTextureStrength = 0.3; });
       buildFormsFor(g);
       S.ready[g] = true;
       S.dirty = true;
+      if (S.key === 'low' && g !== 'bnodes_f') release();   // 読んでいるあいだに低に下げられた
     }).catch(e => { delete loading[g]; S.ready[g] = false; if (window.console) console.info('[gfx] モデルを読めなかった組:', g, e && e.message); });
   }
   function setupTrees(Tx) {
@@ -175,6 +178,7 @@
     const bm = { tree_pine: barkMat('treeBarkC', Tx.barkC), tree_cottonwood: barkMat('treeBarkB', Tx.barkB), tree_dead: barkMat('treeBarkD', Tx.barkD) };
     bm.tree_spruce = bm.tree_pine; bm.tree_poplar = bm.tree_cottonwood;
     bm.tree_dead.albedoColor = new B.Color3(1.15, 1.1, 1.05);
+    S.treeMats = [leaf].concat(Object.keys(bm).map(k => bm[k]));
     S.treeParts = {};
     GROUPS.trees.forEach(nm => {
       const o = {};
@@ -288,16 +292,16 @@
       P[k] = x * r; P[k + 1] = Math.max(y * r * 0.6, -0.15); P[k + 2] = z * r;
     }
     const Nn = []; B.VertexData.ComputeNormals(P, vd.indices, Nn);
-    const m = new B.Mesh('pebble', G.scene), v2 = new B.VertexData();
-    v2.positions = P; v2.indices = vd.indices; v2.normals = Nn; v2.uvs = vd.uvs; v2.applyToMesh(m);
+    const mk = name => { const mm = new B.Mesh(name, G.scene), v2 = new B.VertexData(); v2.positions = P; v2.indices = vd.indices; v2.normals = Nn; v2.uvs = vd.uvs; v2.applyToMesh(mm); return mm; };
+    const m = mk('pebble'); S.pebbleMk = mk;
     const pm = new B.PBRMaterial('pebbleMat', G.scene);
-    pm.metallic = 0; pm.roughness = 0.9; pm.albedoColor = lin('#8C857A'); pm.maxSimultaneousLights = 4;
+    pm.metallic = 0; pm.roughness = 0.9; pm.albedoColor = lin('#9A9388'); pm.maxSimultaneousLights = 4;
     m.material = pm; S.pebble = m; S.pebbleMat = pm;
     return m;
   }
   function setStone(set) {
     const pm = S.pebbleMat; if (!pm) return;
-    if (set) G.photo.setMatTex(pm, G.photo.view(set.col, 0.6, 0.6), G.photo.view(set.nrm, 0.6, 0.6), G.photo.view(set.orm, 0.6, 0.6), lin('#8C857A').scale(1.0), true);
+    if (set) G.photo.setMatTex(pm, G.photo.view(set.col, 0.6, 0.6), G.photo.view(set.nrm, 0.6, 0.6), G.photo.view(set.orm, 0.6, 0.6), lin('#8C857A').scale(1.25), true);
     else { pm.albedoTexture = null; pm.bumpTexture = null; pm.metallicTexture = null; pm.albedoColor = lin('#8C857A'); }
   }
   /* 粘土（モデル待ち）：今の形に farm の写真を赤茶に色付けして貼る */
@@ -380,7 +384,7 @@
     S.decor = buildDecor(nodes);
     buildPebble();
     /* 石ころ（かたまり）・小石の飾り。粘土（写真貼り）。モデルが要らないので、いつでも作れる */
-    makeForm('stones', [S.pebble.clone('stoneCl')], countOf('stone'), stoneWriter, { per: 5 });
+    makeForm('stones', [S.pebbleMk('stoneCl')], countOf('stone'), stoneWriter, { per: 5 });
     S.forms.stones.meshes[0].material = S.pebbleMat;
     makeDecor('pebble', [S.pebble], S.decor.pebbles.length, S.decor.pebbles, false);
     const cm = MZ.getModel('clay').clone('clayHd');
@@ -390,6 +394,30 @@
     /* 飾りの元の形（モデルが読めないときでも、小石は出る） */
     S.dirty = true;
   }
+  /* 画質を「低」に下げたとき、採れる物の GLB（木・岩・切り株・低木・粘土・鉄の近く用）を片づける。遠く用（bnodes_f）とコードの形は残す。
+     高・中にもどしたら、また読む（loading と A のキャッシュを消してあるので） */
+  const REL = /^(tree_|rock_|stump$|deadlog$|bush$|twigs$|iron$|clayN$|ironN$)/;
+  function release() {
+    S.nodes.forEach(nd => { nd.look = null; });
+    Object.keys(S.forms).forEach(id => {
+      if (!REL.test(id)) return;
+      S.forms[id].meshes.forEach(m => {
+        try {
+          if (id === 'iron') { if (m.name === 'ironRock') { if (m.material) m.material.dispose(); m.dispose(false, false); } else m.setEnabled(false); }   // コードの鉱石の粒は共有なので残す
+          else m.dispose(false, false);
+        } catch (_) { /* 済み */ }
+      });
+      delete S.forms[id];
+    });
+    ['rocks', 'wood', 'trees', 'plants', 'bnodes_n'].forEach(g => {
+      GROUPS[g].forEach(n => { (S.models[n] || []).forEach(m => { try { m.dispose(false, true); } catch (_) { /* 済み */ } }); delete S.models[n]; A.forget2(n); });
+      S.ready[g] = false; delete loading[g];
+    });
+    (S.treeMats || []).forEach(m => { try { m.dispose(false, false); } catch (_) { /* 済み */ } }); S.treeMats = null; S.treeParts = null;
+    (S.texList || []).forEach(t => { try { t.dispose(); } catch (_) { /* 済み */ } }); S.texList = [];
+    Object.keys(_tt).forEach(k => delete _tt[k]);
+    S.dirty = true;
+  }
   function apply(key) {
     S.key = key;
     const q = G.Q[key];
@@ -397,6 +425,7 @@
     loadGroup('bnodes_f');
     if (q.models.indexOf('rocks') >= 0) loadGroup('bnodes_n');
     /* 画質が変わったら、粘土・小石の写真の貼りかえは photo.js が呼ぶ */
+    if (key === 'low') release();
     S.dirty = true; S.flushNow = true;
   }
   /* 採れた・また出た（world.js から）。消えるときはすぐ見えなくする */
@@ -438,5 +467,5 @@
     const o = {}; Object.keys(S.forms).forEach(id => { if (S.forms[id].n) o[id] = S.forms[id].n; });
     return o;
   }
-  G.nodes = { init, apply, show, hit, dirty, flush, update, stats, setStone, setClay, state: S };
+  G.nodes = { init, apply, release, show, hit, dirty, flush, update, stats, setStone, setClay, state: S };
 })();

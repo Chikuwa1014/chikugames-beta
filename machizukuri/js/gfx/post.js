@@ -79,7 +79,7 @@
     if (B.SSAO2RenderingPipeline && B.SSAO2RenderingPipeline.IsSupported && eng.webGLVersion >= 2) {
       try {
         const s = new B.SSAO2RenderingPipeline('ssao', G.scene, { ssaoRatio: 0.5, blurRatio: 0.5 }, [G.cam], true);
-        s.radius = 0.9; s.totalStrength = 1.2; s.base = 0.12; s.samples = 12;
+        s.radius = 0.6; s.totalStrength = 0.45; s.base = 0.35; s.samples = 12;
         s.maxZ = 80; s.minZAspect = 0.4; s.expensiveBlur = false; s.bilateralSamples = 8;
         P.ssao = s;
       } catch (e) { P.ssao = null; }

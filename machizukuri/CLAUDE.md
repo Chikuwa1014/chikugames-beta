@@ -56,7 +56,7 @@
 
 ## 6. テスト
 
-リポジトリ直下で `python3 -m http.server 8000`（バックグラウンド）→ `node machizukuri/dev/test.cjs [スクリーンショットの置き場]`。Chromium は `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`（FPS は 0〜3 なので速さは見ない。描く呼び出しは `MZ.stats()` の `activeMeshes`。低で 70 未満）。ふだんは低で回す（`localStorage['machizukuri-gfx'] = 'low'`）。高・中は画質・三角形・作業台の項目と `dev/shots.cjs`（スクリーンショット）だけ。高の 1 フレームは swiftshader で数十秒かかる。ゲームの中は `window.MZ` の関数（`MZ.hit`・`MZ.craft`・`MZ.place`・`MZ.remove`・`MZ.tick`・`MZ.state`）で進める。持ち物を直接増やす関数は作らない。終わったらサーバーを止める。
+リポジトリ直下で `python3 -m http.server 8000`（バックグラウンド）→ `node machizukuri/dev/test.cjs [区切り 1〜4] [スクリーンショットの置き場]`。全部通すと 10 分を超えるので、区切りごとに流す（`... test.cjs 1`、`2`、`3`、`4`。引数なしは全部）。1＝PC の通しとスマホ、2＝読み込み・待ち行列・資産が読めないとき、3＝画質の切りかえ・ボタン・自動の下げ、4＝三角形・GLB の表示。終わりに区切りごとの件数と合計を出す。Chromium は `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`（FPS は 0〜3 なので速さは見ない。描く呼び出しは `MZ.stats()` の `activeMeshes`。低で 70 未満）。ふだんは低で回す（`localStorage['machizukuri-gfx'] = 'low'`）。高・中は画質・三角形・作業台の項目と `dev/shots.cjs`（スクリーンショット）だけ。高の 1 フレームは swiftshader で数十秒かかる。ゲームの中は `window.MZ` の関数（`MZ.hit`・`MZ.craft`・`MZ.place`・`MZ.remove`・`MZ.tick`・`MZ.state`）で進める。持ち物を直接増やす関数は作らない。終わったらサーバーを止める。
 
 ## 7. ゲーム固有の決まり
 
@@ -65,7 +65,8 @@
 - **建物・人・道具の GLB の足し方**：`assets/models/b_<種類>.glb`（近く用）と `b_<種類>_far.glb`（遠く用）を置き、`gfx/assets.js` の `MANIFEST` に組を 1 行、`BUILD_MODELS` に種類を 1 行足す（β0.2.0 時点で作業台・小屋・木の家・井戸・たき火・かまど・炉・畑・きこり小屋・れんがの家の 10 種が入っている。遠く用が箱に近い建物は `BUILD_MODELS` の `lod` で切りかえ距離を遠くしている。主人公・住民・道具・粘土・鉄の鉱脈も入っている：主人公 `b_player`・住民 `b_person_a`〜`c` は根の子 `body・legL・legR・armL・armR`（`looks.js` の `PIV` に脚の付け根（股）・腕の付け根（肩）を持ち、主人公は部品を複製して根の `metadata.parts` に並べる／住民は部品ごとの thin instance で脚と腕を行列で振る。近い人だけ近く用、遠い人は遠く用を 1 つにまとめる。女の人 b の振りはスカートのため小さい `SWING`）。道具 `b_tool_axe1〜3`・`pick1〜3` は近く用だけ（低はコードの形）で、一人称は `player.js` の `showHand`、三人称は `looks.holdTool`（右手）。粘土・鉄は `b_n_clay`・`b_n_iron`（`nodes.js` の `bnodes_n`・`bnodes_f`）。足もとの y・向きは `fix` で直せる。足したら `dev/test.cjs` と `dev/shots.cjs` を通して見比べる。
 - **読み込み（`gfx/assets.js`）**：資産は待ち行列で、同時に 5 本まで取りに行く。順は 必須（空・地面）→ 石 → 近く用の木・岩 → 建物の遠く用 → 建物 → 人 → 低木・道具・採れる物（`PRIO`）。打ち切りは「20 秒間ひとつも届かない」（ReadableStream で届いた量を見る）。失敗は 3 秒後・8 秒後に読み直し、それでも読めなければ `failed`。画質を変えたとき（`loadTier`）に、失敗したファイルは取りに行き直す（`forget`）。タイトルの「準備中 n／m」は必須の数（`reqDone／reqTotal`）だけ。消えたあと、裏で読んでいる間は画面の下に「絵を読み込み中 n／m」（`#bgLoad`）。
 - **遠景**：山は前後 2 層（`ground.js` の `buildMountains`。雪なし。岩肌は赤茶〜灰色で、遠い層ほど地平の色へ。写真は `MountPlugin` が三平面投影で貼る）。柵の外（126〜330m）にはコードの木・草・岩を thin instance で散らし（`buildOutskirts`。数は画質の `outer`）、茶色い平らな帯に見えないようにしている。
-- 画質を「低」に下げたとき、使わない近く用の GLB と前の画質の写真は片づける（`looks.releaseNear`、`photo.js` の `texOf`）。
+- 画質を「低」に下げたとき、使わない近く用の GLB と前の画質の写真は片づける（建物・人・道具は `looks.releaseNear`、一人称の手の道具は `player.js` の `releaseHands`、採れる物は `nodes.js` の `release`、写真は `photo.js` の `texOf`）。まだ取りに行っていない高・中のファイルは `assets.loadTier` が待ち行列から外す。低のあいだに届いた近く用はその場で片づける。高・中にもどすと読み直す。
+- 一人称の手の道具の位置・大きさは、画面の縦横比から決める（スマホ縦でも画面に入る。向きを変えると追従）。
 - 土地の中（±120m）は y = 0 の平らな地面のまま。起伏は柵の外（126m から）だけ。道・畑・踏み固めは「マスの塗り分けの表」（120×120 の RawTexture）を地面の材質（`GroundPlugin`）が読んで描く。建てる・こわすで `MZ.gfx.ground.mark(建物)`（草のマスも直す）。土の道 `road` はメッシュを置かない（見本だけ平たい板）。
 - 採れる物・飾り・草・住民は thin instance（入れ物は固定の `Float32Array` で、差しかえず中身だけ書きかえて `thinInstanceCount` を変える）、建物は種類ごとの `createInstance`。影は画質で決まる（高：3 段のカスケード、中：2 段、低：なし）。落とす：建物・木・岩・作業台、落とさない：草・飾りの小石・見本。霧は `AirPlugin`（高さと距離・太陽の方向のかすみ）で、`scene.fog` は使わない。
 - 当たり判定は Babylon の物理を使わず、マスの表（`solid` の建物）と `r > 0` の採れる物の円の押し返し（`world.js` の `collide`）。
