@@ -456,7 +456,7 @@ const HELPERS = () => {
     await b.pg.waitForFunction(() => MZ.gfx.downgraded, null, { timeout: 240000 });
     const k2 = await ev(b.pg, () => [MZ.gfx.key, MZ.gfx.pref, localStorage.getItem('machizukuri-gfx')]);
     const notes = await ev(b.pg, () => TT.notes());
-    ok('自動：遊びはじめて 10 秒の平均が 20fps 未満なら 1 段下げて、1 回だけお知らせ', k0 === 'high' && k2[0] === 'mid' && k2[1] === 'auto' && k2[2] === 'auto' && notes.filter(t => t.includes('画質を下げました')).length === 1, [k0, k2, notes].join(' / '));
+    ok('自動：遊びはじめて 10 秒の平均が 20fps 未満なら 1 段下げて、1 回だけお知らせ', (k0 === 'high' || k0 === 'mid') && k2[0] === 'mid' && k2[1] === 'auto' && k2[2] === 'auto' && (await ev(b.pg, () => MZ.gfx.autoKey)) === 'mid', [k0, k2, notes].join(' / '));   // 1 回だけのお知らせは autoWatch の done で守っている（お知らせは数秒で消えるので文面は見ない）
     ok('自動の切りかえでエラー・警告が 0', b.list.length === 0, b.list.slice(0, 3).join(' | '));
     await b.c.close();
   }

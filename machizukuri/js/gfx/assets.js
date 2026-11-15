@@ -28,8 +28,9 @@
     { id: 'trees', required: false, tiers: ['high', 'mid'], models: ['tree_pine', 'tree_spruce', 'tree_cottonwood', 'tree_poplar', 'tree_dead'] },
     { id: 'plants', required: false, tiers: ['high'], models: ['bush', 'twigs'] },
     /* 建物・人・道具（Blender のモデルが届いたら、ここに 1 行ずつ足す。近く用 b_<種類>.glb と遠く用 b_<種類>_far.glb）。
-       いまあるのは作業台（仮に近く用として使う。20000 三角形以下に軽くしたものが来たら差しかえる） */
-    { id: 'b_bench', required: false, tiers: ['high', 'mid'], models: ['workbench'] },
+       作業台・小屋・木の家・井戸・たき火・かまど・炉・畑・きこり小屋・れんがの家が届いている（人・道具はまだ） */
+    { id: 'b_bench', required: false, tiers: ['high', 'mid'], models: ['b_bench'] },
+    { id: 'b_bench_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bench_far'] },
     { id: 'b_hut', required: false, tiers: ['high', 'mid'], models: ['b_hut'] },
     { id: 'b_hut_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_hut_far'] },
     { id: 'b_house', required: false, tiers: ['high', 'mid'], models: ['b_house'] },
@@ -41,18 +42,27 @@
     { id: 'b_kiln', required: false, tiers: ['high', 'mid'], models: ['b_kiln'] },
     { id: 'b_kiln_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_kiln_far'] },
     { id: 'b_furnace', required: false, tiers: ['high', 'mid'], models: ['b_furnace'] },
-    { id: 'b_furnace_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_furnace_far'] }
+    { id: 'b_furnace_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_furnace_far'] },
+    { id: 'b_field', required: false, tiers: ['high', 'mid'], models: ['b_field'] },
+    { id: 'b_field_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_field_far'] },
+    { id: 'b_lumber', required: false, tiers: ['high', 'mid'], models: ['b_lumber'] },
+    { id: 'b_lumber_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_lumber_far'] },
+    { id: 'b_bhouse', required: false, tiers: ['high', 'mid'], models: ['b_bhouse'] },
+    { id: 'b_bhouse_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bhouse_far'] }
   ];
-  /* 建物の見た目の対応：種類 → { near, far, fix }。fix はモデルの向き・大きさの直し（yaw はラジアン）。
+  /* 建物の見た目の対応：種類 → { near, far, fix }。fix はモデルの向き・大きさの直し（yaw はラジアン）。lod は近く用→遠く用の切りかえ距離（省略すると画質の houseNear。遠く用が箱に近い建物は遠めにする）。
      ファイルを置いたら、上の MANIFEST に組を足し、ここに 1 行足す。足りない物はコードの形（models.js）になる */
   G.BUILD_MODELS = {
-    bench: { near: 'workbench', far: null, fix: { yaw: 0 } },
+    bench: { near: 'b_bench', far: 'b_bench_far', fix: {} },
     hut: { near: 'b_hut', far: 'b_hut_far', fix: {} },
-    house: { near: 'b_house', far: 'b_house_far', fix: {} },
+    house: { near: 'b_house', far: 'b_house_far', fix: {}, lod: 32 },
     well: { near: 'b_well', far: 'b_well_far', fix: {} },
     fire: { near: 'b_fire', far: 'b_fire_far', fix: {} },
     kiln: { near: 'b_kiln', far: 'b_kiln_far', fix: {} },
-    furnace: { near: 'b_furnace', far: 'b_furnace_far', fix: {} }
+    furnace: { near: 'b_furnace', far: 'b_furnace_far', fix: {} },
+    field: { near: 'b_field', far: 'b_field_far', fix: {} },
+    lumber: { near: 'b_lumber', far: 'b_lumber_far', fix: {} },
+    bhouse: { near: 'b_bhouse', far: 'b_bhouse_far', fix: {}, lod: 35 }
   };
 
   const A = G.assets = { done: 0, total: 0, failed: [], okMap: {}, started: {}, onProgress: null, tierAsked: {} };

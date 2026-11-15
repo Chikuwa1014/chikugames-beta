@@ -16,7 +16,7 @@
     const g = L.glb[key], q = G.Q[L.key];
     if (g && g.near && q.models.indexOf('buildings') >= 0) {
       const far = g.far && g.far.length ? g.far : [codeMesh(key)];
-      return { src: 'glb', key, lod: [{ meshes: g.near, dist: 0 }, { meshes: far, dist: q.houseNear }] };
+      return { src: 'glb', key, lod: [{ meshes: g.near, dist: 0 }, { meshes: far, dist: Math.max(q.houseNear, (G.BUILD_MODELS[key] || {}).lod || 0) }] };
     }
     if (g && g.far && g.far.length) return { src: 'glb', key, lod: [{ meshes: g.far, dist: 0 }] };
     return { src: 'code', key, lod: [{ meshes: [codeMesh(key)], dist: 0 }] };

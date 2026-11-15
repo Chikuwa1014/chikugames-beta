@@ -62,7 +62,7 @@
 
 - 1 マス 2m、区画は 120×120 マス（240m）、区画 `"0,0"` の中心が世界の原点。小屋は左上のマス (59,59) の 2×2。向きは yaw 0 が +z。建物の正面は −z。
 - モデルは「足もとが y=0、建物の中心が原点、正面は −z（人は +z）、1 単位 = 1m」。ゲーム側（`town.js`・`player.js`）は `MZ.gfx.look／put／preview／people` を通して使い、作り方（コードか GLB か）を知らない。`put` は種類ごと・部品ごとに `createInstance` し、LOD は元のメッシュに `addLODLevel`（近く用→遠く用→見えなくなる）。GLB が無い・読めない・画質「低」のときは `MZ.getModel` のコードの形（`models.js`）になる。
-- **建物・人・道具の GLB の足し方**：`assets/models/b_<種類>.glb`（近く用）と `b_<種類>_far.glb`（遠く用）を置き、`gfx/assets.js` の `MANIFEST` に組を 1 行、`BUILD_MODELS` に種類を 1 行足す（作業台は `workbench.glb` を近く用として仮に使っている）。足もとの y・向きは `fix` で直せる。足したら `dev/test.cjs` と `dev/shots.cjs` を通して見比べる。
+- **建物・人・道具の GLB の足し方**：`assets/models/b_<種類>.glb`（近く用）と `b_<種類>_far.glb`（遠く用）を置き、`gfx/assets.js` の `MANIFEST` に組を 1 行、`BUILD_MODELS` に種類を 1 行足す（β0.2.0 時点で作業台・小屋・木の家・井戸・たき火・かまど・炉・畑・きこり小屋・れんがの家の 10 種が入っている。遠く用が箱に近い建物は `BUILD_MODELS` の `lod` で切りかえ距離を遠くしている。人・道具・粘土・鉄の鉱脈はまだコードの形）。足もとの y・向きは `fix` で直せる。足したら `dev/test.cjs` と `dev/shots.cjs` を通して見比べる。
 - 土地の中（±120m）は y = 0 の平らな地面のまま。起伏は柵の外（126m から）だけ。道・畑・踏み固めは「マスの塗り分けの表」（120×120 の RawTexture）を地面の材質（`GroundPlugin`）が読んで描く。建てる・こわすで `MZ.gfx.ground.mark(建物)`（草のマスも直す）。土の道 `road` はメッシュを置かない（見本だけ平たい板）。
 - 採れる物・飾り・草・住民は thin instance（入れ物は固定の `Float32Array` で、差しかえず中身だけ書きかえて `thinInstanceCount` を変える）、建物は種類ごとの `createInstance`。影は画質で決まる（高：3 段のカスケード、中：2 段、低：なし）。落とす：建物・木・岩・作業台、落とさない：草・飾りの小石・見本。霧は `AirPlugin`（高さと距離・太陽の方向のかすみ）で、`scene.fog` は使わない。
 - 当たり判定は Babylon の物理を使わず、マスの表（`solid` の建物）と `r > 0` の採れる物の円の押し返し（`world.js` の `collide`）。

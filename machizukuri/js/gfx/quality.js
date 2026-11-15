@@ -100,7 +100,10 @@
     for (let i = 0; i < ms.length; i++) {
       const m = ms[i];
       if (!m.isEnabled() || !m.isVisible || !m.getTotalIndices) continue;
-      const n = m.getTotalIndices() / 3;
+      /* 建物のインスタンスは、いまの距離で選ばれる LOD（近く用か遠く用か、見えないか）の三角形を数える */
+      let lm = m;
+      if (m.sourceMesh && m.sourceMesh.getLODLevels().length) { lm = m.getLOD(G.cam); if (!lm) continue; }
+      const n = lm.getTotalIndices() / 3;
       if (!n) continue;
       t += n * (m.hasThinInstances ? m.thinInstanceCount : 1);
     }
