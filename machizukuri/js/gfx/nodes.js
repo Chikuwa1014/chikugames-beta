@@ -42,7 +42,7 @@
     const on = f.n > 0;
     f.meshes.forEach(m => {
       m.thinInstanceCount = f.n;
-      if (on) { m.thinInstanceBufferUpdated('matrix'); m.thinInstanceRefreshBoundingInfo(false); }
+      if (on) { m.thinInstanceBufferUpdated('matrix'); }
       m.setEnabled(on);
     });
   }
@@ -85,7 +85,7 @@
   function stoneWriter(nd, buf, slot, sh) {
     const n = 3 + Math.floor(hs(nd.idx, 20) * 3);
     for (let i = 0; i < n; i++) {
-      const a = hs(nd.idx, 21 + i) * 6.283, r = 0.05 + hs(nd.idx, 30 + i) * 0.3, s0 = 0.1 + hs(nd.idx, 40 + i) * 0.1;
+      const a = hs(nd.idx, 21 + i) * 6.283, r = 0.05 + hs(nd.idx, 30 + i) * 0.2, s0 = 0.06 + hs(nd.idx, 40 + i) * 0.07;
       put(buf, slot + i, nd.x + Math.cos(a) * r + sh * 0.22, -s0 * 0.2, nd.z + Math.sin(a) * r,
         s0 * (0.8 + hs(nd.idx, 50 + i) * 0.6), s0 * 0.75, s0 * (0.8 + hs(nd.idx, 60 + i) * 0.6), hs(nd.idx, 70 + i) * 6.283, (hs(nd.idx, 80 + i) - 0.5) * 0.4, (hs(nd.idx, 90 + i) - 0.5) * 0.4);
     }
@@ -156,12 +156,12 @@
     loading[g] = Promise.all(parts).then(ms => {
       GROUPS[g].forEach((n, i) => { S.models[n] = ms[i]; });
       if (g === 'trees') setupTrees(ms[GROUPS.trees.length]);
-      if (g === 'rocks') ms.slice(0, 3).forEach(arr => arr.forEach(m => { if (m.material && m.material.albedoColor) m.material.albedoColor = new B.Color3(1.25, 1.2, 1.15); }));
-      if (g === 'plants') (S.models.bush || []).forEach(m => { if (m.material && m.material.albedoColor) m.material.albedoColor = new B.Color3(1.7, 1.55, 1.25); });
+      if (g === 'rocks') ms.slice(0, 3).forEach(arr => arr.forEach(m => { if (m.material && m.material.albedoColor) m.material.albedoColor = new B.Color3(1.0, 1.0, 1.0); }));
+      if (g === 'plants') (S.models.bush || []).forEach(m => { if (m.material && m.material.albedoColor) m.material.albedoColor = new B.Color3(1.0, 1.0, 1.0); });
       buildFormsFor(g);
       S.ready[g] = true;
       S.dirty = true;
-    }).catch(e => { S.ready[g] = false; if (window.console) console.info('[gfx] モデルを読めなかった組:', g, e && e.message); });
+    }).catch(e => { delete loading[g]; S.ready[g] = false; if (window.console) console.info('[gfx] モデルを読めなかった組:', g, e && e.message); });
   }
   function setupTrees(Tx) {
     const leaf = new B.PBRMaterial('treeLeaf', G.scene);
@@ -297,7 +297,7 @@
   }
   function setStone(set) {
     const pm = S.pebbleMat; if (!pm) return;
-    if (set) G.photo.setMatTex(pm, G.photo.view(set.col, 0.6, 0.6), G.photo.view(set.nrm, 0.6, 0.6), G.photo.view(set.orm, 0.6, 0.6), lin('#8C857A').scale(1.4), true);
+    if (set) G.photo.setMatTex(pm, G.photo.view(set.col, 0.6, 0.6), G.photo.view(set.nrm, 0.6, 0.6), G.photo.view(set.orm, 0.6, 0.6), lin('#8C857A').scale(1.0), true);
     else { pm.albedoTexture = null; pm.bumpTexture = null; pm.metallicTexture = null; pm.albedoColor = lin('#8C857A'); }
   }
   /* 粘土（モデル待ち）：今の形に farm の写真を赤茶に色付けして貼る */
@@ -330,9 +330,9 @@
         return codeForm('rock');
       }
       case 'bush': return (modelsOn('plants') && q.bushDist && d < q.bushDist && S.forms.bush) || codeForm('bush');
-      case 'stone': return (S.key !== 'low' && S.forms.stones) || codeForm('stone');
-      case 'clay': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist * 1.5 && S.forms.clayN) || (S.ready.bnodes_f && S.forms.clayF) || (S.key !== 'low' && S.forms.clayhd) || codeForm('clay');
-      case 'iron': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist * 1.5 && S.forms.ironN) || (S.ready.bnodes_f && S.forms.ironF) || (modelsOn('rocks') && d < q.rockDist * 1.5 && S.forms.iron) || codeForm('iron');
+      case 'stone': return d > q.decorDist ? null : ((S.key !== 'low' && S.forms.stones) || codeForm('stone'));   // 石ころは近くだけ（遠くでは出さない）
+      case 'clay': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist && S.forms.clayN) || (S.ready.bnodes_f && S.forms.clayF) || (S.key !== 'low' && S.forms.clayhd) || codeForm('clay');
+      case 'iron': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist && S.forms.ironN) || (S.ready.bnodes_f && S.forms.ironF) || (modelsOn('rocks') && d < q.rockDist * 1.5 && S.forms.iron) || codeForm('iron');
     }
     return codeForm(nd.k);
   }

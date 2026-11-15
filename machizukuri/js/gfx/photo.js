@@ -10,7 +10,7 @@
     farm: { file: 'farm', orm: true },
     stone: { file: 'stone', orm: true }
   };
-  const PHOTO = { cache: {}, tier: '', views: [], got: null };
+  const PHOTO = { cache: {}, texOf: {}, tier: '', views: [], got: null };
 
   function tex(file, srgb, aniso) {
     const url = T + file;
@@ -18,10 +18,10 @@
       PHOTO.cache[url] = G.assets.need(url).then(ok => new Promise((res, rej) => {
         if (!ok) return rej(new Error(url));
         const t = new B.Texture(url, G.scene, false, true, B.Texture.TRILINEAR_SAMPLINGMODE, () => res(t), () => rej(new Error(url)));
-        t.gammaSpace = srgb; t.anisotropicFilteringLevel = aniso || 8;
+        t.gammaSpace = srgb; t.anisotropicFilteringLevel = aniso || 8; PHOTO.texOf[url] = t;
         t.wrapU = B.Texture.WRAP_ADDRESSMODE; t.wrapV = B.Texture.WRAP_ADDRESSMODE;
       }));
-      PHOTO.cache[url].catch(() => {});
+      PHOTO.cache[url].catch(() => { delete PHOTO.cache[url]; });   // 読めなかったら覚えない（画質を変えたとき、取り直せる）
     }
     return PHOTO.cache[url];
   }
@@ -66,6 +66,9 @@
       G.ground.setPhoto(got, tier);
       if (G.nodes && G.nodes.setStone) { G.nodes.setStone(got.stone, tier); G.nodes.setClay(got.farm); }
       old.forEach(v => { if (PHOTO.views.indexOf(v) < 0 && !v._keep) v.dispose(); });
+      /* 使わなくなった写真（前の画質の大きい絵）は、メモリから外してキャッシュから消す */
+      const used = new Set(); names.forEach(n => { const v = got[n]; if (v) ['col', 'nrm', 'orm'].forEach(k => { if (v[k]) used.add(v[k]); }); });
+      Object.keys(PHOTO.texOf).forEach(u => { const t = PHOTO.texOf[u]; if (!used.has(t)) { try { t.dispose(); } catch (_) { /* 済み */ } delete PHOTO.texOf[u]; delete PHOTO.cache[u]; } });
       G.photoOk = names.filter(n => got[n]).length;
     });
   }

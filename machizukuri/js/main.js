@@ -22,7 +22,7 @@
 
     let last = performance.now(), gtime = 0;
     W.engine.runRenderLoop(() => {
-      const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+      const now = performance.now(), real = (now - last) / 1000, dt = Math.min(0.1, real); last = now;   // real は実時間（画質の自動判定に使う）
       if (!MZ.paused) MZ.player.update(dt);
       MZ.tick(dt);                       // 世界の時間（移住・仕事・また出る）は、パネルを開いていても進める
       MZ.player.updateCamera(dt);
@@ -38,7 +38,7 @@
       G.fire.update(dt, gtime, ps.x, ps.z);
       G.post.update(ps.x, ps.z, ps.yaw);
       G.budgetTick(dt);
-      G.autoWatch(dt);
+      G.autoWatch(real);
       W.scene.render();
     });
   };

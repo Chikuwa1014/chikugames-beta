@@ -15,7 +15,7 @@
       pipeline: true, bloom: true, fxaa: true, msaa: 4, ssao: true, rays: true, grain: true, chroma: true,
       grass: 21000, fadeEnd: 55, pebbles: 1800, decor: 1,
       models: ['rocks', 'wood', 'trees', 'plants', 'buildings'],
-      treeLod: [55, 150], rockDist: 70, bushDist: 35, decorDist: 70, houseNear: 25, peopleNear: 12,
+      treeLod: [55, 160], rockDist: 70, bushDist: 35, outer: 0.6, decorDist: 70, houseNear: 25, peopleNear: 12,
       hiTerrain: true, trisMax: 1700000
     },
     mid: {
@@ -23,8 +23,8 @@
       shadow: 1024, cascades: 2, shadowDist: 70, pcf: 'QUALITY_MEDIUM',
       pipeline: true, bloom: true, fxaa: true, msaa: 1, ssao: false, rays: false, grain: true, chroma: false,
       grass: 8000, fadeEnd: 40, pebbles: 900, decor: 0.5,
-      models: ['rocks', 'wood', 'trees', 'buildings'],
-      treeLod: [22, 90], rockDist: 40, bushDist: 0, decorDist: 45, houseNear: 25, peopleNear: 12,
+      models: ['rocks', 'wood', 'trees', 'plants', 'buildings'],
+      treeLod: [22, 160], rockDist: 40, bushDist: 20, outer: 0.3, decorDist: 45, houseNear: 25, peopleNear: 12,
       hiTerrain: true, trisMax: 900000
     },
     low: {
@@ -33,7 +33,7 @@
       pipeline: false, bloom: false, fxaa: false, msaa: 1, ssao: false, rays: false, grain: false, chroma: false,
       grass: 2200, fadeEnd: 28, pebbles: 300, decor: 0.17,
       models: [],
-      treeLod: [0, 0], rockDist: 0, bushDist: 0, decorDist: 30, houseNear: 0, peopleNear: 0,
+      treeLod: [0, 0], rockDist: 0, bushDist: 0, outer: 0.12, decorDist: 30, houseNear: 0, peopleNear: 0,
       hiTerrain: false, trisMax: 300000
     }
   };
@@ -122,17 +122,20 @@
     else if (t < max * 0.85 && gs < 1) G.grass.setScale(Math.min(1, gs + 0.05));
   };
 
-  /* 自動のとき、遊びはじめて 10 秒（実時間）の平均が 20fps より低ければ 1 段下げる（1 回だけお知らせ） */
-  const W = { t0: 0, n: 0, done: false };
-  G.autoWatch = function () {
+  /* 自動のとき、遊びはじめて 10 秒ぶんのフレームの時間の中央値が 20fps より低ければ 1 段下げる（1 回だけお知らせ）。
+     読み込み中・タブが隠れているあいだは数えず、最初の 3 秒は捨てる。dt は実時間の 1 フレーム */
+  const W = { t: 0, sec: 0, s: [], done: false };
+  G.autoWatch = function (dt) {
     if (W.done || G.pref !== 'auto') return;
-    const now = performance.now();
-    if (!W.t0) { W.t0 = now; return; }
-    W.n++;
-    const sec = (now - W.t0) / 1000;
-    if (sec < 10) return;
+    if (document.hidden || (G.assets && G.assets.done < G.assets.total)) return;
+    dt = dt > 0 ? dt : 0.016;
+    W.t += dt;
+    if (W.t < 3) return;
+    W.s.push(dt); W.sec += dt;
+    if (W.sec < 10) return;
     W.done = true;
-    if (W.n / sec >= 20) return;
+    const a = W.s.slice().sort((x, y) => x - y), med = a[a.length >> 1];
+    if (1 / med >= 20) return;
     const i = ORDER.indexOf(G.key);
     if (i < 0 || i >= ORDER.length - 1) return;
     G.autoKey = ORDER[i + 1]; G.downgraded = true;

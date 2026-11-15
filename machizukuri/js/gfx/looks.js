@@ -7,7 +7,7 @@
    当たりは今までどおりマスの表（solid）。モデルに当たりの形は要らない。 */
 (function () {
   const MZ = window.MZ, B = BABYLON, G = MZ.gfx, T = MZ.T, A = G.assets;
-  const L = { glb: {}, chr: {}, tool: {}, pl: { near: null, far: null }, objs: new Set(), lodDone: new Set(), pv: null, pvKey: '', pvOk: null, pvBad: null, key: 'low' };
+  const L = { glb: {}, chr: {}, tool: {}, pl: { near: null, far: null }, objs: new Set(), lodDone: new Map(), pv: null, pvKey: '', pvOk: null, pvBad: null, key: 'low' };
 
   /* ---------- 見た目（look） ---------- */
   function codeMesh(key) { return MZ.getModel(key); }
@@ -39,14 +39,15 @@
     L.pend = L.pend || {};
     const low = L.key === 'low', todo = [];
     if (!g.near && !low && !L.pend[key + ':n']) { L.pend[key + ':n'] = true; todo.push(A.model(d.near).then(m => { fixFoot(m, key, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); }); g.near = m; })); }
-    if (!g.far && d.far && !L.pend[key + ':f']) { L.pend[key + ':f'] = true; todo.push(A.model(d.far).then(m => { fixFoot(m, key, d.fix); g.far = m; })); }
-    todo.forEach(p => p.then(repose, () => { /* コードの形のまま */ }));
+    if (!g.far && d.far && !L.pend[key + ':f']) { L.pend[key + ':f'] = true; todo.push(A.model(d.far).then(m => { fixFoot(m, key, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); }); g.far = m; })); }
+    todo.forEach(p => p.then(repose, () => { /* コードの形のまま。画質を変えたとき、読み直せるように印をもどす */ L.pend[key + ':n'] = L.pend[key + ':f'] = false; }));
   }
   function apply(key) {
     L.key = key;
     Object.keys(G.BUILD_MODELS).forEach(loadBuild);
     applyChars();
     repose();
+    if (L.key === 'low') releaseNear();
     if (G.people) G.people.refresh();
   }
 
@@ -56,9 +57,13 @@
     if (lk.lod.length < 2) return;
     const near = lk.lod[0].meshes, far = lk.lod[1].meshes, d = lk.lod[1].dist;
     near.forEach((m, i) => {
-      if (L.lodDone.has(m)) return;
-      L.lodDone.add(m);
-      m.addLODLevel(d, i === 0 ? far[0] : null);   // 遠く用は 1 つ目の部品だけに（同じ物を何度も描かない）
+      const f = i === 0 ? far[0] : null, sig = (f ? f.uniqueId : 0) + ':' + d;
+      if (L.lodDone.get(m) === sig) return;
+      /* 遠く用が後から届いた（コードの形のまま固定されていた）・距離が変わったときは、付け直す */
+      while (m.getLODLevels().length) m.removeLODLevel(m.getLODLevels()[0].mesh);
+      if (f && f._masterMesh && f._masterMesh !== m) f._masterMesh = null;   // 前の元メッシュ（片づけ済み）との結びつきを外す
+      L.lodDone.set(m, sig);
+      m.addLODLevel(d, f);   // 遠く用は 1 つ目の部品だけに（同じ物を何度も描かない）
       m.addLODLevel(400, null);
     });
   }
@@ -150,11 +155,11 @@
     L.pend = L.pend || {};
     if (tier === 'near' && !g.near && L.key !== 'low' && !L.pend[key + ':n']) {
       L.pend[key + ':n'] = true;
-      A.model('b_' + key).then(ms => { ms.forEach(m => { if (G.post) G.post.addCaster(m); }); g.near = ms; g.piv = pivots(key, ms); onChars(); }, () => { });
+      A.model('b_' + key).then(ms => { ms.forEach(m => { if (G.post) G.post.addCaster(m); }); g.near = ms; g.piv = pivots(key, ms); onChars(); }, () => { L.pend[key + ':n'] = false; });
     }
     if (tier === 'far' && !g.far && !L.pend[key + ':f']) {
       L.pend[key + ':f'] = true;
-      A.model('b_' + key + '_far').then(ms => { g.far = ms; g.farPiv = pivots(key, ms); onChars(); }, () => { });
+      A.model('b_' + key + '_far').then(ms => { g.far = ms; g.farPiv = pivots(key, ms); onChars(); }, () => { L.pend[key + ':f'] = false; });
     }
   }
   function onChars() { peopleRefresh(); if (G.looks && G.looks.onPlayer) G.looks.onPlayer(); }
@@ -195,7 +200,7 @@
       const k = n + lv;
       if (L.tool[k] || (L.pend && L.pend['t' + k])) return;
       L.pend = L.pend || {}; L.pend['t' + k] = true;
-      A.model('b_tool_' + k).then(ms => { ms.forEach(m => { m.receiveShadows = false; }); L.tool[k] = ms; }, () => { });
+      A.model('b_tool_' + k).then(ms => { ms.forEach(m => { m.receiveShadows = false; }); L.tool[k] = ms; }, () => { L.pend['t' + k] = false; });
     }));
   }
   /* 道具 1 本（段 lv）の複製を parent の下に作る。まだ読めていなければ null。複製は非表示で返す */
@@ -208,6 +213,8 @@
     const md = root.metadata; if (!md || !md.parts || !md.glb) return;
     const arm = md.parts.armR, pose = md.glb === 'near' ? { y: -0.62, z: 0.06, rx: 1.0 } : null;
     if (!pose) return;
+    const hk = name + lv + ':' + Object.keys(L.tool).length + ':' + Object.keys(md.tools).length;
+    if (md.hk === hk) return;   // 持つ物・読み込みが変わったときだけ
     TOOL_NAMES.forEach(n => [1, 2, 3].forEach(l => {
       const k = n + l;
       if (!md.tools[k]) {
@@ -219,6 +226,7 @@
       const t = md.tools[k], on = n === name && l === lv;
       t.cl.forEach(c => c.setEnabled(on));
     }));
+    md.hk = name + lv + ':' + Object.keys(L.tool).length + ':' + Object.keys(md.tools).length;
   }
 
   /* ---------- 住民 ---------- */
@@ -279,11 +287,23 @@
     }
   }
   function peopleFlush() {
-    PE.groups.forEach(g => g.meshes.forEach((m, b) => { m.thinInstanceCount = g.n; if (g.n) { m.thinInstanceBufferUpdated('matrix'); m.thinInstanceRefreshBoundingInfo(false); } }));
+    PE.groups.forEach(g => g.meshes.forEach((m, b) => { m.thinInstanceCount = g.n; if (g.n) { m.thinInstanceBufferUpdated('matrix'); } }));
   }
   /* 脚の振りの大きさ（ラジアン）。スカートの女の人（b）は裾を突きぬけないよう小さめ */
   const SWING = [0.55, 0.3, 0.5];
   const swingOf = v => SWING[v % 3];
+
+  /* 画質を「低」に下げたとき、使わない近く用の GLB（建物・人・道具・採れる物）を片づけてメモリを空ける。
+     置いてある物は、先に repose で遠く用に置き直してある */
+  function releaseNear() {
+    const names = [], unlod = m => { while (m.getLODLevels().length) m.removeLODLevel(m.getLODLevels()[0].mesh); };   // 遠く用が次の元メッシュでも使えるよう、LOD の結びつきを外す
+    Object.keys(L.glb).forEach(k => { const g = L.glb[k]; if (g.near) { g.near.forEach(m => { unlod(m); L.lodDone.delete(m); m.dispose(false, true); }); g.near = null; if (G.BUILD_MODELS[k]) names.push(G.BUILD_MODELS[k].near); if (L.pend) L.pend[k + ':n'] = false; } });
+    Object.keys(L.chr).forEach(k => { const g = L.chr[k]; if (g.near) { g.near.forEach(m => m.dispose(false, true)); g.near = null; names.push('b_' + k); if (L.pend) L.pend[k + ':n'] = false; } });
+    Object.keys(L.tool).forEach(k => { L.tool[k].forEach(m => m.dispose(false, true)); names.push('b_tool_' + k); if (L.pend) L.pend['t' + k] = false; delete L.tool[k]; });
+    if (L.pl.near) { L.pl.near.dispose(false, false); L.pl.near = null; }
+    if (PE.near) PE.near.forEach((g, i) => { if (g) { const j = PE.groups.indexOf(g); if (j >= 0) PE.groups.splice(j, 1); PE.near[i] = null; } });
+    names.forEach(n => A.forget2(n));
+  }
 
   /* ---------- 読み込みの入口：画質が決まったとき・変わったとき ---------- */
   function applyChars() {
@@ -293,6 +313,6 @@
   }
 
   G.look = look; G.put = put; G.preview = preview; G.setPreviewOk = setPreviewOk; G.repose = repose;
-  G.looks = { apply, state: L, loadBuild, playerModel, holdTool, toolClones, onPlayer: null };
+  G.looks = { apply, releaseNear, state: L, loadBuild, playerModel, holdTool, toolClones, onPlayer: null };
   G.people = { init: peopleInit, refresh: peopleRefresh, pick: peoplePick, write: peopleWrite, flush: peopleFlush, swing: swingOf, state: PE, get groups() { return PE.groups; } };
 })();

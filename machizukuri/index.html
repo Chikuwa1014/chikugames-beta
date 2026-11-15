@@ -115,6 +115,7 @@ body.panelopen .rb{display:none!important}
 #prepBar{width:min(260px,70vw);height:5px;border-radius:3px;background:rgba(0,0,0,.18);overflow:hidden}
 #prepBar i{display:block;height:100%;width:0;background:#6B8A44;transition:width .2s}
 #prepTxt{font-size:12px;color:#4A4430}
+#bgLoad{position:fixed;left:50%;transform:translateX(-50%);bottom:4px;font-size:11px;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000;pointer-events:none;z-index:4;white-space:nowrap}
 #gfxFail{flex:none;font-size:11px;color:var(--sub);text-align:center;padding-top:3px}
 #pfoot{flex:none;display:flex;gap:8px;justify-content:space-between;padding-top:6px;border-top:1px solid var(--line)}
 #pfoot button{border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:999px;padding:7px 16px;font-size:12px;cursor:pointer;min-height:34px}
@@ -128,6 +129,7 @@ body.panelopen .rb{display:none!important}
 </head>
 <body>
 <canvas id="cv" aria-label="荒野"></canvas>
+<div id="bgLoad" hidden></div>
 <header>
   <a href="../">← ちくわゲームズ</a>
   <span class="sp"></span>
@@ -250,8 +252,10 @@ body.panelopen .rb{display:none!important}
     $('#prep').hidden = false;
     const upd = (d, t) => { $('#prepTxt').textContent = '準備中 ' + d + '／' + t; $('#prepBar i').style.width = (t ? d / t * 100 : 0) + '%'; };
     G.assets.onProgress = upd; upd(G.assets.done, G.assets.total);
+    /* 「準備中 n／m」は必須の数だけ。消えたあと、裏で読んでいる間は画面の下に小さく「絵を読み込み中 n／m」 */
+    const bg = () => { G.assets.onBg = (d, t) => { const el = $('#bgLoad'); el.hidden = d >= t; if (d < t) el.textContent = '絵を読み込み中 ' + d + '／' + t; }; G.assets.onBg(G.assets.done, G.assets.total); };
     let released = false;
-    const release = () => { if (released) return; released = true; $('#prep').hidden = true; btns().forEach(b => { b.disabled = false; }); G.assets.onProgress = null; };
+    const release = () => { if (released) return; released = true; $('#prep').hidden = true; btns().forEach(b => { b.disabled = false; }); G.assets.onProgress = null; bg(); };
     G.assets.loadTier(G.key).then(() => G.sky.prepare()).then(release, release);
     setTimeout(release, 8000);
   }

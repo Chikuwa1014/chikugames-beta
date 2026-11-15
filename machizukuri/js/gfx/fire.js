@@ -59,7 +59,7 @@
     shaders();
     const l = F.light = new B.PointLight('fireLight', new B.Vector3(0, -100, 0), G.scene);
     l.diffuse = new B.Color3(1.0, 0.52, 0.22); l.specular = new B.Color3(1.0, 0.5, 0.2); l.intensity = 0; l.range = 26;
-    l.setEnabled(false);
+    l.setEnabled(true);   // いつも有効（強さ 0 で消す）
   }
   function startFx(h) {
     if (h.ps.length) return;
@@ -135,7 +135,7 @@
       let best = null, bd = 40;
       F.list.forEach(h => { const d = Math.hypot(h.x - px, h.z - pz); if (d < bd) { bd = d; best = h; } });
       F.cur = best;
-      F.light.setEnabled(!!best);
+      /* 光は有効のまま、近くに無いときは強さ 0（有効・無効を切りかえると、材質のシェーダーが作り直されて止まる） */
       if (best) F.light.position.set(best.x, 0.9, best.z);
     }
     const fl = 0.78 + 0.12 * Math.sin(time * 13.1) + 0.08 * Math.sin(time * 7.3 + 1.0) + 0.06 * Math.sin(time * 23.7 + 2.0);
@@ -143,7 +143,7 @@
       F.light.intensity = 22 * fl;
       G.grassFireCol.copyFrom(F.light.diffuse).scaleInPlace(F.light.intensity);
       G.grassFirePos.copyFrom(F.light.position);
-    } else { G.grassFireCol.set(0, 0, 0); }
+    } else { F.light.intensity = 0; G.grassFireCol.set(0, 0, 0); }
   }
   G.fire = { init, add, remove, apply, update, state: F };
 })();

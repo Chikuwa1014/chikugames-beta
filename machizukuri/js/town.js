@@ -24,19 +24,20 @@
     const W = MZ.world;
     W.owner.fill(0); W.solid.fill(0); Tn.byId = {};
     Object.values(Tn.meshes).forEach(m => m.dispose()); Tn.meshes = {};
-    list().forEach(b => addBuilding(b));
+    list().forEach(b => addBuilding(b, true));
+    MZ.gfx.ground.markAll();   // 塗り分けの表は、全部置いてから 1 回で書く
     /* 住民：部品ごとの thin instance の入れ物（服の色ちがいが 4 種。近い人だけ近く用）。決まりは gfx/looks.js */
     Tn.pgroups = MZ.gfx.people.init(T.maxPeople);
     Tn.recalc(true); Tn.stageCheck(true);
   };
 
-  function addBuilding(b) {
+  function addBuilding(b, bulk) {
     const W = MZ.world, d = MZ.BUILDS[b.t];
     Tn.byId[b.id] = b;
     cellsOf(b, ci => { W.owner[ci] = b.id; if (d.solid) W.solid[ci] = 1; });
     const c = center(b);
     Tn.meshes[b.id] = MZ.gfx.put(b.t, c[0], c[1], b.r * Math.PI / 2);   // .dispose() で消える
-    MZ.gfx.ground.mark(b);                                              // 道・畑・踏み固めの塗り分け、草のマス
+    if (!bulk) MZ.gfx.ground.mark(b);                                   // 道・畑・踏み固めの塗り分け、草のマス
     /* 建物と重なる採れる物は、二度と出ない */
     cellsOf(b, ci => { const ni = W.cellNode[ci]; if (ni >= 0 && W.taken && W.taken[ni] !== undefined) W.taken[ni] = -1; });
   }

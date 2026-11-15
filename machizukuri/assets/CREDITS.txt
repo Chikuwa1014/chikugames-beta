@@ -33,22 +33,22 @@ LeafSet005              assets/tex/tree_leaves.webp（左下） 広葉樹の葉�
 針葉樹の樹皮は pine_bark（bark_*）、枯れ木は rough_wood（log_*）を使いまわしている。
 
 --- 建物（assets/models/b_*.glb・b_*_far.glb） ---
-建物の形は自作（Blender の Python で部材を 1 つずつ組んだもの。bmodels/build.py）。
+建物の形は自作（Blender の Python で部材を 1 つずつ組んだもの。bmodels/build.py（リポジトリ外））。
 近く用の GLB には下の写真素材（Poly Haven、CC0）を 1K から縮小・色調整して入れている。遠く用はそれを Cycles で 256px 1 枚に焼きこんだもの。
 assetId            使った建物                             用途                         作者（Poly Haven の表記）                    ライセンス  URL
-rough_wood         小屋・木の家・井戸・たき火・かまど・炉・畑・製材所・れんがの家 丸太・板・屋根板・こけら    Rob Tuytel                                   CC0  https://polyhaven.com/a/rough_wood
-pine_bark          小屋（薪）・たき火・かまど（薪）・畑・製材所  樹皮のついた木（薪・杭・丸太）             Dimitrios Savva                              CC0  https://polyhaven.com/a/pine_bark
+rough_wood         小屋・木の家・井戸・たき火・かまど・炉・畑・きこり小屋・れんがの家 丸太・板・屋根板・こけら    Rob Tuytel                                   CC0  https://polyhaven.com/a/rough_wood
+pine_bark          小屋（薪）・たき火・かまど（薪）・畑・きこり小屋  樹皮のついた木（薪・杭・丸太）             Dimitrios Savva                              CC0  https://polyhaven.com/a/pine_bark
 rock_boulder_dry   畑と作業台以外のすべて                  石積み・土台の石・目地       Dimitrios Savva, Rico Cilliers               CC0  https://polyhaven.com/a/rock_boulder_dry
 red_brick_03       かまど・炉・れんがの家                  れんが                       Rob Tuytel                                   CC0  https://polyhaven.com/a/red_brick_03
 clay_plaster       かまど・炉                              粘土のドーム・塗り・革       Amal Kumar                                   CC0  https://polyhaven.com/a/clay_plaster
-rusty_metal_02     小屋・木の家・井戸・炉・製材所・れんがの家  鉄の金具（暗く色を変えた）   Rob Tuytel                                   CC0  https://polyhaven.com/a/rusty_metal_02
+rusty_metal_02     小屋・木の家・井戸・炉・きこり小屋・れんがの家  鉄の金具（暗く色を変えた）   Rob Tuytel                                   CC0  https://polyhaven.com/a/rusty_metal_02
 farm_soil          畑                                      うねの土                     Amal Kumar                                   CC0  https://polyhaven.com/a/farm_soil
 reed_roof_04       畑（かかし）                            わら（かかしの帽子・体・束）   Rob Tuytel                                   CC0  https://polyhaven.com/a/reed_roof_04
 
-作業台（b_bench.glb・b_bench_far.glb）は自作の作業台モデル（5.6MB、リポジトリからは外した）を Blender で減らしたもの（bmodels/bench.py）。遠く用の 256px は Cycles で焼き直した。
+作業台（b_bench.glb・b_bench_far.glb）は自作の作業台モデル（5.6MB、リポジトリからは外した）を Blender で減らしたもの（bmodels/bench.py（リポジトリ外））。遠く用の 256px は Cycles で焼き直した。
 
 --- 人・道具・採れる物（第 3 弾：b_player・b_person_a〜c・b_tool_*・b_n_clay・b_n_iron） ---
-形は自作（Blender の Python。bmodels/chars.py・items3.py）。人は布・革の写真を色を抜いて使い、色は頂点色で付けて Cycles で 1 枚に焼いた。
+形は自作（Blender の Python。bmodels/chars.py・items3.py（リポジトリ外））。人は布・革の写真を色を抜いて使い、色は頂点色で付けて Cycles で 1 枚に焼いた。
 assetId            使った物                                 用途                             作者（Poly Haven の表記）       ライセンス  URL
 rough_linen        主人公・住民                             シャツ・前かけ・ネッカチーフ     colormass, Rico Cilliers        CC0  https://polyhaven.com/a/rough_linen
 denim_fabric       主人公・若い男                           ズボン                           Rob Tuytel                      CC0  https://polyhaven.com/a/denim_fabric

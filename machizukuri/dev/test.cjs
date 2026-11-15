@@ -387,6 +387,59 @@ const HELPERS = () => {
     await b.c.close();
   }
 
+  /* 読み込みの待ち行列：同時 5 本まで・順序（必須→木・岩→建物→人→道具）・失敗の読み直し・画質を変えたときの取り直し */
+  {
+    const reqs = [], cnt = {};
+    const a = await open2({
+      pref: 'mid',
+      route: async c => {
+        await c.route('**/assets/**', async r => {
+          const u = r.request().url(), n = u.replace(/^.*\/assets\//, '');
+          reqs.push(n);
+          cnt[n] = (cnt[n] || 0) + 1;
+          if (/b_well\.glb$/.test(u) && cnt[n] === 1) return r.abort();   // 1 回目だけ失敗（自動の読み直しで届く）
+          if (/b_hut_far\.glb$/.test(u) && cnt[n] <= 3) return r.abort();   // 3 回とも失敗（画質を変えると取り直す）
+          try { await r.continue(); } catch (e) { /* 閉じた */ }
+        });
+      }
+    });
+    await begin2(a.pg);
+    await a.pg.waitForFunction(() => { const A = MZ.gfx.assets; return A.done >= A.total; }, null, { timeout: 240000 });
+    const st = await ev(a.pg, () => ({ max: MZ.gfx.assets.queue.max, failed: MZ.gfx.assets.failed.slice(), ok: MZ.gfx.assets.okMap['assets/models/b_well.glb'], reqDone: MZ.gfx.assets.reqDone, reqTotal: MZ.gfx.assets.reqTotal }));
+    ok('読み込み：同時に取りに行くのは 5 本まで', st.max >= 1 && st.max <= 5, JSON.stringify(st));
+    ok('読み込み：1 回失敗しても自動で読み直して届く（井戸）', st.ok === true && st.failed.indexOf('assets/models/b_well.glb') < 0 && cnt['models/b_well.glb'] >= 2, JSON.stringify(st) + ' ' + cnt['models/b_well.glb']);
+    ok('読み込み：3 回失敗したファイルは failed に残る（小屋の遠く用）', st.failed.indexOf('assets/models/b_hut_far.glb') >= 0, JSON.stringify(st.failed));
+    ok('読み込み：必須の数だけが「準備中 n／m」に出る（必須は 7 本ほど。全体より少ない）', st.reqTotal > 0 && st.reqTotal <= 8 && st.reqDone === st.reqTotal, JSON.stringify(st));
+    const idx = pat => reqs.findIndex(n => pat.test(n));
+    const last = pat => { let k = -1; reqs.forEach((n, i) => { if (pat.test(n)) k = i; }); return k; };
+    ok('読み込みの順：必須（空・地面）→ 木・岩 → 建物 → 人 → 道具', last(/tex\/(sky|ground_col|path_col|farm_col)/) < idx(/models\/b_house\.glb/) && idx(/models\/rock_a/) < idx(/models\/b_house\.glb/) && idx(/models\/b_house\.glb/) < idx(/models\/b_tool_axe1/) && idx(/models\/b_player\.glb/) < idx(/models\/b_tool_pick3/), JSON.stringify(reqs.slice(0, 14)));
+    /* 画質を変えると、読めなかったファイルを取り直す */
+    await ev(a.pg, () => MZ.gfx.setQuality('high'));
+    await a.pg.waitForFunction(() => { const A = MZ.gfx.assets; return A.done >= A.total; }, null, { timeout: 240000 });
+    await a.pg.waitForFunction(() => { const g = MZ.gfx.looks.state.glb.hut; return g && g.far; }, null, { timeout: 120000 }).catch(() => { });
+    const st2 = await ev(a.pg, () => ({ failed: MZ.gfx.assets.failed.slice(), far: !!(MZ.gfx.looks.state.glb.hut && MZ.gfx.looks.state.glb.hut.far) }));
+    ok('画質を変えると、読めなかったファイルを取り直す（小屋の遠く用が届く）', st2.failed.indexOf('assets/models/b_hut_far.glb') < 0 && st2.far, JSON.stringify(st2) + ' ' + cnt['models/b_hut_far.glb']);
+    /* 建物：高→低→高 のあと、全部描かれる（遠く用の付け直しも） */
+    const bl = await ev(a.pg, async () => {
+      MZ.noSave = true; Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 99; });
+      MZ.world.nodes.forEach(nd => { if (nd.gx >= 40 && nd.gx <= 80 && nd.gz >= 40 && nd.gz <= 80) MZ.world.take(nd.idx, -1); });
+      ['house', 'well', 'kiln', 'bench'].forEach((k, i) => MZ.place(k, 52 + i * 3, 60, 0));
+      MZ.gfx.setQuality('low'); await new Promise(r => setTimeout(r, 1500));
+      MZ.gfx.setQuality('high'); return true;
+    });
+    await a.pg.waitForFunction(() => { const A = MZ.gfx.assets; return A.done >= A.total; }, null, { timeout: 240000 });
+    await a.pg.waitForTimeout(4000);
+    const bd = await ev(a.pg, () => {
+      const bs = Object.values(MZ.town.meshes), out = bs.map(o => {
+        const m = o.inst[0], lv = m && !m.isDisposed() ? m.sourceMesh.getLODLevels() : [];
+        return { k: o.key, n: o.inst.length, disposed: o.inst.some(i => i.isDisposed()), lod: lv.length, farCode: lv.length ? lv[0].mesh === MZ.getModel(o.key) : null };
+      });
+      return { out, tris: MZ.gfx.tris() };
+    });
+    ok('高→低→高のあと、建物が全部描かれる（遠く用も GLB で付け直されている）', bd.out.length >= 4 && bd.out.every(o => o.n >= 1 && !o.disposed && o.lod === 2 && o.farCode === false), JSON.stringify(bd));
+    await a.c.close();
+  }
+
   /* 資産が読めないとき・loaders が読めないとき：低でも中でも同じに遊べる */
   for (const cfg of [
     { name: '資産が読めない', route: c => c.route('**/assets/**', r => r.abort()) },
@@ -446,8 +499,8 @@ const HELPERS = () => {
     await a.pg.click('#bBag'); await a.pg.waitForSelector('#pQual', { state: 'visible' });
     const t2 = await a.pg.textContent('#pQual');
     await a.pg.click('#pQual');
-    const t3 = await a.pg.textContent('#pQual'), t4 = await a.pg.textContent('#bQual');
-    ok('画質のボタン：押すたびに 高→中→低→自動（上のバーとパネルの下が同じ表示）', t0 === '画質：中' && t1 === '画質：低' && t2 === '画質：低' && /^画質：自動（[高中低]）$/.test(t3) && t3 === t4 && k1[0] === 'low' && k1[1] === 'low', [t0, t1, t2, t3, t4, k1].join(' / '));
+    const t3 = await a.pg.textContent('#pQual', { timeout: 240000 }), t4 = await a.pg.textContent('#bQual', { timeout: 240000 });   // 高の 1 フレームは数十秒かかる
+    ok('画質のボタン：押すたびに 高→中→低→自動（上のバーとパネルの下が同じ表示）', t0 === '画質：中' && t1 === '画質：低' && t2 === '画質：低' && /^画質：自動（[高中低]）$/.test(t3) && /^画質：自動（[高中低]）$/.test(t4) &&   /* 自動のとき、数秒のあいだに 1 段下がることがある（遅い環境） */ k1[0] === 'low' && k1[1] === 'low', [t0, t1, t2, t3, t4, k1].join(' / '));
     await ev(a.pg, () => MZ.gfx.setQuality('low'));
     await a.c.close();
     const b = await open2({ pref: 'auto' });

@@ -43,6 +43,7 @@
     for (let gz = 0; gz < N; gz++) for (let gx = 0; gx < N; gx++) writeCell(gx, gz);
     if (mark.tex) mark.tex.update(mark.data);
     if (G.grass) G.grass.dirty();
+    if (G.nodes) G.nodes.dirty();
   }
 
   /* ---------- 地面の材質（PBR）と GroundPlugin ---------- */
@@ -172,18 +173,25 @@
     m.receiveShadows = true; m.freezeWorldMatrix();
     return m;
   }
-  /* 遠景の山なみ（輪っか状の地形。霧でかすむ） */
-  function buildMountains() {
-    const A = 200, R = 16, g = new Geo(); g.c = [];
+  /* 遠景の山なみ：前後 2 層の輪っか状の地形。雪はなし（荒野に合わない）。岩肌は彩度の低い赤茶〜灰色で、
+     遠い層ほど空の地平の色に寄せる。写真（stone）は MountPlugin が三平面投影で大きく貼る（読めなければ頂点の色だけ） */
+  function buildMountains(name, rMin, rMax, hBase, hRange, seed, mixFar) {
+    const A = 400, R = 24, g = new Geo(); g.c = [];
+    const H = G.SKYC.C_HORIZON;
     for (let j = 0; j <= R; j++) {
-      const r = 300 + 900 * Math.pow(j / R, 1.3);
+      const t = j / R, r = rMin + (rMax - rMin) * Math.pow(t, 1.3);
       for (let i = 0; i <= A; i++) {
         const a = i / A * Math.PI * 2, x = Math.cos(a) * r, z = Math.sin(a) * r;
-        const n = fbm(x * 0.0035 + 11, z * 0.0035 + 3, 41, 5), ridge = 1 - Math.abs(n * 2 - 1);
-        let y = smooth(310, 640, r) * (40 + Math.pow(ridge, 2.2) * 270) * (0.55 + 0.45 * fbm(x * 0.001 + 2, z * 0.001, 42, 2));
-        y -= 6 * (1 - smooth(300, 360, r));
-        let c = mix3([0.3, 0.32, 0.22], [0.42, 0.4, 0.38], smooth(40, 120, y));
-        c = mix3(c, [0.95, 0.95, 0.98], smooth(190, 230, y + (fbm(x * 0.02, z * 0.02, 43, 2) - 0.5) * 40));
+        const n = fbm(x * 0.0035 / (r > 900 ? 1.6 : 1) + seed, z * 0.0035 / (r > 900 ? 1.6 : 1) + 3, 41 + seed, 5), ridge = 1 - Math.abs(n * 2 - 1);
+        let y = smooth(rMin + 10, rMin + (rMax - rMin) * 0.5, r) * (hBase + Math.pow(ridge, 2.2) * hRange) * (0.55 + 0.45 * fbm(x * 0.001 + 2, z * 0.001, 42 + seed, 2));
+        y -= 6 * (1 - smooth(rMin, rMin + 60, r));
+        const nz = fbm(x * 0.02, z * 0.02, 43 + seed, 3), nz2 = fbm(x * 0.006 + 9, z * 0.006, 44 + seed, 2);
+        /* 彩度の低い赤茶〜灰色（低いところは少し緑がかる） */
+        let c = mix3([0.30, 0.27, 0.21], [0.30, 0.26, 0.22], nz2);
+        c = mix3(c, [0.36, 0.34, 0.31], smooth(60, 200, y + (nz - 0.5) * 60));
+        c = mix3(c, [0.27, 0.25, 0.20], smooth(0.55, 0.8, nz) * 0.5);
+        const k = mixFar * (0.35 + 0.65 * t);   // 遠いほど地平の色へ
+        c = mix3(c, [H.r, H.g, H.b], Math.min(0.85, k));
         g.p.push(x, y, z); g.n.push(0, 1, 0); g.uv.push(0, 0); g.c.push(c[0], c[1], c[2], 1);
       }
     }
@@ -191,9 +199,75 @@
       const a = j * (A + 1) + i; g.q(a, a + 1, a + A + 2, a + A + 1);
     }
     B.VertexData.ComputeNormals(g.p, g.i, g.n);
-    const m = g.mesh('mountains', G.ground.mountMat);
+    const m = g.mesh(name, G.ground.mountMat);
     m.freezeWorldMatrix();
     return m;
+  }
+  /* 岩肌の写真を三平面投影で貼る材質の部品 */
+  function registerMount() {
+    class MountPlugin extends B.MaterialPluginBase {
+      constructor(material) { super(material, 'MountPhoto', 255, { MPHOTO: false }); this.tex = null; this.on = false; this._enable(true); }
+      set(tex) { const on = !!tex; this.tex = tex; if (on !== this.on) { this.on = on; this.markAllDefinesAsDirty(); } }
+      isReadyForSubMesh() { return !this.on || this.tex.isReady(); }
+      prepareDefines(d) { d.MPHOTO = this.on; }
+      getClassName() { return 'MountPlugin'; }
+      getSamplers(s) { s.push('mSampler'); }
+      bindForSubMesh(ubo) { if (this.on) ubo.setTexture('mSampler', this.tex); }
+      getCustomCode(type) {
+        if (type === 'vertex') return null;
+        return {
+          CUSTOM_FRAGMENT_DEFINITIONS: `
+            #ifdef MPHOTO
+            uniform sampler2D mSampler;
+            #endif
+`,
+          CUSTOM_FRAGMENT_BEFORE_LIGHTS: `
+            #ifdef MPHOTO
+            {
+              vec3 nw = abs(normalize(vNormalW));
+              nw = pow(nw, vec3(4.0)); nw /= (nw.x + nw.y + nw.z);
+              vec3 p = vPositionW * (1.0 / 230.0);
+              vec3 tx = toLinearSpace(texture2D(mSampler, p.zy).rgb) * nw.x
+                      + toLinearSpace(texture2D(mSampler, p.xz + 0.31).rgb) * nw.y
+                      + toLinearSpace(texture2D(mSampler, p.xy + 0.67).rgb) * nw.z;
+              surfaceAlbedo *= mix(vec3(1.0), clamp(tx * 2.6, 0.4, 1.7), 0.8);
+            }
+            #endif
+`
+        };
+      }
+    }
+    return MountPlugin;
+  }
+
+  /* 柵の外（126〜330m）：茶色い平らな帯に見えないよう、コードの木と草のかたまりを散らす（thin instance。形は固定） */
+  function buildOutskirts() {
+    const r = G.rng(T.seed + 99), out = [];
+    const mk = (key, n, minC, maxC, sMin, sMax, yOff) => {
+      const m = MZ.models[key](), buf = [];   // 作り直す（ほかが使っている元の形とは別のメッシュにする）
+      m.name = 'out_' + key;
+      let tries = 0, got = 0;
+      while (got < n && tries++ < n * 30) {
+        const a = r() * 6.2832, d = minC + Math.sqrt(r()) * (maxC - minC), x = Math.cos(a) * d, z = Math.sin(a) * d;
+        const c = Math.max(Math.abs(x), Math.abs(z));
+        if (c < HALF + 8) continue;
+        /* まとまりをつくる（ところどころ濃く、ところどころ空く） */
+        if (fbm(x * 0.012 + 70, z * 0.012, 95, 3) < 0.42 + r() * 0.2) continue;
+        const sc = sMin + r() * (sMax - sMin);
+        buf.push(...B.Matrix.Compose(new B.Vector3(sc, sc * (0.9 + r() * 0.3), sc), B.Quaternion.RotationAxis(B.Axis.Y, r() * 6.2832), new B.Vector3(x, hOut(x, z) + yOff, z)).m);
+        got++;
+      }
+      m.setEnabled(true); m.isVisible = true; m.isPickable = false; m.alwaysSelectAsActiveMesh = true; m.receiveShadows = false;
+      m.thinInstanceSetBuffer('matrix', new Float32Array(buf), 16, true);
+      m.freezeWorldMatrix();
+      out.push(m);
+    };
+    mk('tree', 450, HALF + 24, 330, 1.0, 1.9, -0.1);
+    mk('tree2', 50, HALF + 24, 330, 1.0, 1.9, -0.1);
+    mk('bush', 70, HALF + 14, 280, 1.0, 2.2, 0);
+    mk('rock', 40, HALF + 16, 330, 0.8, 2.4, -0.3);
+    out.forEach(m => { m.metadata = { cap: m.thinInstanceCount }; });
+    return out;
   }
   /* 土地の境目：柵（thin instance 1 つ。今までと同じ形・位置） */
   function buildFence() {
@@ -222,13 +296,17 @@
     G.ground.plugin = plugin;
     G.ground.hi = buildTerrain('terrainHi', 12, 1.1, 3);
     G.ground.lo = buildTerrain('terrainLo', 36, 1.3, 6); G.ground.lo.setEnabled(false);
-    G.ground.mountains = buildMountains();
+    G.ground.mountPlugin = new (registerMount())(G.ground.mountMat);
+    G.ground.mountains = buildMountains('mountains', 300, 1000, 40, 250, 0, 0.22);
+    G.ground.mountainsFar = buildMountains('mountainsFar', 850, 2300, 90, 380, 5, 0.55);
+    G.ground.outskirts = buildOutskirts();
     buildFence();
     markAll();
   }
   /* 写真が読めたとき（photo.js から）。got：{ ground, path, farm }（読めなければ null） */
   function setPhoto(got, tier) {
     const gs = got.ground;
+    if (G.ground.mountPlugin) G.ground.mountPlugin.set(got.stone ? G.photo.view(got.stone.col, 1, 1) : null);
     if (gs && got.path && got.farm) {
       const S = 2.0;   // 地面の UV は 1 = 5 m → 2.5 m で 1 回
       G.photo.setMatTex(mat, null, G.photo.view(gs.nrm, S, S), G.photo.view(gs.orm, S, S), new B.Color3(1, 1, 1), true);
@@ -242,6 +320,8 @@
     const q = G.Q[key];
     if (!G.ground.hi) return;
     G.ground.hi.setEnabled(q.hiTerrain); G.ground.lo.setEnabled(!q.hiTerrain);
+    /* 柵の外の木・草のかたまりは、画質で数を変える（予算のため） */
+    (G.ground.outskirts || []).forEach(m => { m.thinInstanceCount = Math.round(m.metadata.cap * q.outer); });
   }
   G.ground = { init, mark: markBuilding, markAll, setPhoto, apply, hOut, hAt: () => 0, data: mark };
 })();
