@@ -11,13 +11,30 @@
   P.init = function () {
     const scene = MZ.world.scene;
     P.model = MZ.gfx.looks.playerModel(); P.model.setEnabled(false);
-    P.hands = { axe: MZ.getModel('axeHand'), pick: MZ.getModel('pickHand') };
+    /* 一人称の手の道具：根（カメラの子）の下に、コードの形と GLB（段ごと）を置き、段と読み込みで出し分ける */
+    P.hands = {};
     ['axe', 'pick'].forEach(k => {
-      const h = P.hands[k]; h.parent = MZ.world.camera; h.isVisible = false;
-      h.position.set(0.28, -0.4, 0.62); h.rotation.set(0.35, 0, -0.3); h.scaling.setAll(0.45);
+      const h = new B.TransformNode('hand_' + k, scene); h.parent = MZ.world.camera;
+      h.position.set(0.26, -0.34, 0.6); h.rotation.set(0.35, -0.45, -0.2);
+      const code = MZ.getModel(k + 'Hand'); code.parent = h; code.scaling.setAll(0.45); code.isVisible = true;
+      P.hands[k] = { root: h, code, glb: {}, on: false };
+      h.setEnabled(false);
     });
     P.bindInput();
   };
+  /* 手の道具を、段（lv）と読み込みに合わせて出す。lv 0 や建築中は隠す */
+  P.showHand = function (k, lv, on) {
+    const H = P.hands[k], gl = MZ.gfx.looks;
+    if (on && lv > 0 && !H.glb[lv]) {
+      const cl = gl.toolClones(k, lv, H.root);
+      if (cl) { cl.forEach(c => { c.scaling.setAll(P.TOOL_SCALE); }); H.glb[lv] = cl; }
+    }
+    const g = H.glb[lv];
+    H.root.setEnabled(on && lv > 0);
+    H.code.setEnabled(!g);
+    [1, 2, 3].forEach(l => { if (H.glb[l]) H.glb[l].forEach(c => c.setEnabled(on && l === lv && !!g)); });
+  };
+  P.TOOL_SCALE = 0.5;
 
   const fwd = () => { const p = MZ.state.player; return [Math.sin(p.yaw), Math.cos(p.yaw)]; };
 
@@ -65,18 +82,22 @@
       cam.position.copyFrom(last);
     }
     P.camPos.copyFrom(cam.position);
-    /* 主人公の姿 */
+    /* 主人公の姿（GLB が届いたら、画質に合うほうに替える） */
+    const pm = MZ.gfx.looks.playerModel();
+    if (pm !== P.model) { P.model.setEnabled(false); P.model = pm; }
     P.model.setEnabled(third);
     if (third) {
+      const tn = P.lastTool, tl = MZ.state.tools[tn] || 0;
+      MZ.gfx.looks.holdTool(P.model, tn, tl);
       P.model.position.set(s.x, 0, s.z); P.model.rotation.y = s.yaw;
       const sw = P.moving ? Math.sin(P.walkPh) * 0.7 : 0, pt = P.model.metadata.parts;
       pt.legL.rotation.x = sw; pt.legR.rotation.x = -sw; pt.armL.rotation.x = -sw * 0.8; pt.armR.rotation.x = sw * 0.8 - (P.swing > 0 ? Math.sin(P.swing * Math.PI) * 1.4 : 0);
     }
     /* 一人称：手に持つ道具を振る */
     const k = P.lastTool;
-    ['axe', 'pick'].forEach(n => { P.hands[n].isVisible = !third && MZ.build.mode === 'none' && n === k && MZ.state.tools[n] > 0; });
+    ['axe', 'pick'].forEach(n => P.showHand(n, MZ.state.tools[n] | 0, !third && MZ.build.mode === 'none' && n === k && MZ.state.tools[n] > 0));
     if (P.swing > 0) P.swing = Math.max(0, P.swing - dt / 0.28);
-    const h = P.hands[k], bob = P.moving ? Math.sin(P.walkPh) * 0.012 : 0;
+    const h = P.hands[k].root, bob = P.moving ? Math.sin(P.walkPh) * 0.012 : 0;
     h.rotation.x = 0.35 + Math.sin(P.swing * Math.PI) * 1.0; h.position.y = -0.42 + bob;
   };
 

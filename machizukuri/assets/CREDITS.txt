@@ -46,3 +46,16 @@ farm_soil          畑                                      うねの土        
 reed_roof_04       畑（かかし）                            わら（かかしの帽子・体・束）   Rob Tuytel                                   CC0  https://polyhaven.com/a/reed_roof_04
 
 作業台（b_bench.glb・b_bench_far.glb）は自作の作業台モデル（5.6MB、リポジトリからは外した）を Blender で減らしたもの（bmodels/bench.py）。遠く用の 256px は Cycles で焼き直した。
+
+--- 人・道具・採れる物（第 3 弾：b_player・b_person_a〜c・b_tool_*・b_n_clay・b_n_iron） ---
+形は自作（Blender の Python。bmodels/chars.py・items3.py）。人は布・革の写真を色を抜いて使い、色は頂点色で付けて Cycles で 1 枚に焼いた。
+assetId            使った物                                 用途                             作者（Poly Haven の表記）       ライセンス  URL
+rough_linen        主人公・住民                             シャツ・前かけ・ネッカチーフ     colormass, Rico Cilliers        CC0  https://polyhaven.com/a/rough_linen
+denim_fabric       主人公・若い男                           ズボン                           Rob Tuytel                      CC0  https://polyhaven.com/a/denim_fabric
+caban              主人公・住民                             ベスト・帽子・スカート・ズボン   colormass, Rico Cilliers        CC0  https://polyhaven.com/a/caban
+brown_leather      主人公・住民・石の道具                   ブーツ・ベルト・つりバンド・革ひも Rob Tuytel                    CC0  https://polyhaven.com/a/brown_leather
+fine_grained_wood  道具 6 種                                柄                               Rob Tuytel                      CC0  https://polyhaven.com/a/fine_grained_wood
+rust_coarse_01     さびた斧・さびたつるはし                 さびた鉄の頭                     Dimitrios Savva, Rico Cilliers  CC0  https://polyhaven.com/a/rust_coarse_01
+rusty_metal_02     鉄の斧・鉄のつるはし                     鉄の頭（色を抜いて暗く、金属 1）  Rob Tuytel                     CC0  https://polyhaven.com/a/rusty_metal_02
+rock_boulder_dry   石の斧・石のつるはし・鉄の鉱脈           石の頭・岩（さびの筋は頂点色）   Dimitrios Savva, Rico Cilliers  CC0  https://polyhaven.com/a/rock_boulder_dry
+brown_mud_02       粘土の土                                 湿った粘土（赤みを足し、粗さを下げた） Rob Tuytel                 CC0  https://polyhaven.com/a/brown_mud_02

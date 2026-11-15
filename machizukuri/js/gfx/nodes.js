@@ -145,7 +145,8 @@
   /* ---------- 組ごとの読み込み ---------- */
   const GROUPS = {
     rocks: ['rock_a', 'rock_b', 'rock_c'], wood: ['stump', 'deadlog'],
-    trees: ['tree_pine', 'tree_spruce', 'tree_cottonwood', 'tree_poplar', 'tree_dead'], plants: ['bush', 'twigs']
+    trees: ['tree_pine', 'tree_spruce', 'tree_cottonwood', 'tree_poplar', 'tree_dead'], plants: ['bush', 'twigs'],
+    bnodes_n: ['b_n_clay', 'b_n_iron'], bnodes_f: ['b_n_clay_far', 'b_n_iron_far']   // 粘土・鉄の鉱脈（近く用は高・中、遠く用は全部）
   };
   const loading = {};
   function loadGroup(g) {
@@ -215,6 +216,9 @@
           return 1;
         }, { shadow: true });
       }
+    } else if (g === 'bnodes_n' || g === 'bnodes_f') {
+      const sfx = g === 'bnodes_n' ? 'N' : 'F', nm = g === 'bnodes_n' ? ['b_n_clay', 'b_n_iron'] : ['b_n_clay_far', 'b_n_iron_far'];
+      [['clay', nm[0]], ['iron', nm[1]]].forEach(a => { const ms = S.models[a[1]]; if (ms && ms.length) makeForm(a[0] + sfx, ms, countOf(a[0]), plain, { shadow: sfx === 'N' }); });
     } else if (g === 'wood') {
       const st = S.models.stump, dl = S.models.deadlog;
       if (st && st.length) {
@@ -327,8 +331,8 @@
       }
       case 'bush': return (modelsOn('plants') && q.bushDist && d < q.bushDist && S.forms.bush) || codeForm('bush');
       case 'stone': return (S.key !== 'low' && S.forms.stones) || codeForm('stone');
-      case 'clay': return (S.key !== 'low' && S.forms.clayhd) || codeForm('clay');
-      case 'iron': return (modelsOn('rocks') && d < q.rockDist * 1.5 && S.forms.iron) || codeForm('iron');
+      case 'clay': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist * 1.5 && S.forms.clayN) || (S.ready.bnodes_f && S.forms.clayF) || (S.key !== 'low' && S.forms.clayhd) || codeForm('clay');
+      case 'iron': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist * 1.5 && S.forms.ironN) || (S.ready.bnodes_f && S.forms.ironF) || (modelsOn('rocks') && d < q.rockDist * 1.5 && S.forms.iron) || codeForm('iron');
     }
     return codeForm(nd.k);
   }
@@ -390,6 +394,8 @@
     S.key = key;
     const q = G.Q[key];
     ['rocks', 'wood', 'trees', 'plants'].forEach(g => { if (q.models.indexOf(g) >= 0) loadGroup(g); });
+    loadGroup('bnodes_f');
+    if (q.models.indexOf('rocks') >= 0) loadGroup('bnodes_n');
     /* 画質が変わったら、粘土・小石の写真の貼りかえは photo.js が呼ぶ */
     S.dirty = true; S.flushNow = true;
   }

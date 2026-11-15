@@ -240,9 +240,10 @@
     Tn.residents.forEach(r => {
       const dx = r.x - cam.x, dz = r.z - cam.z, g = G.people.pick(r.v, dx * dx + dz * dz), bob = r.mv ? Math.abs(Math.sin(time * 7 + r.ph)) * 0.05 : 0;
       B.Quaternion.RotationAxisToRef(B.Axis.Y, r.ry, _q); _t.set(r.x, bob, r.z);
-      B.Matrix.ComposeToRef(_s, _q, _t, _m); _m.copyToArray(g.buf, g.n * 16); g.n++;
+      B.Matrix.ComposeToRef(_s, _q, _t, _m);
+      G.people.write(g, _m, r.mv ? Math.sin(time * 7 + r.ph) * G.people.swing(r.v) : 0);
     });
-    Tn.pgroups.forEach(g => { g.meshes.forEach(m => { m.thinInstanceCount = g.n; if (g.n) m.thinInstanceBufferUpdated('matrix'); }); });
+    G.people.flush();
   };
 
   /* ---------- 建築モード（見本・回す・置く・こわす） ---------- */

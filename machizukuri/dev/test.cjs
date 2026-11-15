@@ -540,6 +540,74 @@ const HELPERS = () => {
     await a.c.close();
   }
 
+  /* 主人公・住民・道具・粘土・鉄の鉱脈が GLB で出る（中）と、低では遠く用だけ読む */
+  for (const q of ['mid', 'low']) {
+    const a = await open2({ pref: q });
+    await begin2(a.pg);
+    await ev(a.pg, () => { MZ.noSave = true; Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 99; }); });
+    await loaded(a.pg);
+    await a.pg.waitForFunction(() => { const c = MZ.gfx.looks.state.chr; return c.player && (c.player.far || c.player.near) && c.person_c && c.person_c.far; }, null, { timeout: 120000 });
+    await a.pg.waitForTimeout(1500);
+    const r = await ev(a.pg, () => {
+      const L = MZ.gfx.looks.state, o = {};
+      o.pn = !!(L.chr.player.near), o.pf = !!(L.chr.player.far);
+      o.tools = Object.keys(L.tool).length;
+      o.nearPeople = MZ.gfx.people.state.near.filter(Boolean).length;
+      o.farPeople = MZ.gfx.people.state.far.filter(Boolean).length;
+      o.pm = MZ.gfx.looks.playerModel().metadata;
+      o.nodes = Object.keys(MZ.gfx.nodes.state.forms).filter(k => /^(clay|iron)[NF]$/.test(k)).sort().join(',');
+      return { pn: o.pn, pf: o.pf, tools: o.tools, nearPeople: o.nearPeople, farPeople: o.farPeople, glb: o.pm && o.pm.glb, parts: o.pm && o.pm.parts ? Object.keys(o.pm.parts).sort().join(',') : null, nodes: o.nodes, failed: MZ.gfx.assets.failed.length };
+    });
+    if (q === 'mid') {
+      ok('中：主人公・住民・道具・粘土・鉄の GLB が読めた（近く用・遠く用）', r.pn && r.pf && r.tools === 6 && r.nearPeople === 3 && r.farPeople === 3 && r.failed === 0 && r.nodes === 'clayF,clayN,ironF,ironN', JSON.stringify(r));
+      ok('中：主人公の根は近く用で、脚と腕の根がある', r.glb === 'near' && r.parts === 'armL,armR,legL,legR', JSON.stringify(r));
+    } else {
+      ok('低：近く用を読まない（主人公・住民・道具・粘土・鉄は遠く用だけ）', !r.pn && r.pf && r.tools === 0 && r.nearPeople === 0 && r.farPeople === 3 && r.nodes === 'clayF,ironF', JSON.stringify(r));
+      ok('低：主人公の根は遠く用', r.glb === 'far' && r.parts === 'armL,armR,legL,legR', JSON.stringify(r));
+    }
+    /* 三人称：道具が手に出る */
+    const t3 = await ev(a.pg, () => {
+      const s = MZ.state.player; s.view = 3; MZ.state.tools.axe = 2; MZ.state.tools.pick = 3; MZ.player.lastTool = 'pick';
+      MZ.player.updateCamera(0.016);
+      const pm = MZ.player.model, md = pm.metadata, held = Object.keys(md.tools || {}).filter(k => md.tools[k].cl.some(c => c.isEnabled()));
+      return { en: pm.isEnabled(), held: held.join(','), glb: md.glb };
+    });
+    ok(q + '：三人称で主人公が出る。道具は' + (q === 'mid' ? '持っている段（つるはし 3）の GLB を手に持つ' : '遠く用のため持たない（コードの形のまま）'), t3.en && (q === 'mid' ? t3.held === 'pick3' : t3.held === ''), JSON.stringify(t3));
+    /* 一人称：手の道具 */
+    const t1 = await ev(a.pg, () => {
+      const s = MZ.state.player; s.view = 1; MZ.player.lastTool = 'axe'; MZ.player.updateCamera(0.016);
+      const H = MZ.player.hands.axe;
+      return { root: H.root.isEnabled(), code: H.code.isEnabled(), glb: Object.keys(H.glb).join(','), glbOn: [1, 2, 3].filter(l => H.glb[l] && H.glb[l].every(c => c.isEnabled())).join(',') };
+    });
+    if (q === 'mid') ok('中：一人称の手に斧（石の斧 = 2）の GLB が出る（コードの形は隠れる）', t1.root && !t1.code && t1.glbOn === '2', JSON.stringify(t1));
+    else ok('低：一人称の手はコードの形', t1.root && t1.code && t1.glb === '', JSON.stringify(t1));
+    /* 住民：近い人は部品ごと・脚が振れる */
+    const pp = await ev(a.pg, () => {
+      MZ.world.nodes.forEach(nd => { if (nd.gx >= 40 && nd.gx <= 80 && nd.gz >= 40 && nd.gz <= 80) MZ.world.take(nd.idx, -1); });
+      for (let i = 0; i < 4; i++) MZ.place('house', 52 + i * 3, 60, 0);
+      MZ.state.timers.migrate = 0; MZ.state.pop = 6; MZ.town.resDirty = true; MZ.tick(1);
+      const p = MZ.state.player; p.x = 0; p.z = -9;
+      const cam = MZ.world.camera.position;
+      MZ.town.residents.forEach((r, i) => { r.x = p.x + (i - 2.5) * 0.9; r.z = p.z + 3 + (i % 2); r.mv = true; r.wait = 0; });
+      MZ.player.updateCamera(0.016); MZ.world.camera.computeWorldMatrix(true);
+      MZ.town.render(0.9);
+      const gs = MZ.gfx.people.state.groups.filter(g => g.n > 0);
+      const near = gs.filter(g => g.parts);
+      const diff = near.length ? near.some(g => { for (let i = 0; i < g.n; i++) { const b = g.bufs[0][i * 16 + 5], l = g.bufs[1][i * 16 + 6]; if (Math.abs(g.bufs[1][i * 16 + 6] - g.bufs[0][i * 16 + 6]) > 1e-4 || Math.abs(g.bufs[3][i * 16 + 6] - g.bufs[0][i * 16 + 6]) > 1e-4) return true; } return false; }) : false;
+      return { n: gs.reduce((a, g) => a + g.n, 0), nearGroups: near.length, parts: near.length ? near[0].meshes.length : 0, diff, swingB: MZ.gfx.people.swing(1), swingA: MZ.gfx.people.swing(0) };
+    });
+    if (q === 'mid') ok('中：近い住民は 5 つの部品で出て、歩くと脚・腕の行列が胴と変わる', pp.n === 6 && pp.nearGroups >= 1 && pp.parts === 5 && pp.diff, JSON.stringify(pp));
+    else ok('低：住民は遠く用（部品をまとめた 1 つ）だけで出る', pp.n === 6 && pp.nearGroups === 0, JSON.stringify(pp));
+    ok(q + '：スカートの住民（b）の脚の振りは他より小さい', pp.swingB < pp.swingA && pp.swingB <= 0.35, JSON.stringify(pp));
+    /* 粘土・鉄：近く用か遠く用で出る */
+    await ev(a.pg, () => { const p = MZ.state.player, c = MZ.world.nodes.find(n => n.k === 'clay'), i = MZ.world.nodes.find(n => n.k === 'iron'); p.x = c.x - 3; p.z = c.z - 3; MZ.gfx.nodes.flush(); });
+    await settle(a.pg, 2);
+    const nd = await ev(a.pg, () => MZ.gfx.nodes.stats());
+    ok(q + '：粘土が' + (q === 'mid' ? '近く用（clayN）' : '遠く用（clayF）') + 'で出る', q === 'mid' ? (nd.clayN > 0) : (nd.clayF > 0 && !nd.clayN), JSON.stringify(nd));
+    ok(q + '：主人公・住民・道具・粘土・鉄の場面でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+
   /* ================= スマホ ================= */
   const saved = before;
   const mobile = async (name, w, h) => {

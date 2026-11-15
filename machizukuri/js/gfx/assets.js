@@ -48,7 +48,15 @@
     { id: 'b_lumber', required: false, tiers: ['high', 'mid'], models: ['b_lumber'] },
     { id: 'b_lumber_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_lumber_far'] },
     { id: 'b_bhouse', required: false, tiers: ['high', 'mid'], models: ['b_bhouse'] },
-    { id: 'b_bhouse_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bhouse_far'] }
+    { id: 'b_bhouse_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bhouse_far'] },
+    /* 主人公・住民・道具・採れる物（第 3 弾）。人と採れる物は近く用（高・中）と遠く用（全部）、道具は近く用だけ（低はコードの形） */
+    { id: 'b_player', required: false, tiers: ['high', 'mid'], models: ['b_player'] },
+    { id: 'b_player_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_player_far'] },
+    { id: 'b_person', required: false, tiers: ['high', 'mid'], models: ['b_person_a', 'b_person_b', 'b_person_c'] },
+    { id: 'b_person_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_person_a_far', 'b_person_b_far', 'b_person_c_far'] },
+    { id: 'b_tools', required: false, tiers: ['high', 'mid'], models: ['b_tool_axe1', 'b_tool_axe2', 'b_tool_axe3', 'b_tool_pick1', 'b_tool_pick2', 'b_tool_pick3'] },
+    { id: 'b_nodes', required: false, tiers: ['high', 'mid'], models: ['b_n_clay', 'b_n_iron'] },
+    { id: 'b_nodes_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_n_clay_far', 'b_n_iron_far'] }
   ];
   /* 建物の見た目の対応：種類 → { near, far, fix }。fix はモデルの向き・大きさの直し（yaw はラジアン）。lod は近く用→遠く用の切りかえ距離（省略すると画質の houseNear。遠く用が箱に近い建物は遠めにする）。
      ファイルを置いたら、上の MANIFEST に組を足し、ここに 1 行足す。足りない物はコードの形（models.js）になる */
@@ -62,7 +70,7 @@
     furnace: { near: 'b_furnace', far: 'b_furnace_far', fix: {} },
     field: { near: 'b_field', far: 'b_field_far', fix: {} },
     lumber: { near: 'b_lumber', far: 'b_lumber_far', fix: {} },
-    bhouse: { near: 'b_bhouse', far: 'b_bhouse_far', fix: {}, lod: 35 }
+    bhouse: { near: 'b_bhouse', far: 'b_bhouse_far', fix: {}, lod: 36 }
   };
 
   const A = G.assets = { done: 0, total: 0, failed: [], okMap: {}, started: {}, onProgress: null, tierAsked: {} };
