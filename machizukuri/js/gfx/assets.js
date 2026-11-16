@@ -17,8 +17,8 @@
   /* 近く用の建物・道具・採れる物の写真（assets/models/tex/m_<材質>_<種類>_<px>.jpg）。GLB は写真を中に持たず、外の画像（uri は tex/m_….jpg。`..` は使えない）として指す。
      BTEX は「高と中で読む」写真の名前（法線の 1024 は高だけ。中は texUrl で 512 に読みかえる）。BTEX_USERS は写真を使う GLB の名前（写真がそろってから読む）。
      足すときは、写真を assets/models/tex/ に置き（APP11 を抜いてから）、ここへ足す */
-  G.BTEX = ['m_bark_col_1024.jpg', 'm_bark_col_512.jpg', 'm_bark_nrm_1024.jpg', 'm_bark_nrm_512.jpg', 'm_bark_orm_512.jpg', 'm_brick_col_1024.jpg', 'm_brick_nrm_1024.jpg', 'm_brick_orm_512.jpg', 'm_clay_col_1024.jpg', 'm_clay_nrm_1024.jpg', 'm_clay_orm_512.jpg', 'm_hwood_col_512.jpg', 'm_hwood_nrm_512.jpg', 'm_hwood_orm_512.jpg', 'm_iron_col_256.jpg', 'm_iron_nrm_256.jpg', 'm_iron_orm_256.jpg', 'm_leather_col_512.jpg', 'm_leather_nrm_512.jpg', 'm_leather_orm_512.jpg', 'm_mud_col_1024.jpg', 'm_mud_nrm_1024.jpg', 'm_mud_orm_512.jpg', 'm_rust_col_512.jpg', 'm_rust_nrm_512.jpg', 'm_rust_orm_512.jpg', 'm_soil_col_1024.jpg', 'm_soil_nrm_1024.jpg', 'm_soil_orm_512.jpg', 'm_steel_col_512.jpg', 'm_steel_nrm_512.jpg', 'm_steel_orm_512.jpg', 'm_stone_col_1024.jpg', 'm_stone_col_256.jpg', 'm_stone_col_512.jpg', 'm_stone_nrm_1024.jpg', 'm_stone_nrm_256.jpg', 'm_stone_nrm_512.jpg', 'm_stone_orm_256.jpg', 'm_stone_orm_512.jpg', 'm_straw_col_512.jpg', 'm_straw_nrm_512.jpg', 'm_straw_orm_512.jpg', 'm_wood_col_1024.jpg', 'm_wood_col_512.jpg', 'm_wood_nrm_1024.jpg', 'm_wood_nrm_512.jpg', 'm_wood_orm_512.jpg'];
-  G.BTEX_USERS = ['b_hut', 'b_house', 'b_bhouse', 'b_well', 'b_fire', 'b_kiln', 'b_furnace', 'b_field', 'b_lumber', 'b_n_clay', 'b_n_iron', 'b_tool_axe1', 'b_tool_axe2', 'b_tool_axe3', 'b_tool_pick1', 'b_tool_pick2', 'b_tool_pick3'];
+  G.BTEX = ['m_bark_col_1024.jpg', 'm_bark_col_512.jpg', 'm_bark_nrm_1024.jpg', 'm_bark_nrm_512.jpg', 'm_bark_orm_512.jpg', 'm_brick_col_1024.jpg', 'm_brick_nrm_1024.jpg', 'm_brick_orm_512.jpg', 'm_clay_col_1024.jpg', 'm_clay_nrm_1024.jpg', 'm_clay_orm_512.jpg', 'm_hwood_col_512.jpg', 'm_hwood_nrm_512.jpg', 'm_hwood_orm_512.jpg', 'm_iron_col_256.jpg', 'm_iron_nrm_256.jpg', 'm_iron_orm_256.jpg', 'm_leather_col_512.jpg', 'm_leather_nrm_512.jpg', 'm_leather_orm_512.jpg', 'm_linen_col_512.jpg', 'm_linen_nrm_512.jpg', 'm_linen_orm_512.jpg', 'm_mud_col_1024.jpg', 'm_mud_nrm_1024.jpg', 'm_mud_orm_512.jpg', 'm_rust_col_512.jpg', 'm_rust_nrm_512.jpg', 'm_rust_orm_512.jpg', 'm_soil_col_1024.jpg', 'm_soil_nrm_1024.jpg', 'm_soil_orm_512.jpg', 'm_steel_col_512.jpg', 'm_steel_nrm_512.jpg', 'm_steel_orm_512.jpg', 'm_stone_col_1024.jpg', 'm_stone_col_256.jpg', 'm_stone_col_512.jpg', 'm_stone_nrm_1024.jpg', 'm_stone_nrm_256.jpg', 'm_stone_nrm_512.jpg', 'm_stone_orm_256.jpg', 'm_stone_orm_512.jpg', 'm_straw_col_512.jpg', 'm_straw_nrm_512.jpg', 'm_straw_orm_512.jpg', 'm_wood_col_1024.jpg', 'm_wood_col_512.jpg', 'm_wood_nrm_1024.jpg', 'm_wood_nrm_512.jpg', 'm_wood_orm_512.jpg'];
+  G.BTEX_USERS = ['b_hut', 'b_house', 'b_bhouse', 'b_well', 'b_fire', 'b_kiln', 'b_furnace', 'b_field', 'b_lumber', 'b_n_clay', 'b_n_iron', 'b_tool_axe1', 'b_tool_axe2', 'b_tool_axe3', 'b_tool_pick1', 'b_tool_pick2', 'b_tool_pick3', 'b_bigfield', 'b_claypit', 'b_quarry', 'b_workshop', 'b_shop', 'b_storehouse'];
   /* 中画質だけ法線を 512 に読みかえる（高は何もしない）。Babylon が外の画像を取りに行く URL にも同じ関数を通す */
   G.texUrl = (u, tier) => (tier === 'mid' && /\/tex\/m_[a-z]+_nrm_1024\.jpg$/.test(u)) ? u.replace('_nrm_1024.jpg', '_nrm_512.jpg') : u;
   if (B.SceneLoader && B.SceneLoader.OnPluginActivatedObservable) {
@@ -42,11 +42,14 @@
        作業台・小屋・木の家・井戸・たき火・かまど・炉・畑・きこり小屋・れんがの家が届いている（人・道具はまだ） */
     { id: 'btex', required: false, tiers: ['high', 'mid'], files: tier => G.BTEX.map(f => G.texUrl(M + 'tex/' + f, tier)) },
     { id: 'b_bench', required: false, tiers: ['high', 'mid'], models: ['b_bench'] },
-    { id: 'b_bench_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bench_far'] },
+    { id: 'b_bench_far', required: false, tiers: ['high', 'mid'], models: ['b_bench_far'] },
+    { id: 'b_bench_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bench_xfar'] },
     { id: 'b_hut', required: false, tiers: ['high', 'mid'], models: ['b_hut'] },
-    { id: 'b_hut_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_hut_far'] },
+    { id: 'b_hut_far', required: false, tiers: ['high', 'mid'], models: ['b_hut_far'] },
+    { id: 'b_hut_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_hut_xfar'] },
     { id: 'b_house', required: false, tiers: ['high', 'mid'], models: ['b_house'] },
-    { id: 'b_house_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_house_far'] },
+    { id: 'b_house_far', required: false, tiers: ['high', 'mid'], models: ['b_house_far'] },
+    { id: 'b_house_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_house_xfar'] },
     { id: 'b_well', required: false, tiers: ['high', 'mid'], models: ['b_well'] },
     { id: 'b_well_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_well_far'] },
     { id: 'b_fire', required: false, tiers: ['high', 'mid'], models: ['b_fire'] },
@@ -61,6 +64,24 @@
     { id: 'b_lumber_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_lumber_far'] },
     { id: 'b_bhouse', required: false, tiers: ['high', 'mid'], models: ['b_bhouse'] },
     { id: 'b_bhouse_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bhouse_far'] },
+    /* 村の建物 6 種（β0.3.0）。近く用・遠く用は高・中、最遠は全部（低は最遠だけを使う）。工房は最遠のファイルが無く、遠く用を最遠に使う（遠く用は全部で読む） */
+    { id: 'b_bigfield', required: false, tiers: ['high', 'mid'], models: ['b_bigfield'] },
+    { id: 'b_bigfield_far', required: false, tiers: ['high', 'mid'], models: ['b_bigfield_far'] },
+    { id: 'b_bigfield_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_bigfield_xfar'] },
+    { id: 'b_claypit', required: false, tiers: ['high', 'mid'], models: ['b_claypit'] },
+    { id: 'b_claypit_far', required: false, tiers: ['high', 'mid'], models: ['b_claypit_far'] },
+    { id: 'b_claypit_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_claypit_xfar'] },
+    { id: 'b_quarry', required: false, tiers: ['high', 'mid'], models: ['b_quarry'] },
+    { id: 'b_quarry_far', required: false, tiers: ['high', 'mid'], models: ['b_quarry_far'] },
+    { id: 'b_quarry_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_quarry_xfar'] },
+    { id: 'b_shop', required: false, tiers: ['high', 'mid'], models: ['b_shop'] },
+    { id: 'b_shop_far', required: false, tiers: ['high', 'mid'], models: ['b_shop_far'] },
+    { id: 'b_shop_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_shop_xfar'] },
+    { id: 'b_storehouse', required: false, tiers: ['high', 'mid'], models: ['b_storehouse'] },
+    { id: 'b_storehouse_far', required: false, tiers: ['high', 'mid'], models: ['b_storehouse_far'] },
+    { id: 'b_storehouse_xfar', required: false, tiers: ['high', 'mid', 'low'], models: ['b_storehouse_xfar'] },
+    { id: 'b_workshop', required: false, tiers: ['high', 'mid'], models: ['b_workshop'] },
+    { id: 'b_workshop_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_workshop_far'] },
     /* 主人公・住民・道具・採れる物（第 3 弾）。人と採れる物は近く用（高・中）と遠く用（全部）、道具は近く用だけ（低はコードの形） */
     { id: 'b_player', required: false, tiers: ['high', 'mid'], models: ['b_player'] },
     { id: 'b_player_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_player_far'] },
@@ -70,19 +91,25 @@
     { id: 'b_nodes', required: false, tiers: ['high', 'mid'], models: ['b_n_clay', 'b_n_iron'] },
     { id: 'b_nodes_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_n_clay_far', 'b_n_iron_far'] }
   ];
-  /* 建物の見た目の対応：種類 → { near, far, fix }。fix はモデルの向き・大きさの直し（yaw はラジアン）。lod は近く用→遠く用の切りかえ距離（省略すると画質の houseNear。遠く用が箱に近い建物は遠めにする）。
+  /* 建物の見た目の対応：種類 → { near, far, xfar, fix }。xfar は最遠（60m から。遠く用と同じ名前なら、遠く用を最遠にも使う）。fix はモデルの向き・大きさの直し（yaw はラジアン）。lod は近く用→遠く用の切りかえ距離（省略すると画質の houseNear。遠く用が箱に近い建物は遠めにする）。
      ファイルを置いたら、上の MANIFEST に組を足し、ここに 1 行足す。足りない物はコードの形（models.js）になる */
   G.BUILD_MODELS = {
-    bench: { near: 'b_bench', far: 'b_bench_far', fix: {} },
-    hut: { near: 'b_hut', far: 'b_hut_far', fix: {} },
-    house: { near: 'b_house', far: 'b_house_far', fix: {}, lod: 32 },
-    well: { near: 'b_well', far: 'b_well_far', fix: {} },
-    fire: { near: 'b_fire', far: 'b_fire_far', fix: {} },
-    kiln: { near: 'b_kiln', far: 'b_kiln_far', fix: {} },
-    furnace: { near: 'b_furnace', far: 'b_furnace_far', fix: {} },
-    field: { near: 'b_field', far: 'b_field_far', fix: {} },
-    lumber: { near: 'b_lumber', far: 'b_lumber_far', fix: {} },
-    bhouse: { near: 'b_bhouse', far: 'b_bhouse_far', fix: {}, lod: 36 }
+    bench: { near: 'b_bench', far: 'b_bench_far', xfar: 'b_bench_xfar', fix: {} },
+    hut: { near: 'b_hut', far: 'b_hut_far', xfar: 'b_hut_xfar', fix: {} },
+    house: { near: 'b_house', far: 'b_house_far', xfar: 'b_house_xfar', fix: {}, lod: 32 },
+    well: { near: 'b_well', far: 'b_well_far', xfar: 'b_well_far', fix: {} },
+    fire: { near: 'b_fire', far: 'b_fire_far', xfar: 'b_fire_far', fix: {} },
+    kiln: { near: 'b_kiln', far: 'b_kiln_far', xfar: 'b_kiln_far', fix: {} },
+    furnace: { near: 'b_furnace', far: 'b_furnace_far', xfar: 'b_furnace_far', fix: {} },
+    field: { near: 'b_field', far: 'b_field_far', xfar: 'b_field_far', fix: {} },
+    lumber: { near: 'b_lumber', far: 'b_lumber_far', xfar: 'b_lumber_far', fix: {} },
+    bhouse: { near: 'b_bhouse', far: 'b_bhouse_far', xfar: 'b_bhouse_far', fix: {}, lod: 36 },
+    bigfield: { near: 'b_bigfield', far: 'b_bigfield_far', xfar: 'b_bigfield_xfar', fix: {} },
+    claypit: { near: 'b_claypit', far: 'b_claypit_far', xfar: 'b_claypit_xfar', fix: {} },
+    quarry: { near: 'b_quarry', far: 'b_quarry_far', xfar: 'b_quarry_xfar', fix: {} },
+    workshop: { near: 'b_workshop', far: 'b_workshop_far', xfar: 'b_workshop_far', fix: {} },
+    shop: { near: 'b_shop', far: 'b_shop_far', xfar: 'b_shop_xfar', fix: {} },
+    storehouse: { near: 'b_storehouse', far: 'b_storehouse_far', xfar: 'b_storehouse_xfar', fix: {}, lod: 34 }
   };
 
   const MP = {};   // 名前 → 読んで作り直したメッシュの Promise（A.model）
@@ -94,7 +121,7 @@
 
   function progress() { if (A.onProgress) A.onProgress(A.reqDone, A.reqTotal); if (A.onBg) A.onBg(A.done, A.total); }
   /* 読みこみの順（小さいほど先）。必須（空・地面）→ 近く用の木・岩 → 建物 → 人 → 道具・低木 */
-  const PRIO = { sky: 0, ground: 0, path: 0, farm: 0, stone: 1, cobble: 1, treetex: 2, rocks: 2, wood: 2, trees: 2, btex: 2.6, b_nodes_far: 2.5, b_bench_far: 2.5, b_hut_far: 2.5, b_house_far: 2.5, b_well_far: 2.5, b_fire_far: 2.5, b_kiln_far: 2.5, b_furnace_far: 2.5, b_field_far: 2.5, b_lumber_far: 2.5, b_bhouse_far: 2.5, b_player_far: 3.5, b_person_far: 3.5, b_player: 4, b_person: 4, plants: 5, b_tools: 5, b_nodes: 5 };
+  const PRIO = { sky: 0, ground: 0, path: 0, farm: 0, stone: 1, cobble: 1, treetex: 2, rocks: 2, wood: 2, trees: 2, btex: 2.6, b_nodes_far: 2.5, b_hut_xfar: 2.4, b_house_xfar: 2.4, b_bench_xfar: 2.4, b_bigfield_xfar: 2.4, b_claypit_xfar: 2.4, b_quarry_xfar: 2.4, b_shop_xfar: 2.4, b_storehouse_xfar: 2.4, b_bigfield_far: 2.5, b_claypit_far: 2.5, b_quarry_far: 2.5, b_shop_far: 2.5, b_storehouse_far: 2.5, b_workshop_far: 2.5, b_bench_far: 2.5, b_hut_far: 2.5, b_house_far: 2.5, b_well_far: 2.5, b_fire_far: 2.5, b_kiln_far: 2.5, b_furnace_far: 2.5, b_field_far: 2.5, b_lumber_far: 2.5, b_bhouse_far: 2.5, b_player_far: 3.5, b_person_far: 3.5, b_player: 4, b_person: 4, plants: 5, b_tools: 5, b_nodes: 5 };
   A.prioOf = g => (g.id in PRIO ? PRIO[g.id] : g.id.indexOf('b_') === 0 ? 3 : 5);
 
   /* 1 回取りに行く。届いた量を見て、20 秒間ひとつも届かなければ打ち切る（全体の時間では打ち切らない）。結果 true／false */
@@ -222,6 +249,9 @@
       return B.SceneLoader.ImportMeshAsync('', M, name + '.glb', G.scene);
     }).then(res => {
       if (raw) return res;
+      /* 空ノード（工房の煙 smoke など）の位置：左手系に直したあとの、足もとの根からの位置。out.marks に持つ */
+      const marks = {};
+      (res.transformNodes || []).forEach(n => { if (n.name === 'smoke' || n.name === 'flame') { n.computeWorldMatrix(true); marks[n.name] = n.getAbsolutePosition().clone(); } });
       const out = [];
       res.meshes.forEach(m => {
         if (!m.getTotalIndices || !m.getTotalIndices()) return;
@@ -235,6 +265,7 @@
       });
       res.meshes.forEach(m => { if (out.indexOf(m) < 0) m.dispose(); });
       out.forEach(m => m.refreshBoundingInfo());
+      out.marks = marks;
       return out;
     });
     MP[k].catch(() => {});

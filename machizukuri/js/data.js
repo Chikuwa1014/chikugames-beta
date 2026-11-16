@@ -3,7 +3,7 @@
 (function () {
   const MZ = window.MZ = window.MZ || {};
   MZ.GAME = 'machizukuri';
-  MZ.VERSION = 'β0.2.0';
+  MZ.VERSION = 'β0.3.0';
   MZ.SAVE_KEY = 'machizukuri-save';
   MZ.SAVE_V = 2;
 
@@ -100,7 +100,7 @@
     bhouse: { name: 'れんがの家', w: 2, solid: true,  cost: { brick: 12, plank: 6, ingot: 2 }, home: 4, stage: 1, note: '4人が住める' },
     quarry: { name: '採石場',     w: 2, solid: true,  cost: { plank: 12, ingot: 4, rope: 4 }, stage: 2, jobs: 3, makes: { stone: 3 }, every: 30, note: '住民3人で石を自動でつくる' },
     claypit: { name: '粘土採り場', w: 2, solid: true, cost: { plank: 10, stone: 8, rope: 2 }, stage: 2, jobs: 2, makes: { clay: 2 }, every: 30, note: '住民2人で粘土を自動でつくる' },
-    workshop: { name: '工房',     w: 2, solid: true,  cost: { brick: 16, plank: 12, ingot: 4 }, stage: 2, jobs: 3, every: 25, craft: ['plank', 'brick', 'ingot'], note: '住民3人で、えらんだ材料を自動でつくる' },
+    workshop: { name: '工房',     w: 2, solid: true,  cost: { brick: 16, plank: 12, ingot: 4 }, stage: 2, jobs: 3, every: 25, smoke: true, craft: ['plank', 'brick', 'ingot'], note: '住民3人で、えらんだ材料を自動でつくる' },
     shop:   { name: '商店',       w: 2, solid: true,  cost: { brick: 20, plank: 16, ingot: 4 }, stage: 2, shop: 30, staff: 2, note: '30人分の店' },
     storehouse: { name: '倉庫',   w: 3, solid: true,  cost: { brick: 24, plank: 24, ingot: 6 }, stage: 2, store: 150, note: '自動でたまる上限が 150 ふえる' }
   };

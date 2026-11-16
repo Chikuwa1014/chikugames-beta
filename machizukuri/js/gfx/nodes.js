@@ -345,7 +345,7 @@
     switch (nd.k) {
       case 'tree': {
         if (modelsOn('trees') && d < q.treeLod[1]) {
-          const f = S.forms[treeType(nd.idx) + ':' + (d < q.treeLod[0] ? 0 : 1)];
+          const f = S.forms[treeType(nd.idx) + ':' + (d < q.treeLod[0] * G.dyn.treeF ? 0 : 1)];
           if (f) return f;
         }
         return codeForm(nd.g.vi ? 'tree2' : 'tree');
@@ -370,6 +370,8 @@
     for (let i = 0; i < S.nodes.length; i++) {
       const nd = S.nodes[i];
       nd.look = null;
+      /* 見えなくなる距離（nodeFar）より遠い物は、どの入れ物にも入れない（切り株も） */
+      if (Math.abs(nd.x - px) > q.nodeFar || Math.abs(nd.z - pz) > q.nodeFar || Math.hypot(nd.x - px, nd.z - pz) > q.nodeFar) continue;
       if (!W.nodeActive(nd.idx)) {
         /* 切った木のあとに切り株（高・中）。建物の下で二度と出ない所（-1）には出さない */
         if (nd.k === 'tree' && W.takenOf(nd.idx) >= 0 && modelsOn('wood') && S.forms.stump) { const f = S.forms.stump; f.write(nd, f.buf, f.n, 0); f.n++; }

@@ -3,7 +3,7 @@
    点の光を付けるのは、主人公にいちばん近いたき火 1 つだけ（0.5 秒ごとに選びなおす）。 */
 (function () {
   const MZ = window.MZ, B = BABYLON, G = MZ.gfx;
-  const F = { list: [], mats: null, light: null, dot: null, puff: null, key: 'low', acc: 0, cur: null };
+  const F = { list: [], smokes: [], mats: null, light: null, dot: null, puff: null, key: 'low', acc: 0, cur: null };
   function softTexture(name, blobs) {
     const S = 64, t = new B.DynamicTexture(name, { width: S, height: S }, G.scene, true);
     const c = t.getContext(), rnd = G.rng(77);
@@ -121,13 +121,53 @@
     const i = F.list.indexOf(h); if (i >= 0) F.list.splice(i, 1);
     F.acc = 1;
   }
+  /* 工房の煙：建物（put の返す物。bid は建物の id）ごとに登録しておく。仕事場が動いている（run）工房のうち、主人公から 60m 以内で近い順に 4 つまでだけ、粒を出す */
+  const SMOKE_NEAR = 60, SMOKE_MAX = 4;
+  function addSmoke(obj) { const h = { obj, ps: null, pos: new B.Vector3() }; F.smokes.push(h); F.acc = 1; return h; }
+  function removeSmoke(h) { stopSmoke(h); const i = F.smokes.indexOf(h); if (i >= 0) F.smokes.splice(i, 1); }
+  function startSmoke(h) {
+    if (h.ps) return;
+    const low = F.key === 'low', ps = new B.ParticleSystem('chimney', low ? 40 : 70, G.scene);
+    ps.particleTexture = F.puff; ps.emitter = h.pos.clone();
+    ps.minEmitBox = new B.Vector3(-0.15, 0, -0.15); ps.maxEmitBox = new B.Vector3(0.15, 0.1, 0.15);
+    ps.color1 = new B.Color4(0.3, 0.29, 0.28, 0.3); ps.color2 = new B.Color4(0.4, 0.38, 0.36, 0.22); ps.colorDead = new B.Color4(0.5, 0.49, 0.47, 0);
+    ps.addSizeGradient(0, 0.4); ps.addSizeGradient(1, 3.2);
+    ps.minLifeTime = 4; ps.maxLifeTime = 7; ps.emitRate = low ? 5 : 9;
+    ps.blendMode = B.ParticleSystem.BLENDMODE_STANDARD;
+    ps.gravity = new B.Vector3(0.4, 0.2, 0.15);
+    ps.direction1 = new B.Vector3(-0.1, 0.7, -0.1); ps.direction2 = new B.Vector3(0.1, 1.1, 0.1);
+    ps.minEmitPower = 0.3; ps.maxEmitPower = 0.7;
+    ps.minAngularSpeed = -0.4; ps.maxAngularSpeed = 0.4; ps.minInitialRotation = 0; ps.maxInitialRotation = 6.28;
+    ps.updateSpeed = 0.016; ps.preWarmCycles = 60; ps.preWarmStepOffset = 4;
+    ps.start(); h.ps = ps;
+  }
+  function stopSmoke(h) { if (h.ps) { h.ps.stop(); h.ps.dispose(); h.ps = null; } }
+  const _sc = [];
+  function smokeTick(px, pz) {
+    _sc.length = 0;
+    const Tn = MZ.town;
+    for (let i = 0; i < F.smokes.length; i++) {
+      const h = F.smokes[i], b = Tn.byId[h.obj.bid];
+      if (!b || Tn.workSt(b) !== 'run') continue;
+      G.looks.smokePos(h.obj, h.pos);
+      const d = Math.hypot(h.pos.x - px, h.pos.z - pz);
+      if (d <= SMOKE_NEAR) { h.d = d; _sc.push(h); }
+    }
+    _sc.sort((a, c) => a.d - c.d);
+    for (let i = 0; i < F.smokes.length; i++) {
+      const h = F.smokes[i], on = _sc.indexOf(h) >= 0 && _sc.indexOf(h) < SMOKE_MAX;
+      if (on) { startSmoke(h); h.ps.emitter.copyFrom(h.pos); } else stopSmoke(h);
+    }
+  }
   function apply(key) {
+    F.smokes.forEach(stopSmoke);   // 画質で粒の数が変わる。次の smokeTick で作り直す
+    F.acc = 1;
     F.key = key;
     F.list.forEach(h => { if (key === 'low') stopFx(h); else startFx(h); });
   }
   /* 毎フレーム：炎の時間・点の光のゆらぎ・いちばん近いたき火の選びなおし */
   function update(dt, time, px, pz) {
-    if (!F.mats) return;
+    if (!F.mats) { if (!F.smokes.length) return; init(); }   // たき火が無くても、煙の粒の絵は要る
     for (let i = 0; i < F.mats.length; i++) F.mats[i].setFloat('time', time + i * 1.7);
     F.acc += dt;
     if (F.acc >= 0.5) {
@@ -137,6 +177,7 @@
       F.cur = best;
       /* 光は有効のまま、近くに無いときは強さ 0（有効・無効を切りかえると、材質のシェーダーが作り直されて止まる） */
       if (best) F.light.position.set(best.x, 0.9, best.z);
+      smokeTick(px, pz);
     }
     const fl = 0.78 + 0.12 * Math.sin(time * 13.1) + 0.08 * Math.sin(time * 7.3 + 1.0) + 0.06 * Math.sin(time * 23.7 + 2.0);
     if (F.cur) {
@@ -145,5 +186,5 @@
       G.grassFirePos.copyFrom(F.light.position);
     } else { F.light.intensity = 0; G.grassFireCol.set(0, 0, 0); }
   }
-  G.fire = { init, add, remove, apply, update, state: F };
+  G.fire = { init, add, remove, addSmoke, removeSmoke, smokeTick, apply, update, state: F };
 })();

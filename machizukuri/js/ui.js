@@ -179,13 +179,13 @@
     const s = MZ.state, T0 = MZ.T, lh = (T0.span - 1) / 2, p = s.player;
     const here = MZ.chunkOfCell(MZ.cellOf(p.x), MZ.cellOf(p.z)).key;
     if (!U.landSel || MZ.landState(...U.landSel.split(',').map(Number)) === 'out') U.landSel = '';
-    let h = '<p class="small">広げたい区画をえらぶ（上が北）。となりの区画だけ広げられる。</p><div class="lmap">';
+    let h = '<p class="small">広げたい区画をえらぶ（上が北）。となりの区画だけ広げられる。</p><div class="lwrap"><div class="lmap">';
     for (let cz = lh; cz >= -lh; cz--) for (let cx = -lh; cx <= lh; cx++) {
       const key = cx + ',' + cz, st = MZ.landState(cx, cz), kd = MZ.KINDS[MZ.CHUNK_KINDS[key]];
       const lab = st === 'own' ? 'もっている' : st === 'adj' ? '広げられる' : 'となりを先に';
       h += '<button class="lc ' + st + (key === here ? ' here' : '') + (key === U.landSel ? ' sel' : '') + '" data-land="' + key + '" aria-pressed="' + (key === U.landSel) + '"><b>' + kd.name + '</b><span>' + lab + '</span>' + (key === here ? '<i>いまここ</i>' : '') + '</button>';
     }
-    h += '</div>';
+    h += '</div>';   // .lmap（地図は左、えらんだ区画の材料の表は右。縦持ちでも 1 画面に収める）
     if (U.landSel) {
       const c = U.landSel.split(',').map(Number), key = U.landSel, kd = MZ.KINDS[MZ.CHUNK_KINDS[key]], st = MZ.landState(c[0], c[1]);
       h += '<div class="ld"><div class="rt"><b>' + kd.name + '</b><span>' + kindNote(MZ.CHUNK_KINDS[key]) + '</span></div>';
@@ -198,7 +198,7 @@
       }
       h += '</div>';
     }
-    return h;
+    return h + '</div>';
   }
   function capLine() {
     const n = MZ.town.count('storehouse');

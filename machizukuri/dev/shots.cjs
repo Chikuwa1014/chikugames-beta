@@ -80,6 +80,39 @@ const SETUP = {
     [['stoneroad', 46], ['quarry', 49], ['claypit', 54], ['workshop', 59], ['shop', 64], ['storehouse', 69], ['bigfield', 75]].forEach(a => MZ.place(a[0], a[1], 56, 0));
     s.player.x = 4; s.player.z = -34; s.player.yaw = 0; s.player.pitch = 0.12; s.player.view = 1;
   },
+  /* 新しい建物 6 種の GLB の寄り（newbnear：近く用）と 60m 先（newbfar：最遠）。一人称。近くの建物の係を、すぐ回す */
+  newbnear: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 9999; });
+    MZ.world.nodes.forEach(nd => { if (nd.gx >= 36 && nd.gx <= 100 && nd.gz >= 48 && nd.gz <= 70) MZ.world.take(nd.idx, -1); });
+    [['quarry', 40], ['claypit', 46], ['workshop', 52], ['shop', 58], ['storehouse', 64], ['bigfield', 71]].forEach(a => MZ.place(a[0], a[1], 56, 0));
+    s.player.x = -2; s.player.z = -20; s.player.yaw = 0.0; s.player.pitch = 0.1; s.player.view = 1;
+  },
+  newbfar: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 9999; });
+    MZ.world.nodes.forEach(nd => { if (nd.gx >= 30 && nd.gx <= 100 && nd.gz >= 0 && nd.gz <= 70) MZ.world.take(nd.idx, -1); });
+    [['quarry', 40], ['claypit', 46], ['workshop', 52], ['shop', 58], ['storehouse', 64], ['bigfield', 71]].forEach(a => MZ.place(a[0], a[1], 56, 0));
+    s.player.x = -8; s.player.z = -72; s.player.yaw = 0.0; s.player.pitch = 0.04; s.player.view = 1;
+  },
+  /* 工房の煙：工房を 2 つ、仕事場が動く状態（人口・材料を持たせて tick）で */
+  smoke: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; s.pop = 30; Object.keys(s.inv).forEach(k => { s.inv[k] = 9999; });
+    MZ.world.nodes.forEach(nd => { if (nd.gx >= 40 && nd.gx <= 90 && nd.gz >= 44 && nd.gz <= 70) MZ.world.take(nd.idx, -1); });
+    [['workshop', 56, 0], ['workshop', 64, 1], ['house', 48, 0], ['house', 72, 0]].forEach(a => MZ.place(a[0], a[1], 56, a[2]));
+    MZ.town.list().filter(b => b.t === 'workshop').forEach(b => MZ.setMake(b.id, 'brick'));
+    s.inv.stone = 100; s.inv.clay = 100; s.inv.brick = 0; s.timers.migrate = -1e6; MZ.tick(8);
+    s.player.x = 4; s.player.z = -20; s.player.yaw = 0; s.player.pitch = -0.28; s.player.view = 1;
+  },
+  /* 大きな畑の土（地面の塗り分け）の寄り */
+  bigsoil: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 9999; });
+    MZ.world.nodes.forEach(nd => { if (nd.gx >= 40 && nd.gx <= 90 && nd.gz >= 44 && nd.gz <= 70) MZ.world.take(nd.idx, -1); });
+    MZ.place('bigfield', 60, 56, 0); MZ.place('field', 66, 56, 0);
+    s.player.x = 2; s.player.z = -14; s.player.yaw = 0; s.player.pitch = 0.45; s.player.view = 1;
+  },
   village: () => {
     MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
     const s = MZ.state; s.stage = 3; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });
@@ -146,7 +179,7 @@ const SETUP = {
   },
   panel: () => { const s = MZ.state.player; s.view = 1; s.x = 0; s.z = -7; s.yaw = 0; s.pitch = 0; MZ.ui.panel(true); }
 };
-const ORDER = ['start', 'wide', 'near', 'near2', 'build', 'town', 'panel', 'work', 'cobble', 'newb', 'village', 'lshape', 'land9', 'landtab', 'landedge', 'kindrock', 'kindforest', 'kindclay'];
+const ORDER = ['start', 'wide', 'near', 'near2', 'build', 'town', 'panel', 'work', 'cobble', 'newb', 'newbnear', 'newbfar', 'smoke', 'bigsoil', 'village', 'lshape', 'land9', 'landtab', 'landedge', 'kindrock', 'kindforest', 'kindclay'];
 
 (async () => {
   const br = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -171,7 +204,7 @@ const ORDER = ['start', 'wide', 'near', 'near2', 'build', 'town', 'panel', 'work
       if (ONLY.length && !ONLY.includes(name)) continue;
       await page.evaluate('(' + SETUP[name].toString() + ')()');
       /* 並べ直しを待たずに強制（β0.2.0 のときだけ）。そのあと描かせる */
-      await page.evaluate(() => { if (window.MZ.gfx && MZ.gfx.nodes) { const s = MZ.state.player; MZ.gfx.nodes.flush(); MZ.gfx.grass.layout(s.x, s.z); } });
+      await page.evaluate(() => { if (window.MZ.gfx && MZ.gfx.nodes) { const s = MZ.state.player; MZ.gfx.nodes.flush(); MZ.gfx.grass.layout(s.x, s.z); if (MZ.gfx.looks.nearTick) MZ.gfx.looks.nearTick(1, true); if (MZ.gfx.fire.smokeTick) MZ.gfx.fire.smokeTick(s.x, s.z); } });
       await frames(q === 'high' ? 2 : 4);
       const file = OUT + (TAG ? TAG + '-' : '') + dev + '-' + name + '-' + (TAG === 'b010' ? 'x' : q) + '.png';
       await page.screenshot({ path: file, timeout: 600000 });

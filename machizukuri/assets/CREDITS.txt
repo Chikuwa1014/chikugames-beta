@@ -78,6 +78,9 @@ hwood    fine_grained_wood   Rob Tuytel                                  CC0  ht
 rust     rust_coarse_01      Dimitrios Savva, Rico Cilliers              CC0  https://polyhaven.com/a/rust_coarse_01
 steel    rusty_metal_02      Rob Tuytel（色を抜いて暗く、金属 1）         CC0  https://polyhaven.com/a/rusty_metal_02
 leather  brown_leather       Rob Tuytel                                  CC0  https://polyhaven.com/a/brown_leather
+linen    rough_linen         colormass, Rico Cilliers                    CC0  https://polyhaven.com/a/rough_linen （粘土採り場の日よけ布・商店と倉庫の布。主人公の服と同じ写真）
+
+新しい建物 6 種（β0.3.0。大きな畑・粘土採り場・採石場・工房・商店・倉庫：b_<種類>.glb・_far.glb・_xfar.glb。工房は _xfar なし）と、最遠の 3 つ（小屋・木の家・作業台の b_hut_xfar.glb・b_house_xfar.glb・b_bench_xfar.glb）も、形は自作で、写真は上の表（m_*.jpg）を使う。
 
 --- 敷石（assets/tex/cobble_*.jpg） ---
 assetId            使った建物                     用途                         作者（Poly Haven の表記）     ライセンス  URL

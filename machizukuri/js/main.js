@@ -37,6 +37,7 @@
       G.sky.update && G.sky.update(gtime);
       G.grass.update(dt, gtime, ps.x, ps.z);
       G.nodes.update(dt, ps.x, ps.z);
+      G.looks.nearTick(dt);
       G.fire.update(dt, gtime, ps.x, ps.z);
       G.post.update(ps.x, ps.z, ps.yaw);
       G.budgetTick(dt);
@@ -46,5 +47,5 @@
   };
 
   /* 描く呼び出しの数など（手元の確かめ用） */
-  MZ.stats = () => ({ activeMeshes: MZ.world.scene.getActiveMeshes().length, totalMeshes: MZ.world.scene.meshes.length, nodes: MZ.world.nodes.length, tris: MZ.gfx.tris(), quality: MZ.gfx.key });
+  MZ.stats = () => ({ activeMeshes: MZ.world.scene.getActiveMeshes().length, totalMeshes: MZ.world.scene.meshes.length, nodes: MZ.world.nodes.length, tris: MZ.gfx.tris(), quality: MZ.gfx.key, nearBuildings: MZ.gfx.looks.nearCount(), budget: MZ.gfx.budgetState() });
 })();

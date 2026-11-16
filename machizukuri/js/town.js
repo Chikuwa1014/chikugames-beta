@@ -52,7 +52,7 @@
     Tn.byId[b.id] = b;
     cellsOf(b, ci => { W.owner[ci] = b.id; if (d.solid) W.solid[ci] = 1; });
     const c = center(b);
-    Tn.meshes[b.id] = MZ.gfx.put(b.t, c[0], c[1], b.r * Math.PI / 2);   // .dispose() で消える
+    Tn.meshes[b.id] = MZ.gfx.put(b.t, c[0], c[1], b.r * Math.PI / 2, b.id);   // .dispose() で消える
     if (!bulk) MZ.gfx.ground.mark(b);                                   // 道・畑・踏み固めの塗り分け、草のマス
     /* 建物と重なる採れる物は、二度と出ない */
     cellsOf(b, ci => { const ni = W.cellNode[ci]; if (ni >= 0 && W.takenOf(ni) !== undefined) W.forbid(ni); });
