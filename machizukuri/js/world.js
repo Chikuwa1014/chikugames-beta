@@ -99,12 +99,17 @@
     const m = /^(-?\d+),(-?\d+)$/.exec(key), cx = +m[1], cz = +m[2];
     const rng = mulberry32((T.seed ^ hashStr(key)) >>> 0), used = new Uint8Array(N * N), groups = W.groupMap;
     const lo = 3, hi = N - 3;   // 土地の端 4m は避ける（マスの中心が端から 4m 以上）
-    const list = W.byChunk[key] = [], tk0 = {};   // tk0：applyTaken で本物の taken に差しかわるまでの仮の入れ物（tk が無くても例外にならない）
+    const list = W.byChunk[key] = [];
+    /* 物ごとの nd.tk：その区画の taken（state.chunks[key] があれば。起動のときは MZ.state がまだ無いので、W.applyTaken が付けるまでの仮の空の入れ物） */
+    const tk0 = (MZ.state && MZ.state.chunks[key]) ? MZ.state.chunks[key].taken : {};
+    /* 区画の種類の倍率（"0,0" と知らない区画は 1 倍＝今の数のまま） */
+    const kind = MZ.KINDS[MZ.CHUNK_KINDS[key]], mult = (kind && kind.mult) || {};
     if (key === '0,0') for (let lz = 59; lz <= 60; lz++) for (let lx = 59; lx <= 60; lx++) used[lz * N + lx] = 1;   // 小屋
     Object.keys(MZ.NODES).forEach(k => {
       const d = MZ.NODES[k];
       let placed = 0, tries = 0;
-      while (placed < d.n && tries++ < 20000) {
+      const want = Math.round(d.n * (mult[k] || 1));   // 採れる物の数：n × 種類の倍率（"0,0" は n のまま）
+      while (placed < want && tries++ < 20000) {
         const lx = lo + Math.floor(rng() * (hi - lo + 1)), lz = lo + Math.floor(rng() * (hi - lo + 1));
         const gx = cx * N + lx, gz = cz * N + lz;
         const x = MZ.cellPos(gx), z = MZ.cellPos(gz);
@@ -118,7 +123,7 @@
     });
   };
   /* 消えている物か。nd.tk はその区画の taken、nd.li は区画の中の番号（W.applyTaken が付ける） */
-  W.nodeActive = idx => { const nd = W.nodes[idx]; return !(nd.li in nd.tk); };
+  W.nodeActive = idx => { const nd = W.nodes[idx]; return !(nd.tk && nd.li in nd.tk); };   // tk が無ければ「出ている」
   /* 消えている物の残り秒（出ているなら undefined。-1 は二度と出ない） */
   W.takenOf = idx => { const nd = W.nodes[idx]; return nd.tk ? nd.tk[nd.li] : undefined; };
   /* 建物を置いたので、この物はもう出ない */
@@ -128,7 +133,8 @@
   /* 採れた：消して、back 秒後にまた出る（back < 0 は二度と出ない） */
   W.take = function (idx, back) {
     const nd = W.nodes[idx];
-    nd.tk[nd.li] = back; nd.hp = -1; W.setNode(idx, false);
+    if (nd.tk) nd.tk[nd.li] = back;
+    nd.hp = -1; W.setNode(idx, false);
   };
   /* 保存から読んだ「消えている物」を描く。範囲の外の番号は捨てる。
      物ごとの nd.tk は state.chunks[key].taken の物そのもの。taken を別の物に差しかえたら、この関数を呼び直すこと */

@@ -63,7 +63,7 @@
     tree:  { name: '木',       verb: '切る',   hp: 5,  drops: { log: 3, stick: 1 },   n: 130, minR: 10, r: 0.5, back: 240, tool: 'axe', need: 1 },
     rock:  { name: '岩',       verb: '掘る',   hp: 6,  drops: { stone: 3 },           n: 60,  minR: 14, r: 0.9, back: 300, tool: 'pick', need: 1 },
     clay:  { name: '粘土の土', verb: '掘る',   hp: 3,  drops: { clay: 2 },            n: 34,  minR: 18, r: 0,   back: 200, tool: 'pick', need: 1 },
-    iron:  { name: '鉄の鉱脈', verb: '掘る',   hp: 10, drops: { ore: 2 },             n: 30,  minR: 40, r: 0.9, back: 400, tool: 'pick', need: 2 }
+    iron:  { name: '鉄の鉱脈', verb: '掘る',   hp: 10, drops: { ore: 4 },             n: 30,  minR: 40, r: 0.9, back: 400, tool: 'pick', need: 2 }
   };
 
   /* 材料レシピ・工作レシピ。at：近くに必要な設備、stage：解放される段階 */
@@ -80,7 +80,7 @@
 
   /* 建築レシピ。w：マスの数（正方形）、solid：通れない、home：住める人数、
      water・food：まかなえる人数、stage：解放される段階（0 始まり。無ければ段階 0 から）、
-     fixed：こわせない、jobs：働く住民の数、makes・every：every 秒ごとに持ち物へ入る物、
+     fixed：こわせない、jobs：働く住民の数（makes があって jobs が無い建物は、人手なしでいつも動く）、makes・every：every 秒ごとに持ち物へ入る物、
      road：道としてつながる、pave：小屋までつながったこの道に面した家は、住める人数が pave ふえる（1 軒に 1 回）、
      shop：店がまかなう人数、staff：歩く姿と表示だけの人数（人口からは引かない）、store：自動でたまる上限をふやす数、
      craft：工房でつくれる物（MZ.RECIPES の key。1 回ぶんは、そのレシピの cost → give） */
@@ -92,7 +92,7 @@
     stoneroad: { name: '石畳の道', w: 1, solid: false, cost: { stone: 2 }, stage: 2, road: true, pave: 1, note: '土の道と同じにつながる。面した家は 1 人多く住める' },
     house:  { name: '木の家',     w: 2, solid: true,  cost: { plank: 8, log: 4, stone: 4, rope: 2 }, home: 2, note: '2人が住める' },
     field:  { name: '畑',         w: 2, solid: false, cost: { stick: 4, grass: 4 }, food: 4, note: '4人分の食料' },
-    bigfield: { name: '大きな畑', w: 3, solid: false, cost: { plank: 8, grass: 10 }, stage: 2, food: 12, note: '12人分の食料' },
+    bigfield: { name: '大きな畑', w: 3, solid: false, cost: { plank: 8, grass: 10 }, stage: 2, food: 12, makes: { grass: 2 }, every: 40, note: '12人分の食料。人手なしで草もできる' },
     well:   { name: '井戸',       w: 1, solid: true,  cost: { stone: 10, rope: 2, plank: 2 }, water: 10, note: '10人分の水' },
     kiln:   { name: 'かまど',     w: 1, solid: true,  cost: { stone: 8, clay: 4 }, note: '粘土を焼いてれんがにする' },
     furnace: { name: '炉',       w: 1, solid: true,  cost: { stone: 10, brick: 6, clay: 4 }, note: '鉄鉱石をとかして鉄インゴットにする' },
@@ -107,6 +107,26 @@
   MZ.BUILD_ORDER = ['bench', 'road', 'stoneroad', 'house', 'field', 'bigfield', 'well', 'fire', 'kiln', 'furnace', 'lumber', 'bhouse', 'quarry', 'claypit', 'workshop', 'shop', 'storehouse'];
 
   /* 自動でたまる材料の上限（どの物も同じ）。倉庫の store をたす。建物を数える街の側（town.js）が MZ.autoCap を作る */
+
+  /* 区画の種類（β0.3.0）：区画のキー "cx,cz"（北は +z、東は +x）から毎回同じに決まる。"0,0" は「もとの土地」（採れる物は今のまま）。
+     種類の mult は、採れる物の数（NODES[k].n）に掛ける倍率（無ければ 1） */
+  MZ.CHUNK_KINDS = {
+    '0,0': 'home',
+    '0,1': 'forest', '1,0': 'rocky', '0,-1': 'clayland', '-1,0': 'forest',
+    '1,1': 'rocky', '1,-1': 'clayland', '-1,-1': 'rocky', '-1,1': 'clayland'
+  };
+  MZ.KINDS = {
+    home:     { name: 'もとの土地', mult: {} },
+    forest:   { name: '森', mult: { tree: 2 } },
+    rocky:    { name: '岩場', mult: { rock: 3, iron: 3 } },
+    clayland: { name: '粘土の土地', mult: { clay: 3 } }
+  };
+  /* 土地を広げる材料。持っている区画の数 n（もとの区画は数えない。広げる 1 回めが 1）に対して、upto が n 以上の最初の行。条件は段階が T.villageStage 以上 */
+  MZ.LAND_COST = [
+    { upto: 2, cost: { plank: 40, stone: 40, rope: 5 } },
+    { upto: 4, cost: { plank: 80, stone: 80, brick: 40 } },
+    { upto: 8, cost: { plank: 120, stone: 120, brick: 80, ingot: 10 } }
+  ];
 
   /* 段階（人口で上がる）。banner：その段階になったときに出す文（無ければ「○○になった！」）。町より先は今後の版で中身を足す */
   MZ.STAGES = [

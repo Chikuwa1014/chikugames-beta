@@ -79,6 +79,9 @@ body.touch #hint{left:max(12px,env(safe-area-inset-left,0px));transform:none;bot
 #bHit,#bPlace{width:96px;height:96px;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px))}
 #bRot{width:66px;height:66px;right:calc(max(16px,env(safe-area-inset-right,0px)) + 112px);bottom:calc(26px + env(safe-area-inset-bottom,0px))}
 #bCancel{width:66px;height:66px;right:calc(max(16px,env(safe-area-inset-right,0px)) + 15px);bottom:calc(134px + env(safe-area-inset-bottom,0px))}
+#landBtn{width:66px;height:66px;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(134px + env(safe-area-inset-bottom,0px))}
+#landBtn.show{display:block}
+body.building #landBtn.show{display:none}
 body.touch #bHit{display:block}
 body.touch.building #bHit{display:none}
 body.touch.building #bPlace,body.touch.building #bRot,body.touch.building #bCancel{display:block}
@@ -114,11 +117,19 @@ body.panelopen .rb{display:none!important}
 .acts{display:flex;gap:6px;align-items:center}
 .act.x5{padding:8px 12px;background:#7FA855}
 .wl{grid-column:1/-1;font-size:12px;color:var(--ink)}
-.wl.st-run{color:var(--accent)}.wl.st-staff,.wl.st-short,.wl.st-full{color:var(--warn)}.wl.st-off{color:var(--sub)}
+.wl .st-run{color:var(--accent)}.wl .st-staff,.wl .st-short,.wl .st-full{color:var(--warn)}.wl .st-off{color:var(--sub)}
 .mks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
 .mk{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;min-height:36px;cursor:pointer}
 .mk[aria-pressed="true"]{background:var(--accent);color:#17210E;border-color:var(--accent)}
 .inv li.over b{color:var(--warn)}
+.lmap{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:min(100%,264px);margin:8px auto}
+.lc{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.05);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px;cursor:pointer;font-size:11px;line-height:1.3}
+.lc b{font-size:12px}.lc span{font-size:10px;color:var(--sub)}
+.lc.own{background:rgba(155,197,107,.3);border-color:var(--accent)}.lc.own span{color:var(--ink)}
+.lc.adj{border-style:dashed}.lc.far{opacity:.5}
+.lc.sel{outline:2px solid var(--ink);outline-offset:1px}
+.lc i{position:absolute;top:2px;left:0;right:0;font-style:normal;font-size:9px;color:#17210E;background:var(--accent);border-radius:999px;margin:0 8px;padding:0 2px}
+.ld{background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
 .capl{margin-top:10px!important}
 .inv.tl{grid-template-columns:1fr}
 .small{margin:0;font-size:13px;color:var(--sub)}
@@ -166,6 +177,7 @@ body.panelopen .rb{display:none!important}
 <button class="rb" id="bPlace">置く</button>
 <button class="rb" id="bRot">回す</button>
 <button class="rb" id="bCancel">やめる</button>
+<button class="rb" id="landBtn" aria-label="土地を広げる">土地</button>
 
 <section id="panel" hidden>
   <div id="tabs">
@@ -174,6 +186,7 @@ body.panelopen .rb{display:none!important}
     <button data-tab="tool" aria-selected="false">道具</button>
     <button data-tab="build" aria-selected="false">建てる</button>
     <button data-tab="work" aria-selected="false">仕事場</button>
+    <button data-tab="land" aria-selected="false">土地</button>
   </div>
   <div id="pbody"></div>
   <div id="pfoot"><button data-gfx-q id="pQual">画質</button><button id="pReset">さいしょから</button><button id="pClose">とじる</button></div>

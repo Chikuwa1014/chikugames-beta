@@ -95,9 +95,58 @@ const SETUP = {
     s.pop = 200; s.timers.migrate = -1e6; MZ.town.resDirty = true; MZ.tick(1);
     s.player.x = 0; s.player.z = -78; s.player.yaw = 0; s.player.pitch = -0.02; s.player.view = 1;
   },
+  /* β0.3.0 区切り 3：土地を広げる（材料はこの場だけで持たせる）。lshape＝L 字（東と北）・land9＝9 区画・landtab＝土地タブ・kind*＝岩場・森・粘土の土地の中 */
+  lshape: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });
+    MZ.expand(1, 0); MZ.expand(0, 1);
+    MZ.world.nodes.forEach(nd => { if (nd.gx >= 40 && nd.gx <= 140 && nd.gz >= 40 && nd.gz <= 80) MZ.world.take(nd.idx, -1); });
+    for (let g = 61; g <= 125; g++) MZ.place('road', g, 60, 0);
+    MZ.place('house', 119, 50, 0); MZ.place('house', 126, 61, 0); MZ.place('house', 100, 62, 0); MZ.place('field', 112, 64, 0);
+    MZ.T.view3 = { back: 700, up: 0 };
+    s.player.x = 120; s.player.z = 100; s.player.yaw = 0; s.player.pitch = 1.15; s.player.view = 3;
+  },
+  land9: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });
+    [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [1, -1], [-1, -1], [-1, 1]].forEach(c => MZ.expand(c[0], c[1]));
+    MZ.T.view3 = { back: 900, up: 0 };
+    s.player.x = 0; s.player.z = 0; s.player.yaw = 0; s.player.pitch = 1.05; s.player.view = 3;
+  },
+  landtab: () => {
+    MZ.cancelBuild(); MZ.noSave = true;
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; }); s.inv.brick = 10;
+    MZ.expand(1, 0); MZ.expand(0, 1);
+    s.player.x = 100; s.player.z = 100; s.player.yaw = 0.4; s.player.pitch = 0.1; s.player.view = 1;
+    MZ.ui.landSel = '-1,1'; MZ.ui.panel(true); MZ.ui.tab = 'land'; MZ.ui.sig = ''; MZ.ui.render();
+  },
+  landedge: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });
+    s.player.x = 112; s.player.z = 20; s.player.yaw = Math.PI / 2; s.player.pitch = 0.05; s.player.view = 1;
+    MZ.ui.update(0.2);
+  },
+  kindrock: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });
+    MZ.expand(1, 0);
+    s.player.x = 226; s.player.z = 10; s.player.yaw = 0.2; s.player.pitch = 0.05; s.player.view = 1;
+  },
+  kindforest: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });
+    MZ.expand(0, 1);
+    s.player.x = 12; s.player.z = 226; s.player.yaw = 0.2; s.player.pitch = 0.05; s.player.view = 1;
+  },
+  kindclay: () => {
+    MZ.cancelBuild(); MZ.noSave = true; MZ.ui.panel(false);
+    const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });
+    MZ.expand(0, -1);
+    s.player.x = 12; s.player.z = -226; s.player.yaw = 0.2; s.player.pitch = 0.05; s.player.view = 1;
+  },
   panel: () => { const s = MZ.state.player; s.view = 1; s.x = 0; s.z = -7; s.yaw = 0; s.pitch = 0; MZ.ui.panel(true); }
 };
-const ORDER = ['start', 'wide', 'near', 'near2', 'build', 'town', 'panel', 'work', 'cobble', 'newb', 'village'];
+const ORDER = ['start', 'wide', 'near', 'near2', 'build', 'town', 'panel', 'work', 'cobble', 'newb', 'village', 'lshape', 'land9', 'landtab', 'landedge', 'kindrock', 'kindforest', 'kindclay'];
 
 (async () => {
   const br = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -128,7 +177,7 @@ const ORDER = ['start', 'wide', 'near', 'near2', 'build', 'town', 'panel', 'work
       await page.screenshot({ path: file, timeout: 600000 });
       const info = await page.evaluate(() => (window.MZ.gfx ? { tris: MZ.gfx.tris(), q: MZ.gfx.key } : {}));
       console.log(path.basename(file), JSON.stringify(info));
-      if (name === 'panel' || name === 'work') await page.evaluate(() => MZ.ui.panel(false));
+      if (name === 'panel' || name === 'work' || name === 'landtab') await page.evaluate(() => MZ.ui.panel(false));
     }
     if (errs.length) console.log('  エラー', dev, q, errs.slice(0, 3).join(' | '));
     await ctx.close();

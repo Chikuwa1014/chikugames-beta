@@ -15,6 +15,13 @@
     if (P.shadow) P.shadow.addShadowCaster(m, false);
   }
 
+  /* 影を落とす物の一覧から外す（柵を作り直すとき） */
+  function removeCaster(m) {
+    const i = P.casters.indexOf(m);
+    if (i >= 0) P.casters.splice(i, 1);
+    if (P.shadow) { try { P.shadow.removeShadowCaster(m, false); } catch (e) { /* 済み */ } }
+  }
+
   function colorSetup() {
     const ipc = G.scene.imageProcessingConfiguration;
     ipc.toneMappingEnabled = true;
@@ -144,5 +151,5 @@
       G.sun.position.copyFrom(G.SKYC.SUN_DIR).scaleInPlace(150).addInPlace(_tgt);
     }
   }
-  G.post = { apply, update, addCaster, state: P };
+  G.post = { apply, update, addCaster, removeCaster, state: P };
 })();

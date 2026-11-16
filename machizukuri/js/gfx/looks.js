@@ -308,7 +308,7 @@
   }
 
 
-  /* 画質を中 → 高に上げたとき、共通の写真（法線が 512 だった物）を使う近く用（建物・道具）を、高の写真で読み直す。
+  /* 画質を中 → 高に上げたとき、共通の写真（法線が 512 だった物）を使う近く用の建物を、高の写真で読み直す。
      新しい物が届いてから入れかえる（そのあいだは今の物のまま）。高 → 中はそのまま（高の写真のままで困らない） */
   function reloadBtex() {
     const users = G.BTEX_USERS || [];
@@ -324,20 +324,7 @@
         old.forEach(x => x.dispose(false, true));
       }, () => { /* 読めなければ今の物のまま */ });
     });
-    Object.keys(L.tool).forEach(k => {
-      const n = 'b_tool_' + k;
-      if (users.indexOf(n) < 0) return;
-      A.forget2(n);
-      A.model(n).then(ms => {
-        ms.forEach(m => { m.receiveShadows = false; });
-        const old = L.tool[k]; L.tool[k] = ms;
-        /* 手の道具・三人称の主人公が持つ複製は、古い材質を指しているので作り直す */
-        if (MZ.player && MZ.player.releaseHands) MZ.player.releaseHands();
-        if (L.pl.near) { L.pl.near.dispose(false, false); L.pl.near = null; }
-        old.forEach(m => m.dispose(false, true));
-        if (G.looks && G.looks.onPlayer) G.looks.onPlayer();
-      }, () => { /* 今の物のまま */ });
-    });
+    /* 道具の写真は高でも中でも 512 で同じなので、読み直さない（手の道具がちらつくだけ） */
   }
 
   /* ---------- 読み込みの入口：画質が決まったとき・変わったとき ---------- */

@@ -10,7 +10,7 @@
   const { hash2, rng, fbm3, smooth } = G;
   const A = G.assets;
   const S = { nodes: [], forms: {}, key: 'low', ready: {}, tex: null, mats: {}, dirty: true, flushNow: false, acc: 0, lx: 1e9, lz: 1e9,
-    decor: null, shaking: [], stoneSet: null, pebble: null, pebbleMat: null, models: {}, treeCount: 0, treeOf: {} };
+    decor: null, decorOrder: [], shaking: [], stoneSet: null, pebble: null, pebbleMat: null, models: {}, treeCount: 0, treeOf: {} };
   const hs = (idx, salt) => hash2(idx, salt, T.seed);
   const lin = hex => B.Color3.FromHexString(hex).toLinearSpace();
 
@@ -26,9 +26,11 @@
 
   /* ---------- 入れ物 ---------- */
   /* write(nd, buf, slot, sh) → 書いた数（1 以上）。sh はゆれの大きさ（ラジアン。0 ならゆれなし） */
+  /* cap は入れ物の数（数でも、数を返す関数でもよい。関数なら、土地を広げたあと growForm が今の数に合わせて入れ物を大きくする） */
   function makeForm(id, meshes, cap, write, opt) {
-    const per = (opt && opt.per) || 1, buf = new Float32Array(Math.max(1, cap * per) * 16);
-    const f = { id, meshes, cap: cap * per, buf, n: 0, write, shadow: !!(opt && opt.shadow) };
+    const capFn = typeof cap === 'function' ? cap : () => cap;
+    const per = (opt && opt.per) || 1, c0 = capFn(), buf = new Float32Array(Math.max(1, c0 * per) * 16);
+    const f = { id, meshes, cap: c0 * per, buf, n: 0, write, shadow: !!(opt && opt.shadow), capFn, per };
     meshes.forEach(m => {
       m.thinInstanceSetBuffer('matrix', buf, 16, false);
       m.thinInstanceCount = 0; m.isVisible = true; m.isPickable = false; m.alwaysSelectAsActiveMesh = true;
@@ -47,6 +49,14 @@
     });
   }
   const touchForm = f => f.meshes.forEach(m => m.thinInstanceBufferUpdated('matrix'));
+  /* 土地を広げて物がふえたとき、入れ物が足りなければ大きな Float32Array に差しかえる（数を 0 にしてから。減らすことはしない） */
+  function growForm(f) {
+    const want = f.capFn() * f.per;
+    if (want <= f.cap) return;
+    const buf = new Float32Array(want * 16);
+    f.meshes.forEach(m => { m.thinInstanceCount = 0; m.thinInstanceSetBuffer('matrix', buf, 16, false); });
+    f.buf = buf; f.cap = want; f.n = 0;
+  }
 
   const countOf = k => S.nodes.filter(nd => nd.k === k).length;
 
@@ -199,12 +209,12 @@
         const o = S.treeParts[nm];
         [0, 1].forEach(l => {
           const ms = [o['wood' + l], o['leaf' + l]].filter(Boolean);
-          if (ms.length) makeForm(nm + ':' + l, ms, nT, treeWriter(nm), { shadow: true });
+          if (ms.length) makeForm(nm + ':' + l, ms, () => countOf('tree'), treeWriter(nm), { shadow: true });
         });
       });
     } else if (g === 'rocks') {
       const nR = countOf('rock'), rr = MZ.NODES.rock.r;
-      ['rock_a', 'rock_b', 'rock_c'].forEach(nm => { const ms = S.models[nm]; if (ms && ms.length) makeForm(nm, ms, nR, rockWriter(ms[0], rr), { shadow: true }); });
+      ['rock_a', 'rock_b', 'rock_c'].forEach(nm => { const ms = S.models[nm]; if (ms && ms.length) makeForm(nm, ms, () => countOf('rock'), rockWriter(ms[0], rr), { shadow: true }); });
       /* 鉄の鉱脈（モデル待ち）：rock_b を複製してさび色に。コードの鉱石の粒を足す */
       const rb = S.models.rock_b;
       if (rb && rb.length) {
@@ -214,7 +224,7 @@
         m0.material = mt;
         const ore = MZ.getModel('ironOre');
         const w0 = rockWriter(rb[0], MZ.NODES.iron.r);
-        makeForm('iron', [m0, ore], countOf('iron'), (nd, buf, slot, sh) => {
+        makeForm('iron', [m0, ore], () => countOf('iron'), (nd, buf, slot, sh) => {
           w0(nd, buf, slot, sh);
           put(buf, slot, nd.x + sh * 0.22, 0.25, nd.z, nd.s * 1.05, nd.s * 1.05, nd.s * 1.05, nd.ry, 0, 0);
           return 1;
@@ -222,47 +232,51 @@
       }
     } else if (g === 'bnodes_n' || g === 'bnodes_f') {
       const sfx = g === 'bnodes_n' ? 'N' : 'F', nm = g === 'bnodes_n' ? ['b_n_clay', 'b_n_iron'] : ['b_n_clay_far', 'b_n_iron_far'];
-      [['clay', nm[0]], ['iron', nm[1]]].forEach(a => { const ms = S.models[a[1]]; if (ms && ms.length) makeForm(a[0] + sfx, ms, countOf(a[0]), plain, { shadow: sfx === 'N' }); });
+      [['clay', nm[0]], ['iron', nm[1]]].forEach(a => { const ms = S.models[a[1]]; if (ms && ms.length) makeForm(a[0] + sfx, ms, () => countOf(a[0]), plain, { shadow: sfx === 'N' }); });
     } else if (g === 'wood') {
       const st = S.models.stump, dl = S.models.deadlog;
       if (st && st.length) {
         const e = sizeOf(st[0]);
-        makeForm('stump', st, nT, (nd, buf, slot) => {
+        makeForm('stump', st, () => countOf('tree'), (nd, buf, slot) => {
           const s = 0.6 + hs(nd.idx, 12) * 0.2, k = s * 1.0;
           put(buf, slot, nd.x, 0.04, nd.z, k, k * (0.9 + hs(nd.idx, 13) * 0.25), k, hs(nd.idx, 14) * 6.283, 0, 0); return 1;
         }, { shadow: true });
         S.stumpExt = Math.max(e.x, e.z);
       }
-      if (dl && dl.length) makeDecor('deadlog', dl, S.decor.log.length, S.decor.log, true);
+      if (dl && dl.length) makeDecor('deadlog', dl, () => S.decor.nLog, 'log', true);
     } else if (g === 'plants') {
       const bs = S.models.bush, tw = S.models.twigs;
-      if (bs && bs.length) makeForm('bush', bs, countOf('bush'), bushWriter(bs[0]));
-      if (tw && tw.length) makeDecor('twigs', tw, S.decor.twigs.length, S.decor.twigs, false);
+      if (bs && bs.length) makeForm('bush', bs, () => countOf('bush'), bushWriter(bs[0]));
+      if (tw && tw.length) makeDecor('twigs', tw, () => S.decor.nTwigs, 'twigs', false);
     }
   }
 
-  /* ---------- 飾り（採れない・当たりなし）：倒木 12・枯れ枝 40・小石。種は T.seed + 77 ---------- */
-  /* β0.3.0 区切り 1 では区画 "0,0" だけ（乱数 r() の回数を変えない）。区切り 3 では区画ごとの種（T.seed + 77 と区画のキー）で足す */
-  function buildDecor(nodes) {
-    const r = rng(T.seed + 77), W = MZ.world, lim = 3;
+  /* ---------- 飾り（採れない・当たりなし）：区画ごとに 倒木 12・枯れ枝 40・小石 1800。種は T.seed + 77（"0,0"）と、T.seed + 77 と区画のキー ---------- */
+  /* "0,0" の乱数 r() の順・回数は今までと同じ（区画 "0,0" は中心が原点なので、座標の足しこみも 0）。ほかの区画は、同じ数・同じ決まり
+     （区画の中の 3〜116 のマス・採れる物のマスをよける）で、区画の中心まわりに作る */
+  const CHS = N * C;   // 区画の一辺（m）
+  function hashStr(k) { let h = 2166136261; for (let i = 0; i < k.length; i++) { h ^= k.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function buildDecorChunk(key, nodes) {
+    const m = /^(-?\d+),(-?\d+)$/.exec(key), cx = +m[1], cz = +m[2], ox = cx * CHS, oz = cz * CHS, home = key === '0,0';
+    const r = rng(home ? T.seed + 77 : ((T.seed + 77) ^ hashStr(key)) >>> 0), W = MZ.world, lim = 3;
     const free = (x, z) => {
-      if (Math.hypot(x, z) < 6) return false;                          // 小屋のまわり 6m
-      const gx = MZ.cellOf(x), gz = MZ.cellOf(z);
-      if (gx < lim || gz < lim || gx >= N - lim || gz >= N - lim) return false;
+      if (home && Math.hypot(x, z) < 6) return false;                  // 小屋のまわり 6m
+      const gx = MZ.cellOf(x), gz = MZ.cellOf(z), lx = gx - cx * N, lz = gz - cz * N;
+      if (lx < lim || lz < lim || lx >= N - lim || lz >= N - lim) return false;
       return W.cellNode[MZ.ci(gx, gz)] < 0;                              // 採れる物のマス
     };
     const pick = (n, dist, f) => {
       const out = []; let tries = 0;
       while (out.length < n && tries++ < n * 40) {
-        const x = (r() * 2 - 1) * (T.half - 8), z = (r() * 2 - 1) * (T.half - 8);
+        const x = ox + (r() * 2 - 1) * (T.half - 8), z = oz + (r() * 2 - 1) * (T.half - 8);
         if (free(x, z)) out.push(f(x, z));
       }
       return out;
     };
-    const D = { log: [], twigs: [], pebbles: [] };
+    const D = { key, cx: ox, cz: oz, log: [], twigs: [], pebbles: [] };   // cx・cz は区画の中心の座標（m）
     D.log = pick(12, 0, (x, z) => ({ x, z, yaw: r() * 6.283, s: 0.9 + r() * 0.35 }));
-    /* 枯れ枝は、草むら（低木）のまわりに */
-    const bushes = nodes.filter(nd => nd.k === 'bush');
+    /* 枯れ枝は、その区画の草むら（低木）のまわりに */
+    const bushes = nodes.filter(nd => nd.k === 'bush' && nd.ck === key);
     let t = 0;
     while (D.twigs.length < 40 && t++ < 800 && bushes.length) {
       const b = bushes[Math.floor(r() * bushes.length)], a = r() * 6.283, d = 0.8 + r() * 1.0, x = b.x + Math.cos(a) * d, z = b.z + Math.sin(a) * d;
@@ -271,11 +285,17 @@
     D.pebbles = pick(1800, 0, (x, z) => ({ x, z, yaw: r() * 6.283, s: 0.008 + Math.pow(r(), 3) * 0.04, ax: (r() - 0.5) * 0.4, az: (r() - 0.5) * 0.4, kx: 0.8 + r() * 0.6, kz: 0.8 + r() * 0.6 }));
     return D;
   }
+  /* 持っている区画ぜんぶ。入れ物の大きさ：倒木・枯れ枝は全区画の合計、小石は 1 区画ぶん（描くのは近い区画から、入れ物の数まで） */
+  function buildDecor(nodes) {
+    const D = { chunks: [], nLog: 0, nTwigs: 0, nPebbles: 1800 };
+    MZ.world.landKeys.forEach(key => { const c = buildDecorChunk(key, nodes); D.chunks.push(c); D.nLog += c.log.length; D.nTwigs += c.twigs.length; });
+    return D;
+  }
   const dcol = {};
-  function makeDecor(id, meshes, cap, list, shadow) {
+  function makeDecor(id, meshes, cap, which, shadow) {
     const e = sizeOf(meshes[0]), alongX = e.x >= e.z;
     const f = makeForm(id, meshes, cap, null, { shadow });
-    f.list = list; f.alongX = alongX; f.len = Math.max(e.x, e.z);
+    f.which = which; f.alongX = alongX; f.len = Math.max(e.x, e.z);   // which：S.decor.chunks[i] の中の一覧の名前（log・twigs・pebbles）
     f.write = (p, buf, slot) => {
       if (id === 'pebble') put(buf, slot, p.x, -p.s * 0.25, p.z, p.s * p.kx, p.s, p.s * p.kz, p.yaw, p.ax, p.az);
       else put(buf, slot, p.x, 0.02, p.z, p.s, p.s, p.s, p.yaw + (id === 'deadlog' && !alongX ? Math.PI / 2 : 0), 0, 0);
@@ -319,7 +339,7 @@
   S.treeType = treeType;
   const codeForm = k => {
     const id = 'code:' + k;
-    return S.forms[id] || makeForm(id, [MZ.getModel(k)], countOf(k === 'tree2' ? 'tree' : k), plain);
+    return S.forms[id] || makeForm(id, [MZ.getModel(k)], () => countOf(k === 'tree2' ? 'tree' : k), plain);
   };
   function formFor(nd, d, q) {
     switch (nd.k) {
@@ -361,17 +381,24 @@
       const n = f.write(nd, f.buf, slot, shakeVal(nd));
       f.n += n; nd.look = { form: f, slot, n };
     }
-    /* 飾り：主人公に近いものだけ。建物の下は出さない */
+    /* 飾り：主人公に近いものだけ。建物の下は出さない。区画ごとの一覧を、主人公に近い区画から順に、距離の内の物を入れ物の数まで入れる */
+    const order = S.decorOrder; order.length = 0;
+    S.decor.chunks.forEach(c => { c.d = Math.hypot(c.cx - px, c.cz - pz); order.push(c); });
+    order.sort((a, b) => a.d - b.d);
     ['deadlog', 'twigs', 'pebble'].forEach(id => {
       const f = S.forms[id]; if (!f) return;
       const on = id === 'pebble' ? true : modelsOn(id === 'deadlog' ? 'wood' : 'plants');
       if (!on) return;
-      const dist = id === 'pebble' ? q.decorDist * 0.5 : q.decorDist, lim = id === 'pebble' ? Math.round(q.pebbles) : f.list.length;
-      for (let i = 0; i < f.list.length && i < lim && f.n < f.cap; i++) {
-        const p = f.list[i];
-        if (Math.abs(p.x - px) > dist || Math.abs(p.z - pz) > dist || Math.hypot(p.x - px, p.z - pz) > dist) continue;
-        if (W.owner[MZ.ci(MZ.cellOf(p.x), MZ.cellOf(p.z))]) continue;
-        f.write(p, f.buf, f.n, 0); f.n++;
+      const dist = id === 'pebble' ? q.decorDist * 0.5 : q.decorDist, lim = id === 'pebble' ? Math.round(q.pebbles) : 1e9;
+      for (let ci = 0; ci < order.length && f.n < f.cap; ci++) {
+        const ch = order[ci], list = ch[f.which];
+        if (Math.abs(ch.cx - px) > CHS / 2 + dist || Math.abs(ch.cz - pz) > CHS / 2 + dist) continue;   // 区画ごと遠ければ見ない
+        for (let i = 0; i < list.length && i < lim && f.n < f.cap; i++) {
+          const p = list[i];
+          if (Math.abs(p.x - px) > dist || Math.abs(p.z - pz) > dist || Math.hypot(p.x - px, p.z - pz) > dist) continue;
+          if (W.owner[MZ.ci(MZ.cellOf(p.x), MZ.cellOf(p.z))]) continue;
+          f.write(p, f.buf, f.n, 0); f.n++;
+        }
       }
     });
     Object.keys(S.forms).forEach(id => flushForm(S.forms[id]));
@@ -385,13 +412,13 @@
     S.decor = buildDecor(nodes);
     buildPebble();
     /* 石ころ（かたまり）・小石の飾り。粘土（写真貼り）。モデルが要らないので、いつでも作れる */
-    makeForm('stones', [S.pebbleMk('stoneCl')], countOf('stone'), stoneWriter, { per: 5 });
+    makeForm('stones', [S.pebbleMk('stoneCl')], () => countOf('stone'), stoneWriter, { per: 5 });
     S.forms.stones.meshes[0].material = S.pebbleMat;
-    makeDecor('pebble', [S.pebble], S.decor.pebbles.length, S.decor.pebbles, false);
+    makeDecor('pebble', [S.pebble], () => S.decor.nPebbles, 'pebbles', false);
     const cm = MZ.getModel('clay').clone('clayHd');
     S.clayMat = new B.PBRMaterial('clayHdMat', G.scene); S.clayMat.metallic = 0; S.clayMat.roughness = 0.95; S.clayMat.albedoColor = lin('#A9684A'); S.clayMat.maxSimultaneousLights = 4;
     cm.material = S.clayMat; cm.useVertexColors = false;
-    makeForm('clayhd', [cm], countOf('clay'), plain);
+    makeForm('clayhd', [cm], () => countOf('clay'), plain);
     /* 飾りの元の形（モデルが読めないときでも、小石は出る） */
     S.dirty = true;
   }
@@ -454,6 +481,16 @@
     if (S.shaking.indexOf(nd) < 0) S.shaking.push(nd);
   }
   function dirty() { S.dirty = true; }
+  /* 土地を広げて採れる物がふえたあと（W.nodes の後ろに足した後）：飾りを区画ごとに作り直し、入れ物が足りなければ大きくする。
+     メッシュ・材質・写真は片づけず使い回す（入れ物のバッファだけ差しかえる）。いまの画質の並べ直しは update が行う */
+  function rebuild(nodes) {
+    S.nodes = nodes; S.shaking = [];
+    nodes.forEach(nd => { nd.look = null; });
+    S.treeCount = countOf('tree');
+    S.decor = buildDecor(nodes);
+    Object.keys(S.forms).forEach(id => growForm(S.forms[id]));
+    S.dirty = true; S.flushNow = true;
+  }
   /* すぐ並べ直す（読み直したとき・テストから） */
   function flush() { if (MZ.state) layout(); }
   function update(dt, px, pz) {
@@ -476,5 +513,5 @@
     const o = {}; Object.keys(S.forms).forEach(id => { if (S.forms[id].n) o[id] = S.forms[id].n; });
     return o;
   }
-  G.nodes = { init, apply, release, reloadNear, show, hit, dirty, flush, update, stats, setStone, setClay, state: S };
+  G.nodes = { init, rebuild, apply, release, reloadNear, show, hit, dirty, flush, update, stats, setStone, setClay, state: S };
 })();

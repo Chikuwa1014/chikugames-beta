@@ -146,7 +146,7 @@ const HELPERS = () => {
   await goalIs('つるはしを作ったら「土の道」', '土の道');
   ok('作った道具はもう作れない', await ev(page, () => MZ.craftReason(MZ.RECIPES.find(r => r.key === 'pick2')) === '作った'));
   const ironHits = await ev(page, () => { const s = MZ.state.player, nd = TT.nearest(['iron'], s.x, s.z); TT.goto(nd); MZ.player.updateAim(); let n = 0, b = MZ.state.inv.ore; while (MZ.world.nodeActive(nd.idx) && n < 50) { MZ.hit(); n++; } return [n, MZ.state.inv.ore - b]; });
-  ok('石のつるはしで鉄の鉱脈（10 回・鉄鉱石 2）', ironHits[0] === 10 && ironHits[1] === 2, ironHits);
+  ok('石のつるはしで鉄の鉱脈（10 回・鉄鉱石 4）', ironHits[0] === 10 && ironHits[1] === 4, ironHits);
   const treeHits = await ev(page, () => { const s = MZ.state.player, nd = TT.nearest(['tree'], s.x, s.z); TT.goto(nd); MZ.player.updateAim(); let n = 0; while (MZ.world.nodeActive(nd.idx) && n < 50) { MZ.hit(); n++; } return n; });
   ok('石の斧で木は 3 回', treeHits === 3, treeHits);
 
@@ -672,7 +672,7 @@ const HELPERS = () => {
     });
     ok('HUD：村のとき「店 80」が出る', /店 \d+/.test(UI.hud), UI.hud);
     ok('仕事場タブ：名前と番号・向きと距離・働く人・つくる物・状態・上限の行・工房のボタンが出る', /採石場 1/.test(UI.work) && /[北南東西]+ \d+m/.test(UI.work) && /働く人 3／3/.test(UI.work) && /30 秒ごとに 石 3/.test(UI.work) && /動いている（次まで \d+ 秒）|上限いっぱい/.test(UI.work) && /自動でたまる上限：250（倉庫 1）/.test(UI.work) && /店 30 人分/.test(UI.work) && UI.pressed === '板:true|れんが:false|鉄インゴット:false|止める:false', JSON.stringify([UI.work.slice(0, 300), UI.pressed]));
-    ok('タブ「仕事場」が「建てる」の右にある', UI.tabs === 'inv,mat,tool,build,work', UI.tabs);
+    ok('タブ「仕事場」が「建てる」の右、「土地」が「仕事場」の右にある', UI.tabs === 'inv,mat,tool,build,work,land', UI.tabs);
     ok('持ち物タブ：自動でたまる物は「石 120／上限 250」の形', /石120／上限 250/.test(UI.inv) && UI.overCls, UI.inv.slice(0, 120));
     ok('材料タブに「×5」のボタンがある（材料のレシピの数だけ）', UI.x5btn === 4, UI.x5btn);
     ok('近くの 1 行：仕事場のそばで「採石場：…」が出る。建築中・遠いときは出ない', /^採石場：/.test(UI.wk) && UI.wkBuild === true && UI.wkFar === true, JSON.stringify([UI.wk, UI.wkBuild, UI.wkFar]));
@@ -689,6 +689,317 @@ const HELPERS = () => {
     const BN = await ev(a.pg, () => { const s = MZ.state; s.stage = 1; s.pop = MZ.STAGES[2].pop; MZ.town.stageCheck(); return [document.querySelector('#banner').textContent, s.stage]; });
     ok('段階の文：村になると STAGES の banner が出る', BN[1] === 2 && BN[0] === '村になった！ 石畳・採石場・粘土採り場・工房・商店・倉庫・大きな畑が作れる', JSON.stringify(BN));
     ok('区切り 2 の試験でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+
+  /* ---- β0.3.0 0 章：区切り 2 のレビューの直しと、追加の決定（鉄鉱石 4・大きな畑の草・仕事場タブ・軽い workSt・店の知らせ） ---- */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const R = await ev(a.pg, () => {
+      const out = {}, W = MZ.world, Tn = MZ.town, s = MZ.state, T = MZ.T, U = MZ.ui;
+      MZ.noSave = true;
+      W.nodes.forEach(nd => { if (nd.gx >= 30 && nd.gx <= 95 && nd.gz >= 30 && nd.gz <= 95) W.take(nd.idx, -1); });
+      const all = n => { Object.keys(s.inv).forEach(k => { s.inv[k] = n; }); };
+      const hold = () => { s.timers.migrate = -1e6; };
+      const P = (k, x, z) => { all(999); const ok = MZ.place(k, x, z, 0); if (!ok) throw new Error('置けない ' + k); return Tn.list()[Tn.list().length - 1].id; };
+      s.stage = 2; hold();
+      /* 鉄鉱石は 4（配置・hp は変えない） */
+      out.iron = [MZ.NODES.iron.drops.ore, MZ.NODES.iron.hp, MZ.NODES.iron.n];
+      s.tools.pick = 3;
+      const nd = W.nodes.find(n => n.k === 'iron' && W.nodeActive(n.idx)); TT.goto(nd); MZ.player.updateAim(); s.inv.ore = 0;
+      let guard = 0; while (W.nodeActive(nd.idx) && guard++ < 40) MZ.hit();
+      out.ore = s.inv.ore;
+      /* 大きな畑：人手なしで 40 秒ごとに草 2。人口から引かない。上限にかかる */
+      s.pop = 3; Tn.jobsDirty = true;
+      const bf = P('bigfield', 70, 70); s.pop = 3; Tn.jobsDirty = true;
+      const jb = Tn.jobs().find(j => j.id === bf);
+      out.bfJob = jb && [jb.running, jb.need, jb.staff];
+      all(0); s.timers.jobs[bf] = 40; out.bfSt = Tn.workSt(Tn.byId[bf]);
+      MZ.tick(39.5); out.g39 = s.inv.grass; MZ.tick(1); out.g40 = s.inv.grass;
+      s.inv.grass = 100; out.bfFull = Tn.workSt(Tn.byId[bf]); s.timers.jobs[bf] = 40; MZ.tick(41); out.gFull = s.inv.grass;
+      s.inv.grass = 99; s.timers.jobs[bf] = 1; MZ.tick(1.5); out.g101 = s.inv.grass;
+      /* 住民は大きな畑のまわりに立たない・人口は引かれない */
+      s.pop = 10; Tn.jobsDirty = true; Tn.resDirty = true; MZ.tick(2);
+      out.bfRes = Tn.residents.some(r => r.home === bf);
+      /* 軽い workSt：文字列・配列でなく、'run' など 5 つの語だけ。step は workState を 1 回も呼ばない・autoCap() を呼ばない */
+      const wid = P('workshop', 66, 60); s.pop = 20; Tn.jobsDirty = true;
+      const lid = P('lumber', 62, 66); s.pop = 20; Tn.jobsDirty = true; hold();
+      MZ.setMake(wid, 'plank'); all(0);
+      const sts = {};
+      sts.short = Tn.workSt(Tn.byId[wid]); s.inv.log = 1; sts.run = Tn.workSt(Tn.byId[wid]); s.inv.plank = 100; sts.full = Tn.workSt(Tn.byId[wid]);
+      MZ.setMake(wid, null); sts.off = Tn.workSt(Tn.byId[wid]); s.pop = 1; Tn.jobsDirty = true; sts.staff = Tn.workSt(Tn.byId[lid]); s.pop = 20; Tn.jobsDirty = true;
+      out.sts = sts;
+      let nws = 0, nac = 0; const ow = Tn.workState, oa = MZ.autoCap;
+      Tn.workState = function (b) { nws++; return ow.call(Tn, b); }; MZ.autoCap = function () { nac++; return oa(); };
+      MZ.tick(5); Tn.workState = ow; MZ.autoCap = oa;
+      out.calls = [nws, nac];
+      out.capInfo = [Tn.info.autoCap, MZ.autoCap()];
+      P('storehouse', 76, 70); out.capInfo.push(Tn.info.autoCap, MZ.autoCap());
+      /* reloadBtex は道具を読み直さない（関数の中身に道具の読み込みが無い） */
+      out.reload = /L\.tool|b_tool_/.test(MZ.gfx.looks.reloadBtex.toString());
+      return out;
+    });
+    ok('鉄鉱石：鉄の鉱脈から 4（drops・hp 10・n 30 は hp・n そのまま）', R.iron[0] === 4 && R.iron[1] === 10 && R.iron[2] === 30 && R.ore === 4, JSON.stringify([R.iron, R.ore]));
+    ok('大きな畑：人手なし（人口から引かない）で動き、40 秒ごとに草 2（39.5 秒では増えない）', R.bfJob && R.bfJob[0] === true && R.bfJob[1] === 0 && R.bfJob[2] === 0 && R.bfSt === 'run' && R.g39 === 0 && R.g40 === 2, JSON.stringify([R.bfJob, R.bfSt, R.g39, R.g40]));
+    ok('大きな畑の草：上限（100）にかかる（上限いっぱいで止まる・99 → 101）', R.bfFull === 'full' && R.gFull === 100 && R.g101 === 101, JSON.stringify([R.bfFull, R.gFull, R.g101]));
+    ok('大きな畑のまわりには住民を立たせない', R.bfRes === false);
+    ok('Tn.workSt は短い語（run・short・full・off・staff）だけを返す', R.sts.run === 'run' && R.sts.short === 'short' && R.sts.full === 'full' && R.sts.off === 'off' && R.sts.staff === 'staff', JSON.stringify(R.sts));
+    ok('step は workState（文字列づくり）も MZ.autoCap()（全建物を数える）も呼ばない。上限は Tn.info.autoCap（倉庫で 100 → 250）', R.calls[0] === 0 && R.calls[1] === 0 && R.capInfo.join() === '100,100,250,250', JSON.stringify([R.calls, R.capInfo]));
+    ok('reloadBtex は道具（b_tool_）を読み直さない', R.reload === false);
+    /* 仕事場タブ：開いたまま時間が進んでもボタンの要素が同じ。秒と状態の文だけ書きかえる。押した選択が効く */
+    const U1 = await ev(a.pg, () => {
+      const s = MZ.state, Tn = MZ.town, U = MZ.ui, out = {};
+      MZ.noSave = true; s.timers.migrate = -1e6;
+      const wid = Tn.list().find(b => b.t === 'workshop').id, qid = Tn.list().find(b => b.t === 'lumber').id;
+      Object.keys(s.inv).forEach(k => { s.inv[k] = 0; }); s.inv.log = 50; MZ.setMake(wid, 'plank'); s.timers.jobs[qid] = 20; s.timers.jobs[wid] = 25;
+      U.panel(true); U.tab = 'work'; U.sig = ''; U.render();
+      window.__btn = document.querySelector('#pbody .mk[data-make=brick]'); window.__ul = document.querySelector('#pbody ul.wk');
+      window.__ws = document.querySelector('#pbody [data-ws="' + qid + '"]');
+      out.t0 = window.__ws.textContent; out.n = document.querySelectorAll('#pbody [data-ws]').length;
+      window.__sc = (document.querySelector('#pbody').scrollTop = 0);
+      MZ.tick(3); U.update(0.2); U.render();
+      out.same = window.__btn.isSameNode(document.querySelector('#pbody .mk[data-make=brick]')) && window.__ul.isSameNode(document.querySelector('#pbody ul.wk')) && window.__ws.isSameNode(document.querySelector('#pbody [data-ws="' + qid + '"]'));
+      out.t1 = window.__ws.textContent;
+      out.attached = document.body.contains(window.__btn);
+      return out;
+    });
+    ok('仕事場タブ：開いたまま 3 秒すすんでも、ボタン・一覧・状態の行の要素が同じ（作り直さない）。状態の文だけ変わる（' + U1.t0 + ' → ' + U1.t1 + '）', U1.same && U1.attached && U1.t0 !== U1.t1 && /動いている（次まで \d+ 秒）/.test(U1.t1) && U1.n >= 2, JSON.stringify(U1));
+    await a.pg.click('#pbody .mk[data-make=brick]');
+    const U2 = await ev(a.pg, () => { const Tn = MZ.town, w = Tn.list().find(b => b.t === 'workshop'); return { mk: w.mk, pressed: document.querySelector('#pbody .mk[data-make=brick]').getAttribute('aria-pressed'), prev: document.querySelector('#pbody .mk[data-make=plank]').getAttribute('aria-pressed') }; });
+    ok('仕事場タブ：押したボタン（れんが）が効いて、MZ の状態と aria-pressed が変わる', U2.mk === 'brick' && U2.pressed === 'true' && U2.prev === 'false', JSON.stringify(U2));
+    const U3 = await ev(a.pg, () => {
+      const U = MZ.ui, out = {};
+      U.panel(true); U.tab = 'work'; U.sig = ''; U.render(); out.work = document.querySelector('#pbody').textContent;
+      U.tab = 'inv'; U.sig = ''; U.render(); out.inv = document.querySelector('#pbody').textContent;
+      U.panel(false);
+      return out;
+    });
+    ok('仕事場タブに「大きな畑 1」の「人手なし」「40 秒ごとに 草 2」が出る。持ち物タブの草に上限が付く', /大きな畑 1/.test(U3.work) && /人手なし/.test(U3.work) && /40 秒ごとに 草 2/.test(U3.work) && /草\d+／上限 250/.test(U3.inv), U3.work.slice(0, 160) + ' | ' + U3.inv.slice(0, 80));
+    /* 店の知らせ：店がいちばん少なく、ほかの 3 つより小さいときだけ */
+    const SH = await ev(a.pg, () => {
+      const s = MZ.state, Tn = MZ.town, T = MZ.T, out = {}, old = T.shopFree;
+      MZ.noSave = true; MZ.ui.panel(false);
+      Tn.list().filter(b => MZ.BUILDS[b.t].shop || MZ.BUILDS[b.t].store).forEach(b => MZ.remove(b.id));
+      Object.keys(s.inv).forEach(k => { s.inv[k] = 999; });
+      MZ.place('road', 61, 59, 0); MZ.place('road', 62, 59, 0); MZ.place('road', 63, 59, 0); MZ.place('house', 62, 60, 0); MZ.place('well', 66, 56, 0); MZ.place('field', 68, 56, 0);   // 家 2・水 10・食料（畑 4 ＋ 大きな畑 12）
+      const I = () => Tn.info;
+      /* 店が家・水・食料と同じ数のときは出さない */
+      T.shopFree = Math.min(I().homeSum, I().water, I().food); Tn.recalc(true);
+      out.eq = [I().shop, I().homeSum, I().water, I().food]; out.eqOk = I().homeSum === 2 && I().shop === 2;
+      Tn.shopWarned = false; s.pop = I().cap + 3; s.timers.migrate = 0; MZ.tick(6.5); out.eqWarn = Tn.shopWarned;
+      /* 店が足りないとき（ほかの 3 つより小さい）は出る */
+      T.shopFree = Math.max(0, Math.min(I().homeSum, I().water, I().food) - 1); Tn.recalc(true);
+      Tn.shopWarned = false; s.pop = I().cap + 3; s.timers.migrate = 0; MZ.tick(6.5); out.lowWarn = Tn.shopWarned; out.lowInfo = [I().shop, I().homeSum, I().water, I().food];
+      T.shopFree = old; Tn.recalc(true);
+      return out;
+    });
+    ok('店の知らせ：店が家と同じ数のときは出さない／ほかの 3 つより小さいときは出す', SH.eqOk && SH.eqWarn === false && SH.lowWarn === true, JSON.stringify(SH));
+    ok('0 章の試験でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+
+  /* ---- β0.3.0 区切り 3：土地を広げる（材料はテストの中だけで持たせる。ゲームに持ち物を増やす関数は作らない） ---- */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    /* 今の（広げる前の）地形の式の写し。"0,0" だけのとき、hOut が 1 つ残らず同じ値を返すことを確かめるのに使う */
+    const R = await ev(a.pg, () => {
+      const out = {}, W = MZ.world, Tn = MZ.town, s = MZ.state, T = MZ.T, G = MZ.gfx, S = MZ.STAGES;
+      MZ.noSave = true;
+      const all = n => { Object.keys(s.inv).forEach(k => { s.inv[k] = n; }); };
+      const hashOf = f => { let h = 2166136261; const ns = W.nodes.filter(f); const str = ns.map(n => [n.idx, n.k, n.x, n.z, n.s.toFixed(6), n.ry.toFixed(6), n.k === 'tree' ? n.g.vi : 0].join(',')).join(';'); for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16) + ':' + ns.length; };
+      out.h0 = hashOf(() => true);
+      /* "0,0" だけの地形：昔の式と同じ値 */
+      const { fbm, smooth } = G, HALF = 120;
+      const old = (x, z) => { const c = Math.max(Math.abs(x), Math.abs(z)); if (c <= HALF + 6) return 0; const r = Math.sqrt(x * x + z * z); const f = smooth(HALF + 6, HALF + 70, c); let h = (fbm(x * 0.012 + 40, z * 0.012 + 40, 11, 4) - 0.35) * 9 + (fbm(x * 0.05, z * 0.05, 12, 3) - 0.5) * 1.6; h += smooth(110, 280, r) * Math.pow(fbm(x * 0.0065 + 3, z * 0.0065 + 7, 14, 4), 1.6) * 55; h = Math.max(h, 0) * f; return h * (1 - smooth(250, 300, r) * 0.6); };
+      let same = true, n = 0; for (let i = 0; i < 400; i++) { const x = ((i * 97) % 700) - 350 + 0.37, z = ((i * 61) % 700) - 350 - 0.21; if (old(x, z) !== G.ground.hOut(x, z)) same = false; n++; }
+      out.hSame = [same, n];
+      out.rect0 = G.ground.rect && [G.ground.rect.x0, G.ground.rect.x1, G.ground.rect.z0, G.ground.rect.z1];
+      out.fence0 = [G.ground.fenceCount, G.ground.fence.thinInstanceCount];
+      /* canExpand の理由 5 つ（順に：世界の外・もう持っている・となりの区画を先に・村で解放・材料が足りない） */
+      s.stage = 1; all(9999);
+      out.r = [MZ.canExpand(2, 0), MZ.canExpand(0, -2), MZ.canExpand(0, 0), MZ.canExpand(1, 1), MZ.canExpand(1, 0)];
+      s.stage = 2; all(0); out.r2 = [MZ.canExpand(1, 0), MZ.canExpand(1, 1)];
+      all(9999); out.r3 = MZ.canExpand(1, 0);
+      out.kinds = Object.keys(MZ.CHUNK_KINDS).map(k => k + ':' + MZ.CHUNK_KINDS[k]).join(' ');
+      /* 失敗するときは何も変えない */
+      all(0); const inv0 = JSON.stringify(s.inv); out.noExp = [MZ.expand(1, 0), MZ.expand(5, 5), JSON.stringify(s.inv) === inv0, s.land.length];
+      /* 材料の払い（1・3・5 区画め）。1 区画め：東（岩場） */
+      const spend = (cx, cz) => { all(1000); const b = JSON.stringify(s.inv); const ok = MZ.expand(cx, cz); const d = {}; Object.keys(s.inv).forEach(k => { if (s.inv[k] !== 1000) d[k] = 1000 - s.inv[k]; }); return { ok, d }; };
+      out.sp1 = spend(1, 0);                      // 1 区画め
+      out.sp2 = spend(0, 1);                      // 2 区画め（同じ行）
+      out.sp3 = spend(-1, 0);                     // 3 区画め
+      out.sp4 = spend(0, -1);                     // 4 区画め
+      out.sp5 = spend(1, 1);                      // 5 区画め
+      out.sp6 = spend(1, -1); out.sp7 = spend(-1, -1); out.sp8 = spend(-1, 1);
+      out.all9 = [s.land.length, s.land.join(' '), Object.keys(s.chunks).length, W.landKeys.length];
+      out.after9 = [MZ.canExpand(0, 0), MZ.canExpand(2, 2)];
+      /* 採れる物の数：種類の倍率どおり（岩場の鉄は 30 × 3）。区画 "0,0" の物は変わらない */
+      const cnt = key => { const o = {}; (W.byChunk[key] || []).forEach(i => { const k = W.nodes[i].k; o[k] = (o[k] || 0) + 1; }); return o; };
+      out.cnt = { home: cnt('0,0'), rocky: cnt('1,0'), forest: cnt('0,1'), clay: cnt('0,-1') };
+      out.h1 = hashOf(n => n.ck === '0,0');
+      out.idx = W.nodes.every((n, i) => n.idx === i && W.byChunk[n.ck][n.li] === i && n.tk === s.chunks[n.ck].taken);
+      out.within = W.nodes.every(n => MZ.landAt(n.gx, n.gz) && n.x > -360 && n.x < 360 && W.cellNode[MZ.ci(n.gx, n.gz)] === n.idx);
+      return out;
+    });
+    ok('広げる前の "0,0" の地形・柵：hOut が昔の式と 1 つ残らず同じ・rect が ±120・杭 240 本（角は 1 本）', R.hSame[0] && R.rect0.join() === '-120,120,-120,120' && R.fence0[0] === 240 && R.fence0[1] === 240, JSON.stringify([R.hSame, R.rect0, R.fence0]));
+    ok('canExpand の理由が 5 つ：世界の外・世界の外・もう持っている・となりの区画を先に（村でも材料でもなく）・村（人口 50）で解放', R.r[0] === '世界の外' && R.r[1] === '世界の外' && R.r[2] === 'もう持っている' && R.r[3] === 'となりの区画を先に' && R.r[4] === '村（人口 50）で解放', JSON.stringify(R.r));
+    ok('canExpand：村で材料が無ければ「材料が足りない」。となりが無ければ、材料が無くても「となりの区画を先に」。材料があれば空', R.r2[0] === '材料が足りない' && R.r2[1] === 'となりの区画を先に' && R.r3 === '', JSON.stringify([R.r2, R.r3]));
+    ok('区画の種類の表：' + R.kinds, R.kinds === '0,0:home 0,1:forest 1,0:rocky 0,-1:clayland -1,0:forest 1,1:rocky 1,-1:clayland -1,-1:rocky -1,1:clayland', R.kinds);
+    ok('広げられないとき（材料なし・世界の外）は false で、持ち物も区画の数も変わらない', R.noExp[0] === false && R.noExp[1] === false && R.noExp[2] && R.noExp[3] === 1, JSON.stringify(R.noExp));
+    const dj = o => JSON.stringify(Object.entries(o.d).sort()), ej = o => JSON.stringify(Object.entries(o).sort());
+    ok('材料の払い：1・2 区画め＝板 40・石 40・ロープ 5（東の岩場・北の森）', R.sp1.ok && R.sp2.ok && dj(R.sp1) === ej({ plank: 40, stone: 40, rope: 5 }) && dj(R.sp2) === dj(R.sp1), dj(R.sp1) + ' ' + dj(R.sp2));
+    ok('材料の払い：3・4 区画め＝板 80・石 80・れんが 40', R.sp3.ok && R.sp4.ok && dj(R.sp3) === ej({ plank: 80, stone: 80, brick: 40 }) && dj(R.sp4) === dj(R.sp3), dj(R.sp3) + ' ' + dj(R.sp4));
+    ok('材料の払い：5〜8 区画め＝板 120・石 120・れんが 80・鉄インゴット 10', [R.sp5, R.sp6, R.sp7, R.sp8].every(x => x.ok && dj(x) === dj(R.sp5)) && dj(R.sp5) === ej({ plank: 120, stone: 120, brick: 80, ingot: 10 }), dj(R.sp5));
+    ok('9 区画を全部広げられる（land・chunks・W.landKeys が 9）。そのあとは「もう持っている」・「世界の外」', R.all9[0] === 9 && R.all9[2] === 9 && R.all9[3] === 9 && R.after9[0] === 'もう持っている' && R.after9[1] === '世界の外', JSON.stringify([R.all9, R.after9]));
+    const c = R.cnt;
+    ok('広げた区画の採れる物：岩場は岩 180・鉄 90（30×3）・木 130、森は木 260、粘土の土地は粘土 102', c.rocky.rock === 180 && c.rocky.iron === 90 && c.rocky.tree === 130 && c.forest.tree === 260 && c.clay.clay === 102 && c.forest.rock === 60, JSON.stringify(c));
+    ok('区画 "0,0" の物は 444 個で、位置のハッシュが 79e4b006（広げたあとも同じ）。番号 idx・区画の中の番号・nd.tk が正しく、全部が土地の中のマス', R.h0 === '79e4b006:444' && R.h1 === '79e4b006:444' && R.idx && R.within, JSON.stringify([R.h0, R.h1, R.idx, R.within]));
+    ok('区切り 3（その 1）でエラー・警告が 0（9 区画を広げる・描画の入れ物・柵・山）', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+  /* 広げた区画で物を採る → 保存 → 読み直し（別のページ）／区画の境をまたぐ家／道が区画をまたぐ／L 字の柵・当たり・地形・草 */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const R = await ev(a.pg, () => {
+      const out = {}, W = MZ.world, Tn = MZ.town, s = MZ.state, T = MZ.T, G = MZ.gfx;
+      MZ.noSave = true;
+      const all = n => { Object.keys(s.inv).forEach(k => { s.inv[k] = n; }); };
+      s.stage = 2; all(9999); s.timers.migrate = -1e6;
+      /* L 字：東と北を広げる */
+      out.ex = [MZ.expand(1, 0), MZ.expand(0, 1)];
+      out.land = s.land.join(' ');
+      /* 区画 "1,0" で物を採る（くさむら 3 つ・岩 1 つ） */
+      const picks = W.byChunk['1,0'].map(i => W.nodes[i]).filter(n => n.k === 'bush').slice(0, 3);
+      picks.forEach(nd => { TT.goto(nd); MZ.player.updateAim(); let g = 0; while (W.nodeActive(nd.idx) && g++ < 10) MZ.hit(); });
+      const rk = W.byChunk['1,0'].map(i => W.nodes[i]).find(n => n.k === 'rock'); W.take(rk.idx, 300);
+      out.took = Object.keys(s.chunks['1,0'].taken).length;
+      out.takenSame = JSON.stringify(s.chunks['1,0'].taken);
+      out.live = picks.every(nd => !W.nodeActive(nd.idx));
+      /* 区画の境をまたぐ家（"0,0" の右端 119 と "1,0" の左端 0）。保存は左上のマスがある区画 "0,0" に、区画の中の座標 (119,50) で入る */
+      W.nodes.forEach(nd => { if (nd.gx >= 110 && nd.gx <= 135 && nd.gz >= 40 && nd.gz <= 75) W.take(nd.idx, -1); });
+      all(9999);
+      out.cross = MZ.place('house', 119, 50, 0);
+      const hb = Tn.list().find(b => b.t === 'house');
+      out.crossSave = hb && [Tn.ck[hb.id], hb.x, hb.z, Tn.gpos(hb).join(), s.chunks['0,0'].layers.ground.indexOf(hb) >= 0, s.chunks['1,0'].layers.ground.length];
+      out.crossCells = [W.owner[MZ.ci(119, 50)], W.owner[MZ.ci(120, 50)], W.owner[MZ.ci(119, 51)], W.owner[MZ.ci(120, 51)]].every(v => v === hb.id);
+      out.crossOut = MZ.place('house', 119, 119, 0);   // (119,119)〜(120,120)：右上の 1 マス "1,1" は持っていない
+      /* 道が区画をまたぐ：小屋から東へ。向こうの家に人が来る */
+      W.nodes.forEach(nd => { if (nd.gx >= 58 && nd.gx <= 140 && nd.gz >= 56 && nd.gz <= 76) W.take(nd.idx, -1); });
+      let rd = 0; for (let g = 61; g <= 125; g++) if (MZ.place('road', g, 60, 0)) rd++;
+      out.roadN = rd;
+      const far = MZ.place('house', 125, 61, 0), fb = Tn.list().find(b => b.t === 'house' && b.x === 125);
+      const wf = [MZ.place('well', 130, 66, 0), MZ.place('field', 130, 70, 0)];
+      s.pop = 0; Tn.jobsDirty = true; Tn.resDirty = true; Tn.recalc(true);
+      out.conn = [far && wf[0] && wf[1], Tn.info.unconnected, Tn.info.homeSum, Tn.info.roads];
+      s.timers.migrate = 0; MZ.tick(13); s.timers.migrate = -1e6;
+      out.pop = [s.pop, Tn.info.cap];   // cap は 向こうの家 2 人。つながっていない最初の家は数えない
+      MZ.tick(2);
+      out.res = Tn.residents.filter(r => Tn.byId[r.home] && Tn.byId[r.home].t === 'house').length;   // 家をよりどころにする住民（つながっていない最初の家と半分ずつ）
+      /* 土地の外・当たり */
+      s.player.x = 240; s.player.z = 100; out.cl = [W.collide(240, 125, 0.35)[1], W.collide(240, 300, 0.35)[1], W.collide(100, 300, 0.35)[1], W.collide(130, 130, 0.35).join(), W.solidAtPoint(240, 240), W.solidAtPoint(240, 100)];
+      /* 杭の数：L 字を外側から 1 周する点の数（角は 1 本）を別の式で数える。区画ごと・辺ごとに 60 区間 → 61 本、共有する角は引く */
+      const own = new Set(s.land), pts = new Set(); const CH = 240;
+      s.land.forEach(k => { const [cx, cz] = k.split(',').map(Number); [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(d => { if (own.has((cx + d[0]) + ',' + (cz + d[1]))) return;
+        for (let v = 0; v <= CH; v += 4) { const x = d[0] ? (cx + (d[0] > 0 ? 0.5 : -0.5)) * CH : cx * CH - CH / 2 + v, z = d[1] ? (cz + (d[1] > 0 ? 0.5 : -0.5)) * CH : cz * CH - CH / 2 + v; pts.add(x + ',' + z); } }); });
+      out.fence = [G.ground.fenceCount, G.ground.fence.thinInstanceCount, pts.size];
+      const rc = G.ground.rect; out.rect = [rc.x0, rc.x1, rc.z0, rc.z1];
+      /* 地形：持っている所と rect の中（持っていない "1,1" も）は 0、rect の外 30m より先には高い所がある */
+      let flatIn = true, hmax = 0, nIn = 0; for (let x = -118; x <= 358; x += 12) for (let z = -118; z <= 358; z += 12) { nIn++; if (G.ground.hOut(x, z) !== 0) flatIn = false; }
+      for (let x = -500; x <= 740; x += 20) for (let z = -500; z <= 740; z += 20) { if (Math.max(-120 - x, x - 360, -120 - z, z - 360) >= 30) hmax = Math.max(hmax, G.ground.hOut(x, z)); }
+      out.terr = [flatIn, nIn, hmax > 0, Math.round(hmax * 10) / 10];
+      const hp = G.ground.hi.getVerticesData('position'); let mn = 1e9, mx = -1e9; for (let i = 0; i < hp.length; i += 3) { mn = Math.min(mn, hp[i]); mx = Math.max(mx, hp[i]); }
+      out.hiX = [mn, mx];
+      /* 草：持っていない "1,1"（x・z とも 120 より大きい）には 1 株もない。持っている "1,0" にはある */
+      G.grass.dirty(); s.player.x = 200; s.player.z = 100; G.grass.layout(200, 100);
+      const b = G.grass.state.buf, n = G.grass.count; let inGap = 0, inOwn = 0;
+      for (let i = 0; i < n; i++) { const x = b[i * 16 + 12], z = b[i * 16 + 14]; if (x > 120 && z > 120 && x < 360) inGap++; if (x > 120 && z < 120 && x < 360) inOwn++; }
+      out.grass = [n, inGap, inOwn];
+      /* 地面の塗り分けの表：持っていない区画のマスは 0（新しい区画のマスの建物は無いので 0 のまま）、建物のある所は書かれている */
+      out.mk = [G.ground.data.data[MZ.ci(119, 60) * 4], G.ground.data.data[MZ.ci(124, 60) * 4]];
+      /* 保存（また出るまでの残り秒は時間でへるので、保存した時点の taken と比べる） */
+      out.takenSame = JSON.stringify(s.chunks['1,0'].taken);
+      MZ.noSave = false; MZ.saveNow(); MZ.noSave = true;
+      const ld = MZ.loadSave(); out.saved = ld.status === 'ok' && JSON.stringify(ld.state.chunks['1,0'].taken) === out.takenSame && ld.state.land.join(' ') === out.land;
+      out.save = localStorage.getItem('machizukuri-save');
+      out.crossLoad = ld.state.chunks['0,0'].layers.ground.some(b => b.t === 'house' && b.x === 119 && b.z === 50);
+      out.snap = JSON.stringify({ pop: s.pop, b: Tn.list().map(b => [b.id, b.t, Tn.gpos(b).join(), b.r]) });
+      return out;
+    });
+    ok('L 字：東（1,0）と北（0,1）を広げられる', R.ex[0] && R.ex[1] && R.land === '0,0 1,0 0,1', R.land);
+    ok('広げた区画で物を採る（くさむら 3・岩 1）：その区画の taken に入り、消える。保存 → 読み直しで同じ', R.took === 4 && R.live && R.saved, JSON.stringify([R.took, R.live, R.saved]));
+    ok('区画の境をまたぐ家：置ける。保存は左上のマスがある区画 "0,0" に、区画の中の座標 (119,50) で入り、4 マスとも同じ建物。持っていない "1,1" にはみ出す家は置けない', R.cross && R.crossSave[0] === '0,0' && R.crossSave[1] === 119 && R.crossSave[2] === 50 && R.crossSave[3] === '119,50' && R.crossSave[4] && R.crossSave[5] === 0 && R.crossCells && R.crossLoad && R.crossOut === false, JSON.stringify([R.crossSave, R.crossCells, R.crossLoad, R.crossOut]));
+    ok('道が区画をまたいでつながる（65 マス）。向こうの家（125,61）に面した道がつながって家 2 人ぶんになり、人口が 2 まで来て、家に住民がいる', R.roadN === 65 && R.conn[0] && R.conn[1] === 1 && R.conn[2] === 2 && R.pop[0] === 2 && R.res >= 2, JSON.stringify([R.roadN, R.conn, R.pop, R.res]));
+    ok('L 字の当たり：持っていない "1,1" には入れない（東の区画の北端 z 119.5 にもどされる）。北の区画の中は動ける。"1,1" は通れない・東の区画の中は通れる', R.cl[0] === 119.5 && R.cl[1] === 300 && R.cl[2] === 300 && R.cl[4] === true && R.cl[5] === false, JSON.stringify(R.cl));
+    ok('L 字の柵：杭の数が計算どおり（外側を 1 周した点の数。角は 1 本）で、thin instance の数と同じ', R.fence[0] === R.fence[2] && R.fence[1] === R.fence[2] && R.fence[2] > 240, JSON.stringify(R.fence));
+    ok('L 字の rect：x −120〜360・z −120〜360。terrain の x の範囲が rect の外へ広がる', R.rect.join() === '-120,360,-120,360' && R.hiX[0] < -300 && R.hiX[1] > 540, JSON.stringify([R.rect, R.hiX]));
+    ok('L 字の地形：rect の中（持っていない "1,1" も）は y = 0、rect の外 30m より先には y > 0 の所がある', R.terr[0] && R.terr[2], JSON.stringify(R.terr));
+    ok('L 字の草：持っていない "1,1" に草が 1 株もなく、持っている "1,0" にはある', R.grass[0] > 0 && R.grass[1] === 0 && R.grass[2] > 0, JSON.stringify(R.grass));
+    ok('地面の塗り分けの表：道（R=255）が持っている区画のマスに書かれる', R.mk[0] === 255 && R.mk[1] === 255, JSON.stringify(R.mk));
+    /* 読み直し：別のページで保存を読む（つづきから） */
+    {
+      const b = await open2({});
+      await b.c.addInitScript(sv => { try { if (!sessionStorage.getItem('mz-seeded')) { localStorage.setItem('machizukuri-save', sv); sessionStorage.setItem('mz-seeded', '1'); } } catch (e) { /* なし */ } }, R.save);
+      await b.pg.goto(URL);
+      await b.pg.waitForSelector('#tbtn .go:not([disabled])', { timeout: 60000 });
+      const title = await b.pg.textContent('#tbtn');
+      await b.pg.click('#tbtn .go');
+      await b.pg.waitForFunction(() => window.MZ && MZ.started, null, { timeout: 120000 });
+      await ev(b.pg, HELPERS);
+      const L = await ev(b.pg, () => {
+        const s = MZ.state, W = MZ.world, Tn = MZ.town, G = MZ.gfx;
+        MZ.noSave = true;
+        const hb = Tn.list().find(x => x.t === 'house' && x.x === 119);
+        let h = 2166136261; const ns = W.nodes.filter(n => n.ck === '0,0'); const str = ns.map(n => [n.idx, n.k, n.x, n.z, n.s.toFixed(6), n.ry.toFixed(6), n.k === 'tree' ? n.g.vi : 0].join(',')).join(';'); for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+        const tk = s.chunks['1,0'].taken, gone = Object.keys(tk).every(i => { const nd = W.nodes[W.byChunk['1,0'][+i]]; return !W.nodeActive(nd.idx); });
+        return { land: s.land.join(' '), snap: JSON.stringify({ pop: s.pop, b: Tn.list().map(b => [b.id, b.t, Tn.gpos(b).join(), b.r]) }), taken: JSON.stringify(tk), gone, hash: (h >>> 0).toString(16) + ':' + ns.length, nodes: W.nodes.length, fence: G.ground.fenceCount, cells: hb && [W.owner[MZ.ci(119, 50)], W.owner[MZ.ci(120, 51)]].every(v => v === hb.id), meshes: Object.keys(Tn.meshes).length, count: Tn.list().length };
+      });
+      ok('読み直し（つづきから）：持っている区画・建物（またぐ家も同じ所）・採った物・配置のハッシュが同じ', title.includes('つづきから') && L.land === R.land && L.snap === R.snap && L.taken === R.takenSame && L.gone && L.hash === '79e4b006:444' && L.cells && L.meshes === L.count && L.fence === R.fence[0], JSON.stringify(L));
+      ok('読み直しでエラー・警告が 0', b.list.length === 0, b.list.slice(0, 4).join(' | '));
+      await b.c.close();
+    }
+    /* 画面：土地タブ・柵のきわのボタン・L キー・目標・タブの幅 */
+    const UI = await ev(a.pg, () => {
+      const s = MZ.state, U = MZ.ui, out = {};
+      MZ.noSave = true; U.panel(false); MZ.cancelBuild();
+      s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 0; });
+      s.player.x = 0; s.player.z = 0; U.update(0.2); out.btnMid = document.querySelector('#landBtn').classList.contains('show');
+      s.player.x = 355; s.player.z = 0; U.update(0.2); out.btnEdge = document.querySelector('#landBtn').classList.contains('show');
+      s.stage = 1; U.update(0.2); out.btnLow = document.querySelector('#landBtn').classList.contains('show'); s.stage = 2;
+      U.update(0.2);
+      document.querySelector('#landBtn').click();
+      out.open = U.open; out.tab = U.tab;
+      out.cells = document.querySelectorAll('#pbody .lc').length;
+      out.own = document.querySelectorAll('#pbody .lc.own').length; out.adj = document.querySelectorAll('#pbody .lc.adj').length; out.far = document.querySelectorAll('#pbody .lc.far').length;
+      const sq = [...document.querySelectorAll('#pbody .lc')].map(e => { const r = e.getBoundingClientRect(); return Math.abs(r.width - r.height) < 1.5 && r.width > 40; });
+      out.square = sq.every(v => v);
+      const adjBtn = document.querySelector('#pbody .lc.adj'); adjBtn.click();
+      out.detail = document.querySelector('#pbody .ld').textContent; out.exp = document.querySelector('#pbody [data-expand]') && document.querySelector('#pbody [data-expand]').disabled;
+      out.here = document.querySelector('#pbody .lc.here') && document.querySelector('#pbody .lc.here').dataset.land;
+      out.order = [...document.querySelectorAll('#pbody .lc')].map(e => e.dataset.land).join(' ');
+      /* 広げる：材料を持たせて押す */
+      Object.keys(s.inv).forEach(k => { s.inv[k] = 999; }); U.sig = ''; U.render();
+      const key = document.querySelector('#pbody .lc.adj').dataset.land; document.querySelector('#pbody .lc.adj').click();
+      document.querySelector('#pbody [data-expand]').click();
+      out.expanded = [s.land.length, s.land.indexOf(key) >= 0];
+      U.panel(false);
+      /* 目標 */
+      const keepLand = s.land; s.land = ['0,0']; out.goal1 = MZ.GOALS.find(g => /土地を広げよう/.test(g.text())).done();
+      s.land = ['0,0', '1,0']; out.goal2 = MZ.GOALS.find(g => /土地を広げよう/.test(g.text())).done();
+      const gi = MZ.GOALS.map(g => g.text()), li = gi.findIndex(t => /土地を広げよう/.test(t)); out.goalPos = [/倉庫/.test(gi[li - 1]), /人口 200/.test(gi[li + 1])]; out.goalText = gi[li]; s.land = keepLand;
+      return out;
+    });
+    ok('柵のきわ（土地の端から 6m 以内）で「土地」ボタンが出る。土地の真ん中・段階が村より前では出ない。押すとパネルの土地タブが開く', UI.btnEdge && !UI.btnMid && !UI.btnLow && UI.open && UI.tab === 'land', JSON.stringify([UI.btnMid, UI.btnEdge, UI.btnLow, UI.open, UI.tab]));
+    ok('土地タブ：3×3 の正方形のボタン 9 つ（持っている 3・広げられる・となりを先に）。「いまここ」の印。広げられるマスを押すと材料の表と、材料がなければ押せない「広げる」', UI.cells === 9 && UI.own === 3 && UI.adj >= 2 && UI.own + UI.adj + UI.far === 9 && UI.square && UI.exp === true && /板/.test(UI.detail) && !!UI.here, JSON.stringify(UI));
+    ok('土地タブ：上が北（先頭の行は z = 1：-1,1 0,1 1,1）。材料があれば「広げる」で広げられる', UI.order.indexOf('-1,1 0,1 1,1') === 0 && UI.expanded[0] === 4 && UI.expanded[1], JSON.stringify([UI.order, UI.expanded]));
+    ok('目標：「土地を広げよう」は倉庫の行と「人口 200 で町」のあいだ。2 区画で済み', UI.goalPos[0] && UI.goalPos[1] && UI.goal1 === false && UI.goal2 === true && /「土地」タブ/.test(UI.goalText), JSON.stringify([UI.goalPos, UI.goal1, UI.goal2, UI.goalText]));
+    await a.pg.keyboard.press('Escape');
+    await a.pg.keyboard.press('KeyL');
+    const lk = await ev(a.pg, () => [MZ.ui.open, MZ.ui.tab]);
+    ok('PC の L キーで土地タブが開く', lk[0] === true && lk[1] === 'land', JSON.stringify(lk));
+    ok('区切り 3（その 2）でエラー・警告が 0（L 字・保存・画面）', a.list.length === 0, a.list.slice(0, 4).join(' | '));
     await a.c.close();
   }
   }
@@ -961,6 +1272,40 @@ const HELPERS = () => {
   }
   if (want(4)) {
   cur = 4;
+  /* 石畳の明るさ：土の道のマスに比べて 0.95〜1.15 倍（高・中・低で同じ構図を撮り、石畳のマスと土の道のマスの画素の平均の明るさ）。縁（0.12m）の暗さは見える */
+  {
+    const ratios = {};
+    for (const q of ['low', 'mid', 'high']) {
+      const a = await open2({ pref: q, viewport: { width: 1200, height: 750 } });
+      await begin2(a.pg); await loaded(a.pg);
+      await ev(a.pg, () => {
+        MZ.noSave = true; MZ.timeFix = 5; const s = MZ.state; s.stage = 2; Object.keys(s.inv).forEach(k => { s.inv[k] = 9999; });
+        MZ.world.nodes.forEach(nd => { if (nd.gx >= 55 && nd.gx <= 75 && nd.gz >= 40 && nd.gz <= 62) MZ.world.take(nd.idx, -1); });
+        for (let g = 42; g <= 56; g++) { MZ.place('stoneroad', 64, g, 0); MZ.place('road', 66, g, 0); }
+        s.player.x = 11; s.player.z = -22; s.player.yaw = 0; s.player.pitch = 0.6; s.player.view = 1;
+        MZ.gfx.nodes.flush(); MZ.gfx.grass.layout(11, -22);
+      });
+      await frames(a.pg, q === 'high' ? 3 : 5);
+      const buf = await a.pg.screenshot({ path: OUT + 'cobble-' + q + '.png', timeout: 600000 });
+      const m = await ev(a.pg, async b64 => {
+        const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
+        const sc = MZ.world.scene, cam = MZ.world.camera, tm = sc.getTransformMatrix(), vp = cam.viewport.toGlobal(img.width, img.height);
+        const proj = (x, z) => { const v = BABYLON.Vector3.Project(new BABYLON.Vector3(x, 0, z), BABYLON.Matrix.Identity(), tm, vp); return [v.x, v.y]; };
+        const meas = cx => { let sum = 0, n = 0; for (let gz = 44; gz <= 54; gz++) for (const dx of [-0.8, -0.4, 0, 0.4, 0.8]) for (const dz of [-0.8, 0, 0.8]) {
+          const p = proj(cx + dx, (gz - 60) * 2 + 1 + dz), x = Math.round(p[0]), y = Math.round(p[1]); if (x < 2 || y < 2 || x > img.width - 3 || y > img.height - 3) continue;
+          const d = g.getImageData(x - 1, y - 1, 3, 3).data; for (let i = 0; i < 36; i += 4) { sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; n++; } } return [sum / n, n]; };
+        /* 縁：石畳の帯の端（0.06m 内）と、少し内側（0.35m 内）の明るさの平均 */
+        const at = (x, z) => { const p = proj(x, z), d = g.getImageData(Math.round(p[0]) - 1, Math.round(p[1]), 3, 1).data; let v = 0; for (let i = 0; i < 12; i += 4) v += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; return v / 3; };
+        const edge = (() => { let e = 0, m2 = 0, n = 0; for (let gz = 44; gz <= 54; gz++) for (const dz of [-0.6, 0, 0.6]) { const z = (gz - 60) * 2 + 1 + dz; e += at(8.05, z) + at(9.95, z); m2 += at(8.45, z) + at(9.55, z); n += 2; } return [e / n, m2 / n]; })();
+        return { stone: meas(9), dirt: meas(13), edge };
+      }, buf.toString('base64'));
+      ratios[q] = m.stone[0] / m.dirt[0];
+      ok('石畳の明るさ（' + q + '）：土の道のマスの 0.95〜1.15 倍（' + ratios[q].toFixed(3) + '）。縁は少し内側より暗い（縁 ' + Math.round(m.edge[0]) + '／内 ' + Math.round(m.edge[1]) + '）', ratios[q] >= 0.95 && ratios[q] <= 1.15 && m.stone[1] > 300 && m.edge[0] < m.edge[1] * 0.97, JSON.stringify(m));
+      ok('石畳の明るさ（' + q + '）でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 3).join(' | '));
+      await a.c.close();
+    }
+  }
   /* 三角形の上限：小屋のまわりに建物 20 軒と住民 60 人 → 高 170 万・中 90 万・低 30 万以下。道・畑のマスに草が無い。地面は平ら */
   {
     const a = await open2({});
@@ -1349,7 +1694,7 @@ const HELPERS = () => {
     await ev(p, () => MZ.cancelBuild());
     await p.click('#bBag'); await p.waitForTimeout(400);
     const tabs = await ev(p, () => { const bs = [...document.querySelectorAll('#tabs button')], t = document.querySelector('#tabs'); return { n: bs.length, tops: new Set(bs.map(b => b.offsetTop)).size, fit: t.scrollWidth <= t.clientWidth + 1, clip: bs.every(b => b.scrollWidth <= b.clientWidth + 1) }; });
-    ok(name + '：タブ ' + tabs.n + ' つが 1 行に収まる（文字が切れない）', tabs.n === 5 && tabs.tops === 1 && tabs.fit && tabs.clip, JSON.stringify(tabs));
+    ok(name + '：タブ ' + tabs.n + ' つが 1 行に収まる（文字が切れない）', tabs.n === 6 && tabs.tops === 1 && tabs.fit && tabs.clip, JSON.stringify(tabs));
     await p.click('#tabs button[data-tab=work]'); await p.waitForTimeout(300);
     await p.screenshot({ path: OUT + name + '-panel-work.png' });
     await p.click('#tabs button[data-tab=build]'); await p.waitForTimeout(300);

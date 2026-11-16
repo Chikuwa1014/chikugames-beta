@@ -208,6 +208,7 @@
       P.keys[e.code] = true;
       if (e.code === 'KeyE') primary();
       else if (e.code === 'KeyV') MZ.toggleView();
+      else if (e.code === 'KeyL') MZ.ui.openTab('land');   // 土地タブ
       else if (e.code === 'KeyR') MZ.rotate();
       else if (e.code === 'KeyQ' || e.code === 'Escape') MZ.cancelBuild();
     });

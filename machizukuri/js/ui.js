@@ -27,7 +27,7 @@
     { done: () => MZ.state.stage >= 1, text: () => '人口 10 で集落にしよう（家・井戸・畑をふやす）（人口 ' + MZ.state.pop + '／10）' },
     { done: () => has('lumber'), text: () => 'きこり小屋を建てよう（「建てる」→ きこり小屋）' },
     { done: () => tl('axe') >= 3 && tl('pick') >= 3, text: () => '鉄の道具をそろえよう（作業台の近くで「道具」）' },
-    /* 村（段階 T.villageStage）から先。区切り 3 で「土地を広げよう」を、倉庫と「人口 200 で町」のあいだに足す */
+    /* 村（段階 T.villageStage）から先 */
     { done: () => MZ.state.stage >= T.villageStage, text: () => '人口 ' + MZ.STAGES[T.villageStage].pop + ' で' + MZ.STAGES[T.villageStage].name + 'にしよう（れんがの家は 4 人住める）（人口 ' + MZ.state.pop + '／' + MZ.STAGES[T.villageStage].pop + '）' },
     { done: () => has('quarry'), text: () => MZ.BUILDS.quarry.name + 'を建てよう（石が自動でたまる）' },
     { done: () => has('claypit'), text: () => MZ.BUILDS.claypit.name + 'を建てよう（粘土が自動でたまる）' },
@@ -36,6 +36,7 @@
     { done: () => MZ.town.info.paved > 0, text: () => '小屋からの道に' + MZ.BUILDS.stoneroad.name + 'をつなごう（面した家は ' + MZ.BUILDS.stoneroad.pave + ' 人多く住める）' },
     { done: () => has('bigfield'), text: () => MZ.BUILDS.bigfield.name + 'をつくろう（' + MZ.BUILDS.bigfield.food + ' 人分の食料）' },
     { done: () => has('storehouse'), text: () => MZ.BUILDS.storehouse.name + 'を建てよう（自動でたまる上限がふえる）' },
+    { done: () => MZ.state.land.length >= 2, text: () => '土地を広げよう（「土地」タブ。岩場は鉄の鉱脈が多い）' },
     { done: () => MZ.state.stage >= T.villageStage + 1, text: () => '人口 ' + MZ.STAGES[T.villageStage + 1].pop + ' で' + MZ.STAGES[T.villageStage + 1].name + 'にしよう（家・水・食料・店をふやす）（人口 ' + MZ.state.pop + '／' + MZ.STAGES[T.villageStage + 1].pop + '）' },
     { done: () => false, text: () => 'ここまでが今の版です' }
   ];
@@ -104,6 +105,11 @@
       U.sig = ''; U.render();
     }
   };
+  /* パネルをひらいて、そのタブを出す（柵のきわのボタン・L キー） */
+  U.openTab = function (t) {
+    U.tab = t; U.sig = '';
+    if (U.open) U.render(); else U.panel(true);
+  };
   const chips = cost => Object.keys(cost).map(k => { const ok = MZ.state.inv[k] >= cost[k]; return '<span class="chip' + (ok ? '' : ' no') + '">' + MZ.ITEMS[k] + ' ' + MZ.state.inv[k] + '／' + cost[k] + '</span>'; }).join('');
   function recipeRows(tab) {
     return '<ul class="rl">' + MZ.RECIPES.filter(r => r.tab === tab).map(r => {
@@ -127,9 +133,12 @@
     h += '</ul>';
     return h;
   }
-  /* 仕事場タブ：仕事場（jobs のある建物）と商店を id の順に。工房には、つくる物のボタン */
+  /* 仕事場タブ：仕事場（jobs か makes のある建物）と商店を id の順に。工房には、つくる物のボタン。
+     ここが返すのは「一覧の形」だけ（建物の並び・ボタン・えらび）。秒数と状態の文は、各行の <span data-ws="建物 id"> に、
+     U.render が textContent だけを書きかえる（形が変わったときだけ innerHTML を作り直す＝押している最中のボタン・スクロールの位置を失わない） */
+  const isWork = d => d.jobs || d.shop || d.makes;
   function workRows() {
-    const Tn = MZ.town, list = Tn.list().filter(b => { const d = MZ.BUILDS[b.t]; return d.jobs || d.shop; }), nth = {};
+    const Tn = MZ.town, list = Tn.list().filter(b => isWork(MZ.BUILDS[b.t])), nth = {};
     if (!list.length) return '<p class="small">仕事場はまだ無い（' + MZ.BUILDS.lumber.name + 'は' + MZ.STAGES[MZ.BUILDS.lumber.stage].name + 'から、' + MZ.BUILDS.quarry.name + '・' + MZ.BUILDS.claypit.name + '・' + MZ.BUILDS.workshop.name + 'は' + MZ.STAGES[MZ.BUILDS.quarry.stage].name + 'から）</p>' + capLine();
     let h = '<ul class="rl wk">';
     Tn.jobs();
@@ -139,12 +148,12 @@
       h += '<li><div class="rt"><b>' + d.name + ' ' + nth[b.t] + '</b><span>' + br.dir + ' ' + br.dist + 'm</span></div>';
       if (d.shop) h += '<div class="wl">店 ' + d.shop + ' 人分</div>';
       else {
-        const j = Tn.jobsById[b.id], ws = Tn.workState(b);
+        const j = Tn.jobsById[b.id];
         let mk = '';
         if (d.craft) { const r = b.mk && MZ.RECIPES.find(x => x.key === b.mk); mk = d.every + ' 秒ごとに ' + (r ? r.name + '（' + Object.keys(r.give).map(k => MZ.ITEMS[k] + ' ' + r.give[k]).join('・') + '）' : 'えらんだ物'); }
         else mk = d.every + ' 秒ごとに ' + Object.keys(d.makes).map(k => MZ.ITEMS[k] + ' ' + d.makes[k]).join('・');
-        h += '<div class="wl">働く人 ' + (j ? (j.running ? j.need : j.staff) : 0) + '／' + d.jobs + '</div><div class="wl">' + mk + '</div>'
-          + '<div class="wl st-' + ws.st + '">' + ws.text + '</div>';
+        h += '<div class="wl">' + (d.jobs ? '働く人 ' + (j ? (j.running ? j.need : j.staff) : 0) + '／' + d.jobs : '人手なし') + '</div><div class="wl">' + mk + '</div>'
+          + '<div class="wl"><span data-ws="' + b.id + '"></span></div>';
         if (d.craft) {
           h += '<div class="mks">' + d.craft.map(k => { const r = MZ.RECIPES.find(x => x.key === k); return '<button class="mk" data-make="' + k + '" data-bid="' + b.id + '" aria-pressed="' + (b.mk === k) + '">' + r.name + '</button>'; }).join('')
             + '<button class="mk" data-make="" data-bid="' + b.id + '" aria-pressed="' + (!b.mk) + '">止める</button></div>';
@@ -153,6 +162,43 @@
       h += '</li>';
     });
     return h + '</ul>' + capLine();
+  }
+  /* 仕事場タブの「秒と状態の文」だけを書きかえる（同じ文なら書かない） */
+  function updateWs() {
+    const Tn = MZ.town;
+    document.querySelectorAll('#pbody [data-ws]').forEach(el => {
+      const b = Tn.byId[+el.dataset.ws]; if (!b) return;
+      const ws = Tn.workState(b), cls = 'st-' + ws.st;
+      if (el.textContent !== ws.text) el.textContent = ws.text;
+      if (el.className !== cls) el.className = cls;
+    });
+  }
+  /* 土地タブ：3×3 の地図（上が北。東は右）と、えらんだ区画の材料の表・「広げる」ボタン */
+  const kindNote = k => { const m = MZ.KINDS[k].mult, ks = Object.keys(m); return ks.length ? ks.map(n => MZ.NODES[n].name + 'が ' + m[n] + ' 倍').join('・') : '今までの土地'; };
+  function landRows() {
+    const s = MZ.state, T0 = MZ.T, lh = (T0.span - 1) / 2, p = s.player;
+    const here = MZ.chunkOfCell(MZ.cellOf(p.x), MZ.cellOf(p.z)).key;
+    if (!U.landSel || MZ.landState(...U.landSel.split(',').map(Number)) === 'out') U.landSel = '';
+    let h = '<p class="small">広げたい区画をえらぶ（上が北）。となりの区画だけ広げられる。</p><div class="lmap">';
+    for (let cz = lh; cz >= -lh; cz--) for (let cx = -lh; cx <= lh; cx++) {
+      const key = cx + ',' + cz, st = MZ.landState(cx, cz), kd = MZ.KINDS[MZ.CHUNK_KINDS[key]];
+      const lab = st === 'own' ? 'もっている' : st === 'adj' ? '広げられる' : 'となりを先に';
+      h += '<button class="lc ' + st + (key === here ? ' here' : '') + (key === U.landSel ? ' sel' : '') + '" data-land="' + key + '" aria-pressed="' + (key === U.landSel) + '"><b>' + kd.name + '</b><span>' + lab + '</span>' + (key === here ? '<i>いまここ</i>' : '') + '</button>';
+    }
+    h += '</div>';
+    if (U.landSel) {
+      const c = U.landSel.split(',').map(Number), key = U.landSel, kd = MZ.KINDS[MZ.CHUNK_KINDS[key]], st = MZ.landState(c[0], c[1]);
+      h += '<div class="ld"><div class="rt"><b>' + kd.name + '</b><span>' + kindNote(MZ.CHUNK_KINDS[key]) + '</span></div>';
+      if (st === 'own') h += '<div class="why okk">もう持っている</div>';
+      else {
+        const cost = MZ.landCost(s.land.length), why = MZ.canExpand(c[0], c[1]);
+        h += '<div class="cs">' + chips(cost) + '</div>'
+          + '<div class="acts"><button class="act" data-expand="' + key + '"' + (why ? ' disabled' : '') + '>広げる</button></div>'
+          + (why ? '<div class="why">' + why + '</div>' : '');
+      }
+      h += '</div>';
+    }
+    return h;
   }
   function capLine() {
     const n = MZ.town.count('storehouse');
@@ -178,8 +224,9 @@
   }
   U.render = function () {
     const body = $('#pbody'); if (!body) return;
-    let h = U.tab === 'inv' ? invRows() : U.tab === 'build' ? buildRows() : U.tab === 'work' ? workRows() : recipeRows(U.tab);
+    let h = U.tab === 'inv' ? invRows() : U.tab === 'build' ? buildRows() : U.tab === 'work' ? workRows() : U.tab === 'land' ? landRows() : recipeRows(U.tab);
     if (h !== U.sig) { const sc = body.scrollTop; body.innerHTML = h; body.scrollTop = sc; U.sig = h; }
+    if (U.tab === 'work') updateWs();
     document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === U.tab ? 'true' : 'false'));
   };
 
@@ -211,6 +258,12 @@
       const hp = a.hp < 0 ? d.hp : a.hp;
       el.hidden = false; dot.classList.add('hot');
       el.innerHTML = '<b>' + txt + '</b>' + (cant ? '<div class="cant">' + cant + '</div>' : '<div class="bar"><i style="width:' + Math.round((1 - hp / d.hp) * 100) + '%"></i></div>');
+    }
+    /* 柵のきわ（土地の端から 6m 以内）のボタン：段階が村以上で、まだ広げられる区画があるとき。パネル・建築中は出さない */
+    const lb = $('#landBtn');
+    if (lb) {
+      const pl = s.player, show = s.stage >= T.villageStage && s.land.length < T.span * T.span && !U.open && MZ.build.mode === 'none' && !MZ.world.inLand(pl.x, pl.z, 6);
+      if (lb.classList.contains('show') !== show) lb.classList.toggle('show', show);
     }
     /* 近くの仕事場・商店の 1 行（パネルを開いているとき・建築中は出さない） */
     const wk = $('#wk');
@@ -245,12 +298,15 @@
       if (b.dataset.craft) { MZ.craft(b.dataset.craft); U.render(); }
       else if (b.dataset.craft5) { MZ.craft(b.dataset.craft5, 5); U.render(); }
       else if (b.dataset.bid) { MZ.setMake(+b.dataset.bid, b.dataset.make || null); U.sig = ''; U.render(); }
+      else if (b.dataset.land) { U.landSel = b.dataset.land; U.sig = ''; U.render(); }
+      else if (b.dataset.expand) { const c = b.dataset.expand.split(',').map(Number); MZ.expand(c[0], c[1]); U.sig = ''; U.render(); }
       else if (b.dataset.build) MZ.startBuild(b.dataset.build);
       else if (b.dataset.remove) MZ.startRemove();
     });
     $('#pClose').addEventListener('click', () => U.panel(false));
     $('#pReset').addEventListener('click', () => U.confirm('いまの街を消して、さいしょからはじめます。よろしいですか？', MZ.resetAll));
     $('#bBag').addEventListener('click', () => U.panel(!U.open));
+    $('#landBtn').addEventListener('click', () => U.openTab('land'));
     $('#bView').addEventListener('click', () => MZ.toggleView());
     U.modeChanged();
   };
