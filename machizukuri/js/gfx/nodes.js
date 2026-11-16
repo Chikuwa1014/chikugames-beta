@@ -242,13 +242,14 @@
   }
 
   /* ---------- 飾り（採れない・当たりなし）：倒木 12・枯れ枝 40・小石。種は T.seed + 77 ---------- */
+  /* β0.3.0 区切り 1 では区画 "0,0" だけ（乱数 r() の回数を変えない）。区切り 3 では区画ごとの種（T.seed + 77 と区画のキー）で足す */
   function buildDecor(nodes) {
     const r = rng(T.seed + 77), W = MZ.world, lim = 3;
     const free = (x, z) => {
       if (Math.hypot(x, z) < 6) return false;                          // 小屋のまわり 6m
       const gx = MZ.cellOf(x), gz = MZ.cellOf(z);
       if (gx < lim || gz < lim || gx >= N - lim || gz >= N - lim) return false;
-      return W.cellNode[gz * N + gx] < 0;                                // 採れる物のマス
+      return W.cellNode[MZ.ci(gx, gz)] < 0;                              // 採れる物のマス
     };
     const pick = (n, dist, f) => {
       const out = []; let tries = 0;
@@ -351,7 +352,7 @@
       nd.look = null;
       if (!W.nodeActive(nd.idx)) {
         /* 切った木のあとに切り株（高・中）。建物の下で二度と出ない所（-1）には出さない */
-        if (nd.k === 'tree' && W.taken[nd.idx] >= 0 && modelsOn('wood') && S.forms.stump) { const f = S.forms.stump; f.write(nd, f.buf, f.n, 0); f.n++; }
+        if (nd.k === 'tree' && W.takenOf(nd.idx) >= 0 && modelsOn('wood') && S.forms.stump) { const f = S.forms.stump; f.write(nd, f.buf, f.n, 0); f.n++; }
         continue;
       }
       const f = formFor(nd, Math.hypot(nd.x - px, nd.z - pz), q);
@@ -369,7 +370,7 @@
       for (let i = 0; i < f.list.length && i < lim && f.n < f.cap; i++) {
         const p = f.list[i];
         if (Math.abs(p.x - px) > dist || Math.abs(p.z - pz) > dist || Math.hypot(p.x - px, p.z - pz) > dist) continue;
-        if (W.owner[(MZ.cellOf(p.z)) * N + MZ.cellOf(p.x)]) continue;
+        if (W.owner[MZ.ci(MZ.cellOf(p.x), MZ.cellOf(p.z))]) continue;
         f.write(p, f.buf, f.n, 0); f.n++;
       }
     });

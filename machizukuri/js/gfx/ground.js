@@ -2,26 +2,32 @@
    - 土地の中（±120m）は y = 0 の平らなまま（建築・当たり・ねらい・見本は y = 0 を前提にしている）。
      見た目の変化は、写真の混ぜ合わせ・色むら・草でつける。頂点の高さは変えない。
    - 起伏は柵の外だけ。126m から外側でなめらかに上がりはじめ、遠景の山なみ（半径 300〜1200m）へつなぐ。120〜126m は y = 0。
-   - 道・畑・踏み固めは「マスの塗り分けの表」（120×120 の RawTexture。R＝土の道、G＝畑、B＝建物のまわりの踏み固め）を
-     GroundPlugin が世界の座標から読み、ノイズで境目をくずして塗る。建てる・こわすたびに mark で該当マスだけ書きかえる。 */
+   - 起伏・遠景の山なみ・柵の外の飾り・柵（hOut・coords・buildTerrain・buildMountains・buildOutskirts・buildFence）は最初の区画（±120m）だけに合わせて作ってある。
+     区切り 3 で、持っている土地の四角から作り直す（HALF は「最初の区画の半分」の意味）。
+   - 道・畑・踏み固めは「マスの塗り分けの表」（全体の 360×360 マスの RawTexture。R＝土の道、G＝畑、B＝建物のまわりの踏み固め）を
+     GroundPlugin が世界の座標から読み、ノイズで境目をくずして塗る。建てる・こわすたびに mark で該当マスだけ書きかえる。
+     シェーダーは 720m（360 画素）を引く。材質は PBR（highp）なので足りるが、mediump だけの端末では 1 画素の 1/4 ほどずれるおそれがある。 */
 (function () {
   const MZ = window.MZ, B = BABYLON, G = MZ.gfx, T = MZ.T, N = T.chunk, C = T.cell;
   const { fbm, smooth, mix3, Geo } = G;
   const HALF = T.half;   // 120
 
   /* ---------- マスの塗り分けの表 ---------- */
-  const mark = { data: new Uint8Array(N * N * 4), tex: null };
+  /* 表は全体のマス G0〜G0+GN−1。左下の角は世界の x = (G0 − N/2)*C（−360m）、幅は GN*C（720m）。シェーダーへ入れる数（数は直書きしない） */
+  const MK_HALF = (-(MZ.G0 - N / 2) * C).toFixed(1), MK_SPAN = (MZ.GN * C).toFixed(1);
+  const GN = MZ.GN, mark = { data: new Uint8Array(GN * GN * 4), tex: null };
   const kindOf = t => (t === 'road' ? 1 : t === 'field' ? 2 : t ? 3 : 0);   // 道・畑・そのほかの建物
   function cellKind(gx, gz) {
-    if (gx < 0 || gz < 0 || gx >= N || gz >= N) return 0;
-    const id = MZ.world.owner[gz * N + gx];
+    const ci = MZ.ci(gx, gz);
+    if (ci < 0) return 0;
+    const id = MZ.world.owner[ci];
     if (!id) return 0;
     const b = MZ.town.byId[id];
     return b ? kindOf(b.t) : 0;
   }
   /* マス (gx,gz) の 4 つの値を、建物の表（owner）から求める */
   function writeCell(gx, gz) {
-    const k = cellKind(gx, gz), o = (gz * N + gx) * 4;
+    const k = cellKind(gx, gz), o = MZ.ci(gx, gz) * 4;
     let b = 0;
     if (k === 3) b = 128;
     else {
@@ -31,16 +37,20 @@
   }
   /* 建物 b（x,z は左上のマス、w マス四方）のまわりの表だけ書きかえる。呼ぶのは owner を直したあと */
   function markBuilding(b) {
-    const w = MZ.BUILDS[b.t].w;
-    for (let gz = b.z - 2; gz < b.z + w + 2; gz++) for (let gx = b.x - 2; gx < b.x + w + 2; gx++) {
-      if (gx >= 0 && gz >= 0 && gx < N && gz < N) writeCell(gx, gz);
+    const w = MZ.BUILDS[b.t].w, g = MZ.town.gpos(b);
+    for (let gz = g[1] - 2; gz < g[1] + w + 2; gz++) for (let gx = g[0] - 2; gx < g[0] + w + 2; gx++) {
+      if (MZ.inWorld(gx, gz)) writeCell(gx, gz);
     }
     if (mark.tex) mark.tex.update(mark.data);
     if (G.grass) G.grass.dirty();
     if (G.nodes) G.nodes.dirty();
   }
   function markAll() {
-    for (let gz = 0; gz < N; gz++) for (let gx = 0; gx < N; gx++) writeCell(gx, gz);
+    /* 持っている区画のマスだけ回す（持っていない区画は 0 のまま） */
+    MZ.world.landKeys.forEach(key => {
+      const c = key.indexOf(','), x0 = +key.slice(0, c) * N, z0 = +key.slice(c + 1) * N;
+      for (let gz = z0; gz < z0 + N; gz++) for (let gx = x0; gx < x0 + N; gx++) writeCell(gx, gz);
+    });
     if (mark.tex) mark.tex.update(mark.data);
     if (G.grass) G.grass.dirty();
     if (G.nodes) G.nodes.dirty();
@@ -115,8 +125,8 @@
               tc = mix(tc, vec3(0.46, 0.47, 0.34), smoothstep(0.6, 0.78, 1.0 - g3) * 0.35);
               vec3 tint = tc / vec3(0.56, 0.53, 0.39);
               /* 道・畑・踏み固め：マスの表を読んで、ノイズで境目をくずす（土地の外には表がない） */
-              vec4 mk = texture2D(gMarkSampler, (wp + 120.0) / 240.0);
-              if (abs(wp.x) >= 120.0 || abs(wp.y) >= 120.0) mk = vec4(0.0);
+              vec4 mk = texture2D(gMarkSampler, (wp + ${MK_HALF}) / ${MK_SPAN});
+              if (abs(wp.x) >= ${MK_HALF} || abs(wp.y) >= ${MK_HALF}) mk = vec4(0.0);
               float pathv = smoothstep(0.36, 0.64, mk.r + (nb - 0.5) * 0.4);
               float trod = smoothstep(0.3, 0.75, mk.b * 1.5 + (nb - 0.5) * 0.45) * 0.55;
               float farmv = smoothstep(0.4, 0.6, mk.g + (nb - 0.5) * 0.3);
@@ -293,7 +303,7 @@
 
   function init() {
     const sc = G.scene;
-    mark.tex = new B.RawTexture(mark.data, N, N, B.Constants.TEXTUREFORMAT_RGBA, sc, false, false, B.Texture.BILINEAR_SAMPLINGMODE);
+    mark.tex = new B.RawTexture(mark.data, GN, GN, B.Constants.TEXTUREFORMAT_RGBA, sc, false, false, B.Texture.BILINEAR_SAMPLINGMODE);
     mark.tex.wrapU = B.Texture.CLAMP_ADDRESSMODE; mark.tex.wrapV = B.Texture.CLAMP_ADDRESSMODE;
     mat = G.ground.mat = new B.PBRMaterial('ground', sc);
     mat.metallic = 0; mat.roughness = 1; mat.albedoColor = new B.Color3(1, 1, 1); mat.maxSimultaneousLights = 4;

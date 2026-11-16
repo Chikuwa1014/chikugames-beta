@@ -5,12 +5,12 @@
   MZ.GAME = 'machizukuri';
   MZ.VERSION = 'β0.2.0';
   MZ.SAVE_KEY = 'machizukuri-save';
-  MZ.SAVE_V = 1;
+  MZ.SAVE_V = 2;
 
   /* 調整用の数値 */
   MZ.T = {
     cell: 2,          // 建築のマスの大きさ（m）
-    half: 120,        // 荒野の広さ（中心からの距離 m）
+    half: 120,        // 1 区画の半分の長さ（m）。土地の端としては使わない（MZ.landAt・W.inLand・W.clampLand で決める）
     eye: 1.6,         // 目の高さ
     walk: 4.6, run: 7.6,
     sens: 0.0024,     // マウスで見回す速さ
@@ -30,8 +30,13 @@
     autosave: 10,     // 自動保存の間かく（秒）
     regrowCheck: 1,   // 採れる物がまた出るかの判定の間かく（秒）
     chunk: 120,       // 区画のマスの数（240m）
+    span: 3,          // 世界の幅（区画の数）。真ん中が "0,0"。全体のマスは 360×360
     seed: 1014
   };
+
+  /* 全体のマス（world.js・gfx が使う。120 や 360 は直接書かない）。区画 "0,0" の中では今までのマスの番号と同じ */
+  MZ.GN = MZ.T.chunk * MZ.T.span;                   // 全体のマスの一辺（360）
+  MZ.G0 = -MZ.T.chunk * (MZ.T.span - 1) / 2;        // いちばん小さい全体のマスの番号（−120）
 
   /* 持ち物 */
   MZ.ITEMS = {

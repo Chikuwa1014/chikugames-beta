@@ -8,7 +8,7 @@
   const { fbm, smooth, hash3, rng, Geo } = G;
   const TILE = 4, MAXCAP = 21000;
 
-  const S = { mesh: null, mat: null, buf: null, dens: new Float32Array(N * N), dn: new Float32Array(N * N), cap: 0, R: 55, K: 40,
+  const S = { mesh: null, mat: null, buf: null, dens: new Float32Array(MZ.GN * MZ.GN), dn: new Float32Array(MZ.GN * MZ.GN), cap: 0, R: 55, K: 40,
     scaleF: 1, dirty: true, lx: 1e9, lz: 1e9, acc: 0, offs: null, offsR: 0, n: 0 };
   G.grassFireCol = new B.Color3(0, 0, 0); G.grassFirePos = new B.Vector3(0, -100, 0);
 
@@ -95,12 +95,19 @@
 
   /* マスの密度の表（0＝生やさない）。建物（道・畑も）のあるマスは 0 */
   function cellDens(gx, gz) {
-    const x = MZ.cellPos(gx), z = MZ.cellPos(gz), ci = gz * N + gx;
+    const x = MZ.cellPos(gx), z = MZ.cellPos(gz), ci = MZ.ci(gx, gz);
     const d = fbm(x * 0.08 + 3, z * 0.08 + 1, 51, 2);
     S.dn[ci] = d;
     S.dens[ci] = MZ.world.owner[ci] ? 0 : 0.12 + smooth(0.3, 0.62, d) * 0.88;
   }
-  function densAll() { for (let gz = 0; gz < N; gz++) for (let gx = 0; gx < N; gx++) cellDens(gx, gz); }
+  /* 持っている区画のマスだけ回す（持っていない区画の密度は 0 のまま。全体の 129,600 マスは回さない） */
+  function eachOwned(f) {
+    MZ.world.landKeys.forEach(key => {
+      const c = key.indexOf(','), x0 = +key.slice(0, c) * N, z0 = +key.slice(c + 1) * N;
+      for (let gz = z0; gz < z0 + N; gz++) for (let gx = x0; gx < x0 + N; gx++) f(gx, gz);
+    });
+  }
+  function densAll() { eachOwned(cellDens); }
   /* 建物の変化のあとに、そのまわりの密度だけ直して並べ直す（owner を直したあとに呼ぶ） */
   function dirty() {
     if (!S.mesh) return;
@@ -109,11 +116,11 @@
   }
   function densOwner() {
     const o = MZ.world.owner;
-    for (let ci = 0; ci < N * N; ci++) {
-      const blocked = o[ci] !== 0;
+    eachOwned((gx, gz) => {
+      const ci = MZ.ci(gx, gz), blocked = o[ci] !== 0;
       if (blocked) S.dens[ci] = 0;
-      else if (S.dens[ci] === 0) { const gx = ci % N, gz = (ci - gx) / N; cellDens(gx, gz); }
-    }
+      else if (S.dens[ci] === 0) cellDens(gx, gz);
+    });
   }
 
   function init() {
@@ -167,7 +174,7 @@
     return a;
   }
   function layout(px, pz) {
-    const offs = tileOffs(), cap = S.cap, K = Math.max(1, Math.round(S.K * S.scaleF)), buf = S.buf, lim = T.half;
+    const offs = tileOffs(), cap = S.cap, K = Math.max(1, Math.round(S.K * S.scaleF)), buf = S.buf, lim = -(MZ.G0 - N / 2) * C;   // lim：全体の表の端（世界の座標）
     const ptx = Math.floor(px / TILE), ptz = Math.floor(pz / TILE);
     let n = 0;
     for (let k = 0; k < offs.length && n < cap; k++) {
@@ -175,7 +182,7 @@
       for (let j = 0; j < K && n < cap; j++) {
         const x = (tx + hash3(tx, tz, j, 1)) * TILE, z = (tz + hash3(tx, tz, j, 2)) * TILE;
         if (x <= -lim || x >= lim || z <= -lim || z >= lim) continue;
-        const ci = (Math.floor(z / C) + N / 2) * N + Math.floor(x / C) + N / 2;
+        const ci = MZ.ci(Math.floor(x / C) + N / 2, Math.floor(z / C) + N / 2);   // 持っていない区画のマスは密度 0 で飛ばされる
         if (hash3(tx, tz, j, 3) >= S.dens[ci]) continue;
         const sc = 0.7 + hash3(tx, tz, j, 4) * 0.6;
         _s.set(sc, sc * (0.6 + S.dn[ci] * 0.8), sc);

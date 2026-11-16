@@ -7,8 +7,9 @@
   MZ.begin = function (state) {
     const canvas = document.querySelector('#cv'), W = MZ.world;
     const G = MZ.gfx;
+    W.setLand(state.land);               // 持っている区画（草・塗り分けの表を作る前に決める）
     W.init(canvas);
-    W.buildNodes();
+    W.buildNodes(state.land);            // MZ.state はまだ入れない（setQuality の並べ直しが MZ.state の有る無しを見ている）。区画の一覧は引数で渡す
     G.setQuality(G.readPref());          // 画質（資産・材質・採れる物・建物・影の順）。ゲームの状態は触らない
     MZ.state = state;
     W.applyTaken();

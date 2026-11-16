@@ -195,7 +195,7 @@ const HELPERS = () => {
   const rm = await ev(page, () => {
     const L = MZ.state.chunks['0,0'].layers.ground, b = L.find(x => x.x === 80 && x.z === 70), before = Object.assign({}, MZ.state.inv), c = MZ.BUILDS.house.cost;
     const removed = MZ.remove(b.id); const after = MZ.state.inv;
-    return { removed, okAll: Object.keys(c).every(k => after[k] - before[k] === Math.floor(c[k] / 2)), still: L.some(x => x.id === b.id), owner: MZ.world.owner[70 * 120 + 80] };
+    return { removed, okAll: Object.keys(c).every(k => after[k] - before[k] === Math.floor(c[k] / 2)), still: L.some(x => x.id === b.id), owner: MZ.world.owner[MZ.ci(80, 70)] };
   });
   ok('こわすと材料が半分（切り捨て）もどる', rm.removed && rm.okAll && !rm.still && rm.owner === 0, JSON.stringify(rm));
   ok('小屋はこわせない', await ev(page, () => MZ.remove(1) === false));
@@ -273,7 +273,7 @@ const HELPERS = () => {
   /* 保存 → 読み直し → つづきから */
   before = await ev(page, () => { MZ.saveNow(); const raw = localStorage.getItem('machizukuri-save'); return raw; });
   const bj = JSON.parse(before);
-  ok('保存の形：game・v・at・data.chunks["0,0"].layers.ground/under/over', bj.game === 'machizukuri' && bj.v === 1 && typeof bj.at === 'string' && Array.isArray(bj.data.chunks['0,0'].layers.ground) && Array.isArray(bj.data.chunks['0,0'].layers.under) && Array.isArray(bj.data.chunks['0,0'].layers.over) && typeof bj.data.chunks['0,0'].taken === 'object' && bj.data.player && bj.data.inv && bj.data.tools && bj.data.timers, Object.keys(bj.data).join(','));
+  ok('保存の形：game・v・at・data.land・data.chunks["0,0"].layers.ground/under/over', bj.game === 'machizukuri' && bj.v === 2 && Array.isArray(bj.data.land) && bj.data.land[0] === '0,0' && typeof bj.at === 'string' && Array.isArray(bj.data.chunks['0,0'].layers.ground) && Array.isArray(bj.data.chunks['0,0'].layers.under) && Array.isArray(bj.data.chunks['0,0'].layers.over) && typeof bj.data.chunks['0,0'].taken === 'object' && bj.data.player && bj.data.inv && bj.data.tools && bj.data.timers, Object.keys(bj.data).join(','));
   ok('消えている採れる物が保存に入っている', Object.keys(bj.data.chunks['0,0'].taken).length > 5, Object.keys(bj.data.chunks['0,0'].taken).length);
   require('fs').writeFileSync(OUT + 'save.json', before);
   await page.reload(); await page.waitForTimeout(500);
@@ -359,6 +359,168 @@ const HELPERS = () => {
   const settle = (pg, n) => frames(pg, n || 3);   // 実際に描かせる（シェーダーのエラーは描いたときに出る）
   const loaded = pg => pg.waitForFunction(() => { const a = MZ.gfx.assets; return a.done >= a.total; }, null, { timeout: 180000 });
   const snap = pg => ev(pg, () => JSON.stringify({ inv: MZ.state.inv, pop: MZ.state.pop, b: MZ.chunk().layers.ground.map(b => [b.id, b.t, b.x, b.z, b.r]) }));
+
+  /* ================= β0.3.0 区切り 1：土地の表を全体で 1 つにする・保存の版 2 ================= */
+  if (want(1)) {
+  cur = 1;
+  const fs = require('fs');
+  /* 全体の表・土地・当たり・採れる物の番号・広げたときの形の下ごしらえ・草の数・版 2 の保存 */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const r = await ev(a.pg, () => {
+      MZ.noSave = true;
+      const W = MZ.world, G = MZ.gfx, o = {};
+      o.size = [W.owner.length, W.solid.length, W.cellNode.length, G.ground.data.data.length, G.ground.data.tex.getSize().width, G.ground.data.tex.getSize().height, MZ.GN];
+      o.ci = [MZ.ci(-120, -120), MZ.ci(240, 0), MZ.ci(-121, 0), MZ.ci(239, 239), MZ.ci(0, 0)];
+      o.land = [MZ.landAt(0, 0), MZ.landAt(119, 119), MZ.landAt(120, 0), MZ.landAt(-1, 50)];
+      o.cp = MZ.town.canPlace('house', 119, 50);
+      o.col = [W.collide(200, 0, 0.35)[0], W.collide(-200, 0, 0.35)[0], W.collide(0, 200, 0.35)[1], W.solidAtPoint(130, 0), W.solidAtPoint(30, 30)];
+      o.nodes = W.nodes.every((nd, i) => nd.ck === '0,0' && nd.li === i && nd.idx === i && W.byChunk['0,0'][nd.li] === nd.idx);
+      /* 広げたときの形（持っている区画を内がわから変える）。終わったら元にもどす */
+      W.setLand(['0,0', '1,0']);
+      o.ex = {
+        land: [MZ.landAt(130, 0), MZ.landAt(239, 119), MZ.landAt(240, 0), MZ.landAt(130, 120), MZ.landAtPoint(300, 0)],
+        c200: W.collide(200, 0, 0.35)[0], c400: W.collide(400, 0, 0.35)[0], cz: W.collide(200, 300, 0.35)[1], inl: [W.inLand(200, 0, 1), W.inLand(0, 0, 1), W.inLand(119.5, 0, 1)],
+        cpRoad: MZ.town.canPlace('road', 125, 50), cpOut: MZ.town.canPlace('road', 125, 120), cpCross: MZ.town.canPlace('house', 119, 50),
+        ck: MZ.chunkOfCell(125, 50), ckn: MZ.chunkOfCell(-1, -121)
+      };
+      W.setLand(['0,0', '0,1']);   // L 字の片方
+      o.ex2 = [MZ.landAt(10, 130), MZ.landAt(130, 10), W.collide(0, 400, 0.35)[1], W.collide(200, 0, 0.35)[0]];
+      W.setLand(['0,0', '1,0', '0,1']);
+      o.ex3 = [W.inLand(119, 119, 1), W.inLand(130, 130, 1), MZ.landAt(130, 130)];
+      const cl = W.clampLand(250, 250, 0.5).slice();
+      o.ex3c = cl;
+      W.setLand(['0,0']);
+      o.back = [MZ.landAt(130, 0), W.collide(200, 0, 0.35)[0], W.landKeys.join()];
+      return o;
+    });
+    ok('全体の表の大きさ：owner・solid・cellNode が 129,600、塗り分けの表が 360×360', r.size[0] === 129600 && r.size[1] === 129600 && r.size[2] === 129600 && r.size[3] === 360 * 360 * 4 && r.size[4] === 360 && r.size[5] === 360 && r.size[6] === 360, JSON.stringify(r.size));
+    ok('表の番号 MZ.ci：(−120,−120) が 0、世界の外は −1', r.ci[0] === 0 && r.ci[1] === -1 && r.ci[2] === -1 && r.ci[3] === 129599 && r.ci[4] === 120 * 360 + 120, JSON.stringify(r.ci));
+    ok('土地：(0,0)・(119,119) は土地、(120,0)・(−1,50) は土地の外', r.land[0] && r.land[1] && !r.land[2] && !r.land[3], JSON.stringify(r.land));
+    ok('置けない：となりの区画へはみ出す建物は「土地の外」', r.cp.ok === false && r.cp.reason === '土地の外', JSON.stringify(r.cp));
+    ok('当たり：土地の外へは出られない（x が 119.5・−119.5・z が 119.5）、土地の外は通れない', r.col[0] === 119.5 && r.col[1] === -119.5 && r.col[2] === 119.5 && r.col[3] === true && r.col[4] === false, JSON.stringify(r.col));
+    ok('採れる物の番号：全部の物の ck が "0,0"、li === idx', r.nodes === true);
+    ok('広げたときの形（"0,0" と "1,0"）：土地・当たり・土地の外の判定が変わる', r.ex.land[0] && r.ex.land[1] && !r.ex.land[2] && !r.ex.land[3] && r.ex.land[4] && r.ex.c200 === 200 && r.ex.c400 === 359.5 && r.ex.cz === 119.5 && r.ex.inl[0] === true && r.ex.inl[1] === true && r.ex.inl[2] === true, JSON.stringify(r.ex));
+    ok('広げたときの形：道は 125,50 に置ける、区画の外・境をまたぐ家は区画 "0,0" の内がわなら置ける・外なら置けない', r.ex.cpRoad.ok === true && r.ex.cpOut.ok === false && r.ex.cpOut.reason === '土地の外' && r.ex.cpCross.ok === true, JSON.stringify([r.ex.cpRoad, r.ex.cpOut, r.ex.cpCross]));
+    ok('広げたときの形：chunkOfCell が負のマスでも floor（(125,50)→"1,0" の 5、(−1,−121)→"−1,−2" の 119・−1 の外）', r.ex.ck.key === '1,0' && r.ex.ck.lx === 5 && r.ex.ck.lz === 50 && r.ex.ckn.key === '-1,-2' && r.ex.ckn.lx === 119 && r.ex.ckn.lz === 119, JSON.stringify([r.ex.ck, r.ex.ckn]));
+    ok('広げたときの形（L 字）：持っている区画ごとに収まる', r.ex2[0] && !r.ex2[1] && r.ex2[2] === 359.5 && r.ex2[3] === 119.5 && r.ex3[0] === false && r.ex3[1] === false && r.ex3[2] === false && r.ex3c[0] === 250 && r.ex3c[1] === 119.5, JSON.stringify([r.ex2, r.ex3, r.ex3c]));
+    ok('広げたあと元にもどす（"0,0" だけ）', r.back[0] === false && r.back[1] === 119.5 && r.back[2] === '0,0', JSON.stringify(r.back));
+    ok('描画の層で出たエラー・警告が 0（全体の表・広げたときの形）', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+  /* 草：三角形の試験の場面（低）で草の株の数が、作りかえる前と同じ 2,200（前の作りは 低 2,200・中 8,000・高 21,000） */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const g = await ev(a.pg, () => {
+      MZ.noSave = true;
+      MZ.world.nodes.forEach(nd => { if (nd.gx >= 38 && nd.gx <= 60 && nd.gz >= 36 && nd.gz <= 58) MZ.world.take(nd.idx, -1); });
+      Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 9999; });   // 試験用：材料を持たせる
+      let n = 0;
+      for (let j = 0; j < 5 && n < 20; j++) for (let i = 0; i < 6 && n < 20; i++) if (MZ.place('house', 40 + i * 3, 38 + j * 3, 0)) n++;
+      for (let q = 38; q <= 58; q++) MZ.place('road', 58, q, 0);
+      MZ.place('field', 50, 54, 0); MZ.place('fire', 56, 57, 0); MZ.place('well', 56, 59, 0);
+      const s = MZ.state.player; s.x = -4; s.z = -12; s.yaw = 0.4; s.pitch = 0;
+      MZ.gfx.nodes.flush(); MZ.gfx.grass.layout(s.x, s.z);
+      return { n, grass: MZ.gfx.grass.count, q: MZ.gfx.key };
+    });
+    ok('草：三角形の試験の場面（低）の株の数が作りかえる前と同じ（2,200）', g.n === 20 && g.q === 'low' && g.grass === 2200, JSON.stringify(g));
+    await a.c.close();
+  }
+  /* 版 2 の保存：行き来・持っていない区画は捨てる・"0,0" が無ければ壊れている・建物が区画をまたぐ形 */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const r = await ev(a.pg, () => {
+      MZ.noSave = true;
+      Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 999; });   // 試験用：材料を持たせる
+      MZ.place('road', 59, 61, 0); MZ.place('house', 59, 62, 1); MZ.place('well', 57, 62, 0);
+      MZ.world.nodes.slice(0, 8).forEach(nd => { if (MZ.world.nodeActive(nd.idx)) MZ.world.take(nd.idx, 200 + nd.idx); });
+      const raw = JSON.stringify(CG.save.wrap(MZ.state, MZ.SAVE_V)), saved = JSON.stringify(MZ.state);
+      const load = o => { localStorage.setItem('machizukuri-save', typeof o === 'string' ? o : JSON.stringify(o)); return MZ.loadSave(); };
+      const out = { v: JSON.parse(raw).v, vland: JSON.parse(raw).data.land };
+      const l0 = load(raw); out.roundTrip = l0.status === 'ok' && JSON.stringify(l0.state) === saved;
+      /* 持っていない区画のデータは捨てる */
+      let b = JSON.parse(raw);
+      b.data.chunks['1,0'] = { layers: { ground: [{ id: 700, t: 'house', x: 5, z: 5, r: 0 }], under: [], over: [] }, taken: { 3: 5 } };
+      let l = load(b); out.dropChunk = l.status === 'ok' && !('1,0' in l.state.chunks) && Object.keys(l.state.chunks).join() === '0,0' && l.state.land.join() === '0,0' && l.state.nextId === l0.state.nextId;
+      b = JSON.parse(raw); b.data.land = ['0,0', '5,5', '2,0', '0,-2', 'x', '1,1', '1,1'];
+      l = load(b); out.dropLand = l.status === 'ok' && l.state.land.join('|') === '0,0|1,1' && Object.keys(l.state.chunks).join('|') === '0,0|1,1';
+      b = JSON.parse(raw); b.data.land = ['1,0']; out.noOrigin = load(b).status;
+      b = JSON.parse(raw); b.data.land = ['1,0', '0,0']; l = load(b); out.order = l.status === 'ok' && l.state.land.join('|') === '0,0|1,0';
+      delete (b = JSON.parse(raw)).data.land; out.noLand = load(b).status;
+      /* 持っている区画なら建物ごと残る。区画をまたぐ建物は左上の区画に入り、使うマスが全部土地ならよい */
+      b = JSON.parse(raw); b.data.land = ['0,0', '1,0'];
+      b.data.chunks['1,0'] = { layers: { ground: [{ id: 700, t: 'house', x: 5, z: 5, r: 0, mk: 'log' }, { id: 701, t: 'house', x: 200, z: 5, r: 0 }], under: [], over: [] }, taken: { 3: 5, a: 'x' } };
+      b.data.chunks['0,0'].layers.ground.push({ id: 702, t: 'house', x: 119, z: 50, r: 0, mk: 'nothing' }, { id: 703, t: 'house', x: 119, z: 119, r: 0 });
+      l = load(b); const g0 = l.state.chunks['0,0'].layers.ground, g1 = l.state.chunks['1,0'].layers.ground;
+      out.two = l.status === 'ok' && l.state.land.join('|') === '0,0|1,0' && g1.length === 1 && g1[0].id === 700 && g1[0].mk === 'log' && g0.some(x => x.id === 702 && !('mk' in x)) && !g0.some(x => x.id === 703) && JSON.stringify(l.state.chunks['1,0'].taken) === '{"3":5}' && l.state.nextId >= 703;
+      /* 小屋を先に調べる：小屋と重なる建物が配列の前にあっても、小屋が残る */
+      b = JSON.parse(raw); b.data.chunks['0,0'].layers.ground.unshift({ id: 800, t: 'road', x: 59, z: 59, r: 0 });
+      l = load(b); out.hutFirst = l.status === 'ok' && l.state.chunks['0,0'].layers.ground.some(x => x.t === 'hut') && !l.state.chunks['0,0'].layers.ground.some(x => x.id === 800);
+      /* 場所は持っている区画の中へ（"0,0" だけなら ±119.5。広げた区画ならその中） */
+      b = JSON.parse(raw); b.data.player.x = 500; b.data.player.z = -500; l = load(b); out.clamp1 = [l.state.player.x, l.state.player.z];
+      b.data.land = ['0,0', '1,0']; b.data.player.z = -50; l = load(b); out.clamp2 = [l.state.player.x, l.state.player.z];
+      localStorage.setItem('machizukuri-save', raw);
+      return out;
+    });
+    ok('保存の形が版 2：v === 2、data.land が ["0,0"]', r.v === 2 && r.vland.join() === '0,0', JSON.stringify([r.v, r.vland]));
+    ok('版 2 の行き来：保存 → 読み直し → MZ.state の JSON が同じ', r.roundTrip === true);
+    ok('持っていない区画は捨てる：land に無い "1,0"（建物入り）は読むと無い', r.dropChunk === true);
+    ok('land：範囲の外・書式がちがう物・重なりは捨てる', r.dropLand === true, JSON.stringify(r.dropLand));
+    ok('land に "0,0" が無い・land が無いと壊れている扱い', r.noOrigin === 'broken' && r.noLand === 'broken', JSON.stringify([r.noOrigin, r.noLand]));
+    ok('land は "0,0" を先頭に並べる', r.order === true);
+    ok('持っている区画なら建物・taken を残し、mk は ITEMS の物だけ残す。区画の外へはみ出す建物は捨てる', r.two === true);
+    ok('小屋を先に調べる（小屋より前に重なる建物があっても小屋が残る）', r.hutFirst === true);
+    ok('主人公の場所：持っている区画の中へ収める（"0,0" だけなら ±119.5。広げた区画ならその中）', r.clamp1[0] === 119.5 && r.clamp1[1] === -119.5 && r.clamp2[0] === 359.5 && r.clamp2[1] === -50, JSON.stringify([r.clamp1, r.clamp2]));
+    ok('版 2 の読み込みで出たエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+  /* 版 1 の保存（β0.1.0・β0.2.0 で作った見本。dev/fixtures）がそのまま続きから遊べる */
+  for (const fx of ['b010', 'b020']) {
+    const raw = fs.readFileSync(path.join(__dirname, 'fixtures', 'save-v1-' + fx + '.json'), 'utf8'), fj = JSON.parse(raw), fd = fj.data;
+    const a = await open2({});
+    await a.c.addInitScript(s => { try { if (!sessionStorage.getItem('mz-seeded')) { localStorage.setItem('machizukuri-save', s); sessionStorage.setItem('mz-seeded', '1'); } } catch (e) { /* なし */ } }, raw);
+    await a.pg.goto(URL);
+    await a.pg.waitForSelector('#tbtn .go:not([disabled])', { timeout: 60000 });
+    const title = await a.pg.textContent('#tbtn');
+    ok('版 1 の見本（' + fx + '）：タイトルに「つづきから」が出る', fj.v === 1 && title.includes('つづきから'), title);
+    await a.pg.click('#tbtn .go');
+    await a.pg.waitForFunction(() => window.MZ && MZ.started, null, { timeout: 120000 });
+    await ev(a.pg, HELPERS);
+    const st = await ev(a.pg, () => {
+      MZ.noSave = true;
+      const s = JSON.parse(JSON.stringify(MZ.state));
+      MZ.gfx.nodes.flush();
+      const looks = Object.keys(s.chunks['0,0'].taken).map(k => MZ.world.nodes[MZ.world.byChunk['0,0'][+k]].look);
+      return { s, clock: MZ.town.clock, meshes: Object.keys(MZ.town.meshes).length, tookNull: looks.every(l => l == null), shown: MZ.world.nodes.filter(nd => nd.look).length, taken: looks.length };
+    });
+    const sd = st.s, c0 = fd.chunks['0,0'], c1 = sd.chunks['0,0'], cl = st.clock + 2;
+    ok('版 1 の見本（' + fx + '）：pop・stage・tools・player・nextId・land が見本と同じ', sd.pop === fd.pop && sd.stage === fd.stage && JSON.stringify(sd.tools) === JSON.stringify(fd.tools) && ['x', 'z', 'yaw', 'view'].every(k => sd.player[k] === fd.player[k]) && sd.nextId === fd.nextId && sd.land.join() === '0,0', JSON.stringify([sd.pop, sd.stage, sd.player, sd.nextId, sd.land]));
+    ok('版 1 の見本（' + fx + '）：inv が見本と同じ（きこり小屋の原木だけ、遊んだ時間ぶん増えてよい）', Object.keys(fd.inv).every(k => k === 'log' ? sd.inv[k] >= fd.inv[k] && sd.inv[k] <= fd.inv[k] + cl / 20 + 1 : sd.inv[k] === fd.inv[k]), JSON.stringify([sd.inv, fd.inv]));
+    ok('版 1 の見本（' + fx + '）：建物（id・t・x・z・r の並び）が見本と同じ', JSON.stringify(c1.layers.ground) === JSON.stringify(c0.layers.ground) && c1.layers.ground.length > 20, c1.layers.ground.length + ' / ' + c0.layers.ground.length);
+    const k0 = Object.keys(c0.taken), k1 = Object.keys(c1.taken);
+    ok('版 1 の見本（' + fx + '）：taken のキーと値が見本と同じ（残り秒は遊んだ時間ぶん減ってよい。−1 は変わらない）', k0.join() === k1.join() && k0.every(k => c0.taken[k] < 0 ? c1.taken[k] === c0.taken[k] : c1.taken[k] <= c0.taken[k] && c1.taken[k] >= c0.taken[k] - cl) && k0.some(k => c0.taken[k] > 0) && k0.some(k => c0.taken[k] < 0), k0.length + ' / ' + k1.length);
+    ok('版 1 の見本（' + fx + '）：timers のキーが見本と同じ（jobs・migrate）', Object.keys(sd.timers.jobs).join() === Object.keys(fd.timers.jobs).join() && typeof sd.timers.migrate === 'number');
+    ok('版 1 の見本（' + fx + '）：建物が描かれている（meshes が建物の数）。消えている物は消えたまま', st.meshes === c0.layers.ground.length && st.tookNull && st.shown > 100, JSON.stringify([st.meshes, st.tookNull, st.shown, st.taken]));
+    const pl = await ev(a.pg, () => {
+      const W = MZ.world, before = { pop: MZ.state.pop, log: MZ.state.inv.log }, cap = MZ.town.info.cap;
+      MZ.tick(30);
+      const popAfter = MZ.state.pop, logAfter = MZ.state.inv.log;
+      const road = MZ.place('road', 69, 61, 0);
+      const bush = W.nodes.find(nd => nd.k === 'bush' && W.nodeActive(nd.idx) && Math.hypot(nd.x, nd.z) < 60), g0 = MZ.state.inv.grass;
+      TT.goto(bush); const hit = MZ.hit(); const gone = !W.nodeActive(bush.idx);
+      MZ.noSave = false; MZ.saveNow(); MZ.noSave = true;
+      const box = JSON.parse(localStorage.getItem('machizukuri-save')), cur = JSON.stringify(MZ.state), l = MZ.loadSave();
+      return { cap, before, popAfter, logAfter, road, hit, gone, grass: MZ.state.inv.grass - g0, v: box.v, again: l.status === 'ok' && JSON.stringify(l.state) === cur, land: box.data.land, jobs: Object.keys(MZ.state.timers.jobs).length };
+    });
+    ok('版 1 の見本（' + fx + '）：そのまま遊べる（MZ.tick で人口が上限まで動き仕事場が動く・道が置ける・物がたたける）', pl.popAfter === pl.cap && pl.logAfter > pl.before.log && pl.road === true && pl.hit && pl.gone && pl.grass > 0 && pl.jobs >= 1, JSON.stringify(pl));
+    ok('版 1 の見本（' + fx + '）：保存し直すと v が 2 になり、読み直しても同じ', pl.v === 2 && pl.again === true && pl.land.join() === '0,0', JSON.stringify([pl.v, pl.again, pl.land]));
+    ok('版 1 の見本（' + fx + '）：エラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+  }
 
   if (want(2)) {
   cur = 2;
@@ -598,24 +760,27 @@ const HELPERS = () => {
       return { houses: n, people: MZ.town.pgroups.reduce((a, g) => a + g.n, 0) };
     });
     ok('三角形の試験の場面：建物 20 軒・住民 60 人', res.houses === 20 && res.people === 60, JSON.stringify(res));
-    const lim = { low: 300000, mid: 900000, high: 1700000 }, tr = {};
+    const lim = { low: 300000, mid: 900000, high: 1700000 }, tr = {}, grs = {};
     for (const q of ['low', 'mid', 'high']) {
       await ev(a.pg, q => MZ.gfx.setQuality(q), q);
       await loaded(a.pg); await settle(a.pg, 2);
       tr[q] = await ev(a.pg, () => { const G = MZ.gfx, s = MZ.state.player; G.nodes.flush(); G.grass.layout(s.x, s.z); MZ.town.render(1); return G.tris(); });
+      grs[q] = await ev(a.pg, () => MZ.gfx.grass.count);
       ok('三角形の上限（' + q + '）：' + lim[q] + ' 以下', tr[q] <= lim[q], tr[q]);
     }
     console.log('  三角形（建物 20・住民 60 の場面）', JSON.stringify(tr));
+    ok('草の株の数が作りかえる前と同じ（低 2,200・中 8,000・高 21,000）', grs.low === 2200 && grs.mid === 8000 && grs.high === 21000, JSON.stringify(grs));
+    ok('三角形が作りかえる前（低 288,326・中 894,388・高 1,624,632）の ±1% 以内', ['low:288326', 'mid:894388', 'high:1624632'].every(t => { const [q, v] = t.split(':'); return Math.abs(tr[q] - +v) <= +v * 0.01; }), JSON.stringify(tr));
     await ev(a.pg, () => MZ.gfx.setQuality('low'));
     await settle(a.pg, 3);
     const gr = await ev(a.pg, () => {
-      const G = MZ.gfx, s = MZ.state.player, N = 120; s.x = 0; s.z = 0; G.grass.layout(0, 0);
+      const G = MZ.gfx, s = MZ.state.player; s.x = 0; s.z = 0; G.grass.layout(0, 0);
       const cnt = (gx, gz) => G.grass.countInCell(gx, gz);
-      let open = 0, openCells = 0; for (let gz = 50; gz < 56; gz++) for (let gx = 44; gx < 56; gx++) if (!MZ.world.owner[gz * N + gx]) { open += cnt(gx, gz); openCells++; }
+      let open = 0, openCells = 0; for (let gz = 50; gz < 56; gz++) for (let gx = 44; gx < 56; gx++) if (!MZ.world.owner[MZ.ci(gx, gz)]) { open += cnt(gx, gz); openCells++; }
       const rd = []; for (let g = 38; g <= 58; g++) rd.push(cnt(58, g));
       const hs = []; MZ.chunk().layers.ground.filter(b => b.t === 'house').forEach(b => { for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) hs.push(cnt(b.x + i, b.z + j)); });
       const fd = [cnt(50, 54), cnt(51, 55)];
-      const mk = (gx, gz) => G.ground.data.data[(gz * N + gx) * 4];
+      const mk = (gx, gz) => G.ground.data.data[MZ.ci(gx, gz) * 4];
       const before = [mk(58, 45), mk(58, 20)];
       const id = Object.values(MZ.town.byId).find(b => b.t === 'road' && b.x === 58 && b.z === 45).id;
       MZ.remove(id); const after = mk(58, 45); G.grass.layout(0, 0); const regrown = cnt(58, 45);

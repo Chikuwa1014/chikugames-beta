@@ -133,9 +133,9 @@
   P.updateAim = function () {
     const s = MZ.state.player, W = MZ.world, [fx, fz] = fwd();
     let best = null, bc = -2, bd = 0;
-    const gx = MZ.cellOf(s.x), gz = MZ.cellOf(s.z), N = T.chunk, R = Math.ceil((T.reach + 3.5) / T.cell);   // 近くのマスだけ調べる
-    for (let cz = Math.max(0, gz - R); cz <= Math.min(N - 1, gz + R); cz++) for (let cx = Math.max(0, gx - R); cx <= Math.min(N - 1, gx + R); cx++) {
-      const i = W.cellNode[cz * N + cx];
+    const gx = MZ.cellOf(s.x), gz = MZ.cellOf(s.z), R = Math.ceil((T.reach + 3.5) / T.cell), g0 = MZ.G0, g1 = MZ.G0 + MZ.GN - 1;   // 近くのマスだけ調べる（世界の範囲で切る）
+    for (let cz = Math.max(g0, gz - R); cz <= Math.min(g1, gz + R); cz++) for (let cx = Math.max(g0, gx - R); cx <= Math.min(g1, gx + R); cx++) {
+      const i = W.cellNode[MZ.ci(cx, cz)];
       if (i < 0 || !W.nodeActive(i)) continue;
       const nd = W.nodes[i], dx = nd.x - s.x, dz = nd.z - s.z, d = Math.hypot(dx, dz), rr = MZ.NODES[nd.k].r * nd.s;
       if (d > T.reach + rr) continue;
@@ -175,12 +175,12 @@
 
   /* ---------- 建てる位置：画面の真ん中から出した線と地面（y=0）の交わる点 ---------- */
   P.rayPoint = function () {
-    const s = MZ.state.player, o = P.camPos, d = P.camDir, lim = T.half - 0.01;
+    const s = MZ.state.player, o = P.camPos, d = P.camDir;
     const fall = () => { const [fx, fz] = fwd(); return { x: s.x + fx * T.buildMax, z: s.z + fz * T.buildMax }; };
     let q = null;
     if (d.y < -0.01) { const t = -o.y / d.y; q = { x: o.x + d.x * t, z: o.z + d.z * t }; }
     if (!q || Math.hypot(q.x - s.x, q.z - s.z) > T.buildMax) q = fall();
-    q.x = Math.max(-lim, Math.min(lim, q.x)); q.z = Math.max(-lim, Math.min(lim, q.z));
+    const c = MZ.world.clampLand(q.x, q.z, 0.01); q.x = c[0]; q.z = c[1];   // 持っている土地の中へ
     return q;
   };
 

@@ -1,5 +1,6 @@
 /* 荒野開拓記（仮） — 街（建築・道のつながり・移住者・住民の姿と仕事・段階）
-   建物は state.chunks["0,0"].layers.ground の配列（{ id, t, x, z, r }。x,z は左上のマス、r は 0〜3）で持つ。 */
+   建物は state.chunks[区画のキー].layers.ground の配列（{ id, t, x, z, r }。x,z は「左上のマスがある区画の中」の座標、r は 0〜3）で持つ（保存の形）。
+   動いている間は全体のマス（gx,gz）で扱う（Tn.gpos(b)）。持っている区画すべての建物を id の順に並べた配列が Tn.all。 */
 (function () {
   const MZ = window.MZ, B = BABYLON, T = MZ.T, N = T.chunk, C = T.cell;
   const Tn = MZ.town = {
@@ -8,21 +9,36 @@
   };
   MZ.build = { mode: 'none', key: null, r: 0, gx: 0, gz: 0, ok: false, reason: '', target: 0 };
 
-  const list = () => MZ.chunk().layers.ground;
+  Tn.all = []; Tn.ck = {}; Tn.gp = {};   // 全建物（id 順）・建物 id → 区画のキー・建物 id → [gx, gz]（全体の左上のマス）。保存には入れない
+  const list = () => Tn.all;
+  /* 持っている区画の建物から Tn.all・Tn.ck・Tn.gp を作り直す（Tn.init・MZ.place・MZ.remove のときだけ） */
+  function rebuildAll() {
+    const all = [];
+    MZ.world.landKeys.forEach(key => {
+      const ch = MZ.state.chunks[key]; if (!ch) return;
+      const c = key.indexOf(','), cx = +key.slice(0, c), cz = +key.slice(c + 1);
+      ch.layers.ground.forEach(b => { Tn.ck[b.id] = key; Tn.gp[b.id] = [cx * N + b.x, cz * N + b.z]; all.push(b); });
+    });
+    all.sort((a, b) => a.id - b.id);
+    Tn.all = all;
+  }
+  Tn.gpos = b => Tn.gp[b.id];
   const rand = (a, b) => a + Math.random() * (b - a);
   Tn.list = list;
 
   function cellsOf(b, f) {
     const w = MZ.BUILDS[b.t].w;
-    for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) f((b.z + j) * N + b.x + i);
+    const g = Tn.gp[b.id];
+    for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) f(MZ.ci(g[0] + i, g[1] + j));
   }
-  const center = b => { const w = MZ.BUILDS[b.t].w; return [(b.x - N / 2) * C + w * C / 2, (b.z - N / 2) * C + w * C / 2]; };
+  const center = b => { const w = MZ.BUILDS[b.t].w, g = Tn.gp[b.id]; return [(g[0] - N / 2) * C + w * C / 2, (g[1] - N / 2) * C + w * C / 2]; };
   Tn.center = center;
 
   /* ---------- 初期化（保存から作り直す） ---------- */
   Tn.init = function () {
     const W = MZ.world;
-    W.owner.fill(0); W.solid.fill(0); Tn.byId = {};
+    W.owner.fill(0); W.solid.fill(0); Tn.byId = {}; Tn.ck = {}; Tn.gp = {};
+    rebuildAll();
     Object.values(Tn.meshes).forEach(m => m.dispose()); Tn.meshes = {};
     list().forEach(b => addBuilding(b, true));
     MZ.gfx.ground.markAll();   // 塗り分けの表は、全部置いてから 1 回で書く
@@ -39,7 +55,7 @@
     Tn.meshes[b.id] = MZ.gfx.put(b.t, c[0], c[1], b.r * Math.PI / 2);   // .dispose() で消える
     if (!bulk) MZ.gfx.ground.mark(b);                                   // 道・畑・踏み固めの塗り分け、草のマス
     /* 建物と重なる採れる物は、二度と出ない */
-    cellsOf(b, ci => { const ni = W.cellNode[ci]; if (ni >= 0 && W.taken && W.taken[ni] !== undefined) W.taken[ni] = -1; });
+    cellsOf(b, ci => { const ni = W.cellNode[ci]; if (ni >= 0 && W.takenOf(ni) !== undefined) W.forbid(ni); });
   }
   const has = t => list().some(b => b.t === t);
   Tn.has = has;
@@ -48,9 +64,9 @@
   /* ---------- 置けるか ---------- */
   Tn.canPlace = function (key, gx, gz) {
     const W = MZ.world, d = MZ.BUILDS[key], w = d.w;
-    if (gx < 0 || gz < 0 || gx + w > N || gz + w > N) return { ok: false, reason: '土地の外' };
+    for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) if (!MZ.landAt(gx + i, gz + j)) return { ok: false, reason: '土地の外' };
     for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) {
-      const ci = (gz + j) * N + gx + i;
+      const ci = MZ.ci(gx + i, gz + j);
       if (W.owner[ci]) return { ok: false, reason: '建物と重なる' };
       const ni = W.cellNode[ci];
       if (ni >= 0 && W.nodeActive(ni)) return { ok: false, reason: MZ.NODES[W.nodes[ni].k].name + 'と重なる' };
@@ -76,9 +92,11 @@
     const d = MZ.BUILDS[key], s = MZ.state;
     if (!d || d.fixed || Tn.lockReason(key) || !MZ.afford(d.cost)) return false;
     if (!Tn.canPlace(key, gx, gz).ok) return false;
+    const o = MZ.chunkOfCell(gx, gz), ch = s.chunks[o.key];   // 左上のマスがある区画に入れる
+    if (!ch) return false;
     Object.keys(d.cost).forEach(k => { s.inv[k] -= d.cost[k]; });
-    const b = { id: s.nextId++, t: key, x: gx, z: gz, r: r || 0 };
-    list().push(b); addBuilding(b);
+    const b = { id: s.nextId++, t: key, x: o.lx, z: o.lz, r: r || 0 };
+    ch.layers.ground.push(b); rebuildAll(); addBuilding(b);
     Tn.recalc(); MZ.saveNow();
     MZ.ui.notice(d.name + 'を建てた');
     return true;
@@ -94,7 +112,8 @@
     cellsOf(b, ci => { W.owner[ci] = 0; W.solid[ci] = 0; });
     Tn.meshes[id].dispose(); delete Tn.meshes[id]; delete Tn.byId[id];
     MZ.gfx.ground.mark(b);
-    const L = list(); L.splice(L.indexOf(b), 1);
+    const L = s.chunks[Tn.ck[id]].layers.ground; L.splice(L.indexOf(b), 1);
+    delete Tn.ck[id]; delete Tn.gp[id]; rebuildAll();
     delete s.timers.jobs[id];
     Tn.recalc(); MZ.saveNow();
     MZ.ui.notice(d.name + 'をこわした' + (back.length ? '（' + back.join('・') + ' もどる）' : ''));
@@ -105,7 +124,9 @@
   Tn.recalc = function (silent) {
     const W = MZ.world, conn = new Set(), q = [];
     const typeAt = ci => { const id = W.owner[ci]; return id ? Tn.byId[id].t : ''; };
-    const nb = ci => { const x = ci % N, z = (ci - x) / N, r = []; if (x > 0) r.push(ci - 1); if (x < N - 1) r.push(ci + 1); if (z > 0) r.push(ci - N); if (z < N - 1) r.push(ci + N); return r; };
+    /* となりの 4 マス（全体の表の中。世界の外は入れない。番号から (gx, gz) へ戻すときは G0 を足す） */
+    const GN = MZ.GN;
+    const nb = ci => { const x = ci % GN, z = (ci - x) / GN, r = []; if (x > 0) r.push(ci - 1); if (x < GN - 1) r.push(ci + 1); if (z > 0) r.push(ci - GN); if (z < GN - 1) r.push(ci + GN); return r; };
     list().filter(b => b.t === 'hut').forEach(h => cellsOf(h, ci => nb(ci).forEach(n => { if (typeAt(n) === 'road' && !conn.has(n)) { conn.add(n); q.push(n); } })));
     while (q.length) { const c = q.shift(); nb(c).forEach(n => { if (typeAt(n) === 'road' && !conn.has(n)) { conn.add(n); q.push(n); } }); }
     let home = 0, water = 0, food = 0, unc = 0;
@@ -214,14 +235,14 @@
     if (!MZ.world.solidAtPoint(r.x, r.z)) return;
     const h = Tn.byId[r.home], c = h ? center(h) : [0, 0];
     r.x = c[0]; r.z = c[1] - 3;
-    for (let k = 0; k < 40 && MZ.world.solidAtPoint(r.x, r.z); k++) { const a = rand(0, 6.283), d = 3 + k * 0.3; r.x = c[0] + Math.cos(a) * d; r.z = c[1] + Math.sin(a) * d; }
+    for (let k = 0; k < 40 && (MZ.world.solidAtPoint(r.x, r.z) || !MZ.world.inLand(r.x, r.z, 1)); k++) { const a = rand(0, 6.283), d = 3 + k * 0.3; r.x = c[0] + Math.cos(a) * d; r.z = c[1] + Math.sin(a) * d; }
     pickTarget(r); r.wait = 0.5;
   }
   function pickTarget(r, spawn) {
     const h = Tn.byId[r.home], c = h ? center(h) : [0, 0];
     for (let k = 0; k < 12; k++) {
       const a = rand(0, 6.283), d = rand(3, 8), x = c[0] + Math.cos(a) * d, z = c[1] + Math.sin(a) * d;
-      if (Math.abs(x) < T.half - 1 && Math.abs(z) < T.half - 1 && !MZ.world.solidAtPoint(x, z)) { r.tx = x; r.tz = z; return; }
+      if (MZ.world.inLand(x, z, 1) && !MZ.world.solidAtPoint(x, z)) { r.tx = x; r.tz = z; return; }
     }
     r.tx = r.x; r.tz = r.z;
   }
@@ -298,7 +319,7 @@
       MZ.gfx.setPreviewOk(m, b.ok);
     } else {
       const gx = MZ.cellOf(p.x), gz = MZ.cellOf(p.z);
-      const id = (gx >= 0 && gz >= 0 && gx < N && gz < N) ? W.owner[gz * N + gx] : 0;
+      const id = MZ.inWorld(gx, gz) ? W.owner[MZ.ci(gx, gz)] : 0;
       b.target = id;
       if (id) {
         const bd = Tn.byId[id], m = pvMesh(bd.t), c = center(bd);
