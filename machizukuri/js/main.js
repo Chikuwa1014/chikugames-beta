@@ -25,13 +25,14 @@
     W.engine.runRenderLoop(() => {
       const now = performance.now(), real = (now - last) / 1000, dt = Math.min(0.1, real); last = now;   // real は実時間（画質の自動判定に使う）
       if (!MZ.paused) MZ.player.update(dt);
-      MZ.tick(dt);                       // 世界の時間（移住・仕事・また出る）は、パネルを開いていても進める
+      if (MZ.timeFix == null) MZ.tick(dt);   // 世界の時間（移住・仕事・また出る）は、パネルを開いていても進める
       MZ.player.updateCamera(dt);
       MZ.town.updatePreview();
-      MZ.town.render(now / 1000);
+      MZ.town.render(MZ.timeFix == null ? now / 1000 : MZ.timeFix);
       MZ.ui.update(dt);
       /* 描画の層：時間・草・採れる物の並べ直し・火・影・予算・自動の画質 */
-      gtime += dt; G.time = gtime;
+      if (MZ.timeFix == null) gtime += dt; else gtime = MZ.timeFix;   // timeFix：決まった絵を撮るための開発用（dev/shots.cjs）。世界の時間・草の時間を止める
+      G.time = gtime;
       const ps = MZ.state.player;
       G.sky.update && G.sky.update(gtime);
       G.grass.update(dt, gtime, ps.x, ps.z);

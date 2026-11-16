@@ -7,6 +7,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
+const WANT_V = +arg('v', 1);   // 作る見本の保存の版（版 2 は区切り 1 のコミット 3585c05 の作りで作る：node ... --v 2 --out dev/fixtures/save-v2-b030-1.json）
 const BASE = arg('base', 'http://localhost:8000/machizukuri/'), OUT = arg('out', path.join(__dirname, 'fixtures', 'save-v1.json'));
 (async () => {
   const br = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -48,7 +49,7 @@ const BASE = arg('base', 'http://localhost:8000/machizukuri/'), OUT = arg('out',
   const box = JSON.parse(raw), d = box.data, ch = d.chunks['0,0'];
   const tk = Object.values(ch.taken);
   console.log(JSON.stringify(info), 'v=' + box.v, 'chunks=' + Object.keys(d.chunks).join('|'), 'taken+=' + tk.filter(v => v > 0).length, 'taken-=' + tk.filter(v => v < 0).length, 'jobs=' + JSON.stringify(d.timers.jobs));
-  if (box.v !== 1 || Object.keys(d.chunks).join() !== '0,0' || d.pop < 10 || d.stage !== 1 || errs.length) { console.error('見本がおかしい', errs.slice(0, 3)); process.exit(3); }
+  if (box.v !== WANT_V || (WANT_V === 2 && JSON.stringify(d.land) !== '["0,0"]') || Object.keys(d.chunks).join() !== '0,0' || d.pop < 10 || d.stage !== 1 || errs.length) { console.error('見本がおかしい', errs.slice(0, 3)); process.exit(3); }
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, raw);
   await br.close();

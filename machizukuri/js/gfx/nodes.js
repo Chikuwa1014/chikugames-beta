@@ -419,6 +419,14 @@
     Object.keys(_tt).forEach(k => delete _tt[k]);
     S.dirty = true;
   }
+  /* 画質を中 → 高に上げたとき、粘土・鉄の鉱脈の近く用を、高の写真で読み直す（遠く用はそのまま） */
+  function reloadNear() {
+    ['clayN', 'ironN'].forEach(id => { const f = S.forms[id]; if (!f) return; f.meshes.forEach(m => { try { m.dispose(false, false); } catch (_) { /* 済み */ } }); delete S.forms[id]; });
+    S.nodes.forEach(nd => { nd.look = null; });
+    GROUPS.bnodes_n.forEach(n => { (S.models[n] || []).forEach(m => { try { m.dispose(false, true); } catch (_) { /* 済み */ } }); delete S.models[n]; A.forget2(n); });
+    S.ready.bnodes_n = false; delete loading.bnodes_n; S.dirty = true;
+    if (S.key !== 'low') loadGroup('bnodes_n');
+  }
   function apply(key) {
     S.key = key;
     const q = G.Q[key];
@@ -468,5 +476,5 @@
     const o = {}; Object.keys(S.forms).forEach(id => { if (S.forms[id].n) o[id] = S.forms[id].n; });
     return o;
   }
-  G.nodes = { init, apply, release, show, hit, dirty, flush, update, stats, setStone, setClay, state: S };
+  G.nodes = { init, apply, release, reloadNear, show, hit, dirty, flush, update, stats, setStone, setClay, state: S };
 })();

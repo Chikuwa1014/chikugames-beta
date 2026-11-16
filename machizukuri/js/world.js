@@ -99,7 +99,7 @@
     const m = /^(-?\d+),(-?\d+)$/.exec(key), cx = +m[1], cz = +m[2];
     const rng = mulberry32((T.seed ^ hashStr(key)) >>> 0), used = new Uint8Array(N * N), groups = W.groupMap;
     const lo = 3, hi = N - 3;   // 土地の端 4m は避ける（マスの中心が端から 4m 以上）
-    const list = W.byChunk[key] = [];
+    const list = W.byChunk[key] = [], tk0 = {};   // tk0：applyTaken で本物の taken に差しかわるまでの仮の入れ物（tk が無くても例外にならない）
     if (key === '0,0') for (let lz = 59; lz <= 60; lz++) for (let lx = 59; lx <= 60; lx++) used[lz * N + lx] = 1;   // 小屋
     Object.keys(MZ.NODES).forEach(k => {
       const d = MZ.NODES[k];
@@ -111,7 +111,7 @@
         const s = 0.85 + rng() * 0.35, ry = rng() * Math.PI * 2, v = (VARIANTS[k] && rng() < 0.5) ? 1 : 0;
         if (used[lz * N + lx] || Math.hypot(x, z) < d.minR) continue;
         used[lz * N + lx] = 1;
-        const nd = { idx: W.nodes.length, ck: key, li: list.length, k, x, z, s, ry, gx, gz, g: groups[k + (VARIANTS[k] ? v : 0)], hp: -1 };
+        const nd = { idx: W.nodes.length, ck: key, li: list.length, k, x, z, s, ry, gx, gz, g: groups[k + (VARIANTS[k] ? v : 0)], hp: -1, tk: tk0 };
         nd.slot = nd.g.nodes.length; nd.g.nodes.push(nd);
         list.push(nd.idx); W.nodes.push(nd); W.cellNode[MZ.ci(gx, gz)] = nd.idx; placed++;
       }

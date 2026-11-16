@@ -16,7 +16,7 @@
   /* 表は全体のマス G0〜G0+GN−1。左下の角は世界の x = (G0 − N/2)*C（−360m）、幅は GN*C（720m）。シェーダーへ入れる数（数は直書きしない） */
   const MK_HALF = (-(MZ.G0 - N / 2) * C).toFixed(1), MK_SPAN = (MZ.GN * C).toFixed(1);
   const GN = MZ.GN, mark = { data: new Uint8Array(GN * GN * 4), tex: null };
-  const kindOf = t => (t === 'road' ? 1 : t === 'field' ? 2 : t ? 3 : 0);   // 道・畑・そのほかの建物
+  const kindOf = t => { const d = t && MZ.BUILDS[t]; return !d ? 0 : d.road ? (d.pave ? 4 : 1) : (d.food && !d.solid) ? 2 : 3; };   // 0＝なし、1＝土の道（road の欄で pave なし）、2＝畑（大きな畑も。食料で通れる物）、3＝そのほかの建物、4＝石畳（road で pave あり）
   function cellKind(gx, gz) {
     const ci = MZ.ci(gx, gz);
     if (ci < 0) return 0;
@@ -33,7 +33,7 @@
     else {
       for (let dz = -1; dz <= 1 && !b; dz++) for (let dx = -1; dx <= 1; dx++) if (cellKind(gx + dx, gz + dz) === 3) { b = 128; break; }
     }
-    mark.data[o] = k === 1 ? 255 : 0; mark.data[o + 1] = k === 2 ? 255 : 0; mark.data[o + 2] = b; mark.data[o + 3] = 255;
+    mark.data[o] = k === 1 ? 255 : 0; mark.data[o + 1] = k === 2 ? 255 : 0; mark.data[o + 2] = b; mark.data[o + 3] = k === 4 ? 255 : 0;   // A＝石畳のマス
   }
   /* 建物 b（x,z は左上のマス、w マス四方）のまわりの表だけ書きかえる。呼ぶのは owner を直したあと */
   function markBuilding(b) {
@@ -61,8 +61,9 @@
   function registerGround() {
     class GroundPlugin extends B.MaterialPluginBase {
       constructor(material) {
-        super(material, 'GroundPhoto', 250, { GPHOTO: false });
+        super(material, 'GroundPhoto', 250, { GPHOTO: false, GCOBBLE: false, GCNRM: false, GCORM: false });
         this.on = false; this.dirt = null; this.path = null; this.farm = null; this.mark = null;
+        this.cob = null; this.cobN = null; this.cobO = null;   // 石畳の写真（色・法線・ORM。読めたものだけ。土・道・畑の写真とは別に有る無しを決める）
         this._enable(true);
       }
       /* 写真が読めたら col（土）・path・farm を渡す。null ならコードの色で描く */
@@ -71,15 +72,22 @@
         this.dirt = on ? col : null; this.path = on ? path : null; this.farm = on ? farm : null;
         if (on !== this.on) { this.on = on; this.markAllDefinesAsDirty(); }
       }
+      /* 石畳の写真：col が読めたときだけ GCOBBLE。法線（中・高）・ORM（高）は読めた分だけ */
+      setCobble(col, nrm, orm) {
+        this.cob = col || null; this.cobN = col ? (nrm || null) : null; this.cobO = col ? (orm || null) : null;
+        this.markAllDefinesAsDirty();
+      }
       isReadyForSubMesh() {
+        if (this.cob && !(this.cob.isReady() && (!this.cobN || this.cobN.isReady()) && (!this.cobO || this.cobO.isReady()))) return false;
         if (!this.on) return true;
         return this.dirt.isReady() && this.path.isReady() && this.farm.isReady();
       }
-      prepareDefines(defines) { defines.GPHOTO = this.on; }
+      prepareDefines(defines) { defines.GPHOTO = this.on; defines.GCOBBLE = !!this.cob; defines.GCNRM = !!this.cobN; defines.GCORM = !!this.cobO; }
       getClassName() { return 'GroundPlugin'; }
-      getSamplers(samplers) { samplers.push('gMarkSampler', 'gDirtSampler', 'gPathSampler', 'gFarmSampler'); }
+      getSamplers(samplers) { samplers.push('gMarkSampler', 'gDirtSampler', 'gPathSampler', 'gFarmSampler', 'gCobSampler', 'gCobNSampler', 'gCobOSampler'); }
       bindForSubMesh(ubo) {
         ubo.setTexture('gMarkSampler', this.mark);
+        if (this.cob) { ubo.setTexture('gCobSampler', this.cob); if (this.cobN) ubo.setTexture('gCobNSampler', this.cobN); if (this.cobO) ubo.setTexture('gCobOSampler', this.cobO); }
         if (!this.on) return;
         ubo.setTexture('gDirtSampler', this.dirt);
         ubo.setTexture('gPathSampler', this.path);
@@ -94,6 +102,16 @@
             uniform sampler2D gDirtSampler; uniform sampler2D gPathSampler; uniform sampler2D gFarmSampler;
             vec3 gTex(sampler2D s, vec2 uv) { return toLinearSpace(texture2D(s, uv).rgb); }
             #endif
+            #ifdef GCOBBLE
+            uniform sampler2D gCobSampler;
+            #ifdef GCNRM
+            uniform sampler2D gCobNSampler;
+            #endif
+            #ifdef GCORM
+            uniform sampler2D gCobOSampler;
+            #endif
+            #endif
+            vec2 gRot(vec2 v, float k) { if (k < 0.5) return v; if (k < 1.5) return vec2(-v.y, v.x); if (k < 2.5) return -v; return vec2(v.y, -v.x); }
             float gH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
             float gN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
               return mix(mix(gH(i), gH(i + vec2(1.0, 0.0)), f.x), mix(gH(i + vec2(0.0, 1.0)), gH(i + vec2(1.0, 1.0)), f.x), f.y); }
@@ -144,6 +162,38 @@
               #endif
               float pat = gN(wp * 0.018 + 5.0) * 0.6 + gN(wp * 0.05) * 0.4;
               col *= mix(vec3(1.0), mix(vec3(0.85, 0.9, 0.7), vec3(1.12, 1.02, 0.86), smoothstep(0.35, 0.7, pat)), outer * 0.7);
+              /* 石畳：表の A（マスの中心の画素。補間しない）が 255 のマス。1 マス（2m）に写真を 1 枚、マスごとに 90° ずつ回す。縁ははっきり出す */
+              {
+                vec2 cc = (floor(wp / 2.0) + 0.5) * 2.0;
+                if (abs(cc.x) < ${MK_HALF} && abs(cc.y) < ${MK_HALF} && texture2D(gMarkSampler, (cc + ${MK_HALF}) / ${MK_SPAN}).a > 0.5) {
+                  vec2 lp = wp - cc;
+                  float k = floor(gH(floor(wp / 2.0)) * 4.0);
+                  vec2 uv = gRot(lp, k) * 0.5 + 0.5;
+                  float ao = 1.0;
+                  #ifdef GCOBBLE
+                  vec3 cob = toLinearSpace(texture2D(gCobSampler, uv).rgb);
+                  #ifdef GCORM
+                  ao = texture2D(gCobOSampler, uv).r;
+                  #endif
+                  #ifdef GCNRM
+                  vec3 nt = texture2D(gCobNSampler, uv).xyz * 2.0 - 1.0;
+                  vec2 nw = gRot(nt.xy, mod(4.0 - k, 4.0));
+                  normalW = normalize(mix(normalW, normalize(vec3(nw.x, nt.z, nw.y)), 0.9));
+                  #endif
+                  #else
+                  vec3 cob = vec3(0.30, 0.29, 0.27) * (0.78 + 0.44 * gN(wp * 5.0)) * (0.9 + 0.2 * gN(wp * 17.0));
+                  #endif
+                  /* 石畳でないとなりの側の縁 0.12m を暗くする（石畳どうしの間には線を出さない） */
+                  float ed = 0.0;
+                  vec2 nbr[4]; nbr[0] = vec2(2.0, 0.0); nbr[1] = vec2(-2.0, 0.0); nbr[2] = vec2(0.0, 2.0); nbr[3] = vec2(0.0, -2.0);
+                  for (int i = 0; i < 4; i++) {
+                    vec2 q = cc + nbr[i];
+                    float nA = (abs(q.x) < ${MK_HALF} && abs(q.y) < ${MK_HALF}) ? texture2D(gMarkSampler, (q + ${MK_HALF}) / ${MK_SPAN}).a : 0.0;
+                    if (nA < 0.5) { float d = 1.0 - dot(lp, nbr[i]) * 0.5; ed = max(ed, 1.0 - smoothstep(0.0, 0.12, d)); }
+                  }
+                  col = cob * ao * mix(1.0, 0.7, ed);
+                }
+              }
               surfaceAlbedo = col;
             }
 `
@@ -324,6 +374,8 @@
   /* 写真が読めたとき（photo.js から）。got：{ ground, path, farm }（読めなければ null） */
   function setPhoto(got, tier) {
     const gs = got.ground;
+    const cb = got.cobble;
+    if (plugin) plugin.setCobble(cb && cb.col, cb && cb.nrm, cb && cb.orm);   // 石畳の写真は、土・道・畑の写真とは別に有る無しを決める
     if (G.ground.mountPlugin) G.ground.mountPlugin.set(got.stone ? G.photo.view(got.stone.col, 1, 1) : null);
     if (gs && got.path && got.farm) {
       const S = 2.0;   // 地面の UV は 1 = 5 m → 2.5 m で 1 回

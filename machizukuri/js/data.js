@@ -20,7 +20,11 @@
     hitCool: 0.42,    // 1 回たたく間かくし（秒）
     buildMax: 14,     // 建てられる距離
     near: 7,          // 作業台・かまどを使える距離
-    migrate: 9,       // 移住者が 1 人来る間かくし（秒）
+    migrate: 9,       // 移住者が 1 人来る間かくし（秒）。段階が villageStage より前
+    migrateVillage: 6, // 段階が villageStage 以上のときの移住の間かく（秒）
+    shopFree: 50,     // 店が無くても来られる人数
+    autoCap: 100,     // 自動でたまる材料の上限（倉庫なし。倉庫の store をたす）
+    villageStage: 2,  // 「村」の段階の番号（STAGES の番号。HUD の「店」を出す・移住の間かくを変える）
     baseWater: 0, baseFood: 0, // 井戸・畑がなくてもまかなえる人数（0：井戸も畑もなければ人は来ない）
     radius: 0.35,     // 体の太さ（半径 m）
     height: 1.7,      // 身長
@@ -76,28 +80,40 @@
 
   /* 建築レシピ。w：マスの数（正方形）、solid：通れない、home：住める人数、
      water・food：まかなえる人数、stage：解放される段階（0 始まり。無ければ段階 0 から）、
-     fixed：こわせない、jobs：働く住民の数、makes・every：every 秒ごとに持ち物へ入る物 */
+     fixed：こわせない、jobs：働く住民の数、makes・every：every 秒ごとに持ち物へ入る物、
+     road：道としてつながる、pave：小屋までつながったこの道に面した家は、住める人数が pave ふえる（1 軒に 1 回）、
+     shop：店がまかなう人数、staff：歩く姿と表示だけの人数（人口からは引かない）、store：自動でたまる上限をふやす数、
+     craft：工房でつくれる物（MZ.RECIPES の key。1 回ぶんは、そのレシピの cost → give） */
   MZ.BUILDS = {
     hut:    { name: '小屋',       w: 2, solid: true, fixed: true },
     fire:   { name: 'たき火',     w: 1, solid: true,  cost: { stick: 3, stone: 2 }, note: 'かざり。あたたかい' },
     bench:  { name: '作業台',     w: 1, solid: true,  cost: { log: 4, stone: 2 }, note: '板・道具をつくれる' },
-    road:   { name: '土の道',     w: 1, solid: false, cost: { stone: 1 }, note: '道に面した家に人が来る' },
+    road:   { name: '土の道',     w: 1, solid: false, cost: { stone: 1 }, road: true, note: '道に面した家に人が来る' },
+    stoneroad: { name: '石畳の道', w: 1, solid: false, cost: { stone: 2 }, stage: 2, road: true, pave: 1, note: '土の道と同じにつながる。面した家は 1 人多く住める' },
     house:  { name: '木の家',     w: 2, solid: true,  cost: { plank: 8, log: 4, stone: 4, rope: 2 }, home: 2, note: '2人が住める' },
     field:  { name: '畑',         w: 2, solid: false, cost: { stick: 4, grass: 4 }, food: 4, note: '4人分の食料' },
+    bigfield: { name: '大きな畑', w: 3, solid: false, cost: { plank: 8, grass: 10 }, stage: 2, food: 12, note: '12人分の食料' },
     well:   { name: '井戸',       w: 1, solid: true,  cost: { stone: 10, rope: 2, plank: 2 }, water: 10, note: '10人分の水' },
     kiln:   { name: 'かまど',     w: 1, solid: true,  cost: { stone: 8, clay: 4 }, note: '粘土を焼いてれんがにする' },
     furnace: { name: '炉',       w: 1, solid: true,  cost: { stone: 10, brick: 6, clay: 4 }, note: '鉄鉱石をとかして鉄インゴットにする' },
-    lumber: { name: 'きこり小屋', w: 2, solid: true,  cost: { plank: 10, stone: 6 }, stage: 1, jobs: 2, makes: { log: 1 }, every: 20, note: '住民2人で原木を自動でつくる' },
-    bhouse: { name: 'れんがの家', w: 2, solid: true,  cost: { brick: 12, plank: 6, ingot: 2 }, home: 4, stage: 1, note: '4人が住める' }
+    lumber: { name: 'きこり小屋', w: 2, solid: true,  cost: { plank: 10, stone: 6 }, stage: 1, jobs: 2, makes: { log: 1, stick: 1 }, every: 20, note: '住民2人で原木と枝を自動でつくる' },
+    bhouse: { name: 'れんがの家', w: 2, solid: true,  cost: { brick: 12, plank: 6, ingot: 2 }, home: 4, stage: 1, note: '4人が住める' },
+    quarry: { name: '採石場',     w: 2, solid: true,  cost: { plank: 12, ingot: 4, rope: 4 }, stage: 2, jobs: 3, makes: { stone: 3 }, every: 30, note: '住民3人で石を自動でつくる' },
+    claypit: { name: '粘土採り場', w: 2, solid: true, cost: { plank: 10, stone: 8, rope: 2 }, stage: 2, jobs: 2, makes: { clay: 2 }, every: 30, note: '住民2人で粘土を自動でつくる' },
+    workshop: { name: '工房',     w: 2, solid: true,  cost: { brick: 16, plank: 12, ingot: 4 }, stage: 2, jobs: 3, every: 25, craft: ['plank', 'brick', 'ingot'], note: '住民3人で、えらんだ材料を自動でつくる' },
+    shop:   { name: '商店',       w: 2, solid: true,  cost: { brick: 20, plank: 16, ingot: 4 }, stage: 2, shop: 30, staff: 2, note: '30人分の店' },
+    storehouse: { name: '倉庫',   w: 3, solid: true,  cost: { brick: 24, plank: 24, ingot: 6 }, stage: 2, store: 150, note: '自動でたまる上限が 150 ふえる' }
   };
-  MZ.BUILD_ORDER = ['bench', 'road', 'house', 'field', 'well', 'fire', 'kiln', 'furnace', 'lumber', 'bhouse'];
+  MZ.BUILD_ORDER = ['bench', 'road', 'stoneroad', 'house', 'field', 'bigfield', 'well', 'fire', 'kiln', 'furnace', 'lumber', 'bhouse', 'quarry', 'claypit', 'workshop', 'shop', 'storehouse'];
 
-  /* 段階（人口で上がる）。3 つめより先は今後の版で中身を足す */
+  /* 自動でたまる材料の上限（どの物も同じ）。倉庫の store をたす。建物を数える街の側（town.js）が MZ.autoCap を作る */
+
+  /* 段階（人口で上がる）。banner：その段階になったときに出す文（無ければ「○○になった！」）。町より先は今後の版で中身を足す */
   MZ.STAGES = [
     { name: '開拓', pop: 0 },
-    { name: '集落', pop: 10 },
-    { name: '村',   pop: 50 },
-    { name: '町',   pop: 200 },
+    { name: '集落', pop: 10, banner: '集落になった！ きこり小屋・れんがの家・鉄の道具が作れる' },
+    { name: '村',   pop: 50, banner: '村になった！ 石畳・採石場・粘土採り場・工房・商店・倉庫・大きな畑が作れる' },
+    { name: '町',   pop: 200, banner: '町になった！ ここまでが今の版です' },
     { name: '都市', pop: 1000 },
     { name: '大都市', pop: 5000 }
   ];

@@ -5,7 +5,7 @@
    ゲームの中は window.MZ の関数（MZ.hit・MZ.craft・MZ.place・MZ.remove・MZ.tick）で進める。 */
 const { chromium } = require('playwright');
 const path = require('path');
-const ARGS = process.argv.slice(2), PART = +(ARGS.find(a => /^[1-4]$/.test(a)) || 0), DIR = ARGS.find(a => !/^[1-4]$/.test(a));
+const ARGS = process.argv.slice(2), PART = +(ARGS.find(a => /^[1-5]$/.test(a)) || 0), DIR = ARGS.find(a => !/^[1-5]$/.test(a));
 const OUT = (DIR || path.join(require('os').tmpdir(), 'machizukuri-shots')) + '/';
 require('fs').mkdirSync(OUT, { recursive: true });
 const URL = process.env.URL || 'http://localhost:8000/machizukuri/';
@@ -238,7 +238,7 @@ const HELPERS = () => {
   await goalIs('インゴットができたら「鉄の道具」', '鉄の道具');
   ok('鉄の道具を作れる（集落から）', await ev(page, () => { TT.ensureCost(MZ.RECIPES.find(r => r.key === 'axe3').cost); TT.home(); const a = MZ.craft('axe3'); TT.ensure('ingot', 2); TT.ensureCost(MZ.RECIPES.find(r => r.key === 'pick3').cost); TT.home(); const b = MZ.craft('pick3'); return a && b && MZ.state.tools.axe === 3 && MZ.state.tools.pick === 3; }));
   const lastGoal = await ev(page, () => MZ.currentGoal());
-  ok('つぎの目標が最後の 1 行まで進む', lastGoal.includes('今の版'), lastGoal);
+  ok('つぎの目標が、集落のあとの「村にしよう」まで進む', lastGoal.includes('村にしよう'), lastGoal);
 
   /* 三人称 */
   await ev(page, () => { const s = MZ.state.player; s.x = 6; s.z = -25; s.yaw = 0.2; s.pitch = 0.15; });
@@ -455,7 +455,7 @@ const HELPERS = () => {
       b.data.chunks['1,0'] = { layers: { ground: [{ id: 700, t: 'house', x: 5, z: 5, r: 0, mk: 'log' }, { id: 701, t: 'house', x: 200, z: 5, r: 0 }], under: [], over: [] }, taken: { 3: 5, a: 'x' } };
       b.data.chunks['0,0'].layers.ground.push({ id: 702, t: 'house', x: 119, z: 50, r: 0, mk: 'nothing' }, { id: 703, t: 'house', x: 119, z: 119, r: 0 });
       l = load(b); const g0 = l.state.chunks['0,0'].layers.ground, g1 = l.state.chunks['1,0'].layers.ground;
-      out.two = l.status === 'ok' && l.state.land.join('|') === '0,0|1,0' && g1.length === 1 && g1[0].id === 700 && g1[0].mk === 'log' && g0.some(x => x.id === 702 && !('mk' in x)) && !g0.some(x => x.id === 703) && JSON.stringify(l.state.chunks['1,0'].taken) === '{"3":5}' && l.state.nextId >= 703;
+      out.two = l.status === 'ok' && l.state.land.join('|') === '0,0|1,0' && g1.length === 1 && g1[0].id === 700 && !('mk' in g1[0]) && g0.some(x => x.id === 702 && !('mk' in x)) && !g0.some(x => x.id === 703) && JSON.stringify(l.state.chunks['1,0'].taken) === '{"3":5}' && l.state.nextId >= 703;
       /* 小屋を先に調べる：小屋と重なる建物が配列の前にあっても、小屋が残る */
       b = JSON.parse(raw); b.data.chunks['0,0'].layers.ground.unshift({ id: 800, t: 'road', x: 59, z: 59, r: 0 });
       l = load(b); out.hutFirst = l.status === 'ok' && l.state.chunks['0,0'].layers.ground.some(x => x.t === 'hut') && !l.state.chunks['0,0'].layers.ground.some(x => x.id === 800);
@@ -471,7 +471,7 @@ const HELPERS = () => {
     ok('land：範囲の外・書式がちがう物・重なりは捨てる', r.dropLand === true, JSON.stringify(r.dropLand));
     ok('land に "0,0" が無い・land が無いと壊れている扱い', r.noOrigin === 'broken' && r.noLand === 'broken', JSON.stringify([r.noOrigin, r.noLand]));
     ok('land は "0,0" を先頭に並べる', r.order === true);
-    ok('持っている区画なら建物・taken を残し、mk は ITEMS の物だけ残す。区画の外へはみ出す建物は捨てる', r.two === true);
+    ok('持っている区画なら建物・taken を残し、mk は craft の中の物だけ残す（工房でない建物の mk は捨てる）。区画の外へはみ出す建物は捨てる', r.two === true);
     ok('小屋を先に調べる（小屋より前に重なる建物があっても小屋が残る）', r.hutFirst === true);
     ok('主人公の場所：持っている区画の中へ収める（"0,0" だけなら ±119.5。広げた区画ならその中）', r.clamp1[0] === 119.5 && r.clamp1[1] === -119.5 && r.clamp2[0] === 359.5 && r.clamp2[1] === -50, JSON.stringify([r.clamp1, r.clamp2]));
     ok('版 2 の読み込みで出たエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
@@ -513,11 +513,182 @@ const HELPERS = () => {
       TT.goto(bush); const hit = MZ.hit(); const gone = !W.nodeActive(bush.idx);
       MZ.noSave = false; MZ.saveNow(); MZ.noSave = true;
       const box = JSON.parse(localStorage.getItem('machizukuri-save')), cur = JSON.stringify(MZ.state), l = MZ.loadSave();
-      return { cap, before, popAfter, logAfter, road, hit, gone, grass: MZ.state.inv.grass - g0, v: box.v, again: l.status === 'ok' && JSON.stringify(l.state) === cur, land: box.data.land, jobs: Object.keys(MZ.state.timers.jobs).length };
+      return { cap, before, popAfter, logAfter, road, hit, gone, grass: MZ.state.inv.grass - g0, v: box.v, again: l.status === 'ok' && JSON.stringify(l.state) === cur, land: box.data.land, jobs: Object.keys(MZ.state.timers.jobs).length, lumber: MZ.town.workState(MZ.town.list().find(b => b.t === 'lumber')).st };
     });
-    ok('版 1 の見本（' + fx + '）：そのまま遊べる（MZ.tick で人口が上限まで動き仕事場が動く・道が置ける・物がたたける）', pl.popAfter === pl.cap && pl.logAfter > pl.before.log && pl.road === true && pl.hit && pl.gone && pl.grass > 0 && pl.jobs >= 1, JSON.stringify(pl));
+    ok('版 1 の見本（' + fx + '）：そのまま遊べる（MZ.tick で人口が上限まで動き、原木が 100 をこえた古い街ではきこり小屋が上限いっぱいで止まる・道が置ける・物がたたける）', pl.popAfter === pl.cap && pl.logAfter >= pl.before.log && pl.lumber === 'full' && pl.road === true && pl.hit && pl.gone && pl.grass > 0 && pl.jobs >= 1, JSON.stringify(pl));
     ok('版 1 の見本（' + fx + '）：保存し直すと v が 2 になり、読み直しても同じ', pl.v === 2 && pl.again === true && pl.land.join() === '0,0', JSON.stringify([pl.v, pl.again, pl.land]));
     ok('版 1 の見本（' + fx + '）：エラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+  /* 区切り 1 の形の版 2 の保存（dev/fixtures/save-v2-b030-1.json。コミット 3585c05 の作りで作った）も、そのまま続きから遊べる */
+  {
+    const raw = fs.readFileSync(path.join(__dirname, 'fixtures', 'save-v2-b030-1.json'), 'utf8'), fj = JSON.parse(raw), fd = fj.data;
+    const a = await open2({});
+    await a.c.addInitScript(s => { try { if (!sessionStorage.getItem('mz-seeded')) { localStorage.setItem('machizukuri-save', s); sessionStorage.setItem('mz-seeded', '1'); } } catch (e) { /* なし */ } }, raw);
+    await a.pg.goto(URL);
+    await a.pg.waitForSelector('#tbtn .go:not([disabled])', { timeout: 60000 });
+    const title = await a.pg.textContent('#tbtn');
+    await a.pg.click('#tbtn .go');
+    await a.pg.waitForFunction(() => window.MZ && MZ.started, null, { timeout: 120000 });
+    await ev(a.pg, HELPERS);
+    const st = await ev(a.pg, () => {
+      MZ.noSave = true;
+      const s = MZ.state, before = { pop: s.pop, stick: s.inv.stick }, cap = MZ.town.info.cap, lum = MZ.town.list().find(b => b.t === 'lumber');
+      s.inv.log = 0; s.inv.stick = 0; MZ.town.jobsDirty = true; s.timers.jobs[lum.id] = 20; s.timers.migrate = -1e6; MZ.tick(20.5);
+      return { v: s.land.join(), pop: before.pop, cap, stage: s.stage, ground: s.chunks['0,0'].layers.ground.length, log: s.inv.log, stick: s.inv.stick, meshes: Object.keys(MZ.town.meshes).length };
+    });
+    ok('区切り 1 の版 2 の見本：「つづきから」で遊べ、建物がそろう', fj.v === 2 && title.includes('つづきから') && st.v === '0,0' && st.pop === fd.pop && st.stage === 1 && st.meshes === fd.chunks['0,0'].layers.ground.length, JSON.stringify(st));
+    ok('区切り 1 の版 2 の見本：きこり小屋で原木に加えて枝もたまる', st.log === 1 && st.stick === 1, JSON.stringify([st.log, st.stick]));
+    ok('区切り 1 の版 2 の見本：エラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
+  /* ---- β0.3.0 区切り 2：村の遊び（1 区画の中）。テストの中だけで持ち物・人口・段階を書く（ゲームに持ち物を増やす関数は作らない） ---- */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const R = await ev(a.pg, () => {
+      const out = {}, W = MZ.world, Tn = MZ.town, s = MZ.state, T = MZ.T;
+      MZ.noSave = true;
+      W.nodes.forEach(nd => { if (nd.gx >= 30 && nd.gx <= 95 && nd.gz >= 30 && nd.gz <= 95) W.take(nd.idx, -1); });
+      const hold = () => { s.timers.migrate = -1e6; };   // 移住・退去で人口が動かないように止める
+      const setInv = o => { Object.keys(s.inv).forEach(k => { s.inv[k] = o[k] || 0; }); };
+      const all = n => { Object.keys(s.inv).forEach(k => { s.inv[k] = n; }); };
+      const near = id => { const b = Tn.byId[id], c = Tn.center(b); s.player.x = c[0]; s.player.z = c[1] - 4; };
+      const P = (k, x, z, r) => { all(999); const ok = MZ.place(k, x, z, r || 0); if (!ok) throw new Error('置けない ' + k + ' ' + x + ',' + z); return Tn.list()[Tn.list().length - 1].id; };
+      const NEW = ['stoneroad', 'bigfield', 'quarry', 'claypit', 'workshop', 'shop', 'storehouse'];
+      /* 1 段階 2 より前は選べない（村で解放） */
+      all(999); s.stage = 1;
+      out.lock = NEW.every(k => Tn.lockReason(k).indexOf('村') === 0 && MZ.startBuild(k) === false);
+      s.stage = 2;
+      out.unlock = NEW.every(k => Tn.lockReason(k) === '');
+      /* 2 3×3：見本の位置と置いたマスが合う。こわすと 9 マスとも空く */
+      s.player.x = 3.5; s.player.z = -7; s.player.yaw = 0; s.player.pitch = 0.35; s.player.view = 1;
+      all(999);
+      MZ.startBuild('storehouse'); Tn.updatePreview();
+      const bd = MZ.build, gx = bd.gx, gz = bd.gz, okp = bd.ok;
+      const placed = MZ.placeHere(); MZ.cancelBuild();
+      const sid = W.owner[MZ.ci(gx, gz)], cells = []; for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) cells.push(W.owner[MZ.ci(gx + i, gz + j)]);
+      const sb = Tn.byId[sid], c = sb ? Tn.center(sb) : [0, 0];
+      out.three = { okp, placed, same: sid > 0 && cells.every(v => v === sid), center: sb && Math.abs(c[0] - ((gx - T.chunk / 2) * T.cell + 3 * T.cell / 2)) < 1e-6 && Math.abs(c[1] - ((gz - T.chunk / 2) * T.cell + 3 * T.cell / 2)) < 1e-6, ring: W.owner[MZ.ci(gx - 1, gz)] === 0 && W.owner[MZ.ci(gx + 3, gz)] === 0 };
+      out.threeRemove = MZ.remove(sid) && (() => { for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) if (W.owner[MZ.ci(gx + i, gz + j)] !== 0) return false; return true; })();
+      /* 3 石畳：土の道とまざってつながる。面した家は 1 人多く住める。つながっていない石畳では増えない */
+      P('road', 61, 59); P('stoneroad', 62, 59); P('road', 63, 59); P('road', 64, 59); P('road', 65, 59);
+      P('house', 62, 60); P('house', 64, 60);
+      P('stoneroad', 80, 80); P('house', 80, 81);
+      out.road = { homeSum: Tn.info.homeSum, paved: Tn.info.paved, unc: Tn.info.unconnected, roads: Tn.info.roads };
+      /* 石畳の塗り：表の A が石畳のマスで 255、ほかは 0。石畳のマスは R（土の道）が 0。石畳のマスに草が無い */
+      { const md = MZ.gfx.ground.data.data, A = (gx, gz) => md[MZ.ci(gx, gz) * 4 + 3], Rr = (gx, gz) => md[MZ.ci(gx, gz) * 4];
+        let n255 = 0, bad = 0; for (let i = 3; i < md.length; i += 4) { if (md[i] === 255) n255++; else if (md[i] !== 0) bad++; }
+        s.player.x = 5; s.player.z = -1; MZ.gfx.grass.layout(5, -1);
+        out.paint = { stone: A(62, 59), stone2: A(80, 80), dirt: A(61, 59), house: A(62, 60), none: A(10 + 60, 5 + 60), rStone: Rr(62, 59), rDirt: Rr(61, 59), n255, bad, grass: MZ.gfx.grass.countInCell(62, 59), grassDirt: MZ.gfx.grass.countInCell(61, 59) }; }
+      /* 4 店：商店に人手が無くても数える */
+      s.pop = 0; Tn.recalc(true);
+      out.shop0 = Tn.info.shop;
+      const shopId = P('shop', 70, 62); s.pop = 0; Tn.recalc(true);
+      out.shop1 = [Tn.info.shop, Tn.info.low.shop, Tn.info.cap <= Tn.info.shop];
+      /* 5 水・食料をまかない、移住の間かく */
+      P('well', 66, 56); P('field', 68, 56);
+      s.pop = 0; Tn.recalc(true);
+      out.capNow = Tn.info.cap;
+      s.stage = 1; s.pop = 0; s.timers.migrate = 0; MZ.tick(8.5); out.m1a = s.pop; MZ.tick(0.5); out.m1b = s.pop;
+      s.stage = 2; s.pop = 0; s.timers.migrate = 0; MZ.tick(5.5); out.m2a = s.pop; MZ.tick(0.5); out.m2b = s.pop;
+      /* 6 工房 */
+      s.pop = 10; Tn.jobsDirty = true;
+      const wid = P('workshop', 66, 60);
+      s.pop = 10; Tn.jobsDirty = true;
+      setInv({}); out.wsOff = Tn.workState(Tn.byId[wid]).st;
+      out.setBad = [MZ.setMake(wid, 'stick'), MZ.setMake(9999, 'brick'), MZ.setMake(Tn.list()[0].id, 'brick')];
+      out.setOk = MZ.setMake(wid, 'brick'); out.wsShort = Tn.workState(Tn.byId[wid]);
+      setInv({ clay: 2, stick: 1 }); s.timers.jobs[wid] = 25; hold(); MZ.tick(24.5); out.beforeBrick = s.inv.brick; MZ.tick(1);
+      out.brick = { brick: s.inv.brick, clay: s.inv.clay, stick: s.inv.stick };
+      out.wsAgain = Tn.workState(Tn.byId[wid]).st;
+      MZ.setMake(wid, null); out.mkNull = !('mk' in Tn.byId[wid]) && Tn.workState(Tn.byId[wid]).st === 'off';
+      MZ.setMake(wid, 'plank'); MZ.noSave = false; MZ.saveNow(); MZ.noSave = true;
+      const ld = MZ.loadSave(); out.mkSaved = ld.status === 'ok' && ld.state.chunks['0,0'].layers.ground.some(b => b.id === wid && b.mk === 'plank');
+      MZ.setMake(wid, null);
+      /* 7 きこり小屋で原木と枝 */
+      const lid = P('lumber', 70, 66); s.pop = 10; Tn.jobsDirty = true;
+      setInv({}); s.timers.jobs[lid] = 20; hold(); MZ.tick(20.5);
+      out.lumber = [s.inv.log, s.inv.stick];
+      /* 8 自動の上限：採石場 */
+      const qid = P('quarry', 72, 66); s.pop = 10; Tn.jobsDirty = true;
+      setInv({ stone: 100 }); out.qFull = Tn.workState(Tn.byId[qid]).st; out.cap0 = MZ.autoCap();
+      setInv({ stone: 99 }); s.timers.jobs[qid] = 30; hold(); MZ.tick(30.5); out.stone102 = s.inv.stone;
+      P('storehouse', 76, 66); s.pop = 10; Tn.jobsDirty = true;
+      out.cap1 = MZ.autoCap();
+      setInv({ stone: 100 }); out.qRun = Tn.workState(Tn.byId[qid]).st; s.timers.jobs[qid] = 30; hold(); MZ.tick(30.5); out.stone103 = s.inv.stone;
+      /* 9 ×5：作業台の近くで原木 5 → 板 10。4 回ぶんしか無いと作れない */
+      P('bench', 62, 56); s.player.x = 3; s.player.z = -7;
+      setInv({ log: 4 }); const f4 = MZ.craft('plank', 5);
+      setInv({ log: 5 }); const f5 = MZ.craft('plank', 5);
+      out.x5 = { f4, f5, log: s.inv.log, plank: s.inv.plank, bad3: MZ.craft('plank', 3), tool: MZ.craft('axe2', 5) };
+      /* 10 住民：仕事場のまわり 9m 以内にいる人がいる */
+      s.pop = 30; Tn.jobsDirty = true; Tn.resDirty = true; MZ.tick(6);
+      const work = Tn.residents.filter(r => { const b = Tn.byId[r.home]; return b && (MZ.BUILDS[b.t].jobs || MZ.BUILDS[b.t].shop); });
+      out.res = { n: Tn.residents.length, work: work.length, near: work.some(r => { const c = Tn.center(Tn.byId[r.home]); return Math.hypot(r.x - c[0], r.z - c[1]) <= 9; }), shopFolk: Tn.residents.some(r => Tn.byId[r.home] && Tn.byId[r.home].t === 'shop') };
+      /* 11 商店が無い古い街：店が足りないと 1 人ずつ出ていき、最初に 1 回だけ知らせる */
+      const old = T.shopFree; T.shopFree = 2; Tn.recalc(true); s.stage = 2; s.pop = 10; s.timers.migrate = 0;
+      const sb2 = Tn.byId[shopId]; // 商店があると 30 人分あるので、いったんこわす
+      MZ.remove(shopId); T.shopFree = 2; Tn.recalc(true); Tn.shopWarned = false; s.pop = 6; s.timers.migrate = 0; MZ.tick(6.5);
+      out.leave = { pop: s.pop, warned: Tn.shopWarned, low: Tn.info.low.shop, cap: Tn.info.cap };
+      T.shopFree = old; Tn.recalc(true);
+      return out;
+    });
+    ok('新しい建物 7 種：段階 2 より前は「村で解放」でえらべず、段階 2 で置ける', R.lock && R.unlock, JSON.stringify([R.lock, R.unlock]));
+    ok('3×3（倉庫）：見本の位置と置いたマスが合い、9 マスの owner が同じ id。こわすと 9 マスとも空く', R.three.okp && R.three.placed && R.three.same && R.three.center && R.three.ring && R.threeRemove, JSON.stringify([R.three, R.threeRemove]));
+    ok('石畳：土の道とまざってつながり、面した木の家は 3 人（面していない家は 2 人）。つながっていない石畳では増えない', R.road.homeSum === 5 && R.road.paved === 1 && R.road.unc === 1, JSON.stringify(R.road));
+    ok('石畳の塗り：表の A が石畳のマスで 255、ほかは 0（土の道・家・空き地）。石畳のマスは R が 0（土の道は 255）', R.paint.stone === 255 && R.paint.stone2 === 255 && R.paint.n255 === 2 && R.paint.bad === 0 && R.paint.dirt === 0 && R.paint.house === 0 && R.paint.none === 0 && R.paint.rStone === 0 && R.paint.rDirt === 255, JSON.stringify(R.paint));
+    ok('石畳のマスに草が無い（owner があるので）', R.paint.grass === 0 && R.paint.grassDirt === 0, JSON.stringify([R.paint.grass, R.paint.grassDirt]));
+    ok('店：商店が無ければ 50、商店 1 つで 80（人手が無くても数える）。上限は店をこえない', R.shop0 === 50 && R.shop1[0] === 80 && R.shop1[1] === false && R.shop1[2], JSON.stringify([R.shop0, R.shop1]));
+    ok('移住の間かく：段階 1 は 9 秒、段階 2 は 6 秒で 1 人（上限 ' + R.capNow + '）', R.capNow >= 1 && R.m1a === 0 && R.m1b === 1 && R.m2a === 0 && R.m2b === 1, JSON.stringify([R.m1a, R.m1b, R.m2a, R.m2b]));
+    ok('工房：えらばないと off。材料が無いと short。setMake で粘土 2・枝 1 が減り、れんがが 2 増える。止めると off', R.wsOff === 'off' && R.wsShort.st === 'short' && R.setOk === true && R.beforeBrick === 0 && R.brick.brick === 2 && R.brick.clay === 0 && R.brick.stick === 0 && R.mkNull, JSON.stringify([R.wsOff, R.wsShort, R.brick, R.mkNull]));
+    ok('工房：工房でない物・知らない物・知らない id には setMake が false', R.setBad.every(v => v === false), JSON.stringify(R.setBad));
+    ok('工房：保存して読み直しても mk が同じ', R.mkSaved === true);
+    ok('きこり小屋で原木と枝が増える', R.lumber[0] === 1 && R.lumber[1] === 1, JSON.stringify(R.lumber));
+    ok('自動の上限：石 100 で採石場は full。99 → 102 までは足す。倉庫で上限 250 になり、また動く（100 → 103）', R.qFull === 'full' && R.cap0 === 100 && R.stone102 === 102 && R.cap1 === 250 && R.qRun === 'run' && R.stone103 === 103, JSON.stringify([R.qFull, R.cap0, R.stone102, R.cap1, R.qRun, R.stone103]));
+    ok('×5：原木 5 で板が 10 増える。4 回ぶんだけでは作れない。5 でも 1 でもない数・道具は作れない', R.x5.f4 === false && R.x5.f5 === true && R.x5.log === 0 && R.x5.plank === 10 && R.x5.bad3 === false && R.x5.tool === false, JSON.stringify(R.x5));
+    ok('住民：仕事場・商店をよりどころにする人がいて、そのまわり 9m 以内にいる人がいる', R.res.work >= 1 && R.res.near && R.res.shopFolk && R.res.n >= 25, JSON.stringify(R.res));
+    ok('店が足りない古い街：1 人ずつ出ていき、最初に 1 回だけ知らせる', R.leave.pop === 5 && R.leave.warned === true && R.leave.low === true, JSON.stringify(R.leave));
+    /* 画面：仕事場タブ・近くの 1 行・HUD の店・持ち物の上限（文字を読む） */
+    const UI = await ev(a.pg, () => {
+      const s = MZ.state, Tn = MZ.town, U = MZ.ui, out = {};
+      MZ.noSave = true; s.stage = 2; s.pop = 30; Tn.jobsDirty = true; Object.keys(s.inv).forEach(k => { s.inv[k] = 999; }); MZ.place('shop', 70, 62, 0); s.pop = 30; Tn.jobsDirty = true;
+      Object.keys(s.inv).forEach(k => { s.inv[k] = 0; }); s.inv.stone = 120;
+      const wid = Tn.list().find(b => b.t === 'workshop').id; MZ.setMake(wid, 'plank');
+      U.update(0.2); out.hud = document.querySelector('#pop').textContent;
+      U.panel(true); U.tab = 'work'; U.sig = ''; U.render();
+      out.work = document.querySelector('#pbody').textContent;
+      out.pressed = [...document.querySelectorAll('#pbody .mk')].map(b => b.textContent + ':' + b.getAttribute('aria-pressed')).join('|');
+      out.tabs = [...document.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join();
+      U.tab = 'inv'; U.sig = ''; U.render(); out.inv = document.querySelector('#pbody').textContent;
+      out.overCls = !!document.querySelector('#pbody li.auto b');
+      U.tab = 'mat'; U.sig = ''; U.render(); out.x5btn = document.querySelectorAll('#pbody [data-craft5]').length;
+      U.panel(false);
+      const c = Tn.center(Tn.list().find(b => b.t === 'quarry')); s.player.x = c[0]; s.player.z = c[1] - 4;
+      U.update(0.2); out.wk = document.querySelector('#wk').hidden ? '' : document.querySelector('#wk').textContent;
+      MZ.startBuild('road'); U.update(0.2); out.wkBuild = document.querySelector('#wk').hidden; MZ.cancelBuild();
+      s.player.x = -50; s.player.z = -50; U.update(0.2); out.wkFar = document.querySelector('#wk').hidden;
+      return out;
+    });
+    ok('HUD：村のとき「店 80」が出る', /店 \d+/.test(UI.hud), UI.hud);
+    ok('仕事場タブ：名前と番号・向きと距離・働く人・つくる物・状態・上限の行・工房のボタンが出る', /採石場 1/.test(UI.work) && /[北南東西]+ \d+m/.test(UI.work) && /働く人 3／3/.test(UI.work) && /30 秒ごとに 石 3/.test(UI.work) && /動いている（次まで \d+ 秒）|上限いっぱい/.test(UI.work) && /自動でたまる上限：250（倉庫 1）/.test(UI.work) && /店 30 人分/.test(UI.work) && UI.pressed === '板:true|れんが:false|鉄インゴット:false|止める:false', JSON.stringify([UI.work.slice(0, 300), UI.pressed]));
+    ok('タブ「仕事場」が「建てる」の右にある', UI.tabs === 'inv,mat,tool,build,work', UI.tabs);
+    ok('持ち物タブ：自動でたまる物は「石 120／上限 250」の形', /石120／上限 250/.test(UI.inv) && UI.overCls, UI.inv.slice(0, 120));
+    ok('材料タブに「×5」のボタンがある（材料のレシピの数だけ）', UI.x5btn === 4, UI.x5btn);
+    ok('近くの 1 行：仕事場のそばで「採石場：…」が出る。建築中・遠いときは出ない', /^採石場：/.test(UI.wk) && UI.wkBuild === true && UI.wkFar === true, JSON.stringify([UI.wk, UI.wkBuild, UI.wkFar]));
+    /* 目標・段階の文 */
+    const GL = await ev(a.pg, () => {
+      const s = MZ.state, Tn = MZ.town, out = [];
+      MZ.noSave = true; s.stage = 1; s.pop = 5; s.tools.axe = 3; s.tools.pick = 3; s.inv.ingot = 3;
+      ['kiln', 'furnace'].forEach(k => { if (!Tn.has(k)) { Object.keys(s.inv).forEach(i => { s.inv[i] = 999; }); const P = [[60, 54], [60, 52]]; MZ.place(k, P[k === 'kiln' ? 0 : 1][0], P[k === 'kiln' ? 0 : 1][1], 0); } });
+      out.push(MZ.currentGoal());   // 段階 1 → 村にしよう
+      s.stage = 2; out.push(MZ.currentGoal());
+      return out;
+    });
+    ok('目標：集落のあとは「人口 50 で村にしよう」。村になったら次の建物の目標へ（途中までの建物で文が順に変わる）', /^人口 50 で村にしよう（れんがの家は 4 人住める）（人口 5／50）/.test(GL[0]) && GL[1].length > 0 && !/村にしよう/.test(GL[1]), JSON.stringify(GL));
+    const BN = await ev(a.pg, () => { const s = MZ.state; s.stage = 1; s.pop = MZ.STAGES[2].pop; MZ.town.stageCheck(); return [document.querySelector('#banner').textContent, s.stage]; });
+    ok('段階の文：村になると STAGES の banner が出る', BN[1] === 2 && BN[0] === '村になった！ 石畳・採石場・粘土採り場・工房・商店・倉庫・大きな畑が作れる', JSON.stringify(BN));
+    ok('区切り 2 の試験でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
     await a.c.close();
   }
   }
@@ -633,6 +804,32 @@ const HELPERS = () => {
     await a.c.close();
   }
 
+  /* 共通の写真（btex）：中で読み、低では取りに行かない。wood_col_1024 が読めないとき、それを使う 4 つ（小屋・木の家・きこり小屋・井戸）だけコードの形になる */
+  {
+    const reqs = [];
+    const a = await open2({ pref: 'mid', route: c => c.route('**/assets/models/tex/**', async r => { reqs.push(r.request().url().replace(/^.*\/tex\//, '')); try { await r.continue(); } catch (e) { /* 閉じた */ } }) });
+    await begin2(a.pg);
+    await loaded(a.pg);
+    const q = await ev(a.pg, () => ({ n: MZ.gfx.assets.groupFiles(MZ.gfx.MANIFEST.find(g => g.id === 'btex'), 'mid').length, hi: MZ.gfx.assets.groupFiles(MZ.gfx.MANIFEST.find(g => g.id === 'btex'), 'high').length, prio: MZ.gfx.assets.prioOf(MZ.gfx.MANIFEST.find(g => g.id === 'btex')), ok: MZ.gfx.assets.groupOk('btex', 'mid') }));
+    ok('btex：待ち行列に入り（48 枚）、中で読めて、順は建物の遠く用の後・建物の前（2.6）', q.n === 48 && q.hi === 48 && q.ok && q.prio === 2.6 && reqs.length >= 40, JSON.stringify(q) + ' 取りに行った ' + reqs.length);
+    ok('btex：中は法線を 512 で読む（brick_nrm_512 を取り、brick_nrm_1024 は取らない）', reqs.includes('m_brick_nrm_512.jpg') && !reqs.includes('m_brick_nrm_1024.jpg') && !reqs.some(n => /_nrm_1024/.test(n)), reqs.filter(n => /nrm/.test(n)).join(','));
+    await a.c.close();
+    const lreq = [];
+    const b = await open2({ route: c => c.route('**/assets/models/tex/**', async r => { lreq.push(r.request().url()); try { await r.continue(); } catch (e) { /* 閉じた */ } }) });
+    await begin2(b.pg); await loaded(b.pg); await settle(b.pg, 2);
+    ok('btex：低では取りに行かない', lreq.length === 0, lreq.length);
+    await b.c.close();
+    const c2 = await open2({ pref: 'mid', route: c => c.route('**/assets/models/tex/m_wood_col_1024.jpg', r => r.abort()) });
+    await begin2(c2.pg); await loaded(c2.pg);
+    await c2.pg.waitForFunction(() => { const g = MZ.gfx.looks.state.glb; return ['fire', 'kiln', 'furnace', 'field', 'bhouse', 'bench'].every(k => g[k] && g[k].near); }, null, { timeout: 180000 }).catch(() => { });
+    await settle(c2.pg, 3);
+    const w = await ev(c2.pg, () => { const g = MZ.gfx.looks.state.glb, r = {}; Object.keys(g).forEach(k => { r[k] = !!g[k].near; }); return r; });
+    const codeSet = ['hut', 'house', 'lumber', 'well'], glbSet = ['fire', 'kiln', 'furnace', 'field', 'bhouse'];
+    ok('btex：m_wood_col_1024 が読めないと、小屋・木の家・きこり小屋・井戸だけコードの形（ほかは GLB のまま）', codeSet.every(k => w[k] === false) && glbSet.every(k => w[k] === true), JSON.stringify(w));
+    ok('btex：読めないときもページのエラーは 0（Failed to load resource のぞく）', c2.list.filter(BAD_RES).length === 0, c2.list.filter(BAD_RES).slice(0, 3).join(' | '));
+    await c2.c.close();
+  }
+
   }
   if (want(3)) {
   cur = 3;
@@ -737,6 +934,27 @@ const HELPERS = () => {
     await a.pg.waitForFunction(() => { const A = MZ.gfx.assets; return A.done >= A.total; }, null, { timeout: 180000 });
     const t1 = await ev(a.pg, () => ({ total: MZ.gfx.assets.total, done: MZ.gfx.assets.done, failed: MZ.gfx.assets.failed.length, waiting: MZ.gfx.assets.queue.waiting, never: ['b_tool_pick3', 'b_player', 'tree_spruce'].filter(n => !(('assets/models/' + n + '.glb') in MZ.gfx.assets.okMap)) }));
     ok('低に下げる：待ち行列の高・中だけの GLB は取りに行かない（total が減り、failed は 0）', t0.waiting > 0 && t1.total < t0.total && t1.failed === 0 && t1.never.length >= 1 && t1.waiting === 0, JSON.stringify([t0, t1]));
+    await a.c.close();
+  }
+
+  /* 画質を中 → 高 → 中：取りに行く法線が切りかわる（中は _nrm_512、高は _nrm_1024）。高 → 中は読み直さない */
+  {
+    const reqs = [];
+    const a = await open2({ pref: 'mid', route: c => c.route('**/assets/models/tex/**', async r => { reqs.push(r.request().url().replace(/^.*\/tex\//, '')); try { await r.continue(); } catch (e) { /* 閉じた */ } }) });
+    await begin2(a.pg); await loaded(a.pg);
+    await a.pg.waitForFunction(() => { const L = MZ.gfx.looks.state; return L.glb.kiln && L.glb.kiln.near && L.tool.axe2; }, null, { timeout: 180000 });
+    const n0 = reqs.length, mid1 = reqs.some(n => /^m_brick_nrm_512/.test(n)), hi0 = reqs.some(n => /_nrm_1024/.test(n));
+    const m0 = await ev(a.pg, () => MZ.gfx.looks.state.glb.kiln.near[0].uniqueId);
+    await ev(a.pg, () => MZ.gfx.setQuality('high')); await loaded(a.pg);
+    await a.pg.waitForFunction(id => { const g = MZ.gfx.looks.state.glb.kiln; return g.near && g.near[0].uniqueId !== id && !g.near[0].isDisposed(); }, m0, { timeout: 240000 });
+    await settle(a.pg, 2);
+    const hi1 = reqs.some(n => /^m_brick_nrm_1024/.test(n)), n1 = reqs.length;
+    const st = await ev(a.pg, () => ({ near: Object.values(MZ.gfx.looks.state.glb).filter(g => g.near).length, tools: Object.keys(MZ.gfx.looks.state.tool).length }));
+    ok('中 → 高：法線が 1024 に切りかわり（中は 512 だけ）、建物・道具の近く用が読み直される', mid1 && !hi0 && hi1 && st.near >= 9 && st.tools === 6, JSON.stringify([mid1, hi0, hi1, st]));
+    await ev(a.pg, () => MZ.gfx.setQuality('mid')); await loaded(a.pg); await settle(a.pg, 2);
+    const st2 = await ev(a.pg, () => ({ near: Object.values(MZ.gfx.looks.state.glb).filter(g => g.near).length }));
+    ok('高 → 中：そのまま（読み直さない・建物は GLB のまま）', reqs.length === n1 && st2.near >= 9, reqs.length + ' ' + n1 + ' ' + JSON.stringify(st2));
+    ok('中 → 高 → 中でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
     await a.c.close();
   }
 
@@ -893,6 +1111,194 @@ const HELPERS = () => {
     await a.c.close();
   }
 
+  /* β0.3.0：新しい建物 7 種（石畳・採石場・粘土採り場・工房・商店・倉庫・大きな畑）を高・中・低で置いてもエラーが出ない。石畳の写真が画質どおりに読まれる。
+     村の場面（1 区画に新しい建物 7 種を含む 100 軒・人口 200）の三角形は、測って報告するだけ（合否にしない） */
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const res = await ev(a.pg, () => {
+      MZ.noSave = true; const s = MZ.state, W = MZ.world;
+      W.nodes.forEach(nd => { if (nd.gx >= 28 && nd.gx <= 94 && nd.gz >= 28 && nd.gz <= 94) W.take(nd.idx, -1); });
+      Object.keys(s.inv).forEach(k => { s.inv[k] = 99999; });   // 試験用：材料を持たせる
+      s.stage = 3;
+      const kinds = ['house', 'bhouse', 'house', 'field', 'bigfield', 'quarry', 'claypit', 'workshop', 'shop', 'storehouse', 'well', 'house', 'bhouse', 'lumber'];
+      for (let g = 30; g <= 56; g++) MZ.place('stoneroad', g, 62, 0);
+      let n = 0; const seen = {};
+      for (let r = 0; r < 12 && n < 100; r++) for (let c = 0; c < 12 && n < 100; c++) {
+        const gx = 30 + c * 5, gz = 30 + r * 5 + (r > 5 ? 2 : 0);
+        if (gz >= 58 && gz <= 64 && gx >= 56 && gx <= 64) continue;
+        const k = kinds[(r * 12 + c) % kinds.length];
+        if (MZ.place(k, gx, gz, (r + c) % 4)) { n++; seen[k] = 1; }
+      }
+      s.pop = 200; s.timers.migrate = -1e6; MZ.town.resDirty = true; MZ.tick(1); MZ.town.render(1);
+      const p = s.player; p.x = 0; p.z = -70; p.yaw = 0; p.pitch = -0.02;
+      return { n, kinds: Object.keys(seen).length, people: MZ.town.pgroups.reduce((a, g) => a + g.n, 0), pop: s.pop, stone: MZ.town.list().filter(b => b.t === 'stoneroad').length };
+    });
+    ok('村の場面：新しい建物 7 種を含む建物 100 軒と石畳・人口 200（歩く姿は 60 人まで）', res.n === 100 && res.kinds === 11 && res.people === 60 && res.pop === 200 && res.stone === 27, JSON.stringify(res));
+    const tr = {}, cob = {};
+    for (const q of ['low', 'mid', 'high']) {
+      await ev(a.pg, q => MZ.gfx.setQuality(q), q);
+      await loaded(a.pg); await settle(a.pg, 2);
+      tr[q] = await ev(a.pg, () => { const G = MZ.gfx, s = MZ.state.player; G.nodes.flush(); G.grass.layout(s.x, s.z); MZ.town.render(1); return G.tris(); });
+      cob[q] = await ev(a.pg, () => { const g = MZ.gfx.photo.state.got && MZ.gfx.photo.state.got.cobble; return g ? [!!g.col, !!g.nrm, !!g.orm] : null; });
+    }
+    console.log('  村の場面の三角形（報告用）', JSON.stringify(tr));
+    ok('村の場面：高・中・低で描けてエラー・警告が 0（三角形は報告だけ）', tr.low > 0 && tr.mid > 0 && tr.high > 0 && a.list.length === 0, JSON.stringify(tr) + ' ' + a.list.slice(0, 3).join(' | '));
+    ok('石畳の写真：低は色だけ・中は色と法線・高は色・法線・ORM', JSON.stringify(cob) === '{"low":[true,false,false],"mid":[true,true,false],"high":[true,true,true]}', JSON.stringify(cob));
+    await a.c.close();
+    const rq = [];
+    const b = await open2({ pref: 'mid', route: c => c.route('**/assets/tex/cobble_*', async r => { rq.push(r.request().url().replace(/^.*\//, '')); try { await r.continue(); } catch (e) { /* 閉じた */ } }) });
+    await begin2(b.pg); await loaded(b.pg);
+    ok('石畳の写真：中は cobble_col と cobble_nrm_s を取りに行く', [...new Set(rq)].sort().join() === 'cobble_col.jpg,cobble_nrm_s.jpg', rq.join());
+    await b.c.close();
+    const c3 = await open2({ route: c => c.route('**/assets/tex/cobble_*', r => r.abort()) });
+    await begin2(c3.pg); await loaded(c3.pg);
+    const f = await ev(c3.pg, () => { MZ.noSave = true; MZ.state.stage = 2; Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 99; }); MZ.world.nodes.forEach(nd => { if (nd.gx >= 50 && nd.gx <= 70 && nd.gz >= 50 && nd.gz <= 70) MZ.world.take(nd.idx, -1); }); return [MZ.place('stoneroad', 62, 59, 0), MZ.gfx.photoOk]; });
+    await settle(c3.pg, 3);
+    ok('石畳の写真が読めなくても、石畳は置けて描ける（ほかの写真はそのまま。エラーは Failed to load resource だけ）', f[0] === true && f[1] >= 4 && c3.list.filter(e => !/^error Failed to load resource/.test(e)).length === 0, JSON.stringify(f) + ' ' + c3.list.filter(e => !/^error Failed to load resource/.test(e)).slice(0, 3).join(' | '));
+    await c3.c.close();
+  }
+
+  }
+  /* ================= 区切り 5：通しの試験（最初から人口 200 まで。1 区画 "0,0" だけ） ================= */
+  if (want(5)) {
+  cur = 5;
+  {
+    const a = await open2({});
+    await begin2(a.pg);
+    const t0 = Date.now();
+    const R = await ev(a.pg, () => {
+      /* 使ってよいのは、ゲームの関数（MZ.hit・MZ.craft・MZ.place・MZ.remove・MZ.setMake・MZ.tick・MZ.startBuild など）と、主人公の場所を書きかえること（採れる物や作業台のそばへ行く代わり）だけ。
+         持ち物・人口・段階は直接書かない。以下の小さな手伝い（gather・craftAt・placeNear など）は、その決まりの中で動く */
+      MZ.noSave = true;
+      const S = MZ.state, T = MZ.T, W = MZ.world, Tn = MZ.town, P = S.player, B = MZ.BUILDS;
+      const st = { hits: 0, byK: {}, tickSec: 0, crafts: {}, craftCalls: 0, waits: 0, placed: 0 };
+      const rawHit = MZ.hit, rawCraft = MZ.craft;
+      MZ.hit = function () { MZ.player.updateAim(); const k = MZ.aim && MZ.aim.k; const r = rawHit.call(MZ); if (r) { st.hits++; st.byK[k] = (st.byK[k] || 0) + 1; } return r; };
+      MZ.craft = function (key, n) { const r = rawCraft.call(MZ, key, n); if (r) { st.crafts[key] = (st.crafts[key] || 0) + (n || 1); st.craftCalls++; } return r; };
+      const tick = sec => { st.tickSec += sec; MZ.tick(sec); };
+      const stand = (x, z) => { P.x = x; P.z = z; P.yaw = 0; P.pitch = 0; };
+      const RAW = { grass: ['bush'], stick: ['bush', 'tree'], stone: ['stone', 'rock'], log: ['tree'], clay: ['clay'], ore: ['iron'] };
+      const PRODUCER = { log: 'lumber', stick: 'lumber', stone: 'quarry', clay: 'claypit' };
+      const cellOf = gx => (gx - T.chunk / 2) * T.cell + T.cell / 2;
+      let guardAll = 0;
+      const tooLong = () => { if (++guardAll > 400000) throw new Error('終わらない'); };
+      const hitNode = nd => { stand(nd.x, nd.z - 1.4); let g = 0; while (W.nodeActive(nd.idx) && g++ < 80) { if (!MZ.hit()) return false; } return true; };
+      const producing = t => Tn.list().some(b => b.t === t && Tn.workState(b).st === 'run');
+      function ensureTool(name, lv) {
+        if (S.tools[name] >= lv) return;
+        const r = MZ.RECIPES.find(x => x.tool && x.tool[0] === name && x.tool[1] === lv);
+        for (let k = 0; k < 6 && MZ.craftReason(r) !== ''; k++) { Object.keys(r.cost).forEach(i => need(i, r.cost[i])); if (r.at && !Tn.has(r.at)) build(r.at); const c = Tn.list().find(b => b.t === r.at); if (c) { const q = Tn.center(c); stand(q[0], q[1] - 3); } }
+        if (!MZ.craft(r.key)) throw new Error('道具が作れない ' + r.key + ' ' + MZ.craftReason(r));
+      }
+      function gather(item, n) {
+        let waited = 0;
+        if (item === 'ore') ensureTool('pick', 2);
+        while (S.inv[item] < n) {
+          tooLong();
+          const pr = PRODUCER[item];
+          if (pr && producing(pr) && waited++ < 150) { st.waits++; tick(30); continue; }
+          let best = null, bd = 1e9;
+          W.nodes.forEach(nd => { if (RAW[item].indexOf(nd.k) < 0 || !W.nodeActive(nd.idx)) return; const d = MZ.NODES[nd.k]; if (d.tool && S.tools[d.tool] < d.need) return; const dd = Math.hypot(nd.x - P.x, nd.z - P.z); if (dd < bd) { bd = dd; best = nd; } });
+          if (!best) { tick(30); continue; }
+          hitNode(best);
+        }
+      }
+      function need(item, n) {
+        if (S.inv[item] >= n) return;
+        if (RAW[item]) return gather(item, n);
+        const rec = MZ.RECIPES.find(r => r.tab === 'mat' && r.give[item]);
+        let g = 0;
+        while (S.inv[item] < n) {
+          if (g++ > 500) throw new Error('作れない ' + item);
+          const times = Math.ceil((n - S.inv[item]) / rec.give[item]), k = times >= 5 ? 5 : 1;
+          for (let q = 0; q < 4; q++) { Object.keys(rec.cost).forEach(i => need(i, rec.cost[i] * k)); if (MZ.afford(k === 5 ? Object.fromEntries(Object.keys(rec.cost).map(i => [i, rec.cost[i] * 5])) : rec.cost)) break; }
+          if (rec.at) { if (!Tn.has(rec.at)) build(rec.at); const c = Tn.list().find(b => b.t === rec.at), q = Tn.center(c); stand(q[0], q[1] - 3); }
+          if (!MZ.craft(rec.key, k)) throw new Error('作れない ' + rec.key + ' ' + MZ.craftReason(rec, k));
+        }
+      }
+      const clearCells = (gx, gz, w) => {
+        for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) {
+          const ni = W.cellNode[MZ.ci(gx + i, gz + j)];
+          if (ni >= 0 && W.nodeActive(ni)) { const nd = W.nodes[ni], d = MZ.NODES[nd.k]; if (d.tool && S.tools[d.tool] < d.need) return false; if (!hitNode(nd)) return false; }
+        }
+        return true;
+      };
+      const fits = (gx, gz, w) => { for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) { if (!MZ.landAt(gx + i, gz + j) || W.owner[MZ.ci(gx + i, gz + j)]) return false; } return true; };
+      const doPlace = (key, gx, gz, r) => { if (!fits(gx, gz, B[key].w) || !clearCells(gx, gz, B[key].w)) return false; stand(-100, -100); const ok = MZ.place(key, gx, gz, r || 0); if (ok) st.placed++; return ok; };
+      const roadKey = () => (S.stage >= B.stoneroad.stage ? 'stoneroad' : 'road');
+      /* 道：小屋の下の行 gz=61 を、東と西へ。家はこの行の上（gz 59）と下（gz 62）にならべる */
+      function layRoad(gx0, gx1) {
+        for (let g = gx0; g <= gx1; g++) { if (W.owner[MZ.ci(g, 61)]) continue; need('stone', B[roadKey()].cost.stone); if (!doPlace(roadKey(), g, 61, 0)) throw new Error('道が置けない ' + g); }
+      }
+      const slots = []; for (let k = 0; k < 58; k++) { slots.push([61 + 2 * k, 59], [61 + 2 * k, 62], [57 - 2 * k, 59], [57 - 2 * k, 62]); }
+      let slotI = 0;
+      const getCost = d => { for (let q = 0; q < 6 && !MZ.afford(d.cost); q++) Object.keys(d.cost).forEach(i => need(i, d.cost[i])); if (!MZ.afford(d.cost)) throw new Error('材料が足りない'); };
+      function placeHouse() {
+        for (; slotI < slots.length; slotI++) {
+          const [gx, gz] = slots[slotI]; if (gx < 2 || gx + 1 > 118 || !fits(gx, gz, 2)) continue;
+          if (gx > 59) layRoad(59, gx + 1); else layRoad(gx, 58);
+          getCost(B.house);   // 道を置いたあとで材料をそろえる（石が道で減るため）
+          if (doPlace('house', gx, gz, 0)) { slotI++; return true; }
+        }
+        throw new Error('家の場所がない');
+      }
+      const tried = {};
+      function placeZone(key) {
+        const w = B[key].w;
+        for (let gz = 67; gz <= 112; gz += 4) for (let gx = 6; gx <= 112; gx += 4) {
+          if (tried[gx + ',' + gz] || !fits(gx, gz, w)) continue;
+          if (doPlace(key, gx, gz, 0)) return true;
+          tried[gx + ',' + gz] = 1;
+        }
+        throw new Error('置き場所がない ' + key);
+      }
+      function build(key) {
+        const d = B[key];
+        while (S.stage < (d.stage || 0)) { tooLong(); tick(30); }
+        if (key === 'house') return placeHouse();
+        getCost(d);
+        return placeZone(key);
+      }
+      const count = t => Tn.count(t);
+      const log = [];
+      const infra = () => {
+        if (!count('bench')) build('bench');
+        ensureTool('pick', 2); ensureTool('axe', 2);
+        if (!count('kiln')) build('kiln');
+        if (!count('furnace')) build('furnace');
+        if (S.stage >= 1 && !count('lumber')) build('lumber');
+        if (S.stage >= 2) {
+          ['quarry', 'claypit', 'storehouse', 'workshop'].forEach(k => { if (!count(k)) { build(k); log.push(k + '@' + Math.round(st.tickSec)); } });
+          const ws = Tn.list().find(b => b.t === 'workshop'); if (ws && !ws.mk) MZ.setMake(ws.id, 'plank');
+        }
+      };
+      let iter = 0;
+      while (S.stage < 3 && iter++ < 600) {
+        tooLong();
+        infra();
+        const I = Tn.info, G = S.stage >= 3 ? 200 : MZ.STAGES[S.stage + 1].pop;
+        const def = { home: G - I.homeSum, water: G - I.water, food: G - I.food, shop: G - I.shop };
+        let f = null; Object.keys(def).forEach(k => { if (def[k] > 0 && (f === null || def[k] > def[f])) f = k; });
+        if (f === null || S.pop < Math.min(G, I.cap) - 8) { tick(30); if (f === null) continue; if (S.pop < Math.min(G, I.cap) - 8) continue; }
+        if (f === 'home') build('house');
+        else if (f === 'water') build('well');
+        else if (f === 'food') build(S.stage >= B.bigfield.stage ? 'bigfield' : 'field');
+        else if (f === 'shop') build('shop');
+        if (iter % 25 === 0) log.push('iter' + iter + ' pop' + S.pop + ' st' + S.stage + ' t' + Math.round(st.tickSec) + ' hits' + st.hits);
+      }
+      const types = {}; Tn.list().forEach(b => { types[b.t] = (types[b.t] || 0) + 1; });
+      return { stage: S.stage, pop: S.pop, iter, tickSec: st.tickSec, hits: st.hits, byK: st.byK, crafts: st.crafts, craftCalls: st.craftCalls, waits: st.waits, types, total: Tn.list().length, info: { home: Tn.info.homeSum, water: Tn.info.water, food: Tn.info.food, shop: Tn.info.shop, cap: Tn.info.cap }, inv: S.inv, log: log.slice(-12) };
+    });
+    const secs = ((Date.now() - t0) / 1000).toFixed(0);
+    console.log('  通しの試験：' + JSON.stringify(R));
+    console.log('  通しの試験の実時間 ' + secs + ' 秒');
+    const big = Object.keys(R.byK).filter(k => R.byK[k] >= 300);
+    ok('通しの試験：最初から人口 200（段階 3）まで行ける（人口 ' + R.pop + '・手数 ' + R.hits + '・ゲームの中の時間 ' + Math.round(R.tickSec) + ' 秒）', R.stage === 3 && R.pop >= 200, JSON.stringify([R.stage, R.pop, R.iter]));
+    ok('通しの試験：たたく回数（種類ごと）は ' + JSON.stringify(R.byK) + (big.length ? '（300 回以上：' + big.join('・') + '）' : '（300 回以上の種類は無い）'), true);
+    ok('通しの試験：エラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
+    await a.c.close();
+  }
   }
   if (want(1)) {
   cur = 1;
@@ -942,6 +1348,10 @@ const HELPERS = () => {
     ok(name + '：建築中のボタン・表示が重ならず、はみ出さない', ov.bad.length === 0 && ov.out.length === 0 && ov.n >= 6, JSON.stringify(ov));
     await ev(p, () => MZ.cancelBuild());
     await p.click('#bBag'); await p.waitForTimeout(400);
+    const tabs = await ev(p, () => { const bs = [...document.querySelectorAll('#tabs button')], t = document.querySelector('#tabs'); return { n: bs.length, tops: new Set(bs.map(b => b.offsetTop)).size, fit: t.scrollWidth <= t.clientWidth + 1, clip: bs.every(b => b.scrollWidth <= b.clientWidth + 1) }; });
+    ok(name + '：タブ ' + tabs.n + ' つが 1 行に収まる（文字が切れない）', tabs.n === 5 && tabs.tops === 1 && tabs.fit && tabs.clip, JSON.stringify(tabs));
+    await p.click('#tabs button[data-tab=work]'); await p.waitForTimeout(300);
+    await p.screenshot({ path: OUT + name + '-panel-work.png' });
     await p.click('#tabs button[data-tab=build]'); await p.waitForTimeout(300);
     const pn = await ev(p, () => { const r = document.querySelector('#panel').getBoundingClientRect(); return { l: r.left, t: r.top, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight }; });
     const portrait = h > w;

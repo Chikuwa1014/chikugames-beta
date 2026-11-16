@@ -3,7 +3,8 @@
    - MZ.gfx.put(種類, x, z, 回転) … 置いた物を返す。.dispose() で消える。LOD は addLODLevel（近く用→遠く用→見えなくなる）。
    - MZ.gfx.preview(種類) … 緑と赤の見本（遠く用の部品を複製して、見本の材質にする）。
    - MZ.gfx.people        … 住民の thin instance の入れ物（近い人だけ近く用）。
-   モデルは 1 つずつ足せる：assets/models/ にファイルを置き、assets.js の MANIFEST と BUILD_MODELS に 1 行足すだけ。
+   モデルは 1 つずつ足せる：assets/models/ にファイルを置き、assets.js の MANIFEST と BUILD_MODELS に 1 行足すだけ（コードの側は何も変えない。
+   BUILD_MODELS に 1 行足すと、その種類は GLB に切りかわる。新しい建物 quarry・claypit・workshop・shop・storehouse・bigfield は、いまはコードの形）。
    当たりは今までどおりマスの表（solid）。モデルに当たりの形は要らない。 */
 (function () {
   const MZ = window.MZ, B = BABYLON, G = MZ.gfx, T = MZ.T, A = G.assets;
@@ -71,7 +72,7 @@
     const obj = { key, x, z, ry, inst: [], fx: null };
     obj.build = function () {
       obj.inst.forEach(i => i.dispose()); obj.inst = [];
-      if (key === 'road') return;   // 土の道は、どの画質でもメッシュを置かず、地面のマスの表で描く
+      if (MZ.BUILDS[key].road) return;   // 道（土の道・石畳の道。road の欄がある建物）は、どの画質でもメッシュを置かず、地面のマスの表で描く
       const lk = look(key);
       ensureLod(lk);
       lk.lod[0].meshes.forEach((m, i) => {
@@ -108,8 +109,8 @@
     const root = new B.TransformNode('previewRoot', G.scene);
     root.metadata = { parts: [] };
     let srcs;
-    if (key === 'road') {
-      srcs = [codeMesh('road')];   // 土の道の見本は平たい板（2m）
+    if (MZ.BUILDS[key].road) {
+      srcs = [codeMesh(key)];   // 道の見本は平たい板（2m。石畳は丸い石をのせた板）
     } else {
       const lk = look(key);
       srcs = lk.lod[lk.lod.length - 1].meshes;   // 遠く用の部品を複製
@@ -306,6 +307,39 @@
     names.forEach(n => A.forget2(n));
   }
 
+
+  /* 画質を中 → 高に上げたとき、共通の写真（法線が 512 だった物）を使う近く用（建物・道具）を、高の写真で読み直す。
+     新しい物が届いてから入れかえる（そのあいだは今の物のまま）。高 → 中はそのまま（高の写真のままで困らない） */
+  function reloadBtex() {
+    const users = G.BTEX_USERS || [];
+    Object.keys(L.glb).forEach(k => {
+      const g = L.glb[k], d = G.BUILD_MODELS[k];
+      if (!g.near || !d || users.indexOf(d.near) < 0) return;
+      A.forget2(d.near);
+      A.model(d.near).then(m => {
+        fixFoot(m, k, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); });
+        const old = g.near;
+        old.forEach(x => { while (x.getLODLevels().length) x.removeLODLevel(x.getLODLevels()[0].mesh); L.lodDone.delete(x); });   // 遠く用との結びつきを先に外す
+        g.near = m; repose();
+        old.forEach(x => x.dispose(false, true));
+      }, () => { /* 読めなければ今の物のまま */ });
+    });
+    Object.keys(L.tool).forEach(k => {
+      const n = 'b_tool_' + k;
+      if (users.indexOf(n) < 0) return;
+      A.forget2(n);
+      A.model(n).then(ms => {
+        ms.forEach(m => { m.receiveShadows = false; });
+        const old = L.tool[k]; L.tool[k] = ms;
+        /* 手の道具・三人称の主人公が持つ複製は、古い材質を指しているので作り直す */
+        if (MZ.player && MZ.player.releaseHands) MZ.player.releaseHands();
+        if (L.pl.near) { L.pl.near.dispose(false, false); L.pl.near = null; }
+        old.forEach(m => m.dispose(false, true));
+        if (G.looks && G.looks.onPlayer) G.looks.onPlayer();
+      }, () => { /* 今の物のまま */ });
+    });
+  }
+
   /* ---------- 読み込みの入口：画質が決まったとき・変わったとき ---------- */
   function applyChars() {
     ['player', 'person_a', 'person_b', 'person_c'].forEach(k => { loadChar(k, 'near'); loadChar(k, 'far'); });
@@ -314,6 +348,6 @@
   }
 
   G.look = look; G.put = put; G.preview = preview; G.setPreviewOk = setPreviewOk; G.repose = repose;
-  G.looks = { apply, releaseNear, state: L, loadBuild, playerModel, holdTool, toolClones, onPlayer: null };
+  G.looks = { apply, releaseNear, reloadBtex, state: L, loadBuild, playerModel, holdTool, toolClones, onPlayer: null };
   G.people = { init: peopleInit, refresh: peopleRefresh, pick: peoplePick, write: peopleWrite, flush: peopleFlush, swing: swingOf, state: PE, get groups() { return PE.groups; } };
 })();

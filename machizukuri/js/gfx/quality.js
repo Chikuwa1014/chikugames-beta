@@ -73,6 +73,7 @@
   G.setQuality = function (pref) {
     if (!(pref === 'high' || pref === 'mid' || pref === 'low' || pref === 'auto')) pref = 'auto';
     G.pref = pref; CG.ls.set(KEY, pref);
+    const prev = G.key;
     G.key = G.resolve(pref);
     G.refreshUI();
     if (!G.scene) return G.key;
@@ -81,6 +82,8 @@
     G.cam.fovMode = B.Camera.FOVMODE_VERTICAL_FIXED;
     /* 1 資産の読み込み（足りない組を取りに行く。届いた組は、それぞれが自分で入れかえる） */
     G.assets.loadTier(G.key);
+    /* 中 → 高：共通の写真（法線 512 → 1024）を使う近く用を読み直す */
+    if (prev === 'mid' && G.key === 'high') { G.looks.reloadBtex(); G.nodes.reloadNear(); }
     /* 2 材質の貼りかえ・3 採れる物と飾り・4 建物・5 影 */
     G.photo.apply(G.key);
     G.ground.apply(G.key);

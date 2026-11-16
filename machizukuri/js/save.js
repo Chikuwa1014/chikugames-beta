@@ -104,7 +104,7 @@
         src[k].ground.forEach(b => {
           if (!okB.has(b)) return;
           const o = { id: b.id, t: b.t, x: b.x, z: b.z, r: ((b.r | 0) % 4 + 4) % 4 };
-          if (typeof b.mk === 'string' && MZ.ITEMS[b.mk]) o.mk = b.mk;   // 工房のえらび（区切り 2 で使う）
+          if (typeof b.mk === 'string' && MZ.BUILDS[b.t].craft && MZ.BUILDS[b.t].craft.indexOf(b.mk) >= 0) o.mk = b.mk;   // 工房のえらび（その建物の craft の中の物だけ残す）
           ground.push(o);
         });
         /* 6. taken：値が数のキーだけ残す（番号の範囲は W.applyTaken が見る） */

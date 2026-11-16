@@ -4,7 +4,7 @@
 (function () {
   const MZ = window.MZ, B = BABYLON, T = MZ.T, N = T.chunk, C = T.cell;
   const Tn = MZ.town = {
-    meshes: {}, byId: {}, info: { homeSum: 0, water: 0, food: 0, cap: 0, unconnected: 0, low: {} },
+    meshes: {}, byId: {}, info: { homeSum: 0, water: 0, food: 0, shop: 0, cap: 0, unconnected: 0, paved: 0, low: {} },
     residents: [], resDirty: true, clock: 0, lastNote: {}, jobsRun: {}, people: []
   };
   MZ.build = { mode: 'none', key: null, r: 0, gx: 0, gz: 0, ok: false, reason: '', target: 0 };
@@ -123,37 +123,85 @@
   /* ---------- 道のつながり・移住の上限 ---------- */
   Tn.recalc = function (silent) {
     const W = MZ.world, conn = new Set(), q = [];
-    const typeAt = ci => { const id = W.owner[ci]; return id ? Tn.byId[id].t : ''; };
+    /* そのマスの建物の表（無ければ null）。道は表の road の欄で決める（土の道・石畳がまざってつながる） */
+    const defAt = ci => { const id = W.owner[ci]; return id ? MZ.BUILDS[Tn.byId[id].t] : null; };
+    const isRd = ci => { const d = defAt(ci); return !!(d && d.road); };
     /* となりの 4 マス（全体の表の中。世界の外は入れない。番号から (gx, gz) へ戻すときは G0 を足す） */
     const GN = MZ.GN;
     const nb = ci => { const x = ci % GN, z = (ci - x) / GN, r = []; if (x > 0) r.push(ci - 1); if (x < GN - 1) r.push(ci + 1); if (z > 0) r.push(ci - GN); if (z < GN - 1) r.push(ci + GN); return r; };
-    list().filter(b => b.t === 'hut').forEach(h => cellsOf(h, ci => nb(ci).forEach(n => { if (typeAt(n) === 'road' && !conn.has(n)) { conn.add(n); q.push(n); } })));
-    while (q.length) { const c = q.shift(); nb(c).forEach(n => { if (typeAt(n) === 'road' && !conn.has(n)) { conn.add(n); q.push(n); } }); }
-    let home = 0, water = 0, food = 0, unc = 0;
+    list().filter(b => b.t === 'hut').forEach(h => cellsOf(h, ci => nb(ci).forEach(n => { if (isRd(n) && !conn.has(n)) { conn.add(n); q.push(n); } })));
+    while (q.length) { const c = q.shift(); nb(c).forEach(n => { if (isRd(n) && !conn.has(n)) { conn.add(n); q.push(n); } }); }
+    let home = 0, water = 0, food = 0, shopSum = 0, unc = 0, paved = 0;
+    conn.forEach(ci => { if (defAt(ci).pave) paved++; });
     list().forEach(b => {
       const d = MZ.BUILDS[b.t];
       if (d.water) water += d.water;
       if (d.food) food += d.food;
+      if (d.shop) shopSum += d.shop;
       if (d.home) {
-        let ok = false; cellsOf(b, ci => { if (!ok) nb(ci).forEach(n => { if (conn.has(n)) ok = true; }); });
-        if (ok) home += d.home; else unc++;
+        /* つながった道に 1 マスでも面した家だけ数える。面した道に pave があれば、その家は pave（いちばん大きい物）だけ多く住める（1 軒に 1 回） */
+        let ok = false, pv = 0;
+        cellsOf(b, ci => nb(ci).forEach(n => { if (conn.has(n)) { ok = true; pv = Math.max(pv, defAt(n).pave || 0); } }));
+        if (ok) home += d.home + pv; else unc++;
       }
     });
     water += T.baseWater; food += T.baseFood;
-    const cap = Math.min(home, water, food), mn = cap;
-    Tn.info = { homeSum: home, water, food, cap, unconnected: unc, low: { home: home === mn, water: water === mn, food: food === mn }, roads: conn.size };
+    const shop = T.shopFree + shopSum;   // 店：商店に人手が無くても数える
+    const cap = Math.min(home, water, food, shop), mn = cap;
+    Tn.info = { homeSum: home, water, food, shop, cap, unconnected: unc, paved, low: { home: home === mn, water: water === mn, food: food === mn, shop: shop === mn }, roads: conn.size };
     Tn.resDirty = true; Tn.jobsDirty = true;
     Tn.rescue = true;
     if (!silent && MZ.state.pop > cap) MZ.state.timers.migrate = 0;
   };
 
   /* ---------- 仕事 ---------- */
+  /* 人の割り当て：jobs のある建物へ id の順に。足りなければその建物は止まる（商店の staff は割り当てに入れない＝人口から引かない） */
   Tn.jobs = function () {
     if (Tn.jobsCache && !Tn.jobsDirty && Tn.jobsPop === MZ.state.pop) return Tn.jobsCache;   // 建物・人口が変わったときだけ作り直す
     Tn.jobsDirty = false; Tn.jobsPop = MZ.state.pop;
     let left = MZ.state.pop; const r = [];
-    list().forEach(b => { const d = MZ.BUILDS[b.t]; if (d.jobs) { const run = left >= d.jobs; if (run) left -= d.jobs; r.push({ id: b.id, t: b.t, running: run, need: d.jobs, staff: Math.min(left + (run ? d.jobs : 0), d.jobs) }); } });
-    Tn.jobsCache = r; return r;
+    list().forEach(b => { const d = MZ.BUILDS[b.t]; if (d.jobs) { const run = left >= d.jobs; const staff = Math.min(left, d.jobs); if (run) left -= d.jobs; r.push({ id: b.id, t: b.t, running: run, need: d.jobs, staff }); } });
+    Tn.jobsCache = r; Tn.jobsById = {}; r.forEach(j => { Tn.jobsById[j.id] = j; });
+    return r;
+  };
+  /* 自動でたまる上限（どの物も同じ）：T.autoCap ＋ 倉庫の store */
+  MZ.autoCap = () => T.autoCap + list().reduce((a, b) => a + (MZ.BUILDS[b.t].store || 0), 0);
+  const recipeOf = key => MZ.RECIPES.find(r => r.key === key);
+  const givesOf = (d, b) => { if (d.craft) { const r = b.mk && recipeOf(b.mk); return r ? r.give : null; } return d.makes; };
+  /* 仕事場ごとの状態：{ st: 'run' | 'staff' | 'off' | 'short' | 'full', text, what }。what は「何をつくるか」（板・石 3 など。表示用） */
+  Tn.workState = function (b) {
+    const d = MZ.BUILDS[b.t], s = MZ.state;
+    Tn.jobs();
+    const j = Tn.jobsById[b.id], cap = MZ.autoCap();
+    if (!j) return { st: 'off', text: '', what: '' };
+    if (!j.running) return { st: 'staff', text: '人が足りない（あと ' + (j.need - j.staff) + ' 人）', what: '' };
+    let what = '', st = 'run', text = '';
+    if (d.craft) {
+      const r = b.mk && recipeOf(b.mk);
+      if (!r) return { st: 'off', text: '止めている（つくる物をえらぶ）', what: '' };
+      what = r.name;
+      if (!MZ.afford(r.cost)) return { st: 'short', text: '材料が足りない（' + r.name + 'には ' + Object.keys(r.cost).map(k => MZ.ITEMS[k] + ' ' + r.cost[k]).join('・') + '）', what };
+      if (Object.keys(r.give).every(k => s.inv[k] >= cap)) st = 'full';
+    } else {
+      what = Object.keys(d.makes).map(k => MZ.ITEMS[k] + (d.makes[k] > 1 ? ' ' + d.makes[k] : '')).join('・');
+      if (Object.keys(d.makes).every(k => s.inv[k] >= cap)) st = 'full';
+    }
+    if (st === 'full') {
+      const gk = Object.keys(givesOf(d, b)).find(k => s.inv[k] >= cap);
+      return { st, text: '上限いっぱい（' + MZ.ITEMS[gk] + ' ' + s.inv[gk] + '／' + cap + '。倉庫で上限がふえる）', what };
+    }
+    const t = s.timers.jobs[b.id] === undefined ? d.every : s.timers.jobs[b.id];
+    return { st: 'run', text: '動いている（次まで ' + Math.max(1, Math.ceil(t)) + ' 秒）', what };
+  };
+  /* 工房のつくる物をえらぶ。k は craft の中の物か null（止める）。保存して true。工房でない・知らない物なら false */
+  MZ.setMake = function (id, k) {
+    const b = Tn.byId[id]; if (!b) return false;
+    const d = MZ.BUILDS[b.t];
+    if (!d.craft || !(k === null || d.craft.indexOf(k) >= 0)) return false;
+    if (k === null) delete b.mk; else b.mk = k;
+    MZ.state.timers.jobs[id] = d.every;   // えらびなおしたら、数えなおす
+    MZ.ui.dirty = true; MZ.saveNow();
+    return true;
   };
   Tn.stageCheck = function (silent) {
     const s = MZ.state;
@@ -161,7 +209,7 @@
       if (s.pop >= MZ.STAGES[i].pop) {
         s.stage = i;
         if (!silent) {
-          MZ.ui.banner(i === 1 ? '集落になった！ きこり小屋・れんがの家・鉄の道具が作れる' : MZ.STAGES[i].name + 'になった！');
+          MZ.ui.banner(MZ.STAGES[i].banner || MZ.STAGES[i].name + 'になった！');
           MZ.saveNow();
         }
         break;
@@ -182,23 +230,36 @@
     MZ.world.regrow(dt);
     /* 移住 */
     s.timers.migrate += dt;
-    if (s.timers.migrate >= T.migrate) {
+    if (s.timers.migrate >= (s.stage >= T.villageStage ? T.migrateVillage : T.migrate)) {
       s.timers.migrate = 0;
       const cap = Tn.info.cap;
       if (s.pop < cap) { s.pop++; Tn.resDirty = true; MZ.ui.notice('1 人移住してきた（人口 ' + s.pop + '）'); Tn.stageCheck(); MZ.saveNow(); }
-      else if (s.pop > cap) { s.pop--; Tn.resDirty = true; MZ.ui.notice('1 人出ていった（人口 ' + s.pop + '）'); MZ.saveNow(); }
+      else if (s.pop > cap) {
+        /* 古い保存で、人口が 50 をこえていて商店が無い街：最初に出ていくときに 1 回だけ、わけを伝える */
+        if (Tn.info.low.shop && !Tn.shopWarned) { Tn.shopWarned = true; MZ.ui.notice('店が足りないので人が出ていく。商店を建てよう', 'warn'); }
+        s.pop--; Tn.resDirty = true; MZ.ui.notice('1 人出ていった（人口 ' + s.pop + '）'); MZ.saveNow();
+      }
     }
-    /* 仕事 */
+    /* 仕事：動いている（run）ときだけ残り秒を減らす。止まっている間（full・short・off）は every のまま止めておく */
     Tn.jobs().forEach(j => {
-      const d = MZ.BUILDS[j.t];
-      if (!j.running) return;
+      const b = Tn.byId[j.id], d = MZ.BUILDS[j.t];
+      if (!j.running || !b) return;
+      const ws = Tn.workState(b);
+      if (ws.st !== 'run') { s.timers.jobs[j.id] = d.every; return; }
       let t = s.timers.jobs[j.id]; if (t === undefined) t = d.every;
       t -= dt;
       if (t <= 0) {
         t += d.every;
-        const txt = [];
-        Object.keys(d.makes).forEach(k => { s.inv[k] += d.makes[k]; txt.push('＋' + d.makes[k] + ' ' + MZ.ITEMS[k]); });
-        if (!(Tn.lastNote[j.t] > Tn.clock - 60)) { Tn.lastNote[j.t] = Tn.clock; MZ.ui.notice(d.name + '：' + txt.join(' ')); }
+        const txt = [], cap = MZ.autoCap();
+        if (d.craft) {
+          const r = recipeOf(b.mk);
+          Object.keys(r.cost).forEach(k => { s.inv[k] -= r.cost[k]; });
+          Object.keys(r.give).forEach(k => { s.inv[k] += r.give[k]; txt.push('＋' + r.give[k] + ' ' + MZ.ITEMS[k]); });
+        } else {
+          /* 1 つずつ見て、上限に達していない物だけ足す（1 回で上限を少しこえてよい） */
+          Object.keys(d.makes).forEach(k => { if (s.inv[k] < cap) { s.inv[k] += d.makes[k]; txt.push('＋' + d.makes[k] + ' ' + MZ.ITEMS[k]); } });
+        }
+        if (txt.length && !(Tn.lastNote[j.t] > Tn.clock - 60)) { Tn.lastNote[j.t] = Tn.clock; MZ.ui.notice(d.name + '：' + txt.join(' ')); }
       }
       s.timers.jobs[j.id] = t;
     });
@@ -212,22 +273,48 @@
   }
 
   /* ---------- 住民の姿 ---------- */
-  function homeList() { return list().filter(b => MZ.BUILDS[b.t].home); }
+  /* 歩く姿は min(人口, T.maxPeople) 人。それぞれに「よりどころ」の建物（r.home に id）を 1 つ決め、そのまわり 3〜8m を歩く（家でも仕事場でも同じ）。
+     分け方：働く人の数 W ＝（人を割り当てた仕事場の人数）＋（商店の数 × staff）。W は人口を上限とする。
+     仕事場に round(描く数 × W ／ 人口) 人を、仕事場ごとの人数の割合で割り振り、残りは家に home の割合で割り振る。
+     割り振りを直すのは Tn.resDirty が立ったときだけ（建てた・こわした・人口が変わった）。よりどころがまだ残っている人は、数があふれないかぎり動かさない */
+  function share(slots, n) {   // slots：[{ id, w }]。重みの割合で n 人を割り振る（最大剰余法）。返すのは { id: 人数 }
+    const out = {}, tot = slots.reduce((a, x) => a + x.w, 0);
+    if (!slots.length || n <= 0 || tot <= 0) return out;
+    let used = 0; const rem = [];
+    slots.forEach(x => { const q = n * x.w / tot, f = Math.floor(q); out[x.id] = f; used += f; rem.push([q - f, x.id]); });
+    rem.sort((p, q) => q[0] - p[0]);
+    for (let i = 0; used < n; i++, used++) out[rem[i % rem.length][1]]++;
+    return out;
+  }
   function syncResidents() {
     Tn.resDirty = false;
-    const want = Math.min(MZ.state.pop, T.maxPeople), homes = homeList(), R = Tn.residents;
+    const s = MZ.state, want = Math.min(s.pop, T.maxPeople), R = Tn.residents;
     while (R.length > want) R.pop();
-    while (R.length < want) R.push({ home: 0, x: 0, z: 0, tx: 0, tz: 0, wait: rand(0, 3), ry: rand(0, 6.28), v: R.length % 4, mv: false, ph: rand(0, 6) });
-    const cnt = {}; homes.forEach(h => { cnt[h.id] = 0; });
-    R.forEach(r => { if (r.home && cnt[r.home] !== undefined) cnt[r.home]++; else r.home = 0; });
-    R.forEach(r => {
-      if (r.home) return;
-      let h = null; homes.forEach(x => { if (!h || cnt[x.id] < cnt[h.id]) h = x; });
-      if (!h) h = Tn.byId[1] || null;
-      if (h) cnt[h.id] = (cnt[h.id] || 0) + 1;
-      r.home = h ? h.id : 0;
-      const c = h ? center(h) : [0, 0];
-      r.x = c[0]; r.z = c[1] - 3; pickTarget(r, true); r.x = r.tx; r.z = r.tz;
+    while (R.length < want) R.push({ home: 0, x: 0, z: 0, tx: 0, tz: 0, wait: rand(0, 3), ry: rand(0, 6.28), v: R.length % 4, mv: false, ph: rand(0, 6), fresh: true });
+    /* 仕事場（人を割り当てた物と商店）・家 */
+    const work = [], homes = [];
+    Tn.jobs().forEach(j => { if (j.running) work.push({ id: j.id, w: j.need }); });
+    list().forEach(b => { const d = MZ.BUILDS[b.t]; if (d.staff) work.push({ id: b.id, w: d.staff }); if (d.home) homes.push({ id: b.id, w: d.home }); });
+    const W = Math.min(s.pop, work.reduce((a, x) => a + x.w, 0));
+    const nW = s.pop > 0 && work.length ? Math.min(want, Math.round(want * W / s.pop)) : 0;
+    const target = share(work, nW), th = share(homes, want - nW);
+    Object.keys(th).forEach(k => { target[k] = th[k]; });
+    if (!Object.keys(target).length || Object.keys(target).every(k => !target[k])) { if (Tn.byId[1]) target[1] = want; }   // 家も仕事場もなければ小屋のまわり
+    /* よりどころが残っていて、数があふれない人は動かさない。それ以外の人を、足りない所へ */
+    const cnt = {}; Object.keys(target).forEach(k => { cnt[k] = 0; });
+    const loose = [];
+    R.forEach(r => { if (r.home && target[r.home] !== undefined && cnt[r.home] < target[r.home]) cnt[r.home]++; else loose.push(r); });
+    loose.forEach(r => {
+      let best = null; Object.keys(target).forEach(k => { if (cnt[k] < target[k] && (best === null || target[k] - cnt[k] > target[best] - cnt[best])) best = k; });
+      if (best === null) best = Object.keys(target)[0];
+      if (best === undefined) return;
+      cnt[best] = (cnt[best] || 0) + 1;
+      r.home = +best;
+      if (r.fresh) {   // 新しい住民は、よりどころの前に現れる。動かされた人は、いまの場所から歩いていく
+        r.fresh = false;
+        const h = Tn.byId[r.home], c = h ? center(h) : [0, 0];
+        r.x = c[0]; r.z = c[1] - 3; pickTarget(r, true); r.x = r.tx; r.z = r.tz;
+      } else pickTarget(r);
     });
   }
   /* 建物の中に入ってしまった住民を、家の前へ移す */
@@ -326,6 +413,23 @@
         m.position.set(c[0], 0.02, c[1]); m.rotation.y = bd.r * Math.PI / 2; m.scaling.setAll(1.03); MZ.gfx.setPreviewOk(m, false);
       } else hidePreview();
     }
+  };
+  /* 主人公から T.near + w m 以内にある仕事場か商店のうち、いちばん近い 1 つ（無ければ null）。画面の下の 1 行（#wk）に使う */
+  Tn.nearWork = function () {
+    const p = MZ.state.player; let best = null, bd = Infinity;
+    list().forEach(b => {
+      const d = MZ.BUILDS[b.t]; if (!d.jobs && !d.shop) return;
+      const c = center(b), dist = Math.hypot(c[0] - p.x, c[1] - p.z);
+      if (dist <= T.near + d.w && dist < bd) { bd = dist; best = b; }
+    });
+    return best;
+  };
+  /* 主人公から建物 b への向き（北＝ +z、東＝ +x。八方位）と距離（m、四捨五入） */
+  const DIRS = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+  Tn.bearing = function (b) {
+    const p = MZ.state.player, c = center(b), dx = c[0] - p.x, dz = c[1] - p.z;
+    const a = Math.atan2(dx, dz), i = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+    return { dir: DIRS[i], dist: Math.round(Math.hypot(dx, dz)) };
   };
   /* 主人公から T.near m 以内に、その種類の建物があるか */
   MZ.nearBuilding = function (t) {
