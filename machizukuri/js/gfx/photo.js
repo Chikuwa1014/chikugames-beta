@@ -8,7 +8,8 @@
     ground: { file: 'ground', orm: true },
     path: { file: 'path', colOnly: true },
     farm: { file: 'farm', orm: true },
-    stone: { file: 'stone', orm: true }
+    stone: { file: 'stone', orm: true },
+    cobble: { file: 'cobble', orm: true }   // 石畳の道（マスごとに 1 枚）
   };
   const PHOTO = { cache: {}, texOf: {}, tier: '', views: [], got: null };
 

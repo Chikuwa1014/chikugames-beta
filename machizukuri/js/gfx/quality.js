@@ -8,24 +8,29 @@
   G.KEY = KEY;
 
   /* 画質の表（モックの QUALITY を基準にした）。低は β0.1.0 に近い軽さ */
+  /* 草の 1 株の三角形の数（10 枚の葉 × 3）。草の数 grass は、予算の草 ÷ これ で決める */
+  const GRASS_TRIS = 30;
+  G.GRASS_TRIS = GRASS_TRIS;
   G.Q = {
     high: {
       name: '高', tier: 'high', scale: () => 1 / Math.min(window.devicePixelRatio || 1, 2),
       shadow: 2048, cascades: 3, shadowDist: 110, pcf: 'QUALITY_HIGH',
       pipeline: true, bloom: true, fxaa: true, msaa: 4, ssao: true, rays: true, grain: true, chroma: true,
-      grass: 21000, fadeEnd: 55, pebbles: 1800, decor: 1,
+      grass: Math.round(450000 / GRASS_TRIS), fadeEnd: 55, pebbles: 1800, decor: 1,
       models: ['rocks', 'wood', 'trees', 'plants', 'buildings'],
       treeLod: [55, 160], rockDist: 70, bushDist: 35, outer: 0.6, decorDist: 70, houseNear: 25, peopleNear: 12,
-      hiTerrain: true, trisMax: 1700000
+      hiTerrain: true, trisMax: 1700000,
+      bldFar: 300, nodeFar: 250, xfarDist: 60, nearMax: 8, budget: { bld: 400000, grass: 450000, tree: 400000 }
     },
     mid: {
       name: '中', tier: 'mid', scale: () => 1 / Math.min(window.devicePixelRatio || 1, 1.25),
       shadow: 1024, cascades: 2, shadowDist: 70, pcf: 'QUALITY_MEDIUM',
       pipeline: true, bloom: true, fxaa: true, msaa: 1, ssao: false, rays: false, grain: true, chroma: false,
-      grass: 8000, fadeEnd: 40, pebbles: 900, decor: 0.5,
+      grass: Math.round(150000 / GRASS_TRIS), fadeEnd: 40, pebbles: 900, decor: 0.5,
       models: ['rocks', 'wood', 'trees', 'plants', 'buildings'],
       treeLod: [22, 160], rockDist: 40, bushDist: 20, outer: 0.3, decorDist: 45, houseNear: 25, peopleNear: 12,
-      hiTerrain: true, trisMax: 900000
+      hiTerrain: true, trisMax: 900000,
+      bldFar: 220, nodeFar: 180, xfarDist: 60, nearMax: 4, budget: { bld: 250000, grass: 150000, tree: 220000 }
     },
     low: {
       name: '低', tier: 'low', scale: () => 1 / Math.min(window.devicePixelRatio || 1, 1),
@@ -34,11 +39,14 @@
       grass: 2200, fadeEnd: 28, pebbles: 300, decor: 0.17,
       models: [],
       treeLod: [0, 0], rockDist: 0, bushDist: 0, outer: 0.12, decorDist: 30, houseNear: 0, peopleNear: 0,
-      hiTerrain: false, trisMax: 300000
+      hiTerrain: false, trisMax: 300000,
+      bldFar: 150, nodeFar: 130, xfarDist: 0, nearMax: 0, budget: { bld: 120000, grass: 66000, tree: 0 }
     }
   };
   const ORDER = ['high', 'mid', 'low'];
 
+  /* 予算の手順で下げた段（G.budgetTick）。houseCut：建物の近く用の距離を縮めた m（最大 10＝25 → 15）、treeF：木の近く用の距離の倍率（最小 0.6）。草は G.grass.scaleF */
+  G.dyn = { houseCut: 0, treeF: 1 };
   G.pref = 'auto';          // 画面で選んだ値
   G.key = 'high';           // 実際に使っている画質
   G.autoKey = null;         // 「自動」のとき、遅くて下げた後の画質
@@ -73,6 +81,7 @@
   G.setQuality = function (pref) {
     if (!(pref === 'high' || pref === 'mid' || pref === 'low' || pref === 'auto')) pref = 'auto';
     G.pref = pref; CG.ls.set(KEY, pref);
+    const prev = G.key;
     G.key = G.resolve(pref);
     G.refreshUI();
     if (!G.scene) return G.key;
@@ -81,6 +90,8 @@
     G.cam.fovMode = B.Camera.FOVMODE_VERTICAL_FIXED;
     /* 1 資産の読み込み（足りない組を取りに行く。届いた組は、それぞれが自分で入れかえる） */
     G.assets.loadTier(G.key);
+    /* 中 → 高：共通の写真（法線 512 → 1024）を使う近く用を読み直す */
+    if (prev === 'mid' && G.key === 'high') { G.looks.reloadBtex(); G.nodes.reloadNear(); }
     /* 2 材質の貼りかえ・3 採れる物と飾り・4 建物・5 影 */
     G.photo.apply(G.key);
     G.ground.apply(G.key);
@@ -99,8 +110,8 @@
     const ms = G.scene.meshes;
     for (let i = 0; i < ms.length; i++) {
       const m = ms[i];
-      if (!m.isEnabled() || !m.isVisible || !m.getTotalIndices) continue;
-      /* 建物のインスタンスは、いまの距離で選ばれる LOD（近く用か遠く用か、見えないか）の三角形を数える */
+      if (!m.isEnabled() || !m.isVisible || !m.getTotalIndices || m._masterMesh) continue;   // _masterMesh：LOD の先に使われているメッシュ（自分では描かれない）
+      /* インスタンスは、元のメッシュの三角形を数える（建物の近く用・遠く用・最遠は、近くの建物の係が有効・無効で切りかえている。木などの LOD は使わない） */
       let lm = m;
       if (m.sourceMesh && m.sourceMesh.getLODLevels().length) { lm = m.getLOD(G.cam); if (!lm) continue; }
       const n = lm.getTotalIndices() / 3;
@@ -110,17 +121,30 @@
     return Math.round(t);
   };
 
-  /* 予算：2 秒ごとに数え、上限を超えたら草を 10% ずつ減らす。上限の 85% を下回ったら、少しずつもどす */
+  /* 予算：2 秒ごとに数え、上限を超えたら 1 回に 1 段、次の順に下げる：1 草を 10% へらす（最小 0.1）→ 2 建物の近く用の距離を 2.5m 縮める（15m まで）→ 3 木の近く用の距離を 0.85 倍（60% まで）。
+     上限の 85% を下回ったら、逆の順（3 → 2 → 1）に少しずつもどす */
   G.budgetAcc = 0; G.lastTris = 0;
+  G.HOUSE_CUT_MAX = 10; G.TREE_F_MIN = 0.6;
   G.budgetTick = function (dt) {
     G.budgetAcc += dt;
     if (G.budgetAcc < 2) return;
     G.budgetAcc = 0;
-    const t = G.lastTris = G.tris(), max = G.Q[G.key].trisMax;
-    const gs = G.grass.scaleF;
-    if (t > max && gs > 0.1) G.grass.setScale(Math.max(0.1, gs * 0.9));
-    else if (t < max * 0.85 && gs < 1) G.grass.setScale(Math.min(1, gs + 0.05));
+    G.budgetStep(G.lastTris = G.tris());
   };
+  G.budgetStep = function (t) {
+    const max = G.Q[G.key].trisMax, gs = G.grass.scaleF, D = G.dyn;
+    if (t > max) {
+      if (gs > 0.1) G.grass.setScale(Math.max(0.1, gs * 0.9));
+      else if (D.houseCut < G.HOUSE_CUT_MAX && G.Q[G.key].nearMax > 0) D.houseCut = Math.min(G.HOUSE_CUT_MAX, D.houseCut + 2.5);
+      else if (D.treeF > G.TREE_F_MIN && G.Q[G.key].treeLod[0] > 0) { D.treeF = Math.max(G.TREE_F_MIN, D.treeF * 0.85); G.nodes.dirty(); }
+    } else if (t < max * 0.85) {
+      if (D.treeF < 1) { D.treeF = Math.min(1, D.treeF / 0.85); G.nodes.dirty(); }
+      else if (D.houseCut > 0) D.houseCut = Math.max(0, D.houseCut - 2.5);
+      else if (gs < 1) G.grass.setScale(Math.min(1, gs + 0.05));
+    }
+  };
+  /* どこまで下げたか（MZ.stats 用） */
+  G.budgetState = () => ({ grass: +G.grass.scaleF.toFixed(2), houseCut: G.dyn.houseCut, treeF: +G.dyn.treeF.toFixed(2) });
 
   /* 自動のとき、遊びはじめて 10 秒ぶんのフレームの時間の中央値が 20fps より低ければ 1 段下げる（1 回だけお知らせ）。
      読み込み中・タブが隠れているあいだは数えず、最初の 3 秒は捨てる。dt は実時間の 1 フレーム */

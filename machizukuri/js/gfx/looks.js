@@ -1,9 +1,10 @@
 /* 荒野開拓記（仮） — 描画の層：建物・人・道具の見た目の受け皿
    - MZ.gfx.look(種類)    … { src: 'glb' | 'code', lod: [{ meshes, dist }] }。GLB があれば GLB、無い・読めないときは MZ.getModel（今のコードの形）。
-   - MZ.gfx.put(種類, x, z, 回転) … 置いた物を返す。.dispose() で消える。LOD は addLODLevel（近く用→遠く用→見えなくなる）。
+   - MZ.gfx.put(種類, x, z, 回転) … 置いた物を返す。.dispose() で消える。建物は 3 段：近く用（主人公に近い nearMax 軒だけ。「近くの建物の係」nearTick が 0.5 秒に 1 回選ぶ）→ 遠く用 → 最遠（xfarDist m から）→ bldFar m で見えなくなる。切りかえは近くの建物の係が自分でする（Babylon の LOD は使わない）。
    - MZ.gfx.preview(種類) … 緑と赤の見本（遠く用の部品を複製して、見本の材質にする）。
    - MZ.gfx.people        … 住民の thin instance の入れ物（近い人だけ近く用）。
-   モデルは 1 つずつ足せる：assets/models/ にファイルを置き、assets.js の MANIFEST と BUILD_MODELS に 1 行足すだけ。
+   モデルは 1 つずつ足せる：assets/models/ にファイルを置き、assets.js の MANIFEST と BUILD_MODELS に 1 行足すだけ（コードの側は何も変えない。
+   BUILD_MODELS に 1 行足すと、その種類は GLB に切りかわる）。
    当たりは今までどおりマスの表（solid）。モデルに当たりの形は要らない。 */
 (function () {
   const MZ = window.MZ, B = BABYLON, G = MZ.gfx, T = MZ.T, A = G.assets;
@@ -11,15 +12,26 @@
 
   /* ---------- 見た目（look） ---------- */
   function codeMesh(key) { return MZ.getModel(key); }
-  /* 種類 → { src, lod }。画質「低」は近く用を使わない（遠く用だけ。遠く用が無ければコードの形） */
+  /* 種類 → { src, key, base, xfar, near }。
+     base ＝ いつも置く物（高・中は遠く用、低は最遠。GLB が無い・読めないときはコードの形）。xfar ＝ base に LOD でつなぐ最遠（遠く用と別の物があるときだけ）。
+     near ＝ 近くの建物の係が置く近く用（低・GLB 無しは null） */
   function look(key) {
-    const g = L.glb[key], q = G.Q[L.key];
-    if (g && g.near && q.models.indexOf('buildings') >= 0) {
-      const far = g.far && g.far.length ? g.far : [codeMesh(key)];
-      return { src: 'glb', key, lod: [{ meshes: g.near, dist: 0 }, { meshes: far, dist: Math.max(q.houseNear, (G.BUILD_MODELS[key] || {}).lod || 0) }] };
+    const g = L.glb[key] || {}, q = G.Q[L.key], has = a => !!(a && a.length);
+    const sep = !!((G.BUILD_MODELS[key] || {}).xfar && G.BUILD_MODELS[key].xfar !== G.BUILD_MODELS[key].far), gx = sep ? g.xfar : g.far;
+    let base = null, xfar = null;
+    if (L.key === 'low') base = has(gx) ? gx : null;
+    else {
+      base = has(g.far) ? g.far : (has(gx) ? gx : null);
+      if (base && sep && has(gx) && gx !== base) xfar = gx;
     }
-    if (g && g.far && g.far.length) return { src: 'glb', key, lod: [{ meshes: g.far, dist: 0 }] };
-    return { src: 'code', key, lod: [{ meshes: [codeMesh(key)], dist: 0 }] };
+    const near = (L.key !== 'low' && q.nearMax > 0 && has(g.near) && q.models.indexOf('buildings') >= 0) ? g.near : null;
+    if (!base) return { src: 'code', key, base: [codeMesh(key)], xfar: null, near: null };
+    return { src: 'glb', key, base, xfar, near };
+  }
+  /* 近く用に切りかえる距離（m）。予算で縮めた分（G.dyn.houseCut）だけ近くなる。BUILD_MODELS の lod（大きい建物）は、その分だけ縮める */
+  function nearDist(key) {
+    const q = G.Q[L.key], cut = G.dyn ? G.dyn.houseCut : 0, d = (G.BUILD_MODELS[key] || {}).lod || 0;
+    return Math.max(q.houseNear - cut, d ? d - cut : 0);
   }
   /* 足もとの高さを確かめる（y の最小が 0 からずれていたら直す。開発中だけ console.warn） */
   function fixFoot(meshes, key, fix) {
@@ -31,16 +43,23 @@
       meshes.forEach(m => { m.bakeTransformIntoVertices(B.Matrix.Translation(0, -ymin, 0)); m.refreshBoundingInfo(); });
     }
   }
-  /* 種類ごとに GLB を読む（読めなかったら何もしない＝コードの形のまま）。低は遠く用だけ、高・中は近く用も */
+  /* 種類ごとに GLB を読む（読めなかったら何もしない＝コードの形のまま）。低は最遠だけ、高・中は近く用・遠く用・最遠 */
   function loadBuild(key) {
     const d = G.BUILD_MODELS[key];
     if (!d) return;
-    const g = L.glb[key] = L.glb[key] || { near: null, far: null };
+    const g = L.glb[key] = L.glb[key] || { near: null, far: null, xfar: null };
     L.pend = L.pend || {};
     const low = L.key === 'low', todo = [];
-    if (!g.near && !low && !L.pend[key + ':n']) { L.pend[key + ':n'] = true; todo.push(A.model(d.near).then(m => { fixFoot(m, key, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); }); g.near = m; if (L.key === 'low') releaseNear(); })); }
-    if (!g.far && d.far && !L.pend[key + ':f']) { L.pend[key + ':f'] = true; todo.push(A.model(d.far).then(m => { fixFoot(m, key, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); }); g.far = m; })); }
-    todo.forEach(p => p.then(repose, () => { /* コードの形のまま。画質を変えたとき、読み直せるように印をもどす */ L.pend[key + ':n'] = L.pend[key + ':f'] = false; }));
+    const one = (slot, name, caster, after) => {
+      const pk = key + ':' + slot;
+      if (g[slot] || !name || L.pend[pk]) return;
+      L.pend[pk] = true;
+      todo.push(A.model(name).then(m => { fixFoot(m, key, d.fix); if (caster) m.forEach(x => { if (G.post) G.post.addCaster(x); }); g[slot] = m; if (after) after(); }).then(repose, () => { /* コードの形のまま。画質を変えたとき、読み直せるように印をもどす */ L.pend[pk] = false; }));
+    };
+    const sep = !!(d.xfar && d.xfar !== d.far);   // 最遠のファイルが遠く用と別にあるか（無ければ遠く用を最遠にも使う）
+    if (!low) one('near', d.near, true, () => { if (L.key === 'low') releaseNear(); });
+    if (!low || !sep) one('far', d.far, true);
+    if (sep) one('xfar', d.xfar, true);
   }
   function apply(key) {
     L.key = key;
@@ -52,49 +71,100 @@
   }
 
   /* ---------- 置く（put） ---------- */
-  /* LOD は、元のメッシュ（近く用）に 1 度だけ付ける。インスタンスにも LOD が効く */
-  function ensureLod(lk) {
-    if (lk.lod.length < 2) return;
-    const near = lk.lod[0].meshes, far = lk.lod[1].meshes, d = lk.lod[1].dist;
-    near.forEach((m, i) => {
-      const f = i === 0 ? far[0] : null, sig = (f ? f.uniqueId : 0) + ':' + d;
-      if (L.lodDone.get(m) === sig) return;
-      /* 遠く用が後から届いた（コードの形のまま固定されていた）・距離が変わったときは、付け直す */
-      while (m.getLODLevels().length) m.removeLODLevel(m.getLODLevels()[0].mesh);
-      if (f && f._masterMesh && f._masterMesh !== m) f._masterMesh = null;   // 前の元メッシュ（片づけ済み）との結びつきを外す
-      L.lodDone.set(m, sig);
-      m.addLODLevel(d, f);   // 遠く用は 1 つ目の部品だけに（同じ物を何度も描かない）
-      m.addLODLevel(400, null);
-    });
-  }
-  function put(key, x, z, ry) {
-    const obj = { key, x, z, ry, inst: [], fx: null };
+  /* 建物は 4 つの姿を、近くの建物の係（nearTick。0.5 秒に 1 回）が切りかえる：近く用（近い nearMax 軒）→ 遠く用（いつも置く）→ 最遠（xfarDist m から）→ 見えない（bldFar m から）。
+     Babylon の LOD（addLODLevel）は使わない：インスタンスの LOD の先のメッシュが描かれなかったため（試験で確かめた）。切りかえは各インスタンスの有効・無効と、近く用・最遠のインスタンスを作る・片づけるで行う。 */
+  function put(key, x, z, ry, bid) {
+    const obj = { key, x, z, ry, bid, inst: [], near: [], xf: [], mode: 'far', nearOn: false, fx: null, smoke: null };
+    const mk = (m, i, tag) => {
+      m.receiveShadows = true;   // 影を受けるかは元のメッシュで決まる（インスタンスでは効かない）
+      const inst = m.createInstance(key + tag + Math.round(x) + '_' + Math.round(z) + '_' + i);
+      inst.position.set(x, 0, z); inst.rotation.y = ry;
+      inst.isPickable = false;
+      inst.freezeWorldMatrix();   // 動かない物なので、行列を固定する
+      return inst;
+    };
+    const drop = a => { a.forEach(i => i.dispose()); a.length = 0; };
     obj.build = function () {
-      obj.inst.forEach(i => i.dispose()); obj.inst = [];
-      if (key === 'road') return;   // 土の道は、どの画質でもメッシュを置かず、地面のマスの表で描く
-      const lk = look(key);
-      ensureLod(lk);
-      lk.lod[0].meshes.forEach((m, i) => {
-        m.receiveShadows = true;   // 影を受けるかは元のメッシュで決まる（インスタンスでは効かない）
-        const inst = m.createInstance(key + '_' + Math.round(x) + '_' + Math.round(z) + '_' + i);
-        inst.position.set(x, 0, z); inst.rotation.y = ry;
-        inst.isPickable = false;
-        inst.freezeWorldMatrix();
-        obj.inst.push(inst);
-      });
+      drop(obj.inst); drop(obj.near); drop(obj.xf); obj.nearOn = false; obj.mode = 'far';
+      if (MZ.BUILDS[key].road) return;   // 道（土の道・石畳の道。road の欄がある建物）は、どの画質でもメッシュを置かず、地面のマスの表で描く
+      look(key).base.forEach((m, i) => obj.inst.push(mk(m, i, '_')));
+      L.nacc = 9;   // 近くの建物の係を、次のフレームで回す
+    };
+    /* いまの姿を、near・mode から決めて、有効・無効を直す */
+    obj.show = function () {
+      const nearV = obj.nearOn, xfarV = !nearV && obj.mode === 'xfar' && obj.xf.length > 0, farV = !nearV && !xfarV && obj.mode !== 'cull';
+      obj.inst.forEach(i => i.setEnabled(farV)); obj.xf.forEach(i => i.setEnabled(xfarV)); obj.near.forEach(i => i.setEnabled(nearV));
+    };
+    /* 近く用に切りかえる・もどす */
+    obj.setNear = function (on) {
+      if (on === obj.nearOn) return true;
+      if (on) {
+        const lk = look(key); if (!lk.near) return false;
+        obj.near = lk.near.map((m, i) => mk(m, i, '_n'));
+      } else drop(obj.near);
+      obj.nearOn = on; obj.show(); return true;
+    };
+    /* 遠く用・最遠・見えないを切りかえる（d は主人公からの距離） */
+    obj.setMode = function (mode) {
+      if (mode === obj.mode) return;
+      if (mode === 'xfar' && !obj.xf.length) { const lk = look(key); if (!lk.xfar) mode = 'far'; else obj.xf = lk.xfar.map((m, i) => mk(m, i, '_x')); }
+      obj.mode = mode; obj.show();
     };
     obj.dispose = function () {
-      obj.inst.forEach(i => i.dispose()); obj.inst = [];
+      drop(obj.inst); drop(obj.near); drop(obj.xf); obj.nearOn = false;
       if (obj.fx) { G.fire.remove(obj.fx); obj.fx = null; }
+      if (obj.smoke) { G.fire.removeSmoke(obj.smoke); obj.smoke = null; }
       L.objs.delete(obj);
     };
     obj.build();
     if (key === 'fire') obj.fx = G.fire.add(x, z);
+    if (MZ.BUILDS[key].smoke) obj.smoke = G.fire.addSmoke(obj);   // 煙を出す建物（工房。仕事場が動いているときだけ。近い順に 4 つまで）
     L.objs.add(obj);
     return obj;
   }
   /* 画質・読み込みが変わったとき、置いた物を置き直す（ゲームの状態は触らない） */
   function repose() { L.objs.forEach(o => o.build()); }
+
+  /* 近くの建物の係：0.5 秒に 1 回、(1) 主人公からの距離で 遠く用／最遠／見えない を決め（境は 3m の余裕をもたせる）、(2) 近く用の距離以内の建物を近い順に並べ、上位 nearMax 軒だけに近く用を置く（遠く用は隠す）。
+     はずれた建物は近く用を片づけて遠く用にもどす。近く用を置くのは 1 回に 2 軒まで（ちらつき・かたまりを防ぐ）。force が true なら、数をかぎらず今すぐ（試験用） */
+  const _cand = [];
+  function nearTick(dt, force) {
+    L.nacc += dt;
+    if (!force && L.nacc < 0.5) return;
+    L.nacc = 0;
+    const q = G.Q[L.key], st = MZ.state && MZ.state.player;
+    if (!st) return;
+    const useNear = L.key !== 'low' && q.nearMax > 0;
+    _cand.length = 0;
+    L.objs.forEach(o => {
+      if (!o.inst.length) return;
+      const dx = o.x - st.x, dz = o.z - st.z, d2 = dx * dx + dz * dz, d = Math.sqrt(d2);
+      const out = q.bldFar + (o.mode === 'cull' ? -3 : 0), xo = q.xfarDist + (o.mode === 'xfar' ? -3 : 0);
+      o.setMode(d > out ? 'cull' : (q.xfarDist && d > xo) ? 'xfar' : 'far');
+      const g = L.glb[o.key];
+      if (!useNear || !g || !g.near || o.mode === 'cull') { if (o.nearOn) o.setNear(false); return; }
+      const nd = nearDist(o.key) + (o.nearOn ? 2 : 0);
+      if (d2 <= nd * nd) { o.d2 = d2; _cand.push(o); }
+      else if (o.nearOn) o.setNear(false);
+    });
+    _cand.sort((a, b) => a.d2 - b.d2);
+    for (let i = q.nearMax; i < _cand.length; i++) if (_cand[i].nearOn) _cand[i].setNear(false);
+    let add = force ? 1e9 : 2;
+    for (let i = 0; i < _cand.length && i < q.nearMax && add > 0; i++) if (!_cand[i].nearOn && _cand[i].setNear(true)) add--;
+  }
+  L.nacc = 0;
+  /* 煙の出る位置（世界の座標）。GLB の空ノード smoke（近く用か遠く用）があればその位置、無ければ（コードの形も）既定の位置を、建物の向きで回して足す */
+  const SMOKE0 = new B.Vector3(-1.48, 5.5, 0.3);   // 左手系（Babylon）に直した GLB の値（glTF の [1.48, 5.5, 0.3] は x が反対向きになる）。GLB が読めたらその空ノードの値を使う。コードの形の煙突も同じ位置
+  const _sm = new B.Matrix();
+  function smokePos(obj, out) {
+    const g = L.glb[obj.key] || {}, mk = (g.near && g.near.marks && g.near.marks.smoke) || (g.far && g.far.marks && g.far.marks.smoke) || SMOKE0;
+    B.Matrix.RotationYToRef(obj.ry, _sm);
+    B.Vector3.TransformCoordinatesToRef(mk, _sm, out);
+    out.x += obj.x; out.z += obj.z;
+    return out;
+  }
+  /* 近く用で描いている建物の数（試験・MZ.stats 用） */
+  function nearCount() { let n = 0; L.objs.forEach(o => { if (o.nearOn) n++; }); return n; }
 
   /* ---------- 見本（preview：緑＝置ける、赤＝置けない） ---------- */
   function pvMat(name, hex) {
@@ -108,11 +178,10 @@
     const root = new B.TransformNode('previewRoot', G.scene);
     root.metadata = { parts: [] };
     let srcs;
-    if (key === 'road') {
-      srcs = [codeMesh('road')];   // 土の道の見本は平たい板（2m）
+    if (MZ.BUILDS[key].road) {
+      srcs = [codeMesh(key)];   // 道の見本は平たい板（2m。石畳は丸い石をのせた板）
     } else {
-      const lk = look(key);
-      srcs = lk.lod[lk.lod.length - 1].meshes;   // 遠く用の部品を複製
+      srcs = look(key).base;   // いつも置く物（遠く用）の部品を複製
     }
     srcs.forEach((s, i) => {
       const c = s.clone(i === 0 ? 'preview' : 'preview' + i);
@@ -298,12 +367,33 @@
   function releaseNear() {
     if (MZ.player && MZ.player.releaseHands) MZ.player.releaseHands();
     const names = [], unlod = m => { while (m.getLODLevels().length) m.removeLODLevel(m.getLODLevels()[0].mesh); };   // 遠く用が次の元メッシュでも使えるよう、LOD の結びつきを外す
-    Object.keys(L.glb).forEach(k => { const g = L.glb[k]; if (g.near) { g.near.forEach(m => { unlod(m); L.lodDone.delete(m); m.dispose(false, true); }); g.near = null; if (G.BUILD_MODELS[k]) names.push(G.BUILD_MODELS[k].near); if (L.pend) L.pend[k + ':n'] = false; } });
+    Object.keys(L.glb).forEach(k => { const g = L.glb[k]; if (g.near) { g.near.forEach(m => { unlod(m); L.lodDone.delete(m); m.dispose(false, true); }); g.near = null; if (G.BUILD_MODELS[k]) names.push(G.BUILD_MODELS[k].near); if (L.pend) L.pend[k + ':near'] = false; } });
+    L.objs.forEach(o => { if (o.nearOn) { o.near = []; o.nearOn = false; o.show(); } });
     Object.keys(L.chr).forEach(k => { const g = L.chr[k]; if (g.near) { g.near.forEach(m => m.dispose(false, true)); g.near = null; names.push('b_' + k); if (L.pend) L.pend[k + ':n'] = false; } });
     Object.keys(L.tool).forEach(k => { L.tool[k].forEach(m => m.dispose(false, true)); names.push('b_tool_' + k); if (L.pend) L.pend['t' + k] = false; delete L.tool[k]; });
     if (L.pl.near) { L.pl.near.dispose(false, false); L.pl.near = null; }
     if (PE.near) PE.near.forEach((g, i) => { if (g) { const j = PE.groups.indexOf(g); if (j >= 0) PE.groups.splice(j, 1); PE.near[i] = null; } });
     names.forEach(n => A.forget2(n));
+  }
+
+
+  /* 画質を中 → 高に上げたとき、共通の写真（法線が 512 だった物）を使う近く用の建物を、高の写真で読み直す。
+     新しい物が届いてから入れかえる（そのあいだは今の物のまま）。高 → 中はそのまま（高の写真のままで困らない） */
+  function reloadBtex() {
+    const users = G.BTEX_USERS || [];
+    Object.keys(L.glb).forEach(k => {
+      const g = L.glb[k], d = G.BUILD_MODELS[k];
+      if (!g.near || !d || users.indexOf(d.near) < 0) return;
+      A.forget2(d.near);
+      A.model(d.near).then(m => {
+        fixFoot(m, k, d.fix); m.forEach(x => { if (G.post) G.post.addCaster(x); });
+        const old = g.near;
+        old.forEach(x => { while (x.getLODLevels().length) x.removeLODLevel(x.getLODLevels()[0].mesh); L.lodDone.delete(x); });   // 遠く用との結びつきを先に外す
+        g.near = m; repose();
+        old.forEach(x => x.dispose(false, true));
+      }, () => { /* 読めなければ今の物のまま */ });
+    });
+    /* 道具の写真は高でも中でも 512 で同じなので、読み直さない（手の道具がちらつくだけ） */
   }
 
   /* ---------- 読み込みの入口：画質が決まったとき・変わったとき ---------- */
@@ -314,6 +404,6 @@
   }
 
   G.look = look; G.put = put; G.preview = preview; G.setPreviewOk = setPreviewOk; G.repose = repose;
-  G.looks = { apply, releaseNear, state: L, loadBuild, playerModel, holdTool, toolClones, onPlayer: null };
+  G.looks = { apply, releaseNear, reloadBtex, state: L, loadBuild, nearTick, nearCount, nearDist, smokePos, playerModel, holdTool, toolClones, onPlayer: null };
   G.people = { init: peopleInit, refresh: peopleRefresh, pick: peoplePick, write: peopleWrite, flush: peopleFlush, swing: swingOf, state: PE, get groups() { return PE.groups; } };
 })();

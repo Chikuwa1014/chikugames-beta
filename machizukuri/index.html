@@ -58,6 +58,8 @@ header .sp{flex:1}
 #aim .bar{height:5px;border-radius:3px;background:rgba(0,0,0,.5);margin-top:5px;overflow:hidden}
 #aim .bar i{display:block;height:100%;background:var(--accent)}
 #aim .cant{color:var(--warn);font-weight:800;margin-top:3px}
+#wk{position:fixed;left:50%;bottom:calc(20% + 62px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);text-align:center;font-size:13px;background:rgba(24,22,16,.75);border:1px solid var(--line);border-radius:999px;padding:5px 14px;max-width:92vw;line-height:1.5}
+body.touch #wk{max-width:calc(100vw - 150px);left:max(12px,env(safe-area-inset-left,0px));transform:none;border-radius:12px;text-align:left}
 #hint{position:fixed;left:50%;bottom:calc(10% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);text-align:center;font-size:13px;background:rgba(24,22,16,.75);border-radius:999px;padding:6px 16px;white-space:nowrap;max-width:94vw}
 body.touch #hint{left:max(12px,env(safe-area-inset-left,0px));transform:none;bottom:calc(26px + env(safe-area-inset-bottom,0px));white-space:normal;max-width:calc(100vw - 240px);border-radius:14px;text-align:left}
 #hint em{color:#FF9A90;font-style:normal;font-weight:800}
@@ -77,6 +79,9 @@ body.touch #hint{left:max(12px,env(safe-area-inset-left,0px));transform:none;bot
 #bHit,#bPlace{width:96px;height:96px;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px))}
 #bRot{width:66px;height:66px;right:calc(max(16px,env(safe-area-inset-right,0px)) + 112px);bottom:calc(26px + env(safe-area-inset-bottom,0px))}
 #bCancel{width:66px;height:66px;right:calc(max(16px,env(safe-area-inset-right,0px)) + 15px);bottom:calc(134px + env(safe-area-inset-bottom,0px))}
+#landBtn{width:66px;height:66px;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(134px + env(safe-area-inset-bottom,0px))}
+#landBtn.show{display:block}
+body.building #landBtn.show{display:none}
 body.touch #bHit{display:block}
 body.touch.building #bHit{display:none}
 body.touch.building #bPlace,body.touch.building #bRot,body.touch.building #bCancel{display:block}
@@ -109,6 +114,24 @@ body.panelopen .rb{display:none!important}
 .act.wide{width:100%;margin-bottom:8px;background:#C77B4A;color:#fff}
 .inv{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 .inv li{display:flex;justify-content:space-between;background:rgba(255,255,255,.06);border-radius:8px;padding:6px 10px;font-size:13px}
+.acts{display:flex;gap:6px;align-items:center}
+.act.x5{padding:8px 12px;background:#7FA855}
+.wl{grid-column:1/-1;font-size:12px;color:var(--ink)}
+.wl .st-run{color:var(--accent)}.wl .st-staff,.wl .st-short,.wl .st-full{color:var(--warn)}.wl .st-off{color:var(--sub)}
+.mks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.mk{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;min-height:36px;cursor:pointer}
+.mk[aria-pressed="true"]{background:var(--accent);color:#17210E;border-color:var(--accent)}
+.inv li.over b{color:var(--warn)}
+.lwrap{display:flex;gap:8px;align-items:flex-start;margin:6px 0}
+.lmap{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:168px;flex:none}
+.lc{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.05);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px;cursor:pointer;font-size:11px;line-height:1.3}
+.lc b{font-size:11px}.lc span{font-size:9px;color:var(--sub)}
+.lc.own{background:rgba(155,197,107,.3);border-color:var(--accent)}.lc.own span{color:var(--ink)}
+.lc.adj{border-style:dashed}.lc.far{opacity:.5}
+.lc.sel{outline:2px solid var(--ink);outline-offset:1px}
+.lc i{position:absolute;top:-6px;left:50%;transform:translateX(-50%);white-space:nowrap;font-style:normal;font-size:8px;line-height:1.3;color:#17210E;background:var(--accent);border-radius:999px;padding:0 5px}
+.ld{flex:1;min-width:0;background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.capl{margin-top:10px!important}
 .inv.tl{grid-template-columns:1fr}
 .small{margin:0;font-size:13px;color:var(--sub)}
 #prep{display:flex;flex-direction:column;align-items:center;gap:4px;margin:2px 0 4px}
@@ -145,6 +168,7 @@ body.panelopen .rb{display:none!important}
     <div id="notes"></div>
   </div>
   <div id="dot"></div>
+  <div id="wk" hidden></div>
   <div id="aim" hidden></div>
   <div id="hint" hidden></div>
   <div id="banner"></div>
@@ -154,6 +178,7 @@ body.panelopen .rb{display:none!important}
 <button class="rb" id="bPlace">置く</button>
 <button class="rb" id="bRot">回す</button>
 <button class="rb" id="bCancel">やめる</button>
+<button class="rb" id="landBtn" aria-label="土地を広げる">土地</button>
 
 <section id="panel" hidden>
   <div id="tabs">
@@ -161,6 +186,8 @@ body.panelopen .rb{display:none!important}
     <button data-tab="mat" aria-selected="false">材料</button>
     <button data-tab="tool" aria-selected="false">道具</button>
     <button data-tab="build" aria-selected="false">建てる</button>
+    <button data-tab="work" aria-selected="false">仕事場</button>
+    <button data-tab="land" aria-selected="false">土地</button>
   </div>
   <div id="pbody"></div>
   <div id="pfoot"><button data-gfx-q id="pQual">画質</button><button id="pReset">さいしょから</button><button id="pClose">とじる</button></div>

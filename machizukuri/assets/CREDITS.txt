@@ -59,3 +59,29 @@ rust_coarse_01     さびた斧・さびたつるはし                 さび�
 rusty_metal_02     鉄の斧・鉄のつるはし                     鉄の頭（色を抜いて暗く、金属 1）  Rob Tuytel                     CC0  https://polyhaven.com/a/rusty_metal_02
 rock_boulder_dry   石の斧・石のつるはし・鉄の鉱脈           石の頭・岩（さびの筋は頂点色）   Dimitrios Savva, Rico Cilliers  CC0  https://polyhaven.com/a/rock_boulder_dry
 brown_mud_02       粘土の土                                 湿った粘土（赤みを足し、粗さを下げた） Rob Tuytel                 CC0  https://polyhaven.com/a/brown_mud_02
+
+--- 建物・道具の共通の写真（assets/models/tex/m_*.jpg） ---
+assets/CREDITS.txt の「建物」と「人・道具・採れる物」の節の説明に足す文。素材の表は今のまま。
+近く用の建物・道具・採れる物の GLB は、写真を中に持たず、assets/models/tex/m_<材質>_<種類>_<px>.jpg を指している（glTF の外の画像。GLB の中の uri は tex/m_….jpg）。
+写真は下の Poly Haven（CC0）素材を 1K から色調整・縮小したもの。種類：col＝色、nrm＝法線（OpenGL）、orm＝R が AO・G が粗さ・B が金属。
+材質     assetId             作者（Poly Haven の表記）                    ライセンス  URL
+wood     rough_wood          Rob Tuytel                                  CC0  https://polyhaven.com/a/rough_wood
+bark     pine_bark           Dimitrios Savva                             CC0  https://polyhaven.com/a/pine_bark
+stone    rock_boulder_dry    Dimitrios Savva, Rico Cilliers              CC0  https://polyhaven.com/a/rock_boulder_dry
+brick    red_brick_03        Rob Tuytel                                  CC0  https://polyhaven.com/a/red_brick_03
+clay     clay_plaster        Amal Kumar                                  CC0  https://polyhaven.com/a/clay_plaster
+iron     rusty_metal_02      Rob Tuytel                                  CC0  https://polyhaven.com/a/rusty_metal_02
+soil     farm_soil           Amal Kumar                                  CC0  https://polyhaven.com/a/farm_soil
+straw    reed_roof_04        Rob Tuytel                                  CC0  https://polyhaven.com/a/reed_roof_04
+mud      brown_mud_02        Rob Tuytel                                  CC0  https://polyhaven.com/a/brown_mud_02
+hwood    fine_grained_wood   Rob Tuytel                                  CC0  https://polyhaven.com/a/fine_grained_wood
+rust     rust_coarse_01      Dimitrios Savva, Rico Cilliers              CC0  https://polyhaven.com/a/rust_coarse_01
+steel    rusty_metal_02      Rob Tuytel（色を抜いて暗く、金属 1）         CC0  https://polyhaven.com/a/rusty_metal_02
+leather  brown_leather       Rob Tuytel                                  CC0  https://polyhaven.com/a/brown_leather
+linen    rough_linen         colormass, Rico Cilliers                    CC0  https://polyhaven.com/a/rough_linen （粘土採り場の日よけ布・商店と倉庫の布。主人公の服と同じ写真）
+
+新しい建物 6 種（β0.3.0。大きな畑・粘土採り場・採石場・工房・商店・倉庫：b_<種類>.glb・_far.glb・_xfar.glb。工房は _xfar なし）と、最遠の 3 つ（小屋・木の家・作業台の b_hut_xfar.glb・b_house_xfar.glb・b_bench_xfar.glb）も、形は自作で、写真は上の表（m_*.jpg）を使う。
+
+--- 敷石（assets/tex/cobble_*.jpg） ---
+assetId            使った建物                     用途                         作者（Poly Haven の表記）     ライセンス  URL
+large_pebbles      石畳の道（assets/tex/cobble_*） 丸い自然石の敷石             Charlotte Baglioni            CC0  https://polyhaven.com/a/large_pebbles
