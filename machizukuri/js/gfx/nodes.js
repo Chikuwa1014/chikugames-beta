@@ -83,8 +83,8 @@
     };
   }
   /* 草むら（低木）：横の大きさをコードの草むら（約 1.4m × nd.s）にそろえる */
-  function bushWriter(m) {
-    const e = sizeOf(m), ext = Math.max(e.x, e.z);
+  function bushWriter(m, ext0) {
+    const e = sizeOf(m), ext = ext0 || Math.max(e.x, e.z);
     return (nd, buf, slot, sh) => {
       const s = 1.4 * nd.s / ext;
       put(buf, slot, nd.x + sh * 0.22, -0.02, nd.z, s, s * (0.85 + hs(nd.idx, 7) * 0.3), s, nd.ry, (hs(nd.idx, 8) - 0.5) * 0.12, (hs(nd.idx, 9) - 0.5) * 0.12);
@@ -156,7 +156,8 @@
   const GROUPS = {
     rocks: ['rock_a', 'rock_b', 'rock_c'], wood: ['stump', 'deadlog'],
     trees: ['tree_pine', 'tree_spruce', 'tree_cottonwood', 'tree_poplar', 'tree_dead'], plants: ['bush', 'twigs'],
-    bnodes_n: ['b_n_clay', 'b_n_iron'], bnodes_f: ['b_n_clay_far', 'b_n_iron_far']   // 粘土・鉄の鉱脈（近く用は高・中、遠く用は全部）
+    bnodes_n: ['b_n_clay', 'b_n_iron'], bnodes_f: ['b_n_clay_far', 'b_n_iron_far'],   // 粘土・鉄の鉱脈（近く用は高・中、遠く用は全部）
+    nodes_f: ['bush_far', 'rock_a_far', 'rock_b_far', 'rock_c_far']   // 草むら・岩の遠く用（全部の画質。近く用の距離より先と、低）
   };
   const loading = {};
   function loadGroup(g) {
@@ -173,7 +174,7 @@
       buildFormsFor(g);
       S.ready[g] = true;
       S.dirty = true;
-      if (S.key === 'low' && g !== 'bnodes_f') release();   // 読んでいるあいだに低に下げられた
+      if (S.key === 'low' && g !== 'bnodes_f' && g !== 'nodes_f') release();   // 読んでいるあいだに低に下げられた
     }).catch(e => { delete loading[g]; S.ready[g] = false; if (window.console) console.info('[gfx] モデルを読めなかった組:', g, e && e.message); });
   }
   function setupTrees(Tx) {
@@ -230,6 +231,17 @@
           return 1;
         }, { shadow: true });
       }
+    } else if (g === 'nodes_f') {
+      /* 草むらの遠く用（交差した板）と、岩の遠く用（rock_a_far・rock_b_far・rock_c_far）。大きさは近く用と同じ決まりで合わせる */
+      const bf = S.models.bush_far, rr = MZ.NODES.rock.r;
+      if (bf && bf.length) {
+        /* 板は表と裏を別の面で持っている（片面表示のまま。両面にすると二重に描かれる）。
+           法線が上向きで日と空の光をまともに受け、近く用（細い枝の陰が多い）より白っぽく見えるので、色を落とす */
+        bf.forEach(m => { const mt = m.material; if (!mt || mt._mzBushF) return; mt._mzBushF = true; if (mt.albedoColor) mt.albedoColor = new B.Color3(0.36, 0.36, 0.28); mt.environmentIntensity = 0.7; mt.specularIntensity = 0; });
+        /* 近く用は最初の部品（wild_rooibos_bush_b の 1 つめ。横 0.358m）の大きさで合わせているので、遠く用も同じ数で合わせる（同じ m 単位で作ってある） */
+        makeForm('bushF', bf, () => countOf('bush'), bushWriter(bf[0], 0.358 / 0.82));   // 板は葉が詰まって見えるぶん、少し小さく
+      }
+      ['a', 'b', 'c'].forEach(v => { const ms = S.models['rock_' + v + '_far']; if (ms && ms.length) makeForm('rockF' + v, ms, () => countOf('rock'), rockWriter(ms[0], rr), { shadow: true }); });
     } else if (g === 'bnodes_n' || g === 'bnodes_f') {
       const sfx = g === 'bnodes_n' ? 'N' : 'F', nm = g === 'bnodes_n' ? ['b_n_clay', 'b_n_iron'] : ['b_n_clay_far', 'b_n_iron_far'];
       [['clay', nm[0]], ['iron', nm[1]]].forEach(a => { const ms = S.models[a[1]]; if (ms && ms.length) makeForm(a[0] + sfx, ms, () => countOf(a[0]), plain, { shadow: sfx === 'N' }); });
@@ -351,10 +363,11 @@
         return codeForm(nd.g.vi ? 'tree2' : 'tree');
       }
       case 'rock': {
-        if (modelsOn('rocks') && d < q.rockDist) { const r = hs(nd.idx, 15); return S.forms[r < 0.34 ? 'rock_a' : r < 0.67 ? 'rock_b' : 'rock_c'] || codeForm('rock'); }
-        return codeForm('rock');
+        const r = hs(nd.idx, 15), v = r < 0.34 ? 'a' : r < 0.67 ? 'b' : 'c';
+        if (modelsOn('rocks') && d < q.rockDist && S.forms['rock_' + v]) return S.forms['rock_' + v];
+        return (S.ready.nodes_f && S.forms['rockF' + v]) || codeForm('rock');
       }
-      case 'bush': return (modelsOn('plants') && q.bushDist && d < q.bushDist && S.forms.bush) || codeForm('bush');
+      case 'bush': return (modelsOn('plants') && q.bushDist && d < q.bushDist && S.forms.bush) || (S.ready.nodes_f && S.forms.bushF) || codeForm('bush');
       case 'stone': return d > q.decorDist ? null : ((S.key !== 'low' && S.forms.stones) || codeForm('stone'));   // 石ころは近くだけ（遠くでは出さない）
       case 'clay': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist && S.forms.clayN) || (S.ready.bnodes_f && S.forms.clayF) || (S.key !== 'low' && S.forms.clayhd) || codeForm('clay');
       case 'iron': return (S.ready.bnodes_n && S.key !== 'low' && d < q.rockDist && S.forms.ironN) || (S.ready.bnodes_f && S.forms.ironF) || (modelsOn('rocks') && d < q.rockDist * 1.5 && S.forms.iron) || codeForm('iron');
@@ -460,7 +473,7 @@
     S.key = key;
     const q = G.Q[key];
     ['rocks', 'wood', 'trees', 'plants'].forEach(g => { if (q.models.indexOf(g) >= 0) loadGroup(g); });
-    loadGroup('bnodes_f');
+    loadGroup('bnodes_f'); loadGroup('nodes_f');
     if (q.models.indexOf('rocks') >= 0) loadGroup('bnodes_n');
     /* 画質が変わったら、粘土・小石の写真の貼りかえは photo.js が呼ぶ */
     if (key === 'low') release();

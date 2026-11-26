@@ -78,7 +78,12 @@
     const mk = (m, i, tag) => {
       m.receiveShadows = true;   // 影を受けるかは元のメッシュで決まる（インスタンスでは効かない）
       const inst = m.createInstance(key + tag + Math.round(x) + '_' + Math.round(z) + '_' + i);
-      inst.position.set(x, 0, z); inst.rotation.y = ry;
+      /* インスタンスは元のメッシュの rotationQuaternion を写して持つ（GLB の部品は単位の回転）。それがあると rotation.y が効かず、
+         どの向きで建てても同じ向きになったので、ここで外す（元の回転は A.model で頂点に焼いてある） */
+      const q = m.rotationQuaternion;
+      if (q && Math.abs(q.w) < 0.9999) inst.rotationQuaternion = B.Quaternion.RotationAxis(B.Axis.Y, ry).multiply(q);
+      else { inst.rotationQuaternion = null; inst.rotation.set(0, ry, 0); }
+      inst.position.set(x, 0, z);
       inst.isPickable = false;
       inst.freezeWorldMatrix();   // 動かない物なので、行列を固定する
       return inst;

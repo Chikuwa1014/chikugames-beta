@@ -9,7 +9,7 @@ farm_soil                   畑の土・畝（farm_*）                         
 rough_wood                  丸太・板・屋根板・戸・壁板（log_*）          Rob Tuytel                                      CC0  https://polyhaven.com/a/rough_wood
 pine_bark                   樹皮（幹・切り株・薪）（bark_*）             Dimitrios Savva                                 CC0  https://polyhaven.com/a/pine_bark
 rock_boulder_dry            石（煙突・井戸・たき火の石・岩）（stone_*）  Dimitrios Savva (photo), Rico Cilliers (proc.)  CC0  https://polyhaven.com/a/rock_boulder_dry
-hilly_terrain_01_puresky    空のドームと光の回りこみ（sky.jpg・sky_ibl.png） Sergej Majboroda (original), Jarod Guest (sky edits)  CC0  https://polyhaven.com/a/hilly_terrain_01_puresky
+kloofendal_38d_partly_cloudy_puresky    空のドームと光の回りこみ（sky.jpg・sky_ibl.png。β0.3.1 から） Greg Zaal (original), Jarod Guest (sky edits)  CC0  https://polyhaven.com/a/kloofendal_38d_partly_cloudy_puresky
 
 ambientCG（https://ambientcg.com/、CC0）は木の葉の画像にだけ使っている（下の「木」）。
 

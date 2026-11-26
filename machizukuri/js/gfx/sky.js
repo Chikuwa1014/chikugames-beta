@@ -1,5 +1,5 @@
 /* 荒野開拓記（仮） — 描画の層：太陽・空・光（IBL）
-   写真の空（Poly Haven の HDRI「Hilly Terrain 01 (Pure Sky)」CC0 から作った 2 枚）
+   写真の空（Poly Haven の HDRI「Kloofendal 38d Partly Cloudy (Pure Sky)」CC0 から作った 2 枚。β0.3.1 で雲の見える空に変えた。太陽の高さ約 38°）
      assets/tex/sky.jpg：空のドーム用（正距円筒。リニアの明るさ÷2 を sRGB で保存。太陽はコードで足す）
      assets/tex/sky_ibl.png：光の回りこみ用の小さな HDR（128×64。上半分＝仮数 RGB、下半分＝指数。太陽は抜いてある）
    読めたら、太陽の高さを HDRI に合わせ、地平の色・天頂の色も HDRI から取る。読めないときは、コードの空のまま始まる。 */
@@ -12,7 +12,7 @@
   const C_SUN = new B.Color3(1.0, 0.72, 0.46);
   const FOG = 0.0015;
   G.SKYC = { SUN_DIR, C_HORIZON, C_ZENITH, C_SUN };
-  const SKY = { table: null, W: 128, H: 64, sunU: 0.5998, sunV: 0.4367, uRot: 0, gain: 1, tint: [1, 1, 1] };
+  const SKY = { table: null, W: 128, H: 64, sunU: 0.5998, sunV: 0.2892, uRot: 0, gain: 1, tint: [1, 1, 1] };
   function skySample(x, y, z, out) {   // HDRI の表から、ある向きの明るさ（リニア・gain 込み）
     const W = SKY.W, H = SKY.H, T = SKY.table;
     let u = Math.atan2(z, x) / (Math.PI * 2) + SKY.uRot; u -= Math.floor(u);
@@ -61,6 +61,7 @@
           /* 太陽の高さを HDRI に合わせる（方位はそのまま） */
           const el = (0.5 - SKY.sunV) * Math.PI;
           SUN_DIR.set(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
+          C_SUN.set(1.0, 0.86, 0.68);   // 昼すぎの高い日（約 38°）なので、夕方の色より白く
           /* 地平の色（太陽の側を除いた平均）と天頂の色 */
           const hz = [0, 0, 0], ze = [0, 0, 0];
           const measure = () => {
@@ -245,9 +246,9 @@
     hemi.specular = new B.Color3(0, 0, 0);
     hemi.intensity = 0.85;
     const sun = G.sun = new B.DirectionalLight('sun', SUN_DIR.scale(-1), sc);
-    sun.diffuse = new B.Color3(1.0, 0.8, 0.6);
+    sun.diffuse = SKY.table ? new B.Color3(1.0, 0.9, 0.78) : new B.Color3(1.0, 0.8, 0.6);
     sun.specular = new B.Color3(0.9, 0.75, 0.6);
-    sun.intensity = SKY.table ? 3.7 : 3.2;   // 写真の空では太陽が低い（約 11°）ぶん少し強く
+    sun.intensity = SKY.table ? 3.4 : 3.2;   // 写真の空（太陽の高さ約 38°）
     sun.position = SUN_DIR.scale(120);
     try { setupEnvironment(); } catch (e) { hemi.setEnabled(true); hemi.intensity = 0.85; }
     setupSky();

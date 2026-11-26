@@ -89,7 +89,8 @@
     { id: 'b_person_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_person_a_far', 'b_person_b_far', 'b_person_c_far'] },
     { id: 'b_tools', required: false, tiers: ['high', 'mid'], models: ['b_tool_axe1', 'b_tool_axe2', 'b_tool_axe3', 'b_tool_pick1', 'b_tool_pick2', 'b_tool_pick3'] },
     { id: 'b_nodes', required: false, tiers: ['high', 'mid'], models: ['b_n_clay', 'b_n_iron'] },
-    { id: 'b_nodes_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_n_clay_far', 'b_n_iron_far'] }
+    { id: 'b_nodes_far', required: false, tiers: ['high', 'mid', 'low'], models: ['b_n_clay_far', 'b_n_iron_far'] },
+    { id: 'nodes_far', required: false, tiers: ['high', 'mid', 'low'], models: ['bush_far', 'rock_a_far', 'rock_b_far', 'rock_c_far'] }   // 草むら・岩の遠く用（β0.3.1。丸いコードの形の代わり）
   ];
   /* 建物の見た目の対応：種類 → { near, far, xfar, fix }。xfar は最遠（60m から。遠く用と同じ名前なら、遠く用を最遠にも使う）。fix はモデルの向き・大きさの直し（yaw はラジアン）。lod は近く用→遠く用の切りかえ距離（省略すると画質の houseNear。遠く用が箱に近い建物は遠めにする）。
      ファイルを置いたら、上の MANIFEST に組を足し、ここに 1 行足す。足りない物はコードの形（models.js）になる */
@@ -121,7 +122,7 @@
 
   function progress() { if (A.onProgress) A.onProgress(A.reqDone, A.reqTotal); if (A.onBg) A.onBg(A.done, A.total); }
   /* 読みこみの順（小さいほど先）。必須（空・地面）→ 近く用の木・岩 → 建物 → 人 → 道具・低木 */
-  const PRIO = { sky: 0, ground: 0, path: 0, farm: 0, stone: 1, cobble: 1, treetex: 2, rocks: 2, wood: 2, trees: 2, btex: 2.6, b_nodes_far: 2.5, b_hut_xfar: 2.4, b_house_xfar: 2.4, b_bench_xfar: 2.4, b_bigfield_xfar: 2.4, b_claypit_xfar: 2.4, b_quarry_xfar: 2.4, b_shop_xfar: 2.4, b_storehouse_xfar: 2.4, b_bigfield_far: 2.5, b_claypit_far: 2.5, b_quarry_far: 2.5, b_shop_far: 2.5, b_storehouse_far: 2.5, b_workshop_far: 2.5, b_bench_far: 2.5, b_hut_far: 2.5, b_house_far: 2.5, b_well_far: 2.5, b_fire_far: 2.5, b_kiln_far: 2.5, b_furnace_far: 2.5, b_field_far: 2.5, b_lumber_far: 2.5, b_bhouse_far: 2.5, b_player_far: 3.5, b_person_far: 3.5, b_player: 4, b_person: 4, plants: 5, b_tools: 5, b_nodes: 5 };
+  const PRIO = { sky: 0, ground: 0, path: 0, farm: 0, stone: 1, cobble: 1, treetex: 2, rocks: 2, wood: 2, trees: 2, btex: 2.6, b_nodes_far: 2.5, nodes_far: 2.5, b_hut_xfar: 2.4, b_house_xfar: 2.4, b_bench_xfar: 2.4, b_bigfield_xfar: 2.4, b_claypit_xfar: 2.4, b_quarry_xfar: 2.4, b_shop_xfar: 2.4, b_storehouse_xfar: 2.4, b_bigfield_far: 2.5, b_claypit_far: 2.5, b_quarry_far: 2.5, b_shop_far: 2.5, b_storehouse_far: 2.5, b_workshop_far: 2.5, b_bench_far: 2.5, b_hut_far: 2.5, b_house_far: 2.5, b_well_far: 2.5, b_fire_far: 2.5, b_kiln_far: 2.5, b_furnace_far: 2.5, b_field_far: 2.5, b_lumber_far: 2.5, b_bhouse_far: 2.5, b_player_far: 3.5, b_person_far: 3.5, b_player: 4, b_person: 4, plants: 5, b_tools: 5, b_nodes: 5 };
   A.prioOf = g => (g.id in PRIO ? PRIO[g.id] : g.id.indexOf('b_') === 0 ? 3 : 5);
 
   /* 1 回取りに行く。届いた量を見て、20 秒間ひとつも届かなければ打ち切る（全体の時間では打ち切らない）。結果 true／false */

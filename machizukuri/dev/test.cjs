@@ -346,7 +346,7 @@ const HELPERS = () => {
     else await c.addInitScript(LOW);
     if (opt.route) await opt.route(c);
     const pg = await c.newPage(), list = [];
-    pg.on('pageerror', e => list.push('pageerror ' + e.message));
+    pg.on('pageerror', e => list.push('pageerror ' + e.message + ' @ ' + String(e.stack || '').split('\n').slice(1, 3).join(' ').trim()));
     pg.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') list.push(m.type() + ' ' + m.text()); });
     return { c, pg, list };
   };
@@ -1560,6 +1560,23 @@ const HELPERS = () => {
     ok('工房の煙：動いている工房だけ（6 つのうち 5 つが run。1 つは off）', sm.st.filter(x => x === 'run').length === 5 && sm.st[5] === 'off', JSON.stringify(sm.st));
     ok('工房の煙：主人公から 60m 以内で近い順に 4 つまで（近く ' + sm.near + '・120m はなれると ' + sm.far + '・左端の近く ' + sm.one + '）。えらびを止めた工房の煙は消える（' + sm.after + '）', sm.near === 4 && sm.far === 0 && sm.one >= 1 && sm.one <= 4 && sm.on2 && sm.after === true, JSON.stringify(sm));
     ok('工房の煙の位置：GLB の空ノード smoke（glTF の [1.48, 5.5, 0.3]。Babylon では x が反対向きの [-1.48, 5.5, 0.3]）から。建物の向き 0 で、建物の中心からのずれが一致', sm.mark && Math.abs(Math.abs(sm.mark[0]) - 1.48) < 0.02 && Math.abs(sm.mark[1] - 5.5) < 0.02 && Math.abs(Math.abs(sm.mark[2]) - 0.3) < 0.02 && sm.pos[0] === sm.mark[0] && sm.pos[2] === sm.mark[2], JSON.stringify([sm.mark, sm.pos]));
+    /* β0.3.1：建物の向き。GLB の部品は rotationQuaternion を持ち、インスタンスがそれを写すと rotation.y が効かなかった（どの向きで建てても同じ向き） */
+    const rot = await ev(a.pg, () => {
+      const B = BABYLON, L = MZ.gfx.looks.state, s = MZ.state, out = [];
+      MZ.noSave = true; Object.keys(s.inv).forEach(k => { s.inv[k] = 9999; });
+      MZ.world.nodes.forEach(nd => { if (nd.gx >= 40 && nd.gx <= 80 && nd.gz >= 70 && nd.gz <= 76) MZ.world.take(nd.idx, -1); });
+      [0, 1, 2, 3].forEach(r => MZ.place('bench', 50 + r * 3, 72, r));
+      s.player.x = 0; s.player.z = 20; MZ.gfx.looks.nearTick(1, true); MZ.gfx.looks.nearTick(1, true); MZ.gfx.looks.nearTick(1, true);
+      L.objs.forEach(o => {
+        if (o.key !== 'bench' || o.z < 20) return;
+        const ax = i => { const v = B.Vector3.TransformNormal(new B.Vector3(0, 0, 1), i.computeWorldMatrix(true)); return Math.round(Math.atan2(v.x, v.z) / (Math.PI / 2)); };
+        const want = Math.round(o.ry / (Math.PI / 2));
+        out.push({ want, far: o.inst.map(ax), near: o.near.map(ax) });
+      });
+      return out;
+    });
+    const same = (a1, w) => a1.every(v => ((v - w) % 4 + 4) % 4 === 0);
+    ok('建物の向き：作業台を向き 0〜3 で置くと、遠く用・近く用のインスタンスが置いた向きに回っている', rot.length === 4 && rot.every(o => o.far.length > 0 && same(o.far, o.want) && same(o.near, o.want)) && rot.some(o => o.near.length > 0), JSON.stringify(rot));
     ok('新しい建物 6 種の GLB・工房の煙でエラー・警告が 0', a.list.length === 0, a.list.slice(0, 4).join(' | '));
     await a.c.close();
     /* コードの形（低）でも、同じ位置から煙が出る */
