@@ -5,7 +5,7 @@
   MZ.GAME = 'machizukuri';
   MZ.VERSION = 'β0.3.2';
   MZ.SAVE_KEY = 'machizukuri-save';
-  MZ.SAVE_V = 2;
+  MZ.SAVE_V = 3;
 
   /* 調整用の数値 */
   MZ.T = {
@@ -45,9 +45,11 @@
   /* 持ち物 */
   MZ.ITEMS = {
     stick: '枝', grass: '草', stone: '石', log: '原木', clay: '粘土', ore: '鉄鉱石',
-    rope: 'ロープ', plank: '板', brick: 'れんが', ingot: '鉄インゴット'
+    rope: 'ロープ', plank: '板', brick: 'れんが', ingot: '鉄インゴット', concrete: 'コンクリート'
   };
-  MZ.ITEM_ORDER = ['stick', 'grass', 'stone', 'log', 'clay', 'ore', 'rope', 'plank', 'brick', 'ingot'];
+  MZ.ITEM_ORDER = ['stick', 'grass', 'stone', 'log', 'clay', 'ore', 'rope', 'plank', 'brick', 'ingot', 'concrete'];
+  /* 持ち物で、この段階になるまで一覧に出さない物（数が 0 のあいだ。段階の番号）。レシピ側の stage で作れる・えらべるのも同じ段階 */
+  MZ.ITEM_STAGE = { concrete: 3 };
 
   /* 道具（段 1 さびた・2 石・3 鉄。持つ道具は { axe: 1, pick: 1 }。持ちかえはせず、段の高い方を常に使う） */
   MZ.TOOLS = {
@@ -72,6 +74,7 @@
     { key: 'plank', tab: 'mat',  name: '板',           cost: { log: 1 },              give: { plank: 2 }, at: 'bench' },
     { key: 'brick', tab: 'mat',  name: 'れんが',       cost: { clay: 2, stick: 1 },   give: { brick: 2 }, at: 'kiln' },
     { key: 'ingot', tab: 'mat',  name: '鉄インゴット', cost: { ore: 2, log: 1 },      give: { ingot: 1 }, at: 'furnace' },
+    { key: 'concrete', tab: 'mat', name: 'コンクリート', cost: { stone: 2, clay: 1 },  give: { concrete: 1 }, at: 'kiln', stage: 3 },
     { key: 'axe2',  tab: 'tool', name: '石の斧',       cost: { stick: 2, stone: 3, rope: 1 }, tool: ['axe', 2], at: 'bench', note: '木を速く切れる' },
     { key: 'pick2', tab: 'tool', name: '石のつるはし', cost: { stick: 2, stone: 3, rope: 1 }, tool: ['pick', 2], at: 'bench', note: '鉄の鉱脈を掘れる' },
     { key: 'axe3',  tab: 'tool', name: '鉄の斧',       cost: { plank: 2, ingot: 2, rope: 1 }, tool: ['axe', 3], at: 'bench', stage: 1, note: 'もっと速く切れる' },
@@ -100,7 +103,7 @@
     bhouse: { name: 'れんがの家', w: 2, solid: true,  cost: { brick: 12, plank: 6, ingot: 2 }, home: 4, stage: 1, note: '4人が住める' },
     quarry: { name: '採石場',     w: 2, solid: true,  cost: { plank: 12, ingot: 4, rope: 4 }, stage: 2, jobs: 3, makes: { stone: 3 }, every: 30, note: '住民3人で石を自動でつくる' },
     claypit: { name: '粘土採り場', w: 2, solid: true, cost: { plank: 10, stone: 8, rope: 2 }, stage: 2, jobs: 2, makes: { clay: 2 }, every: 30, note: '住民2人で粘土を自動でつくる' },
-    workshop: { name: '工房',     w: 2, solid: true,  cost: { brick: 16, plank: 12, ingot: 4 }, stage: 2, jobs: 3, every: 25, smoke: true, craft: ['plank', 'brick', 'ingot'], note: '住民3人で、えらんだ材料を自動でつくる' },
+    workshop: { name: '工房',     w: 2, solid: true,  cost: { brick: 16, plank: 12, ingot: 4 }, stage: 2, jobs: 3, every: 25, smoke: true, craft: ['plank', 'brick', 'ingot', 'rope', 'concrete'], note: '住民3人で、えらんだ材料を自動でつくる' },
     shop:   { name: '商店',       w: 2, solid: true,  cost: { brick: 20, plank: 16, ingot: 4 }, stage: 2, shop: 30, staff: 2, note: '30人分の店' },
     storehouse: { name: '倉庫',   w: 3, solid: true,  cost: { brick: 24, plank: 24, ingot: 6 }, stage: 2, store: 150, note: '自動でたまる上限が 150 ふえる' }
   };

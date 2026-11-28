@@ -7,6 +7,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
+const TOWN = process.argv.includes('--town');   // 人口 200 をこえて「町」になった版 2 の街（β0.3.2 の作りで作る：node ... --v 2 --town --out dev/fixtures/save-v2-b032-town.json）
 const WANT_V = +arg('v', 1);   // 作る見本の保存の版（版 2 は区切り 1 のコミット 3585c05 の作りで作る：node ... --v 2 --out dev/fixtures/save-v2-b030-1.json）
 const BASE = arg('base', 'http://localhost:8000/machizukuri/'), OUT = arg('out', path.join(__dirname, 'fixtures', 'save-v1.json'));
 (async () => {
@@ -19,7 +20,7 @@ const BASE = arg('base', 'http://localhost:8000/machizukuri/'), OUT = arg('out',
   await pg.goto(BASE);
   await pg.click('#tbtn .go', { timeout: 90000 });
   await pg.waitForFunction(() => window.MZ && MZ.started, null, { timeout: 180000 });
-  const info = await pg.evaluate(() => {
+  const info = await pg.evaluate(TOWN => {
     const W = MZ.world, s = MZ.state.player, inArea = nd => nd.gx >= 52 && nd.gx <= 76 && nd.gz >= 57 && nd.gz <= 69;
     /* 採れる物を 10 個ほど採る（草むら・石ころ。建てる場所の外で） */
     const near = W.nodes.filter(nd => (nd.k === 'bush' || nd.k === 'stone') && !inArea(nd)).sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z)).slice(0, 10);
@@ -42,14 +43,27 @@ const BASE = arg('base', 'http://localhost:8000/machizukuri/'), OUT = arg('out',
     P('house', 71, 64, 1);
     MZ.state.player.view = 3;
     MZ.state.timers.migrate = 0; MZ.tick(30);
+    if (TOWN) {
+      /* 町の街：村の建物と、東の区画（"1,0"。小屋の東）を広げて建物を 1 つ。人口は 210・段階は町（試験用に直接入れる） */
+      MZ.state.pop = 60; MZ.town.stageCheck(true);
+      Object.keys(MZ.state.inv).forEach(k => { MZ.state.inv[k] = 9999; });
+      P('stoneroad', 69, 61); P('shop', 60, 67); P('workshop', 63, 67); P('bigfield', 67, 66); P('storehouse', 70, 66); P('quarry', 73, 60);
+      const why = MZ.canExpand(1, 0); if (why) throw new Error('広げられない ' + why);
+      if (!MZ.expand(1, 0)) throw new Error('広げられない');
+      MZ.world.nodes.forEach(nd => { if (nd.gx >= 122 && nd.gx <= 140 && nd.gz >= 58 && nd.gz <= 68 && MZ.world.nodeActive(nd.idx)) MZ.world.take(nd.idx, 400); });
+      P('house', 125, 62); P('bhouse', 130, 62); P('well', 135, 62);
+      MZ.state.pop = 210; MZ.town.stageCheck(true);
+      MZ.state.inv.stone = 130; MZ.state.inv.plank = 55; MZ.state.inv.brick = 8; MZ.state.inv.grass = 40; MZ.state.inv.clay = 12;
+    }
     MZ.saveNow();
     return { houses: MZ.town.list().length, nextId: MZ.state.nextId, pop: MZ.state.pop, stage: MZ.state.stage };
-  });
+  }, TOWN);
   const raw = await pg.evaluate(() => localStorage.getItem('machizukuri-save'));
   const box = JSON.parse(raw), d = box.data, ch = d.chunks['0,0'];
   const tk = Object.values(ch.taken);
   console.log(JSON.stringify(info), 'v=' + box.v, 'chunks=' + Object.keys(d.chunks).join('|'), 'taken+=' + tk.filter(v => v > 0).length, 'taken-=' + tk.filter(v => v < 0).length, 'jobs=' + JSON.stringify(d.timers.jobs));
-  if (box.v !== WANT_V || (WANT_V === 2 && JSON.stringify(d.land) !== '["0,0"]') || Object.keys(d.chunks).join() !== '0,0' || d.pop < 10 || d.stage !== 1 || errs.length) { console.error('見本がおかしい', errs.slice(0, 3)); process.exit(3); }
+  const bad = TOWN ? (box.v !== 2 || d.land.join('|') !== '0,0|1,0' || d.pop !== 210 || d.stage !== 3) : (box.v !== WANT_V || (WANT_V === 2 && JSON.stringify(d.land) !== '["0,0"]') || Object.keys(d.chunks).join() !== '0,0' || d.pop < 10 || d.stage !== 1);
+  if (bad || errs.length) { console.error('見本がおかしい', errs.slice(0, 3)); process.exit(3); }
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, raw);
   await br.close();

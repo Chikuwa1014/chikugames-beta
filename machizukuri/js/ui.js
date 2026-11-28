@@ -155,7 +155,7 @@
         h += '<div class="wl">' + (d.jobs ? '働く人 ' + (j ? (j.running ? j.need : j.staff) : 0) + '／' + d.jobs : '人手なし') + '</div><div class="wl">' + mk + '</div>'
           + '<div class="wl"><span data-ws="' + b.id + '"></span></div>';
         if (d.craft) {
-          h += '<div class="mks">' + d.craft.map(k => { const r = MZ.RECIPES.find(x => x.key === k); return '<button class="mk" data-make="' + k + '" data-bid="' + b.id + '" aria-pressed="' + (b.mk === k) + '">' + r.name + '</button>'; }).join('')
+          h += '<div class="mks">' + d.craft.map(k => { const r = MZ.RECIPES.find(x => x.key === k); return '<button class="mk" data-make="' + k + '" data-bid="' + b.id + '" aria-pressed="' + (b.mk === k) + '"' + (MZ.town.makeReason(k) ? ' disabled title="' + MZ.town.makeReason(k) + '"' : '') + '>' + r.name + '</button>'; }).join('')
             + '<button class="mk" data-make="" data-bid="' + b.id + '" aria-pressed="' + (!b.mk) + '">止める</button></div>';
         }
       }
@@ -206,17 +206,18 @@
   }
   /* 自動でたまる物（建っている仕事場の makes と、工房があれば craft の give）。持ち物タブでは「石 120／上限 250」の形で出す */
   function autoItems() {
-    const set = {};
+    const set = {}, stage = MZ.state.stage;
     MZ.town.list().forEach(b => {
       const d = MZ.BUILDS[b.t];
       if (d.makes) Object.keys(d.makes).forEach(k => { set[k] = 1; });
       if (d.craft) d.craft.forEach(c => { const r = MZ.RECIPES.find(x => x.key === c); if (r) Object.keys(r.give).forEach(k => { set[k] = 1; }); });
     });
+    Object.keys(MZ.ITEM_STAGE).forEach(k => { if (MZ.ITEM_STAGE[k] > stage) delete set[k]; });   // 段階がまだの物は上限つきの行にしない
     return set;
   }
   function invRows() {
     const s = MZ.state, au = autoItems(), cap = MZ.autoCap();
-    return '<h4>持ち物</h4><ul class="inv">' + MZ.ITEM_ORDER.map(k => au[k]
+    return '<h4>持ち物</h4><ul class="inv">' + MZ.ITEM_ORDER.filter(k => !(MZ.ITEM_STAGE[k] > s.stage && !s.inv[k] && !au[k])).map(k => au[k]
       ? '<li class="auto' + (s.inv[k] >= cap ? ' over' : '') + '"><span>' + MZ.ITEMS[k] + '</span><b>' + s.inv[k] + '／上限 ' + cap + '</b></li>'
       : '<li><span>' + MZ.ITEMS[k] + '</span><b>' + s.inv[k] + '</b></li>').join('') + '</ul>'
       + '<h4>道具</h4><ul class="inv tl"><li><span>斧</span><b>' + (MZ.TOOLS.axe[s.tools.axe] || '素手') + '</b></li><li><span>つるはし</span><b>' + (MZ.TOOLS.pick[s.tools.pick] || '素手') + '</b></li></ul>'

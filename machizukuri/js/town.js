@@ -214,11 +214,17 @@
     const t = MZ.state.timers.jobs[b.id] === undefined ? d.every : MZ.state.timers.jobs[b.id];
     return '動いている（次まで ' + Math.max(1, Math.ceil(t)) + ' 秒）';
   }
+  /* 工房でその物をえらべない理由（えらべるなら空）：レシピの stage の段階になるまで */
+  Tn.makeReason = function (k) {
+    const r = recipeOf(k);
+    return r && r.stage && MZ.state.stage < r.stage ? MZ.STAGES[r.stage].name + '（人口 ' + MZ.STAGES[r.stage].pop + '）で解放' : '';
+  };
   /* 工房のつくる物をえらぶ。k は craft の中の物か null（止める）。保存して true。工房でない・知らない物なら false */
   MZ.setMake = function (id, k) {
     const b = Tn.byId[id]; if (!b) return false;
     const d = MZ.BUILDS[b.t];
     if (!d.craft || !(k === null || d.craft.indexOf(k) >= 0)) return false;
+    if (k !== null && Tn.makeReason(k)) return false;   // 段階がまだ（コンクリートは町から）
     if (k === null) delete b.mk; else b.mk = k;
     MZ.state.timers.jobs[id] = d.every;   // えらびなおしたら、数えなおす
     MZ.ui.dirty = true; MZ.saveNow();

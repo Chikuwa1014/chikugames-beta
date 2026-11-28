@@ -13,6 +13,15 @@
       c.land = ['0,0'];
       c.chunks = { '0,0': c.chunks['0,0'] };               // ほかの区画があっても捨てる
       return c;
+    },
+    /* 版 2 → 版 3：持ち物にコンクリート 0 を足すだけ（建物・採った物・時間・番号・持っている区画は触らない）。
+       古い JS が新しい保存（コンクリート・新しい建物）を読んで捨てて上書きしないように、版だけ上げるための直し */
+    2: d => {
+      const c = JSON.parse(JSON.stringify(d));
+      if (!c || typeof c !== 'object') return c;
+      if (!c.inv || typeof c.inv !== 'object') c.inv = {};
+      if (c.inv.concrete === undefined) c.inv.concrete = 0;
+      return c;
     }
   };
 

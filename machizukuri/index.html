@@ -121,6 +121,7 @@ body.panelopen .rb{display:none!important}
 .mks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
 .mk{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;min-height:36px;cursor:pointer}
 .mk[aria-pressed="true"]{background:var(--accent);color:#17210E;border-color:var(--accent)}
+.mk:disabled{opacity:.3;cursor:default}
 .inv li.over b{color:var(--warn)}
 .lwrap{display:flex;gap:8px;align-items:flex-start;margin:6px 0}
 .lmap{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:168px;flex:none}
@@ -215,26 +216,26 @@ body.panelopen .rb{display:none!important}
 <script src="../common/lib/babylon/7.54.3/babylon.js"></script>
 <script src="../common/lib/babylon/7.54.3/babylonjs.loaders.min.js"></script>
 <!-- 自分のスクリプトは ?v=版 を付けて読む（スマホのブラウザが古い JS を使い続けて、直したはずの不具合が残って見えたため。β0.3.2）。版を上げたら全部そろえて変える -->
-<script src="js/data.js?v=b032"></script>
-<script src="js/models.js?v=b032"></script>
-<script src="js/gfx/util.js?v=b032"></script>
-<script src="js/gfx/air.js?v=b032"></script>
-<script src="js/gfx/sky.js?v=b032"></script>
-<script src="js/gfx/photo.js?v=b032"></script>
-<script src="js/gfx/ground.js?v=b032"></script>
-<script src="js/gfx/grass.js?v=b032"></script>
-<script src="js/gfx/assets.js?v=b032"></script>
-<script src="js/gfx/looks.js?v=b032"></script>
-<script src="js/gfx/nodes.js?v=b032"></script>
-<script src="js/gfx/fire.js?v=b032"></script>
-<script src="js/gfx/post.js?v=b032"></script>
-<script src="js/gfx/quality.js?v=b032"></script>
-<script src="js/world.js?v=b032"></script>
-<script src="js/player.js?v=b032"></script>
-<script src="js/town.js?v=b032"></script>
-<script src="js/ui.js?v=b032"></script>
-<script src="js/save.js?v=b032"></script>
-<script src="js/main.js?v=b032"></script>
+<script src="js/data.js?v=b040"></script>
+<script src="js/models.js?v=b040"></script>
+<script src="js/gfx/util.js?v=b040"></script>
+<script src="js/gfx/air.js?v=b040"></script>
+<script src="js/gfx/sky.js?v=b040"></script>
+<script src="js/gfx/photo.js?v=b040"></script>
+<script src="js/gfx/ground.js?v=b040"></script>
+<script src="js/gfx/grass.js?v=b040"></script>
+<script src="js/gfx/assets.js?v=b040"></script>
+<script src="js/gfx/looks.js?v=b040"></script>
+<script src="js/gfx/nodes.js?v=b040"></script>
+<script src="js/gfx/fire.js?v=b040"></script>
+<script src="js/gfx/post.js?v=b040"></script>
+<script src="js/gfx/quality.js?v=b040"></script>
+<script src="js/world.js?v=b040"></script>
+<script src="js/player.js?v=b040"></script>
+<script src="js/town.js?v=b040"></script>
+<script src="js/ui.js?v=b040"></script>
+<script src="js/save.js?v=b040"></script>
+<script src="js/main.js?v=b040"></script>
 <script>
 (function () {
   const $ = s => document.querySelector(s), MZ = window.MZ;
